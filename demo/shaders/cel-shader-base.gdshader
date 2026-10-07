@@ -74,6 +74,7 @@ void vertex() {
 }
 
 void fragment() {
+	NDTL_DITHER_POSITION = FRAGCOORD.xy;
 	ALBEDO = color.rgb * texture(base_texture, UV).rgb;
 #if USE_ALPHA
 	float alpha = color.a * texture(base_texture, UV).a;
