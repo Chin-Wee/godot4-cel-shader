@@ -2,10 +2,27 @@ global uniform sampler2D diffuse_curve: repeat_disable;
 global uniform float specular_smoothness;
 global uniform float fresnel_smoothness;
 
- float diffuse_sample(vec3 light, vec3 normal) {
-	return texture(diffuse_curve, vec2(dot(light, normal), 0)
-	).r;
- }
+group_uniforms DiffuseRamp;
+uniform int diffuse_ramp_mode: hint_enum("Texture", "Two Tone", "Smoothed Two Tone") = 0;
+uniform float diffuse_ramp_threshold: hint_range(-1.0, 1.0, 0.01) = 0.0;
+uniform float diffuse_ramp_smoothing: hint_range(0.001, 0.5, 0.001) = 0.08;
+group_uniforms;
+
+float diffuse_sample(vec3 light, vec3 normal) {
+	float ndotl = dot(light, normal);
+	if (diffuse_ramp_mode == 1) {
+		return step(diffuse_ramp_threshold, ndotl);
+	}
+	if (diffuse_ramp_mode == 2) {
+		float half_width = diffuse_ramp_smoothing * 0.5;
+		return smoothstep(
+				diffuse_ramp_threshold - half_width,
+				diffuse_ramp_threshold + half_width,
+				ndotl
+		);
+	}
+	return texture(diffuse_curve, vec2(ndotl, 0.0)).r;
+}
 
 float is_lit(vec3 light, vec3 normal, float attenuation) {
 	return attenuation * diffuse_sample(light, normal);

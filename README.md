@@ -28,6 +28,8 @@ The `diffuse_curve` texture must also be set. You can put a texture you already 
 
 Whenever you want a material with one of the additional features, make a copy of [cel-shader-base.gdshader](src/cel-shader-base.gdshader) and change the defines.
 
+The `DiffuseRamp` material group offers `Texture` (the existing `diffuse_curve` lookup), `Two Tone`, and `Smoothed Two Tone`. The latter two reconstruct Risk of Rain 2's `HGStandard` ramp choices; adjust the threshold and smoothing width per material.
+
 ![](images/image2.png)
 
 This is how the defines look on [cel-shader-base.gdshader](src/cel-shader-base.gdshader). For each feature you want, change the `0` to `1` and the additional uniforms should show up on the material. You must have the [includes](src/includes) folder on the same directory as the your modified copy. You can see the demo as an example.
