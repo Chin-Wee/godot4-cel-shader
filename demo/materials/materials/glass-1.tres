@@ -1,11 +1,9 @@
-[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://badbu2vtbonxy"]
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://badbu2vtbonxy"]
 
-[ext_resource type="Material" uid="uid://dnvlpeg4no6w3" path="res://materials/outline.tres" id="1_5vcig"]
 [ext_resource type="Shader" path="res://shaders/cel-shader-transp.gdshader" id="1_n4wg8"]
 
 [resource]
 render_priority = 0
-next_pass = ExtResource("1_5vcig")
 shader = ExtResource("1_n4wg8")
 shader_parameter/refraction = 0.0200008
 shader_parameter/blurriness = 0.0

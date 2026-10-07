@@ -1,11 +1,9 @@
-[gd_resource type="ShaderMaterial" load_steps=3 format=3 uid="uid://5qss4ojdhbk2"]
+[gd_resource type="ShaderMaterial" load_steps=2 format=3 uid="uid://5qss4ojdhbk2"]
 
-[ext_resource type="Material" uid="uid://dnvlpeg4no6w3" path="res://materials/outline.tres" id="1_eorg8"]
 [ext_resource type="Shader" path="res://shaders/cel-shader-aniso.gdshader" id="2_v12ib"]
 
 [resource]
 render_priority = 0
-next_pass = ExtResource("1_eorg8")
 shader = ExtResource("2_v12ib")
 shader_parameter/anisotropy_ratio = 1.0
 shader_parameter/anisotropy_direction = Vector3(1, 0, 0)

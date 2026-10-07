@@ -38,7 +38,11 @@ Lastly, you can watch the [Youtube video](https://youtu.be/F0LZ_hAci4k) for more
 
 ### Outlines
 
-Make another material with the [outline.gdshader](src/outline.gdshader) shader. Put this material on the `next_pass` property of the material.
+This is a Godot 4.7 reconstruction of Risk of Rain 2's depth-and-normal `SobelOutline` postprocess. For another Godot project, copy [src/post](src/post) to `res://src/post`, then assign [ror2-compositor.tres](src/post/ror2-compositor.tres) to `Environment.compositor` or `Camera3D.compositor`. The compositor runs [ror2-outline-effect.gd](src/post/ror2-outline-effect.gd) and [ror2-sobel.glsl](src/post/ror2-sobel.glsl) after transparent rendering. In this repository's demo, use the self-contained copy at [demo/src/post/ror2-compositor.tres](demo/src/post/ror2-compositor.tres). Tune threshold, depth and normal weights, width, and color on the effect resource.
+
+This effect needs Godot 4.7's Forward+ normal/roughness buffer. It skips rendering when the buffer or RenderingDevice is unavailable. Transparent surfaces do not contribute their own contours because they are absent from that buffer.
+
+For generic inverted-hull outlines, keep using [outline.gdshader](src/outline.gdshader) as a material's `next_pass`.
 
 ## Changelog
 
@@ -65,4 +69,3 @@ All code is licensed under the [MIT](https://opensource.org/license/mit/) licens
 ## Credits
 
 Shader, demo and assets by me, [Rafael Bordoni](https://github.com/eldskald). The skybox shader is [this one](https://godotshaders.com/shader/stylized-sky-shader-with-clouds/), by [axilirate](https://godotshaders.com/author/axilirate/). The fog shader is [this one](https://godotshaders.com/shader/moving-gradient-noise-fog-mist-for-godot-4/), by [alghost](https://godotshaders.com/author/alghost/).
-
