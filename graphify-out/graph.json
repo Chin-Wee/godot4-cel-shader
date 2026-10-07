@@ -1,0 +1,184 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "id": "readme",
+      "label": "README.md",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Godot 4 Complete Cel Shader",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "readme.md",
+      "source_file": "README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "readme_changelog",
+      "label": "Changelog",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Godot 4 Complete Cel Shader",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "changelog",
+      "source_file": "README.md",
+      "source_location": "L49"
+    },
+    {
+      "id": "readme_credits",
+      "label": "Credits",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Godot 4 Complete Cel Shader",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "credits",
+      "source_file": "README.md",
+      "source_location": "L71"
+    },
+    {
+      "id": "readme_godot_4_complete_cel_shader",
+      "label": "Godot 4 Complete Cel Shader",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Godot 4 Complete Cel Shader",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "godot 4 complete cel shader",
+      "source_file": "README.md",
+      "source_location": "L3"
+    },
+    {
+      "id": "readme_license",
+      "label": "License",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Godot 4 Complete Cel Shader",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "license",
+      "source_file": "README.md",
+      "source_location": "L67"
+    },
+    {
+      "id": "readme_base_materials",
+      "label": "Base Materials",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "Instructions",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "base materials",
+      "source_file": "README.md",
+      "source_location": "L27"
+    },
+    {
+      "id": "readme_instructions",
+      "label": "Instructions",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "Instructions",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "instructions",
+      "source_file": "README.md",
+      "source_location": "L11"
+    },
+    {
+      "id": "readme_outlines",
+      "label": "Outlines",
+      "_origin": "ast",
+      "community": 1,
+      "community_name": "Instructions",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "outlines",
+      "source_file": "README.md",
+      "source_location": "L41"
+    }
+  ],
+  "links": [
+    {
+      "source": "readme",
+      "target": "readme_godot_4_complete_cel_shader",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_godot_4_complete_cel_shader",
+      "target": "readme_instructions",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_godot_4_complete_cel_shader",
+      "target": "readme_changelog",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L49",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_godot_4_complete_cel_shader",
+      "target": "readme_license",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L67",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_godot_4_complete_cel_shader",
+      "target": "readme_credits",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L71",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_instructions",
+      "target": "readme_base_materials",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L27",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_instructions",
+      "target": "readme_outlines",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L41",
+      "weight": 1.0
+    }
+  ],
+  "hyperedges": [],
+  "built_at_commit": "45a1342421aafd08a35098e37c4451c49b67c2c2"
+}
