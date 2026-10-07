@@ -1,0 +1,9 @@
+[gd_resource type="Compositor" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://src/post/ror2-outline-effect.gd" id="1_sobel"]
+
+[sub_resource type="CompositorEffect" id="SobelOutline"]
+script = ExtResource("1_sobel")
+
+[resource]
+compositor_effects = Array[CompositorEffect]([SubResource("SobelOutline")])
