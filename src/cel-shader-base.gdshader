@@ -83,6 +83,7 @@ void vertex() {
 }
 
 void fragment() {
+	NDTL_DITHER_POSITION = FRAGCOORD.xy;
 #if USE_HEIGHT_MAP
 	base_uv = height_map_fragment(UV, VERTEX, TANGENT, BINORMAL, NORMAL);
 #endif

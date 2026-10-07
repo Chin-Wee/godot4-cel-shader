@@ -1,6 +1,8 @@
 global uniform sampler2D diffuse_curve: repeat_disable;
 global uniform float specular_smoothness;
 global uniform float fresnel_smoothness;
+uniform float ndotl_dither_strength: hint_range(0.0, 0.1, 0.001) = 0.03;
+varying vec2 NDTL_DITHER_POSITION;
 
 group_uniforms DiffuseRamp;
 uniform int diffuse_ramp_mode: hint_enum("Texture", "Two Tone", "Smoothed Two Tone") = 0;
@@ -8,8 +10,16 @@ uniform float diffuse_ramp_threshold: hint_range(-1.0, 1.0, 0.01) = 0.0;
 uniform float diffuse_ramp_smoothing: hint_range(0.001, 0.5, 0.001) = 0.08;
 group_uniforms;
 
+float bayer4x4(vec2 screen_position) {
+	int x = int(screen_position.x) % 4;
+	int y = int(screen_position.y) % 4;
+	int rank = (((x ^ y) & 1) << 3) | ((y & 1) << 2) | ((x ^ y) & 2) | (y >> 1);
+	return (float(rank) + 0.5) / 16.0;
+}
+
 float diffuse_sample(vec3 light, vec3 normal) {
 	float ndotl = dot(light, normal);
+	ndotl += (bayer4x4(NDTL_DITHER_POSITION) - 0.5) * ndotl_dither_strength;
 	if (diffuse_ramp_mode == 1) {
 		return step(diffuse_ramp_threshold, ndotl);
 	}
