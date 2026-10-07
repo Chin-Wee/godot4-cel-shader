@@ -28,6 +28,8 @@ func _init() -> void:
 func _notification(what: int) -> void:
 	if what != NOTIFICATION_PREDELETE or _rd == null:
 		return
+	if _pipeline.is_valid():
+		_rd.free_rid(_pipeline)
 	if _shader.is_valid():
 		_rd.free_rid(_shader)
 	if _sampler.is_valid():
