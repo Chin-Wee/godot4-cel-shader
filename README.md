@@ -14,13 +14,13 @@ You need to put everything on the [src](src) folder on your project, on the same
 
 ```
 sampler2D diffuse_curve
-float specular_smoothness = 0.05
-float fresnel_smoothness = 0.05
 float outline_width = 4
 color outline_color = black
 ```
 
 These values are the ones that made this screenshot you're seeing, but feel free to mess around with these values.
+
+These controls follow Risk of Rain 2's HGStandard material pattern: specular strength, exponent, and smoothness are separate per-material values. The `specular` alpha now multiplies strength (it previously changed the exponent), and `specular_texture` alpha remains a strength mask. Set `specular_exponent` to control highlight size; `specular_smoothness` controls its threshold softness. Fresnel emission is disabled by default; enable it on a material to use `fresnel` for color and intensity, `fresnel_texture` as its mask, `fresnel_ramp` for its ramp, and tune `fresnel_power` and `fresnel_boost`.
 
 The `diffuse_curve` texture must also be set. You can put a texture you already have or you can use Godot's built in `GradientTexture1D` or `CurveTexture` types, but *you must save them as resources* or else the engine won't be able to load them the next time you open Godot. The one I used for this demo is [this one](demo/texture/diffuse-texture.tres) saved from a `GradientTexture1D` resource, so you can use this one to get a scene looking exactly like the one in the demo. I explain its functionality more in detail on [the previous video](https://youtu.be/Y3tT_-GTXKg).
 
@@ -63,4 +63,3 @@ All code is licensed under the [MIT](https://opensource.org/license/mit/) licens
 ## Credits
 
 Shader, demo and assets by me, [Rafael Bordoni](https://github.com/eldskald). The skybox shader is [this one](https://godotshaders.com/shader/stylized-sky-shader-with-clouds/), by [axilirate](https://godotshaders.com/author/axilirate/). The fog shader is [this one](https://godotshaders.com/shader/moving-gradient-noise-fog-mist-for-godot-4/), by [alghost](https://godotshaders.com/author/alghost/).
-
