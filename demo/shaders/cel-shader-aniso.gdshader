@@ -134,7 +134,7 @@ void fragment() {
 		vec4 fresnel_mask = texture(fresnel_texture, UV);
 		float fresnel_term = fresnel_factor(NORMAL, VIEW, fresnel_power);
 		vec3 fresnel_ramp_color = texture(fresnel_ramp, vec2(fresnel_term, 0.0)).rgb;
-		EMISSION += fresnel.rgb * fresnel_mask.rgb * fresnel.a * fresnel_mask.a * fresnel_boost * fresnel_ramp_color;
+		EMISSION += fresnel_term * fresnel.rgb * fresnel_mask.rgb * fresnel.a * fresnel_mask.a * fresnel_boost * fresnel_ramp_color;
 	}
 }
 

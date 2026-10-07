@@ -45,7 +45,7 @@ vec3 anisotropy_specular(
 	float spec = max(mix(dot(normal, half), aniso, aniso_ratio), 0.0);
 	float spec_intensity = smoothstep(
 			0.05,
-			0.05 + specular_smoothness,
+			0.05 + max(specular_smoothness, 0.001),
 			pow(spec, specular_exponent)
 	);
 	return light_color

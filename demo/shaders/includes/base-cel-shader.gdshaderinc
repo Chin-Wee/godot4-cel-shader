@@ -38,7 +38,7 @@ vec3 specular_light(
 			* is_lit(light, normal, attenuation)
 			* smoothstep(
 					0.05,
-					0.05 + specular_smoothness,
+					0.05 + max(specular_smoothness, 0.001),
 					intensity
 			);
 }
