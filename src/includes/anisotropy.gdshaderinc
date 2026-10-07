@@ -30,6 +30,8 @@ vec3 anisotropy_specular(
 		vec3 light_color,
 		vec3 specular_color,
 		float specular_strength,
+		float specular_exponent,
+		float specular_smoothness,
 		vec3 normal,
 		vec3 view,
 		vec3 light,
@@ -40,15 +42,15 @@ vec3 anisotropy_specular(
 ) {
 	vec3 half = normalize(view + light);
 	float aniso = max(0, sin(dot(normalize(normal + aniso_dir), half) * PI));
-	float spec = mix(dot(normal, half), aniso, aniso_ratio);
-	float spec_gloss = pow(2.0, 8.0 * (1.0 - specular_strength));
+	float spec = max(mix(dot(normal, half), aniso, aniso_ratio), 0.0);
 	float spec_intensity = smoothstep(
 			0.05,
-			0.05 + specular_smoothness,
-			pow(spec, spec_gloss * spec_gloss)
+			0.05 + max(specular_smoothness, 0.001),
+			pow(spec, specular_exponent)
 	);
 	return light_color
 			* specular_color
+			* specular_strength
 			* spec_intensity
 			* is_lit(light, normal, attenuation);
 }

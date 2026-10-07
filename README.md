@@ -14,13 +14,13 @@ You need to put everything on the [src](src) folder on your project, on the same
 
 ```
 sampler2D diffuse_curve
-float specular_smoothness = 0.05
-float fresnel_smoothness = 0.05
 float outline_width = 4
 color outline_color = black
 ```
 
 These values are the ones that made this screenshot you're seeing, but feel free to mess around with these values.
+
+These controls follow Risk of Rain 2's HGStandard material pattern: specular strength, exponent, and smoothness are separate per-material values. The `specular` alpha and `specular_texture` alpha now multiply strength; both previously changed the exponent. Set `specular_exponent` to control highlight size; `specular_smoothness` controls its threshold softness. Fresnel emission is disabled by default; enable it on a material to use `fresnel` for color and intensity, `fresnel_texture` as its mask, `fresnel_ramp` for its ramp, and tune `fresnel_power` and `fresnel_boost`.
 
 The `diffuse_curve` texture must also be set. You can put a texture you already have or you can use Godot's built in `GradientTexture1D` or `CurveTexture` types, but *you must save them as resources* or else the engine won't be able to load them the next time you open Godot. The one I used for this demo is [this one](demo/texture/diffuse-texture.tres) saved from a `GradientTexture1D` resource, so you can use this one to get a scene looking exactly like the one in the demo. I explain its functionality more in detail on [the previous video](https://youtu.be/Y3tT_-GTXKg).
 
@@ -29,6 +29,8 @@ The `diffuse_curve` texture must also be set. You can put a texture you already 
 Whenever you want a material with one of the additional features, make a copy of [cel-shader-base.gdshader](src/cel-shader-base.gdshader) and change the defines.
 
 The `DiffuseRamp` material group offers `Texture` (the existing `diffuse_curve` lookup), `Two Tone`, and `Smoothed Two Tone`. The latter two are visual approximations of Risk of Rain 2's `HGStandard` ramp choices; the original proprietary functions are not public. Adjust the threshold and smoothing width per material.
+
+A stable screen-space 4×4 Bayer pattern perturbs `N·L` before the ramp lookup. Set `ndotl_dither_strength` to `0` to disable it or tune its default `0.03` per material.
 
 ![](images/image2.png)
 
