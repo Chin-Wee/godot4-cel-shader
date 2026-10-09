@@ -1,0 +1,13 @@
+[gd_resource type="ShaderMaterial" load_steps=3 format=3]
+
+[ext_resource type="Shader" uid="uid://tnamnnwd827t" path="res://shaders/cel-shader-base.gdshader" id="2_shader"]
+[ext_resource type="Texture2D" path="res://models/kenney_factory-kit_3.0/Models/GLB format/Textures/colormap.png" id="3_texture"]
+
+[resource]
+shader = ExtResource("2_shader")
+shader_parameter/color = Color(0.84, 0.82, 0.76, 1)
+shader_parameter/base_texture = ExtResource("3_texture")
+shader_parameter/color_saturation = 0.65
+shader_parameter/paint_variation = 0.2
+shader_parameter/diffuse_ramp_mode = 1
+shader_parameter/specular = Color(0, 0, 0, 0)

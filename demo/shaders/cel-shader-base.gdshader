@@ -52,6 +52,8 @@ uniform float alpha_cutoff: hint_range(0.0, 1.0) = 0.5;
 #endif
 uniform vec4 color: source_color = vec4(0.7, 0.12, 0.86, 1.0);
 uniform sampler2D base_texture: source_color;
+uniform float color_saturation: hint_range(0.0, 1.0) = 1.0;
+uniform float paint_variation: hint_range(0.0, 0.2) = 0.0;
 uniform vec4 specular: source_color = vec4(0.3, 0.3, 0.3, 0.5);
 uniform sampler2D specular_texture: hint_default_white;
 uniform float specular_strength: hint_range(0.0, 1.0) = 1.0;
@@ -74,13 +76,37 @@ uniform vec2 uv_offset = vec2(0,0);
 group_uniforms;
 
 
+// ponytail: procedural mottling stops at broad pigment shifts; use an authored brush map for true strokes.
+float paint_hash(vec3 cell) {
+	return fract(sin(dot(cell, vec3(127.1, 311.7, 74.7))) * 43758.5453);
+}
+
+float paint_noise(vec3 position) {
+	vec3 cell = floor(position);
+	vec3 blend = fract(position);
+	blend = blend * blend * (3.0 - 2.0 * blend);
+	float x0 = mix(paint_hash(cell), paint_hash(cell + vec3(1.0, 0.0, 0.0)), blend.x);
+	float x1 = mix(paint_hash(cell + vec3(0.0, 1.0, 0.0)), paint_hash(cell + vec3(1.0, 1.0, 0.0)), blend.x);
+	float x2 = mix(paint_hash(cell + vec3(0.0, 0.0, 1.0)), paint_hash(cell + vec3(1.0, 0.0, 1.0)), blend.x);
+	float x3 = mix(paint_hash(cell + vec3(0.0, 1.0, 1.0)), paint_hash(cell + vec3(1.0, 1.0, 1.0)), blend.x);
+	return mix(mix(x0, x1, blend.y), mix(x2, x3, blend.y), blend.z);
+}
+
 void vertex() {
 	UV = UV * uv_scale.xy + uv_offset.xy;
 }
 
 void fragment() {
 	NDTL_DITHER_POSITION = FRAGCOORD.xy;
-	ALBEDO = color.rgb * texture(base_texture, UV).rgb;
+	vec3 albedo = color.rgb * texture(base_texture, UV).rgb;
+	float luminance = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+	albedo = mix(vec3(luminance), albedo, color_saturation);
+	if (paint_variation > 0.0) {
+		vec3 world_position = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
+		float pigment_shift = (paint_noise(world_position * 3.0) - 0.5) * paint_variation * 2.0;
+		albedo *= vec3(1.0 + pigment_shift, 1.0 + pigment_shift * 0.35, 1.0 - pigment_shift * 0.25);
+	}
+	ALBEDO = albedo;
 #if USE_ALPHA
 	float alpha = color.a * texture(base_texture, UV).a;
 	ALBEDO *= alpha;
