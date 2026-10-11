@@ -16,6 +16,8 @@ const ROBOT_ALBEDO_SCALE := 0.85
 var animation_player: AnimationPlayer
 var current_animation: StringName
 var locomotion_stride_distances: Dictionary = {}
+var jump_landing_cue_time := 0.0
+var _was_grounded := false
 
 
 func _ready() -> void:
@@ -67,6 +69,10 @@ func _prepare_animation_library() -> void:
 			locomotion_stride_distances[animation_name] = _measure_stride_distance(
 				local_library.get_animation(animation_name)
 			)
+	if local_library.has_animation(&"Jump"):
+		jump_landing_cue_time = _measure_jump_landing_cue_time(
+			local_library.get_animation(&"Jump")
+		)
 	animation_player.remove_animation_library(&"")
 	animation_player.add_animation_library(&"", local_library)
 
@@ -111,18 +117,31 @@ func _apply_robot_materials(node: Node) -> void:
 func _update_locomotion_animation() -> void:
 	if animation_player == null:
 		return
+	var grounded := is_on_floor()
+	var just_took_off := _was_grounded and not grounded
 	var planar_velocity := Vector3(velocity.x, 0.0, velocity.z)
 	var planar_speed := planar_velocity.length()
 	_update_visual_facing(planar_velocity, planar_speed)
-	var desired_animation := _get_locomotion_animation(planar_speed, is_on_floor())
+	var jump_recovery_active := (
+		current_animation == &"Jump"
+		and animation_player.is_playing()
+		and grounded
+		and not just_took_off
+	)
+	var desired_animation := _get_locomotion_animation(
+		planar_speed, grounded, jump_recovery_active
+	)
 	animation_player.speed_scale = _get_locomotion_playback_speed(
 		desired_animation, planar_speed
 	)
-	_play_animation(desired_animation)
+	_play_animation(desired_animation, just_took_off)
+	_was_grounded = grounded
 
 
-func _get_locomotion_animation(planar_speed: float, grounded: bool) -> StringName:
-	if not grounded:
+func _get_locomotion_animation(
+	planar_speed: float, grounded: bool, jump_recovery_active := false
+) -> StringName:
+	if not grounded or jump_recovery_active:
 		return &"Jump"
 	if planar_speed <= WALK_SPEED_THRESHOLD:
 		return &"Idle"
@@ -150,8 +169,48 @@ func _measure_stride_distance(animation: Animation) -> float:
 	return 0.0
 
 
+func _measure_jump_landing_cue_time(animation: Animation) -> float:
+	var body_track := -1
+	for track_index in animation.get_track_count():
+		if (
+			animation.track_get_type(track_index) == Animation.TYPE_POSITION_3D
+			and str(animation.track_get_path(track_index)).ends_with(":Body")
+		):
+			body_track = track_index
+			break
+	if body_track < 0:
+		return 0.0
+
+	var apex_time := 0.0
+	var apex_y := -INF
+	for key_index in animation.track_get_key_count(body_track):
+		var body_position: Vector3 = animation.track_get_key_value(body_track, key_index)
+		if body_position.y > apex_y:
+			apex_y = body_position.y
+			apex_time = animation.track_get_key_time(body_track, key_index)
+
+	var landing_cue_time := 0.0
+	var landing_cue_y := INF
+	for key_index in animation.track_get_key_count(body_track):
+		var key_time := animation.track_get_key_time(body_track, key_index)
+		if key_time <= apex_time:
+			continue
+		var body_position: Vector3 = animation.track_get_key_value(body_track, key_index)
+		if body_position.y < landing_cue_y:
+			landing_cue_y = body_position.y
+			landing_cue_time = key_time
+	return landing_cue_time
+
+
 func _get_locomotion_playback_speed(animation_name: StringName, planar_speed: float) -> float:
 	var animation := animation_player.get_animation(animation_name)
+	if animation_name == &"Jump":
+		# Risk of Rain 2-style body animation stays on the visual child. This aligns its
+		# landing compression cue with a same-height ballistic jump's predicted airtime.
+		var predicted_airtime := 2.0 * jump_power / gravity if gravity > 0.0 else 0.0
+		if jump_landing_cue_time > 0.0 and predicted_airtime > 0.0:
+			return jump_landing_cue_time / predicted_airtime
+		return 1.0
 	var stride_distance := float(locomotion_stride_distances.get(animation_name, 0.0)) * visual_scale
 	if animation == null or stride_distance <= 0.0 or planar_speed <= 0.0:
 		return 1.0
@@ -166,10 +225,13 @@ func _update_visual_facing(planar_velocity: Vector3, planar_speed: float) -> voi
 	visual_root.rotation.y = atan2(local_direction.x, local_direction.z)
 
 
-func _play_animation(animation_name: StringName) -> void:
+func _play_animation(animation_name: StringName, restart := false) -> void:
 	if animation_player == null or not animation_player.has_animation(animation_name):
 		return
-	if current_animation == animation_name and animation_player.is_playing():
-		return
-	current_animation = animation_name
+	if current_animation == animation_name:
+		if not restart:
+			return
+		animation_player.seek(0.0, true)
+	else:
+		current_animation = animation_name
 	animation_player.play(animation_name, 0.15)
