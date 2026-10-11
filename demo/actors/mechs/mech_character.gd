@@ -7,6 +7,7 @@ extends "res://scripts/controls.gd"
 
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
+const RUN_SPEED_RATIO := 0.7
 const ROBOT_ALBEDO_SCALE := 0.85
 
 @onready var visual_root: Node3D = $VisualRoot
@@ -14,6 +15,7 @@ const ROBOT_ALBEDO_SCALE := 0.85
 
 var animation_player: AnimationPlayer
 var current_animation: StringName
+var locomotion_stride_distances: Dictionary = {}
 
 
 func _ready() -> void:
@@ -21,6 +23,8 @@ func _ready() -> void:
 	set_physics_process(player_controlled and not Engine.is_editor_hint())
 	set_process_input(player_controlled and not Engine.is_editor_hint())
 	visual_root.scale = Vector3.ONE * visual_scale
+	# The mech pack's eye meshes face +Z; the controller and camera face -Z.
+	visual_root.rotation.y = PI
 	if visual_root.get_child_count() == 0:
 		push_error("Add an imported mech scene under VisualRoot.")
 		return
@@ -58,6 +62,11 @@ func _prepare_animation_library() -> void:
 	for animation_name in [&"Idle", &"Walk", &"Run"]:
 		if local_library.has_animation(animation_name):
 			local_library.get_animation(animation_name).loop_mode = Animation.LOOP_LINEAR
+	for animation_name in [&"Walk", &"Run"]:
+		if local_library.has_animation(animation_name):
+			locomotion_stride_distances[animation_name] = _measure_stride_distance(
+				local_library.get_animation(animation_name)
+			)
 	animation_player.remove_animation_library(&"")
 	animation_player.add_animation_library(&"", local_library)
 
@@ -102,12 +111,55 @@ func _apply_robot_materials(node: Node) -> void:
 func _update_locomotion_animation() -> void:
 	if animation_player == null:
 		return
+	var planar_velocity := Vector3(velocity.x, 0.0, velocity.z)
+	var planar_speed := planar_velocity.length()
+	_update_visual_facing(planar_velocity, planar_speed)
 	var desired_animation: StringName = &"Idle"
 	if not is_on_floor():
 		desired_animation = &"Jump"
-	elif Vector2(velocity.x, velocity.z).length() > WALK_SPEED_THRESHOLD:
-		desired_animation = &"Run"
+	elif planar_speed > WALK_SPEED_THRESHOLD:
+		desired_animation = (
+			&"Run"
+			if planar_speed >= maxf(speed * RUN_SPEED_RATIO, WALK_SPEED_THRESHOLD)
+			else &"Walk"
+		)
+	animation_player.speed_scale = _get_locomotion_playback_speed(
+		desired_animation, planar_speed
+	)
 	_play_animation(desired_animation)
+
+
+func _measure_stride_distance(animation: Animation) -> float:
+	for track_index in animation.get_track_count():
+		if (
+			animation.track_get_type(track_index) != Animation.TYPE_POSITION_3D
+			or not str(animation.track_get_path(track_index)).ends_with(":Foot.L")
+		):
+			continue
+		var minimum_z := INF
+		var maximum_z := -INF
+		for key_index in animation.track_get_key_count(track_index):
+			var foot_position: Vector3 = animation.track_get_key_value(track_index, key_index)
+			minimum_z = minf(minimum_z, foot_position.z)
+			maximum_z = maxf(maximum_z, foot_position.z)
+		return maximum_z - minimum_z
+	return 0.0
+
+
+func _get_locomotion_playback_speed(animation_name: StringName, planar_speed: float) -> float:
+	var animation := animation_player.get_animation(animation_name)
+	var stride_distance := float(locomotion_stride_distances.get(animation_name, 0.0)) * visual_scale
+	if animation == null or stride_distance <= 0.0 or planar_speed <= 0.0:
+		return 1.0
+	return animation.length * planar_speed / stride_distance
+
+
+func _update_visual_facing(planar_velocity: Vector3, planar_speed: float) -> void:
+	if planar_speed <= WALK_SPEED_THRESHOLD:
+		visual_root.rotation.y = PI
+		return
+	var local_direction := global_transform.basis.inverse() * planar_velocity.normalized()
+	visual_root.rotation.y = atan2(local_direction.x, local_direction.z)
 
 
 func _play_animation(animation_name: StringName) -> void:
