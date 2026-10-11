@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://actors/mechs/mech_character.gd" id="1_actor"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_mech"]
+radius = 0.4
+height = 1.8
+
+[node name="MechCharacter" type="CharacterBody3D"]
+floor_snap_length = 0.2
+script = ExtResource("1_actor")
+camera_pivot_path = NodePath("CameraPivot")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+position = Vector3(0, 0.9, 0)
+shape = SubResource("CapsuleShape3D_mech")
+
+[node name="VisualRoot" type="Node3D" parent="."]
+
+[node name="CameraPivot" type="Node3D" parent="."]
+position = Vector3(0, 1.3, 0)
+rotation_degrees = Vector3(-12, 0, 0)
+
+[node name="SpringArm3D" type="SpringArm3D" parent="CameraPivot"]
+spring_length = 4.0
+margin = 0.2
+
+[node name="Camera3D" type="Camera3D" parent="CameraPivot/SpringArm3D"]
+current = false
