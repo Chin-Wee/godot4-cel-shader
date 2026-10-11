@@ -10,10 +10,10 @@
 [node name="George" parent="." instance=ExtResource("1_george")]
 
 [node name="Leela" parent="." instance=ExtResource("2_leela")]
-position = Vector3(-2.5, 0, -4)
+position = Vector3(-3, 0, -4)
 
 [node name="Mike" parent="." instance=ExtResource("3_mike")]
-position = Vector3(0, 0, -4)
+position = Vector3(3, 0, -4)
 
 [node name="Stan" parent="." instance=ExtResource("4_stan")]
-position = Vector3(2.5, 0, -4)
+position = Vector3(-1.7, 0, -5.2)

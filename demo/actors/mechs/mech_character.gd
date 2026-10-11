@@ -75,7 +75,7 @@ func _apply_robot_materials(node: Node) -> void:
 			var material := ShaderMaterial.new()
 			material.shader = MECH_SHADER
 			material.set_shader_parameter("base_texture", atlas)
-			material.set_shader_parameter("color", Color(0.78, 0.77, 0.72, 1.0))
+			material.set_shader_parameter("color", Color(0.88, 0.87, 0.82, 1.0))
 			material.set_shader_parameter("color_saturation", 0.55)
 			material.set_shader_parameter("paint_variation", 0.08)
 			material.set_shader_parameter("diffuse_ramp_mode", 1)
