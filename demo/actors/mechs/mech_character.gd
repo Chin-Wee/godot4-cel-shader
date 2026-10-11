@@ -114,19 +114,23 @@ func _update_locomotion_animation() -> void:
 	var planar_velocity := Vector3(velocity.x, 0.0, velocity.z)
 	var planar_speed := planar_velocity.length()
 	_update_visual_facing(planar_velocity, planar_speed)
-	var desired_animation: StringName = &"Idle"
-	if not is_on_floor():
-		desired_animation = &"Jump"
-	elif planar_speed > WALK_SPEED_THRESHOLD:
-		desired_animation = (
-			&"Run"
-			if planar_speed >= maxf(speed * RUN_SPEED_RATIO, WALK_SPEED_THRESHOLD)
-			else &"Walk"
-		)
+	var desired_animation := _get_locomotion_animation(planar_speed, is_on_floor())
 	animation_player.speed_scale = _get_locomotion_playback_speed(
 		desired_animation, planar_speed
 	)
 	_play_animation(desired_animation)
+
+
+func _get_locomotion_animation(planar_speed: float, grounded: bool) -> StringName:
+	if not grounded:
+		return &"Jump"
+	if planar_speed <= WALK_SPEED_THRESHOLD:
+		return &"Idle"
+	return (
+		&"Run"
+		if planar_speed >= maxf(speed * RUN_SPEED_RATIO, WALK_SPEED_THRESHOLD)
+		else &"Walk"
+	)
 
 
 func _measure_stride_distance(animation: Animation) -> float:
