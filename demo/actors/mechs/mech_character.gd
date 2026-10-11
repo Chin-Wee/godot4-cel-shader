@@ -7,6 +7,7 @@ extends "res://scripts/controls.gd"
 
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
+const ROBOT_ALBEDO_SCALE := 0.85
 
 @onready var visual_root: Node3D = $VisualRoot
 @onready var actor_camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
@@ -66,19 +67,30 @@ func _apply_robot_materials(node: Node) -> void:
 		var mesh_instance := node as MeshInstance3D
 		for surface in mesh_instance.mesh.get_surface_count():
 			var imported_material := mesh_instance.get_active_material(surface)
-			var atlas := texture_override
-			if atlas == null and imported_material is StandardMaterial3D:
-				atlas = (imported_material as StandardMaterial3D).albedo_texture
-			if atlas == null:
+			if imported_material == null and texture_override == null:
 				continue
+			var source_color := Color.WHITE
+			var source_texture := texture_override
+			if imported_material is BaseMaterial3D:
+				var base_material := imported_material as BaseMaterial3D
+				source_color = base_material.albedo_color
+				if source_texture == null:
+					source_texture = base_material.albedo_texture
+			var robot_color := Color(
+					source_color.r * ROBOT_ALBEDO_SCALE,
+					source_color.g * ROBOT_ALBEDO_SCALE,
+					source_color.b * ROBOT_ALBEDO_SCALE,
+					source_color.a
+			)
 
 			var material := ShaderMaterial.new()
 			material.shader = MECH_SHADER
-			material.set_shader_parameter("base_texture", atlas)
-			material.set_shader_parameter("color", Color(0.88, 0.87, 0.82, 1.0))
-			material.set_shader_parameter("color_saturation", 0.55)
-			material.set_shader_parameter("paint_variation", 0.08)
-			material.set_shader_parameter("diffuse_ramp_mode", 1)
+			if source_texture != null:
+				material.set_shader_parameter("base_texture", source_texture)
+			material.set_shader_parameter("color", robot_color)
+			material.set_shader_parameter("color_saturation", 0.65)
+			material.set_shader_parameter("paint_variation", 0.0)
+			material.set_shader_parameter("diffuse_ramp_mode", 0)
 			material.set_shader_parameter("specular", Color(0.0, 0.0, 0.0, 0.0))
 			material.set_shader_parameter("specular_strength", 0.0)
 			mesh_instance.set_surface_override_material(surface, material)

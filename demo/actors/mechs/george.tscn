@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3]
 
 [ext_resource type="PackedScene" path="res://actors/mechs/mech_character.tscn" id="1_actor"]
-[ext_resource type="PackedScene" path="res://models/Animated Mech Pack - March 2021/Textured/glTF/George.gltf" id="2_model"]
+[ext_resource type="PackedScene" path="res://models/Animated Mech Pack - March 2021/Flat Colors/glTF/George.gltf" id="2_model"]
 
 [node name="George" instance=ExtResource("1_actor")]
 visual_scale = 0.276
