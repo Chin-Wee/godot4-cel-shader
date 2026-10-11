@@ -85,8 +85,9 @@ compositor = ExtResource("20_sobel")
 transform = Transform3D(0.0382943, -0.187372, 0.981542, -0.023297, 0.981828, 0.188335, -0.998995, -0.0300792, 0.0332332, 0.606105, 2.60517, 0.518529)
 light_indirect_energy = 0.0
 shadow_enabled = true
-shadow_bias = 0.01
-shadow_normal_bias = 6.0
+shadow_bias = 0.05
+shadow_normal_bias = 2.0
+shadow_opacity = 0.65
 directional_shadow_mode = 1
 
 [node name="Wind" type="Area3D" parent="."]
