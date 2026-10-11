@@ -53,7 +53,7 @@ uniform float alpha_cutoff: hint_range(0.0, 1.0) = 0.5;
 uniform vec4 color: source_color = vec4(0.7, 0.12, 0.86, 1.0);
 uniform sampler2D base_texture: source_color;
 uniform float color_saturation: hint_range(0.0, 1.0) = 1.0;
-uniform float paint_variation: hint_range(0.0, 0.2) = 0.0;
+uniform float paint_variation: hint_range(0.0, 0.4) = 0.0;
 uniform vec4 specular: source_color = vec4(0.3, 0.3, 0.3, 0.5);
 uniform sampler2D specular_texture: hint_default_white;
 uniform float specular_strength: hint_range(0.0, 1.0) = 1.0;
@@ -76,7 +76,7 @@ uniform vec2 uv_offset = vec2(0,0);
 group_uniforms;
 
 
-// ponytail: procedural mottling stops at broad pigment shifts; use an authored brush map for true strokes.
+// ponytail: procedural strokes stay synthetic; use an authored brush map for hand-painted marks.
 float paint_hash(vec3 cell) {
 	return fract(sin(dot(cell, vec3(127.1, 311.7, 74.7))) * 43758.5453);
 }
@@ -103,7 +103,16 @@ void fragment() {
 	albedo = mix(vec3(luminance), albedo, color_saturation);
 	if (paint_variation > 0.0) {
 		vec3 world_position = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-		float pigment_shift = (paint_noise(world_position * 3.0) - 0.5) * paint_variation * 2.0;
+		vec3 world_normal = normalize((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).xyz);
+		vec3 projection_weights = pow(abs(world_normal), vec3(4.0));
+		projection_weights /= dot(projection_weights, vec3(1.0));
+		float brush_strokes =
+				paint_noise(vec3(world_position.zy * vec2(8.0, 1.8), 0.0)) * projection_weights.x +
+				paint_noise(vec3(world_position.xz * vec2(8.0, 1.8), 0.0)) * projection_weights.y +
+				paint_noise(vec3(world_position.xy * vec2(8.0, 1.8), 0.0)) * projection_weights.z;
+		brush_strokes = smoothstep(0.22, 0.78, brush_strokes);
+		float pigment = mix(paint_noise(world_position * 1.2), brush_strokes, 0.75);
+		float pigment_shift = (pigment - 0.5) * paint_variation * 2.0;
 		albedo *= vec3(1.0 + pigment_shift, 1.0 + pigment_shift * 0.35, 1.0 - pigment_shift * 0.25);
 	}
 	ALBEDO = albedo;

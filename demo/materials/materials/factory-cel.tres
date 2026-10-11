@@ -5,9 +5,9 @@
 
 [resource]
 shader = ExtResource("2_shader")
-shader_parameter/color = Color(0.84, 0.82, 0.76, 1)
+shader_parameter/color = Color(0.74, 0.72, 0.66, 1)
 shader_parameter/base_texture = ExtResource("3_texture")
-shader_parameter/color_saturation = 0.65
-shader_parameter/paint_variation = 0.2
+shader_parameter/color_saturation = 0.32
+shader_parameter/paint_variation = 0.38
 shader_parameter/diffuse_ramp_mode = 1
 shader_parameter/specular = Color(0, 0, 0, 0)
