@@ -6,8 +6,9 @@ extends CharacterBody3D
 @export var speed: float = 5.0
 @export var jump_power: float = 4.5
 @export var gravity: float = 10.0
+@export var camera_pivot_path: NodePath = NodePath("Camera3D")
 
-@onready var camera: Camera3D = get_node("Camera3D");
+@onready var camera: Node3D = get_node(camera_pivot_path);
 
 
 func _ready():
