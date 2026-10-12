@@ -8,7 +8,7 @@ extends "res://scripts/controls.gd"
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
 const RUN_SPEED_RATIO := 0.7
-const ROBOT_ALBEDO_SCALE := 1.15
+const ROBOT_ALBEDO_SCALE := 1.0
 
 @onready var visual_root: Node3D = $VisualRoot
 @onready var actor_camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
