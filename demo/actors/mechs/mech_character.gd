@@ -8,7 +8,7 @@ extends "res://scripts/controls.gd"
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
 const RUN_SPEED_RATIO := 0.7
-const ROBOT_ALBEDO_SCALE := 0.85
+const ROBOT_ALBEDO_SCALE := 1.15
 
 @onready var visual_root: Node3D = $VisualRoot
 @onready var actor_camera: Camera3D = $CameraPivot/SpringArm3D/Camera3D
@@ -97,13 +97,12 @@ func _apply_robot_materials(node: Node) -> void:
 					source_color.b * ROBOT_ALBEDO_SCALE,
 					source_color.a
 			)
-
 			var material := ShaderMaterial.new()
 			material.shader = MECH_SHADER
 			if source_texture != null:
 				material.set_shader_parameter("base_texture", source_texture)
 			material.set_shader_parameter("color", robot_color)
-			material.set_shader_parameter("color_saturation", 0.65)
+			material.set_shader_parameter("color_saturation", 0.5)
 			material.set_shader_parameter("paint_variation", 0.0)
 			material.set_shader_parameter("diffuse_ramp_mode", 0)
 			material.set_shader_parameter("specular", Color(0.0, 0.0, 0.0, 0.0))
