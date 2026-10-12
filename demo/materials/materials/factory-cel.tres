@@ -7,7 +7,7 @@
 shader = ExtResource("2_shader")
 shader_parameter/color = Color(0.64, 0.68, 0.64, 1)
 shader_parameter/base_texture = ExtResource("3_texture")
-shader_parameter/color_saturation = 0.65
+shader_parameter/color_saturation = 0.5
 shader_parameter/paint_variation = 0.0
 shader_parameter/diffuse_ramp_mode = 0
 shader_parameter/ndotl_dither_strength = 0.0
