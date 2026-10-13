@@ -52,6 +52,7 @@ uniform float alpha_cutoff: hint_range(0.0, 1.0) = 0.5;
 #endif
 uniform vec4 color: source_color = vec4(0.7, 0.12, 0.86, 1.0);
 uniform sampler2D base_texture: source_color;
+uniform float color_saturation: hint_range(0.0, 1.0) = 0.5;
 uniform vec4 specular: source_color = vec4(0.3, 0.3, 0.3, 0.5);
 uniform sampler2D specular_texture: hint_default_white;
 uniform float specular_strength: hint_range(0.0, 1.0) = 1.0;
@@ -80,7 +81,9 @@ void vertex() {
 
 void fragment() {
 	NDTL_DITHER_POSITION = FRAGCOORD.xy;
-	ALBEDO = color.rgb * texture(base_texture, UV).rgb;
+	vec3 albedo = color.rgb * texture(base_texture, UV).rgb;
+	float luminance = dot(albedo, vec3(0.2126, 0.7152, 0.0722));
+	ALBEDO = mix(vec3(luminance), albedo, color_saturation);
 #if USE_ALPHA
 	float alpha = color.a * texture(base_texture, UV).a;
 	ALBEDO *= alpha;
