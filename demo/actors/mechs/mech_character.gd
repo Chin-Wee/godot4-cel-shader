@@ -102,7 +102,7 @@ func _apply_robot_materials(node: Node) -> void:
 			if source_texture != null:
 				material.set_shader_parameter("base_texture", source_texture)
 			material.set_shader_parameter("color", robot_color)
-			material.set_shader_parameter("color_saturation", 0.5)
+			material.set_shader_parameter("color_saturation", 0.35)
 			material.set_shader_parameter("paint_variation", 0.06)
 			material.set_shader_parameter("diffuse_ramp_mode", 0)
 			material.set_shader_parameter("specular", Color(0.0, 0.0, 0.0, 0.0))
