@@ -7,7 +7,8 @@ extends "res://scripts/controls.gd"
 
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
-const RUN_SPEED_RATIO := 0.7
+const VISUAL_TURN_SPEED := 4.5
+const LOCOMOTION_BLEND_TIME := 0.35
 const ROBOT_ALBEDO_SCALE := 1.0
 
 @onready var visual_root: Node3D = $VisualRoot
@@ -49,7 +50,7 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	super._physics_process(delta)
-	_update_locomotion_animation()
+	_update_locomotion_animation(delta)
 
 
 func _input(event: InputEvent) -> void:
@@ -113,14 +114,14 @@ func _apply_robot_materials(node: Node) -> void:
 		_apply_robot_materials(child)
 
 
-func _update_locomotion_animation() -> void:
+func _update_locomotion_animation(delta: float = 1.0 / 60.0) -> void:
 	if animation_player == null:
 		return
 	var grounded := is_on_floor()
 	var just_took_off := _was_grounded and not grounded
 	var planar_velocity := Vector3(velocity.x, 0.0, velocity.z)
 	var planar_speed := planar_velocity.length()
-	_update_visual_facing(planar_velocity, planar_speed)
+	_update_visual_facing(planar_velocity, planar_speed, delta)
 	var jump_recovery_active := (
 		current_animation == &"Jump"
 		and animation_player.is_playing()
@@ -128,7 +129,7 @@ func _update_locomotion_animation() -> void:
 		and not just_took_off
 	)
 	var desired_animation := _get_locomotion_animation(
-		planar_speed, grounded, jump_recovery_active
+		planar_speed, grounded, jump_recovery_active, is_running
 	)
 	animation_player.speed_scale = _get_locomotion_playback_speed(
 		desired_animation, planar_speed
@@ -138,17 +139,13 @@ func _update_locomotion_animation() -> void:
 
 
 func _get_locomotion_animation(
-	planar_speed: float, grounded: bool, jump_recovery_active := false
+	planar_speed: float, grounded: bool, jump_recovery_active := false, run_requested := false
 ) -> StringName:
 	if not grounded or jump_recovery_active:
 		return &"Jump"
 	if planar_speed <= WALK_SPEED_THRESHOLD:
 		return &"Idle"
-	return (
-		&"Run"
-		if planar_speed >= maxf(speed * RUN_SPEED_RATIO, WALK_SPEED_THRESHOLD)
-		else &"Walk"
-	)
+	return &"Run" if run_requested else &"Walk"
 
 
 func _measure_stride_distance(animation: Animation) -> float:
@@ -216,12 +213,16 @@ func _get_locomotion_playback_speed(animation_name: StringName, planar_speed: fl
 	return animation.length * planar_speed / stride_distance
 
 
-func _update_visual_facing(planar_velocity: Vector3, planar_speed: float) -> void:
+func _update_visual_facing(
+	planar_velocity: Vector3, planar_speed: float, delta: float = 1.0 / 60.0
+) -> void:
 	if planar_speed <= WALK_SPEED_THRESHOLD:
-		visual_root.rotation.y = PI
 		return
 	var local_direction := global_transform.basis.inverse() * planar_velocity.normalized()
-	visual_root.rotation.y = atan2(local_direction.x, local_direction.z)
+	var target_rotation := atan2(local_direction.x, local_direction.z)
+	visual_root.rotation.y = lerp_angle(
+		visual_root.rotation.y, target_rotation, 1.0 - exp(-VISUAL_TURN_SPEED * delta)
+	)
 
 
 func _play_animation(animation_name: StringName, restart := false) -> void:
@@ -233,4 +234,4 @@ func _play_animation(animation_name: StringName, restart := false) -> void:
 		animation_player.seek(0.0, true)
 	else:
 		current_animation = animation_name
-	animation_player.play(animation_name, 0.15)
+	animation_player.play(animation_name, LOCOMOTION_BLEND_TIME)
