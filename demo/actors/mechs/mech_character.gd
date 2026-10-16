@@ -8,7 +8,7 @@ extends "res://scripts/controls.gd"
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
 const VISUAL_TURN_SPEED := 4.5
-const LOCOMOTION_BLEND_TIME := 0.35
+const LOCOMOTION_BLEND_TIME := 0.6
 const ROBOT_ALBEDO_SCALE := 1.0
 
 @onready var visual_root: Node3D = $VisualRoot
