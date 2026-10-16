@@ -3,10 +3,10 @@ extends CharacterBody3D
 @export_range(0, 1) var sensitivity: float = 0.5;
 @export_range(0, 90) var vertical_look_boundary: float = 80;
 @export var invert_y_axis: bool = false;
-@export var speed: float = 2.2
-@export var run_speed: float = 3.6
-@export_range(0.1, 20.0, 0.1) var acceleration: float = 6.0
-@export_range(0.1, 20.0, 0.1) var braking: float = 8.0
+@export var speed: float = 1.7
+@export var run_speed: float = 2.8
+@export_range(0.1, 20.0, 0.1) var acceleration: float = 4.5
+@export_range(0.1, 20.0, 0.1) var braking: float = 5.5
 @export var jump_power: float = 4.5
 @export var gravity: float = 10.0
 @export var camera_pivot_path: NodePath = NodePath("Camera3D")
