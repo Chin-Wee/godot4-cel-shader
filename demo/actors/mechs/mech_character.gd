@@ -9,6 +9,7 @@ const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
 const VISUAL_TURN_SPEED := 4.5
 const LOCOMOTION_BLEND_TIME := 0.6
+const NON_JUMP_ANIMATION_RATE_SCALE := 0.7
 const ROBOT_ALBEDO_SCALE := 1.0
 
 @onready var visual_root: Node3D = $VisualRoot
@@ -131,8 +132,11 @@ func _update_locomotion_animation(delta: float = 1.0 / 60.0) -> void:
 	var desired_animation := _get_locomotion_animation(
 		planar_speed, grounded, jump_recovery_active, is_running
 	)
-	animation_player.speed_scale = _get_locomotion_playback_speed(
-		desired_animation, planar_speed
+	var animation_rate_scale := (
+		1.0 if desired_animation == &"Jump" else NON_JUMP_ANIMATION_RATE_SCALE
+	)
+	animation_player.speed_scale = (
+		_get_locomotion_playback_speed(desired_animation, planar_speed) * animation_rate_scale
 	)
 	_play_animation(desired_animation, just_took_off)
 	_was_grounded = grounded
