@@ -1,4 +1,4 @@
-[gd_resource type="ShaderMaterial" load_steps=13 format=3 uid="uid://dp46s1ve43yhf"]
+[gd_resource type="ShaderMaterial" format=3 uid="uid://dp46s1ve43yhf"]
 
 [ext_resource type="Shader" uid="uid://fm3tpdkjha1f" path="res://shaders/sky.gdshader" id="1_velad"]
 
