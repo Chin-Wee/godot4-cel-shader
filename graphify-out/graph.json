@@ -2060,11 +2060,95 @@
       "source_location": "L17"
     },
     {
+      "id": "demo_aerial_readme",
+      "label": "aerial/README.md",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "aerial/readme.md",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "label": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "aerial rendering study \u2014 delivery must complete",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_readme_asset_selection",
+      "label": "Asset selection",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "asset selection",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L58"
+    },
+    {
+      "id": "demo_aerial_readme_checks_and_comparison_captures",
+      "label": "Checks and comparison captures",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "checks and comparison captures",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L68"
+    },
+    {
+      "id": "demo_aerial_readme_implementation_and_reference",
+      "label": "Implementation and reference",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "implementation and reference",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L26"
+    },
+    {
+      "id": "demo_aerial_readme_run_and_controls",
+      "label": "Run and controls",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "run and controls",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L7"
+    },
+    {
+      "id": "demo_aerial_readme_visual_review_and_remaining_goal",
+      "label": "Visual review and remaining goal",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "visual review and remaining goal",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L81"
+    },
+    {
       "id": "readme",
       "label": "README.md",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "readme.md",
@@ -2072,11 +2156,23 @@
       "source_location": "L1"
     },
     {
+      "id": "readme_aerial_rendering_study",
+      "label": "Aerial rendering study",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "aerial rendering study",
+      "source_file": "README.md",
+      "source_location": "L75"
+    },
+    {
       "id": "readme_base_materials",
       "label": "Base Materials",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "base materials",
@@ -2088,7 +2184,7 @@
       "label": "Changelog",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "changelog",
@@ -2100,7 +2196,7 @@
       "label": "Credits",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "credits",
@@ -2112,7 +2208,7 @@
       "label": "Godot 4 Complete Cel Shader",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "godot 4 complete cel shader",
@@ -2124,7 +2220,7 @@
       "label": "Instructions",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "instructions",
@@ -2136,7 +2232,7 @@
       "label": "License",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "license",
@@ -2148,7 +2244,7 @@
       "label": "Outlines",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Godot 4 Complete Cel Shader",
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "outlines",
@@ -5956,6 +6052,22 @@
       "source_location": ""
     },
     {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "PhantomCameraHost",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -6146,22 +6258,6 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
-    },
-    {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -11929,6 +12025,72 @@
       "weight": 1.0
     },
     {
+      "source": "demo_aerial_readme",
+      "target": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_implementation_and_reference",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_asset_selection",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L58",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_checks_and_comparison_captures",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L68",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_run_and_controls",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_visual_review_and_remaining_goal",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L81",
+      "weight": 1.0
+    },
+    {
       "source": "demo_models_mechasset_readme",
       "target": "demo_models_mechasset_readme_mechasset",
       "relation": "contains",
@@ -12080,6 +12242,17 @@
       "confidence_score": 1.0,
       "source_file": "README.md",
       "source_location": "L71",
+      "weight": 1.0
+    },
+    {
+      "source": "readme_godot_4_complete_cel_shader",
+      "target": "readme_aerial_rendering_study",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L75",
       "weight": 1.0
     },
     {
@@ -12633,6 +12806,17 @@
       "weight": 1.0
     },
     {
+      "source": "readme",
+      "target": "demo_aerial_readme",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "README.md",
+      "source_location": "L78",
+      "weight": 1.0
+    },
+    {
       "source": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost_phantomcamera_phantomcamerahost_getactivephantomcamera",
       "target": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d",
       "relation": "calls",
@@ -12658,5 +12842,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "0747da4c3b5a36782ebe35db37420aa2a4b78781"
+  "built_at_commit": "cde92321a5ce400d35937a66c9baf647f09666a1"
 }
