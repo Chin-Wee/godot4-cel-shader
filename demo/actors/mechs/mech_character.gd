@@ -1,9 +1,11 @@
 @tool
 extends "res://scripts/controls.gd"
 
-@export_range(0.2, 0.5, 0.001) var visual_scale: float = 0.3
+@export_range(0.01, 1.0, 0.001) var visual_scale: float = 0.3
 @export var player_controlled: bool = false
 @export var texture_override: Texture2D
+@export var animation_names: Dictionary = {}
+@export var root_motion_bone: StringName = &""
 
 const MECH_SHADER: Shader = preload("res://shaders/cel-shader-base.gdshader")
 const WALK_SPEED_THRESHOLD := 0.1
@@ -26,6 +28,7 @@ func _ready() -> void:
 	# Risk of Rain 2 keeps locomotion on the physics body and skeletal clips on its visual child.
 	set_physics_process(player_controlled and not Engine.is_editor_hint())
 	set_process_input(player_controlled and not Engine.is_editor_hint())
+	movement_input_enabled = player_controlled
 	visual_root.scale = Vector3.ONE * visual_scale
 	# The mech pack's eye meshes face +Z; the controller and camera face -Z.
 	visual_root.rotation.y = PI
@@ -55,7 +58,18 @@ func _physics_process(delta: float) -> void:
 
 
 func _input(event: InputEvent) -> void:
-	super._input(event)
+	if player_controlled:
+		super._input(event)
+
+
+func set_player_controlled(enabled: bool) -> void:
+	# GTA V-style switching: one input owner and camera; both bodies keep simulating.
+	player_controlled = enabled
+	movement_input_enabled = enabled
+	set_physics_process(not Engine.is_editor_hint())
+	set_process_input(enabled and not Engine.is_editor_hint())
+	if enabled:
+		actor_camera.make_current()
 
 
 func _prepare_animation_library() -> void:
@@ -63,7 +77,11 @@ func _prepare_animation_library() -> void:
 	if source_library == null:
 		return
 	var local_library := source_library.duplicate(true) as AnimationLibrary
-	for animation_name in [&"Idle", &"Walk", &"Run"]:
+	for canonical_name in animation_names:
+		var source_name: StringName = animation_names[canonical_name]
+		if local_library.has_animation(source_name) and canonical_name != source_name:
+			local_library.add_animation(canonical_name, local_library.get_animation(source_name).duplicate(true))
+	for animation_name in [&"Idle", &"Walk", &"Run", &"Fall"]:
 		if local_library.has_animation(animation_name):
 			local_library.get_animation(animation_name).loop_mode = Animation.LOOP_LINEAR
 	for animation_name in [&"Walk", &"Run"]:
@@ -75,6 +93,22 @@ func _prepare_animation_library() -> void:
 		jump_landing_cue_time = _measure_jump_landing_cue_time(
 			local_library.get_animation(&"Jump")
 		)
+	if not root_motion_bone.is_empty():
+		var rest_position := Vector3.ZERO
+		var idle := local_library.get_animation(&"Idle")
+		var root_track := _find_position_track(idle, root_motion_bone)
+		if root_track >= 0:
+			rest_position = idle.track_get_key_value(root_track, 0)
+		for animation_name in [&"Idle", &"Walk", &"Run", &"Jump", &"Fall", &"Land"]:
+			if not local_library.has_animation(animation_name):
+				continue
+			var animation := local_library.get_animation(animation_name)
+			root_track = _find_position_track(animation, root_motion_bone)
+			if root_track >= 0:
+				for key_index in animation.track_get_key_count(root_track):
+					animation.track_set_key_value(root_track, key_index, rest_position)
+			if animation_name in [&"Idle", &"Jump", &"Land"]:
+				animation.loop_mode = Animation.LOOP_NONE
 	animation_player.remove_animation_library(&"")
 	animation_player.add_animation_library(&"", local_library)
 
@@ -91,6 +125,9 @@ func _apply_robot_materials(node: Node) -> void:
 			if imported_material is BaseMaterial3D:
 				var base_material := imported_material as BaseMaterial3D
 				source_color = base_material.albedo_color
+				if base_material.emission_enabled and source_color.get_luminance() < 0.01:
+					# Keep the imported green lights readable as matte painted accents.
+					source_color = base_material.emission.clamp(Color.BLACK, Color.WHITE)
 				if source_texture == null:
 					source_texture = base_material.albedo_texture
 			var robot_color := Color(
@@ -123,6 +160,14 @@ func _update_locomotion_animation(delta: float = 1.0 / 60.0) -> void:
 	var planar_velocity := Vector3(velocity.x, 0.0, velocity.z)
 	var planar_speed := planar_velocity.length()
 	_update_visual_facing(planar_velocity, planar_speed, delta)
+	if animation_player.has_animation(&"Fall") and animation_player.has_animation(&"Land"):
+		var desired := _get_separate_air_animation(planar_speed, grounded, just_took_off)
+		animation_player.speed_scale = _get_locomotion_playback_speed(desired, planar_speed) * (
+			1.0 if desired == &"Jump" else NON_JUMP_ANIMATION_RATE_SCALE
+		)
+		_play_animation(desired, just_took_off or (grounded and not _was_grounded))
+		_was_grounded = grounded
+		return
 	var jump_recovery_active := (
 		current_animation == &"Jump"
 		and animation_player.is_playing()
@@ -149,10 +194,33 @@ func _get_locomotion_animation(
 		return &"Jump"
 	if planar_speed <= WALK_SPEED_THRESHOLD:
 		return &"Idle"
-	return &"Run" if run_requested else &"Walk"
+	return &"Run" if run_requested and running_enabled else &"Walk"
+
+
+func _get_separate_air_animation(planar_speed: float, grounded: bool, just_took_off: bool) -> StringName:
+	if not grounded:
+		return &"Jump" if velocity.y > 0.0 and (just_took_off or current_animation == &"Jump") else &"Fall"
+	if not _was_grounded:
+		return &"Land"
+	if current_animation == &"Land" and animation_player.is_playing():
+		return &"Land"
+	return &"Walk" if planar_speed > WALK_SPEED_THRESHOLD else &"Idle"
+
+
+func _find_position_track(animation: Animation, bone: StringName) -> int:
+	for index in animation.get_track_count():
+		if animation.track_get_type(index) == Animation.TYPE_POSITION_3D and str(animation.track_get_path(index)).ends_with(":" + str(bone)):
+			return index
+	return -1
 
 
 func _measure_stride_distance(animation: Animation) -> float:
+	if not root_motion_bone.is_empty():
+		var root_track := _find_position_track(animation, root_motion_bone)
+		if root_track >= 0:
+			var start: Vector3 = animation.track_get_key_value(root_track, 0)
+			var end: Vector3 = animation.track_get_key_value(root_track, animation.track_get_key_count(root_track) - 1)
+			return Vector2(end.x - start.x, end.z - start.z).length()
 	for track_index in animation.get_track_count():
 		if (
 			animation.track_get_type(track_index) != Animation.TYPE_POSITION_3D
@@ -205,6 +273,9 @@ func _measure_jump_landing_cue_time(animation: Animation) -> float:
 func _get_locomotion_playback_speed(animation_name: StringName, planar_speed: float) -> float:
 	var animation := animation_player.get_animation(animation_name)
 	if animation_name == &"Jump":
+		if not root_motion_bone.is_empty() and animation_player.has_animation(&"Fall"):
+			var ascent_time := jump_power / gravity if gravity > 0.0 else 0.0
+			return animation.length / ascent_time if ascent_time > 0.0 else 1.0
 		# Risk of Rain 2-style body animation stays on the visual child. This aligns its
 		# landing compression cue with a same-height ballistic jump's predicted airtime.
 		var predicted_airtime := 2.0 * jump_power / gravity if gravity > 0.0 else 0.0

@@ -848,7 +848,8 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2995577, 0)
 [node name="box-small2" parent="." unique_id=481149780 instance=ExtResource("28_ggl5q")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6844786, 4.5014763, 0.48863506)
 
-[node name="MechRoster" parent="." instance=ExtResource("30_mechs")]
+[node name="MechRoster" parent="." node_paths=PackedStringArray("grass") instance=ExtResource("30_mechs")]
+grass = NodePath("../ground-2/Grass")
 transform = Transform3D(-0.00623083, 0, -0.999981, 0, 1, 0, 0.999981, 0, -0.00623083, -0.513747, 0, 7.0)
 
 [node name="Limit" type="StaticBody3D" parent="." unique_id=673441391]

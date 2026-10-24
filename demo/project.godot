@@ -78,6 +78,11 @@ run={
 ]
 }
 
+switch_mech={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":4194306)]
+}
+
 [rendering]
 
 renderer/rendering_method="mobile"

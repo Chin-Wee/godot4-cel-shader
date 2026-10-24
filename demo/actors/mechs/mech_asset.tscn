@@ -1,0 +1,13 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="PackedScene" path="res://actors/mechs/mech_character.tscn" id="1_actor"]
+[ext_resource type="PackedScene" path="res://models/MechAsset/MechAsset.glb" id="2_model"]
+
+[node name="MechAsset" instance=ExtResource("1_actor")]
+visual_scale = 0.12330315
+running_enabled = false
+animation_names = {&"Idle": &"Idle Pose", &"Walk": &"Walk_Forward"}
+root_motion_bone = &"Root"
+
+[node name="MechAssetModel" parent="VisualRoot" instance=ExtResource("2_model")]
+position = Vector3(0, 0.124167, 0)

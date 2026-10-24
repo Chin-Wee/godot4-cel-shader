@@ -1,11 +1,15 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="PackedScene" path="res://actors/mechs/george.tscn" id="1_george"]
 [ext_resource type="PackedScene" path="res://actors/mechs/leela.tscn" id="2_leela"]
 [ext_resource type="PackedScene" path="res://actors/mechs/mike.tscn" id="3_mike"]
 [ext_resource type="PackedScene" path="res://actors/mechs/stan.tscn" id="4_stan"]
 
+[ext_resource type="PackedScene" path="res://actors/mechs/mech_asset.tscn" id="5_mech"]
+[ext_resource type="Script" path="res://actors/mechs/mech_roster.gd" id="6_roster"]
+
 [node name="MechRoster" type="Node3D"]
+script = ExtResource("6_roster")
 
 [node name="George" parent="." instance=ExtResource("1_george")]
 
@@ -17,3 +21,6 @@ position = Vector3(3, 0, -4)
 
 [node name="Stan" parent="." instance=ExtResource("4_stan")]
 position = Vector3(-1.7, 0, -5.2)
+
+[node name="MechAsset" parent="." instance=ExtResource("5_mech")]
+position = Vector3(3, 0, -7)
