@@ -136,12 +136,12 @@ static func icosphere() -> ArrayMesh:
 static func terrain() -> ArrayMesh:
 	var noise := FastNoiseLite.new()
 	noise.seed = 704
-	noise.frequency = 0.0014
+	noise.frequency = 0.0011
 	noise.fractal_octaves = 3
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	const STEPS := 200
-	const STEP := 18.0
+	const STEPS := 240
+	const STEP := 22.0
 	for z in STEPS:
 		for x in STEPS:
 			var points := []
@@ -152,10 +152,12 @@ static func terrain() -> ArrayMesh:
 				pz += sin((x+offset.x)*31.79+(z+offset.y)*67.13)*STEP*0.10
 				var warp := Vector2(noise.get_noise_2d(px+1200,pz-400),noise.get_noise_2d(px-600,pz+900))*110.0
 				var n := noise.get_noise_2d(px+warp.x,pz+warp.y) * 0.5 + 0.5
-				var mesa := pow(smoothstep(0.49,0.58,n),0.45)
+				n += noise.get_noise_2d(px*2.7+1500,pz*2.7)*0.045
+				var mesa := pow(smoothstep(0.55,0.64,n),0.50)
+				var talus := smoothstep(0.45,0.58,n)*40.0
 				var river_x := sin(pz*0.0028)*190.0 + sin(pz*0.006)*45.0
-				var canyon := smoothstep(75.0,210.0,absf(px-river_x))
-				var h := 8.0 + mesa * (240.0 + noise.get_noise_2d(px+800,pz)*55.0) * canyon
+				var canyon := smoothstep(200.0,550.0,absf(px-river_x))
+				var h := 8.0 + (talus+mesa*(210.0+noise.get_noise_2d(px+800,pz)*95.0))*canyon
 				points.append(Vector3(px,h,pz))
 			for triangle in [[0,1,2],[2,1,3]]:
 				var a: Vector3 = points[triangle[0]]
@@ -176,7 +178,7 @@ static func river() -> ArrayMesh:
 		for step in [index,index+1]:
 			var z: float = 700.0-step*20.0
 			var x := sin(z*0.0028)*190.0+sin(z*0.006)*45.0
-			var width := 5.0+sin(z*0.007)*2.0
+			var width := 12.0+sin(z*0.007)*4.0
 			points.append(Vector3(x-width,8.2,z))
 			points.append(Vector3(x+width,8.2,z))
 		for vertex in [points[0],points[2],points[1],points[1],points[2],points[3]]:

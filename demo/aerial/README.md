@@ -38,11 +38,13 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Terrain owns world-height/slope coloring and broad strata. Aircraft, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
-- Clouds use 18 continuous bank meshes in one MultiMesh. A native SphereMesh is
-  deformed at low frequency and has a compressed base, eliminating the internal
-  intersection rings from the original overlapping spheres. Rotated bank transforms
-  also define visibility/weather regions. Density inverts the same deformation,
-  preventing fog below flattened bases. Coverage affects both drawing and density.
+- Clouds use 18 continuous banks across four native MultiMesh batches. Four native
+  SphereMeshes follow different radial envelopes of broad cumulus lobes, with
+  low-frequency crest breakup and compressed bases. The same envelopes define
+  rotated visibility/weather regions, preventing fog below flattened bases.
+  Coverage affects all batches and their density together. Sunward crowns receive
+  broad warm transmission near the sun; shaded bases retain the stage palette.
+  Transmission is an art-directed surface term, not a volumetric scattering solve.
   Native environment fog reduces visibility on entry; storm entry adds camera rain.
   These remain geometric approximations, not a claim about DMC's cloud technique.
 - Trails store a fixed 512-instance history per emitter. Samples stay in world
@@ -127,14 +129,20 @@ additive sun lobe that was over-warming the entire sky, and scaled the explosion
 for a stronger fire/smoke hierarchy. Lower fire gain preserves orange secondary
 masses, while lobe breakup is restricted to fire meshes so the energy arcs stay solid.
 
+Cloud/canyon comparison then replaced repeated flattened banks with four taller
+cumulus silhouettes and broad sunward crown lighting. A wider valley and river,
+fewer mesa caps, and talus skirts expose the blue valley floor. Shared haze begins
+farther away to retain foreground value separation. The initial flight/camera height
+now shows the open canyon while keeping the hero near the middle-right of the frame.
+
 Compared directly with the supplied references, these remain incomplete:
 
 | Area | Current evidence | Remaining visual work |
 |---|---|---|
 | Aircraft | Closed convex parts, opposing normals, canopy/housing, panel fill and rim render from above/below | Proxy silhouette and livery still need closer matching |
-| Environment | Warped mesa field, smooth normals, river and aerial depth render in both presets | More natural mesa distribution and finer value grouping still needed |
+| Environment | Warped mesas, talus skirts, open river valley and delayed haze render in both presets | Finer erosion shapes and more authored foreground/midground grouping still needed |
 | Trails/exhaust | Persistent trajectory curves, dense smoke, wind drift and mesh flames render | Segmentation rhythm and near-camera shapes need refinement |
-| Clouds | Continuous bank geometry, rotated density regions and coverage controls work | Bank variety, silhouette and internal lighting still need refinement |
+| Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
 | Explosions | Enlarged fire/smoke masses, arcs, rings, debris and post glow animate and expire | Need closer authored fire/smoke breakup and shot hierarchy |
 | Weather/post | Storm palette, density-driven rain/refraction, cover, corona, glow and screen rays render | Glow/shafts are resolved-frame approximations; finer weather transitions remain |
 

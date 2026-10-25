@@ -9,6 +9,6 @@ void sky() {
  float sun_alignment = dot(normalize(EYEDIR), normalize(sun_direction));
  float disk = smoothstep(0.99925, 0.9994, sun_alignment);
  float glow = pow(max(sun_alignment, 0.0), 72.0);
- color += sun_color.rgb * (glow * 0.12 + disk * 3.0);
+ color += sun_color.rgb * (pow(max(sun_alignment,0.0),12.0)*0.16 + glow * 0.10 + disk * 3.0);
  COLOR = color;
 }

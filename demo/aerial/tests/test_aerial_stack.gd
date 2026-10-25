@@ -25,7 +25,21 @@ func _run() -> void:
 	scene._update_hero_pose(0.0)
 	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live aircraft poses disagree")
 	var clouds = scene.clouds
-	assert(clouds._shape_density(Vector3(0,-0.85,0)) == 0.0,"Cloud fog leaked below the flattened visible base")
+	assert(clouds.batches.size() == 4,"Cloud silhouette variants were not instanced")
+	var vertices_by_shape := []
+	for variant in clouds.batches.size():
+		var vertices: PackedVector3Array = clouds.batches[variant].multimesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		vertices_by_shape.append(vertices)
+		for index in range(0,vertices.size(),23):
+			assert(absf(clouds._shape_density(vertices[index],variant)-0.074074) < 0.01,"Cloud density does not match its visible envelope")
+		assert(clouds._shape_density(Vector3(0,-0.85,0),variant) == 0.0,"Cloud fog leaked below a variant's flattened base")
+	assert(vertices_by_shape[0] != vertices_by_shape[1],"Clouds still repeat one silhouette")
+	for active in range(19):
+		clouds.set_coverage(float(active)/18.0)
+		var visible_banks := 0
+		for batch in clouds.batches: visible_banks += batch.multimesh.visible_instance_count
+		assert(visible_banks == active,"Partial cloud cover diverged across silhouette batches")
+	clouds.set_coverage(1.0)
 	var bank: Vector4 = clouds.banks[0]
 	var inside: Vector3 = clouds.to_global(Vector3(bank.x,bank.y,bank.z))
 	assert(clouds.density_at(inside) > 0.99,"Cloud centers must be traversable weather volumes")
@@ -40,6 +54,8 @@ func _run() -> void:
 	await process_frame
 	assert(scene.post_material.get_shader_parameter("rain_strength") > 0.9,"Storm cloud entry did not enable camera rain")
 	clouds.set_coverage(0.0)
+	for batch in clouds.batches:
+		assert(batch.multimesh.visible_instance_count == 0,"Coverage left a visible cloud variant")
 	await process_frame
 	await process_frame
 	assert(not scene.environment.fog_enabled and scene.post_material.get_shader_parameter("rain_strength") == 0.0,"Invisible banks still produced weather")

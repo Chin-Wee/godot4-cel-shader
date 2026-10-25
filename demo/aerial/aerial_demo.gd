@@ -7,7 +7,7 @@ const CloudBanks = preload("res://aerial/cloud_banks.gd")
 var camera: Camera3D
 var environment: Environment
 var sun: DirectionalLight3D
-var clouds: MultiMeshInstance3D
+var clouds: Node3D
 var hero: Node3D
 var wingman: Node3D
 var missile: Node3D
@@ -91,11 +91,11 @@ func _ready() -> void:
 	wingman.scale = Vector3.ONE*0.8
 	add_child(wingman)
 	camera = Camera3D.new()
-	camera.position = Vector3(140,430,540)
+	camera.position = Vector3(140,610,540)
 	camera.fov = 65
 	camera.far = 7000
 	add_child(camera)
-	camera.look_at(Vector3(-160,360,-800))
+	camera.look_at(Vector3(-160,550,-800))
 	camera.current = true
 	missile = Node3D.new()
 	missile.position = missile_position(0.0)
@@ -125,16 +125,17 @@ func set_palette(daylight: bool) -> void:
 	current_haze = haze
 	for material in palette_materials:
 		material.set_shader_parameter("haze_color",haze)
-	sky_material.set_shader_parameter("zenith_color",Color(0.15,0.10,0.22) if not daylight else Color(0.035,0.27,0.4))
-	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.72,0.40,0.29))
+	sky_material.set_shader_parameter("zenith_color",Color(0.27,0.19,0.32) if not daylight else Color(0.035,0.27,0.4))
+	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.62,0.39,0.42))
 	var direction := Vector3(-0.5,0.22,-0.84) if not daylight else Vector3(-0.4,0.65,-0.64)
 	sun_direction = direction
 	sky_material.set_shader_parameter("sun_direction",direction)
 	sun.look_at_from_position(Vector3.ZERO,-direction)
 	sun.light_color = Color(1.0,0.78,0.53) if not daylight else Color(1.0,0.94,0.79)
 	sun.light_energy = 0.65 if storm else 1.5
-	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.78,0.53) if not daylight else Color(0.91,0.94,0.86))
+	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.72,0.50) if not daylight else Color(0.91,0.94,0.86))
 	cloud_material.set_shader_parameter("cloud_shadow",Color(0.22,0.17,0.29) if not daylight else Color(0.11,0.36,0.47))
+	cloud_material.set_shader_parameter("sun_direction",direction)
 	cloud_material.set_shader_parameter("storm",float(storm))
 	if storm:
 		sky_material.set_shader_parameter("zenith_color",Color(0.075,0.09,0.14))
@@ -163,10 +164,10 @@ func _update_hero_pose(time: float) -> void:
 	hero.rotate_object_local(Vector3.FORWARD,-0.6+sin(time*0.3)*0.1)
 
 func flight_position(time: float) -> Vector3:
-	return Vector3(175.0-sin(time*0.065)*940.0,400.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
+	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
 
 func wingman_position(time: float) -> Vector3:
-	return Vector3(-400+sin(time*0.18)*600,380+cos(time*0.18)*160,-700+cos(time*0.18)*500)
+	return Vector3(-400+sin(time*0.18)*600,580+cos(time*0.18)*160,-700+cos(time*0.18)*500)
 
 func missile_position(time: float) -> Vector3:
 	return flight_position(time)+Vector3(-120.0+cos(time*0.6)*80.0,50.0+sin(time*0.6)*50.0,-200.0-sin(time*0.6)*100.0)

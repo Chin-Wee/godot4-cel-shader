@@ -22,6 +22,11 @@ func _capture() -> void:
 	root.add_child(scene)
 	scene.animate = false
 	scene.hud.visible = false
+	# Dummy/headless rendering does not retain MultiMesh transform readbacks.
+	# Verify the actual GPU instance placement against the weather transforms here.
+	for bank in scene.clouds.bank_transforms.size():
+		var batch: MultiMeshInstance3D = scene.clouds.batches[bank%scene.clouds.SHAPE_COUNT]
+		assert(batch.multimesh.get_instance_transform(bank/scene.clouds.SHAPE_COUNT).is_equal_approx(scene.clouds.bank_transforms[bank]),"Visible cloud transform differs from its weather volume")
 	scene.post_material.set_shader_parameter("post_strength",0.0)
 	await _save_frame(output.path_join("sunset-no-post.png"))
 	scene.post_material.set_shader_parameter("post_strength",1.0)
