@@ -1,16 +1,31 @@
 extends SceneTree
 
+var completed := false
+
 func _initialize() -> void:
 	call_deferred("_run")
 
 func _run() -> void:
+	create_timer(15.0).timeout.connect(_checks_timeout)
+	var prism := preload("res://aerial/geometry.gd")._triangular_prism([Vector3(12,0,-5),Vector3(25,0,10),Vector3(13,0,7)],Vector3.DOWN)
+	var normals: PackedVector3Array = prism.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+	var top := false
+	var bottom := false
+	for normal in normals:
+		top = top or normal.y > 0.99
+		bottom = bottom or normal.y < -0.99
+	assert(top and bottom,"Detached aircraft parts lost opposing surface normals")
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
 	await process_frame
 	await process_frame
 	assert(scene.hero.get_child_count() >= 4,"Aircraft body/canopy/exhaust missing")
+	var frozen_pose: Transform3D = scene.hero.transform
+	scene._update_hero_pose(0.0)
+	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live aircraft poses disagree")
 	var clouds = scene.clouds
+	assert(clouds._shape_density(Vector3(0,-0.85,0)) == 0.0,"Cloud fog leaked below the flattened visible base")
 	var bank: Vector4 = clouds.banks[0]
 	var inside: Vector3 = clouds.to_global(Vector3(bank.x,bank.y,bank.z))
 	assert(clouds.density_at(inside) > 0.99,"Cloud centers must be traversable weather volumes")
@@ -19,6 +34,18 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	assert(scene.environment.fog_enabled and scene.environment.fog_density > 0.02,"Cloud entry did not reduce visibility")
+	scene.storm = true
+	scene.set_palette(false)
+	await process_frame
+	await process_frame
+	assert(scene.post_material.get_shader_parameter("rain_strength") > 0.9,"Storm cloud entry did not enable camera rain")
+	clouds.set_coverage(0.0)
+	await process_frame
+	await process_frame
+	assert(not scene.environment.fog_enabled and scene.post_material.get_shader_parameter("rain_strength") == 0.0,"Invisible banks still produced weather")
+	clouds.set_coverage(1.0)
+	scene.storm = false
+	scene.set_palette(false)
 	scene.camera.position = outside
 	await process_frame
 	await process_frame
@@ -51,5 +78,11 @@ func _run() -> void:
 	assert(not is_instance_valid(explosion),"Expired explosion was not freed")
 	scene.queue_free()
 	await process_frame
-	print("Aerial checks passed: cloud entry/exit, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
+	completed = true
+	print("Aerial checks passed: consistent pose, cloud coverage, storm entry rain, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
 	quit()
+
+func _checks_timeout() -> void:
+	if not completed:
+		push_error("Aerial checks did not finish; inspect earlier assertion or script errors.")
+		quit(1)

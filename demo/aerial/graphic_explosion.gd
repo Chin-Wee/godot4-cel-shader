@@ -14,6 +14,7 @@ func build(fire: ShaderMaterial, smoke: ShaderMaterial) -> void:
 	rng.seed = 325
 	for index in 20:
 		var material := (fire if index < 8 else smoke).duplicate() as ShaderMaterial
+		if index < 8: material.set_shader_parameter("graphic_fire",true)
 		materials.append(material)
 		var sphere := SphereMesh.new()
 		sphere.radius = 1.0

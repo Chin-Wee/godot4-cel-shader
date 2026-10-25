@@ -4,7 +4,7 @@ render_mode ambient_light_disabled, specular_disabled;
 #include "atmosphere.gdshaderinc"
 uniform vec4 rock_color: source_color = vec4(0.43, 0.20, 0.17, 1.0);
 uniform vec4 cap_color: source_color = vec4(0.53, 0.31, 0.27, 1.0);
-uniform vec4 valley_color: source_color = vec4(0.075, 0.12, 0.18, 1.0);
+uniform vec4 valley_color: source_color = vec4(0.025, 0.095, 0.19, 1.0);
 uniform float terrain_rim = 0.07;
 void vertex() {
  aerial_world_position = (MODEL_MATRIX * vec4(VERTEX, 1.0)).xyz;

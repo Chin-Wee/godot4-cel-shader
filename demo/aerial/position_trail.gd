@@ -13,6 +13,7 @@ var sample_count := 0
 
 func configure(material: ShaderMaterial) -> void:
 	top_level = true
+	global_transform = Transform3D.IDENTITY
 	cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	multimesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
@@ -34,7 +35,7 @@ func configure(material: ShaderMaterial) -> void:
 func emit_at(point: Vector3, birth_time: float) -> void:
 	var puff_width := width * (0.88 + 0.22*sin(float(sample_count)*2.399))
 	multimesh.set_instance_transform(next_slot,Transform3D(Basis.IDENTITY.scaled(Vector3.ONE*puff_width),to_local(point)))
-	multimesh.set_instance_custom_data(next_slot,Color(birth_time,0,0,1))
+	multimesh.set_instance_custom_data(next_slot,Color(birth_time,float(sample_count%97)/97.0,puff_width,1))
 	next_slot = (next_slot+1) % CAPACITY
 	sample_count += 1
 

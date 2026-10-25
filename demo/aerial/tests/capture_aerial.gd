@@ -1,43 +1,92 @@
 extends SceneTree
 
+var capture_statistics := {}
+var completed := false
+
 func _initialize() -> void:
 	call_deferred("_capture")
 
 func _capture() -> void:
-	assert(DisplayServer.get_name() != "headless","Visual capture requires a rendering display driver")
+	create_timer(30.0).timeout.connect(_capture_timeout)
+	if DisplayServer.get_name() == "headless":
+		push_error("Visual capture requires a rendering display driver")
+		quit(1)
+		return
 	var arguments := OS.get_cmdline_user_args()
 	var output := arguments[0] if not arguments.is_empty() else "/tmp/godot-dmc-captures"
-	DirAccess.make_dir_recursive_absolute(output)
+	if not output.is_absolute_path() or DirAccess.make_dir_recursive_absolute(output) != OK:
+		push_error("Capture output must be a writable absolute directory: "+output)
+		quit(1)
+		return
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
 	scene.hud.visible = false
+	scene.post_material.set_shader_parameter("post_strength",0.0)
+	await _save_frame(output.path_join("sunset-no-post.png"))
+	scene.post_material.set_shader_parameter("post_strength",1.0)
 	await _save_frame(output.path_join("sunset.png"))
 	scene.set_palette(true)
 	await _save_frame(output.path_join("daylight.png"))
+	var initial_camera: Transform3D = scene.camera.transform
+	scene.camera.position = scene.hero.global_position+Vector3(-120,65,80)
+	scene.camera.look_at(scene.hero.global_position)
+	await _save_frame(output.path_join("aircraft-top.png"))
+	scene.camera.position = scene.hero.global_position+Vector3(-90,-55,100)
+	scene.camera.look_at(scene.hero.global_position)
+	await _save_frame(output.path_join("aircraft-underside.png"))
+	scene.camera.transform = initial_camera
 	scene.trigger_explosion()
 	scene.explosion.set_process(false)
 	scene.explosion.set_time(0.7)
 	await _save_frame(output.path_join("explosion.png"))
+	var outside: Vector3 = scene.camera.position
 	var bank: Vector4 = scene.clouds.banks[0]
 	scene.camera.position = scene.clouds.to_global(Vector3(bank.x,bank.y,bank.z))
 	await _save_frame(output.path_join("inside-cloud.png"))
+	scene.storm = true
+	scene.set_palette(true)
+	await _save_frame(output.path_join("storm-rain.png"))
+	scene.camera.position = outside
+	scene._process(0.0)
+	scene.set_process(false)
+	scene.post_material.set_shader_parameter("rain_strength",0.0)
+	await _save_frame(output.path_join("storm-clear.png"))
+	scene.post_material.set_shader_parameter("rain_strength",1.0)
+	scene.post_material.set_shader_parameter("weather_time",2.3)
+	await _save_frame(output.path_join("rain-on-geometry.png"))
+	var dry := Image.load_from_file(output.path_join("storm-clear.png"))
+	var wet := Image.load_from_file(output.path_join("rain-on-geometry.png"))
+	assert(dry.get_data() != wet.get_data(),"Rain produced no visible change on scene geometry")
+	var before := Image.load_from_file(output.path_join("sunset-no-post.png"))
+	var after := Image.load_from_file(output.path_join("sunset.png"))
+	assert(before.get_data() != after.get_data(),"Post processing did not change the captured frame")
 	var statistics := {
 		"renderer": RenderingServer.get_current_rendering_method(),
-		"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
-		"primitives": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),
+		"captures": capture_statistics,
 		"note": "Desktop capture counters; not a mobile device benchmark."
 	}
 	var report := FileAccess.open(output.path_join("render-stats.json"),FileAccess.WRITE)
 	report.store_string(JSON.stringify(statistics,"  "))
 	scene.queue_free()
 	await process_frame
+	completed = true
 	print("Aerial comparison captures: ",output)
 	quit()
 
 func _save_frame(path: String) -> void:
+	print("Capturing ",path.get_file())
 	for frame in 8: await process_frame
 	await RenderingServer.frame_post_draw
 	var image := root.get_texture().get_image()
 	assert(not image.is_empty(),"Renderer returned an empty frame")
 	assert(image.save_png(path) == OK,"Could not save comparison frame")
+	capture_statistics[path.get_file()] = {
+		"draw_calls": Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
+		"primitives": Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)
+	}
+
+func _capture_timeout() -> void:
+	if not completed:
+		push_error("Aerial capture timed out waiting for rendered frames. Keep the capture window visible.")
+		quit(1)

@@ -17,6 +17,9 @@ var cloud_material: ShaderMaterial
 var animate := true
 var elapsed := 0.0
 var storm := false
+var daylight_palette := false
+var sun_direction := Vector3(-0.5,0.22,-0.84)
+var post_material: ShaderMaterial
 var current_haze := Color(0.54,0.34,0.39)
 var hud: CanvasLayer
 var trails: Array[MultiMeshInstance3D] = []
@@ -47,6 +50,12 @@ func _ready() -> void:
 	terrain_material.set_shader_parameter("diffuse_ramp_mode",1)
 	terrain_material.set_shader_parameter("diffuse_ramp_threshold",0.20)
 	Geometry.add_mesh(self,Geometry.terrain(),terrain_material)
+	var river_material := _material("aircraft")
+	river_material.set_shader_parameter("body_color",Color(0.055,0.24,0.21))
+	river_material.set_shader_parameter("orientation_bias",0.0)
+	river_material.set_shader_parameter("panel_strength",0.0)
+	river_material.set_shader_parameter("rim_strength",0.05)
+	Geometry.add_mesh(self,Geometry.river(),river_material)
 	cloud_material = _material("cloud")
 	cloud_material.set_shader_parameter("diffuse_ramp_mode",2)
 	cloud_material.set_shader_parameter("diffuse_ramp_threshold",0.08)
@@ -55,6 +64,7 @@ func _ready() -> void:
 	add_child(clouds)
 	clouds.build(cloud_material)
 	var body := _material("aircraft")
+	body.set_shader_parameter("highlight_mask",0.08)
 	body.set_shader_parameter("diffuse_ramp_mode",1)
 	body.set_shader_parameter("diffuse_ramp_threshold",0.12)
 	var canopy := _material("aircraft")
@@ -62,14 +72,16 @@ func _ready() -> void:
 	canopy.set_shader_parameter("underside_color",Color(0.01,0.04,0.06))
 	canopy.set_shader_parameter("highlight_mask",1.0)
 	canopy.set_shader_parameter("orientation_bias",0.0)
+	canopy.set_shader_parameter("panel_strength",0.0)
 	canopy.set_shader_parameter("rim_strength",0.35)
 	var exhaust := _vfx_material(PackedColorArray([Color(1,0.05,0.22),Color(1,0.2,0.02)]),3.0)
 	hero = Geometry.aircraft(body,canopy,exhaust)
 	hero.name = "HeroAircraft"
 	hero.position = flight_position(0.0)
-	hero.rotation = Vector3(0.05,1.4,-0.75)
+	hero.rotation = Vector3(0.05,1.4,0.6)
 	hero.scale = Vector3.ONE * 1.6
 	add_child(hero)
+	_update_hero_pose(0.0)
 	var wing_body := body.duplicate() as ShaderMaterial
 	palette_materials.append(wing_body)
 	wing_body.set_shader_parameter("body_color",Color(0.56,0.59,0.48))
@@ -79,11 +91,11 @@ func _ready() -> void:
 	wingman.scale = Vector3.ONE*0.8
 	add_child(wingman)
 	camera = Camera3D.new()
-	camera.position = Vector3(140,330,540)
+	camera.position = Vector3(140,430,540)
 	camera.fov = 65
 	camera.far = 7000
 	add_child(camera)
-	camera.look_at(Vector3(-160,260,-800))
+	camera.look_at(Vector3(-160,360,-800))
 	camera.current = true
 	missile = Node3D.new()
 	missile.position = missile_position(0.0)
@@ -94,6 +106,7 @@ func _ready() -> void:
 	flame.position.z = 5.0
 	flame.scale = Vector3(0.8,0.8,3.0)
 	_add_trails()
+	_make_post()
 	_make_hud()
 	set_palette(false)
 
@@ -106,19 +119,26 @@ func _material(shader_name: String) -> ShaderMaterial:
 	return material
 
 func set_palette(daylight: bool) -> void:
-	var haze := Color(0.54,0.34,0.39) if not daylight else Color(0.37,0.67,0.76)
+	daylight_palette = daylight
+	var haze := Color(0.48,0.30,0.36) if not daylight else Color(0.37,0.67,0.76)
+	if storm: haze = haze.lerp(Color(0.17,0.20,0.26),0.65)
 	current_haze = haze
 	for material in palette_materials:
 		material.set_shader_parameter("haze_color",haze)
-	sky_material.set_shader_parameter("zenith_color",Color(0.20,0.13,0.24) if not daylight else Color(0.035,0.27,0.4))
-	sky_material.set_shader_parameter("horizon_color",haze)
+	sky_material.set_shader_parameter("zenith_color",Color(0.15,0.10,0.22) if not daylight else Color(0.035,0.27,0.4))
+	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.72,0.40,0.29))
 	var direction := Vector3(-0.5,0.22,-0.84) if not daylight else Vector3(-0.4,0.65,-0.64)
+	sun_direction = direction
 	sky_material.set_shader_parameter("sun_direction",direction)
 	sun.look_at_from_position(Vector3.ZERO,-direction)
 	sun.light_color = Color(1.0,0.78,0.53) if not daylight else Color(1.0,0.94,0.79)
-	sun.light_energy = 1.5
+	sun.light_energy = 0.65 if storm else 1.5
 	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.78,0.53) if not daylight else Color(0.91,0.94,0.86))
 	cloud_material.set_shader_parameter("cloud_shadow",Color(0.22,0.17,0.29) if not daylight else Color(0.11,0.36,0.47))
+	cloud_material.set_shader_parameter("storm",float(storm))
+	if storm:
+		sky_material.set_shader_parameter("zenith_color",Color(0.075,0.09,0.14))
+	environment.fog_light_color = Color(0.22,0.24,0.31) if storm else haze.lerp(Color(0.8,0.78,0.75),0.35)
 	if is_instance_valid(explosion):
 		for node in explosion.get_children():
 			if node is MeshInstance3D and node.material_override is ShaderMaterial:
@@ -137,8 +157,13 @@ func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 	material.set_shader_parameter("emission_strength",emission)
 	return material
 
+func _update_hero_pose(time: float) -> void:
+	hero.position = flight_position(time)
+	hero.look_at(flight_position(time+0.01))
+	hero.rotate_object_local(Vector3.FORWARD,-0.6+sin(time*0.3)*0.1)
+
 func flight_position(time: float) -> Vector3:
-	return Vector3(175.0-sin(time*0.065)*940.0,300.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
+	return Vector3(175.0-sin(time*0.065)*940.0,400.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
 
 func wingman_position(time: float) -> Vector3:
 	return Vector3(-400+sin(time*0.18)*600,380+cos(time*0.18)*160,-700+cos(time*0.18)*500)
@@ -189,6 +214,8 @@ func _add_trails() -> void:
 	missile_trail.width = 1.2
 	add_child(missile_trail)
 	missile_trail.configure(smoke)
+	missile_trail.material_override.set_shader_parameter("wind_velocity",Vector3(0.35,0.2,0.1))
+	missile_trail.material_override.set_shader_parameter("wind_curl",0.2)
 	for index in 120:
 		var time := -6.0+float(index)*0.05
 		missile_trail.emit_at(missile_position(time),20.0+time)
@@ -200,11 +227,11 @@ func _add_trails() -> void:
 
 func trigger_explosion() -> void:
 	if is_instance_valid(explosion): explosion.queue_free()
-	var fire := _vfx_material(PackedColorArray([Color(1,0.95,0.22),Color(1,0.42,0.015),Color(0.65,0.06,0.01),Color(0.03,0.025,0.07)]),4.0)
-	fire.set_shader_parameter("graphic_fire",true)
-	var smoke := _vfx_material(PackedColorArray([Color(0.04,0.035,0.065),Color(0.07,0.055,0.1),Color(0.12,0.1,0.16)]))
+	var fire := _vfx_material(PackedColorArray([Color(1,0.95,0.22),Color(1,0.42,0.015),Color(0.65,0.06,0.01),Color(0.03,0.025,0.07)]),0.85)
+	var smoke := _vfx_material(PackedColorArray([Color(0.045,0.06,0.12),Color(0.075,0.085,0.16),Color(0.12,0.1,0.16)]))
 	explosion = Explosion.new()
 	explosion.position = hero.position + Vector3(-180,30,-110)
+	explosion.scale = Vector3.ONE*1.8
 	add_child(explosion)
 	explosion.build(fire,smoke)
 	# Material uniforms are local to the effect; do not retain freed effects in the palette list.
@@ -216,12 +243,10 @@ func _process(delta: float) -> void:
 	if animate:
 		elapsed += delta
 		var old_position := hero.position
-		hero.position = flight_position(elapsed)
+		_update_hero_pose(elapsed)
 		for node in hero.get_children():
 			if node.name.begins_with("EngineFlame"):
-				node.scale.z = 6.0 + sin(elapsed*38.0)*0.6
-		hero.look_at(flight_position(elapsed+0.01))
-		hero.rotate_object_local(Vector3.FORWARD,-0.75+sin(elapsed*0.3)*0.1)
+				node.scale.z = 3.6 + sin(elapsed*38.0)*0.35
 		if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
 			camera.position += hero.position-old_position
 		missile.position = missile_position(elapsed)
@@ -241,7 +266,13 @@ func _process(delta: float) -> void:
 		camera.position += camera.basis * motion * delta * (420.0 if Input.is_key_pressed(KEY_SHIFT) else 140.0)
 	var density: float = clouds.density_at(camera.global_position)
 	environment.fog_enabled = density > 0.001
-	environment.fog_density = density * 0.025
+	environment.fog_density = density * (0.035 if storm else 0.025)
+	var sun_point := camera.global_position + sun_direction*4000.0
+	var uv := camera.unproject_position(sun_point)/get_viewport().get_visible_rect().size
+	post_material.set_shader_parameter("sun_uv",uv)
+	post_material.set_shader_parameter("sun_visible",0.0 if camera.is_position_behind(sun_point) or storm or uv.x < -0.25 or uv.x > 1.25 or uv.y < -0.25 or uv.y > 1.25 else 1.0)
+	post_material.set_shader_parameter("rain_strength",density*float(storm))
+	post_material.set_shader_parameter("weather_time",elapsed)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
@@ -255,16 +286,30 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_2: set_palette(true)
 			KEY_3:
 				storm = not storm
-				cloud_material.set_shader_parameter("storm",float(storm))
+				set_palette(daylight_palette)
+			KEY_4: clouds.set_coverage(0.4 if clouds.coverage > 0.5 else 1.0)
 			KEY_P: animate = not animate
 			KEY_SPACE: trigger_explosion()
 			KEY_ESCAPE: Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
+func _make_post() -> void:
+	var layer := CanvasLayer.new()
+	layer.layer = 1
+	add_child(layer)
+	var rect := ColorRect.new()
+	rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	post_material = ShaderMaterial.new()
+	post_material.shader = load("res://shaders/aerial/post.gdshader")
+	rect.material = post_material
+	layer.add_child(rect)
+
 func _make_hud() -> void:
 	hud = CanvasLayer.new()
+	hud.layer = 2
 	add_child(hud)
 	var label := Label.new()
-	label.text = "AERIAL RENDER STUDY   ·   DELIVERY MUST COMPLETE\n1 Sunset   2 Daylight   3 Storm   P Pause   Space Explosion\nRight click: fly camera · WASD / Q E · Shift: faster"
+	label.text = "AERIAL RENDER STUDY   ·   DELIVERY MUST COMPLETE\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nRight click: fly camera · WASD / Q E · Shift: faster"
 	label.position = Vector2(24,22)
 	label.add_theme_color_override("font_color",Color(1,0.88,0.73))
 	label.add_theme_font_size_override("font_size",16)

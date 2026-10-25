@@ -9,6 +9,8 @@ uniform float lifetime = 12.0;
 uniform float normalized_age = 0.0;
 uniform bool instance_age = false;
 uniform float expansion = 0.0;
+uniform vec3 wind_velocity = vec3(0.08,0.12,0.0);
+uniform float wind_curl = 0.08;
 uniform float emission_strength = 0.0;
 uniform float soft_intersection = 0.0;
 uniform bool graphic_fire = false;
@@ -19,6 +21,13 @@ void vertex() {
  effect_local_position = VERTEX;
  age = instance_age ? (effect_time - INSTANCE_CUSTOM.r) / lifetime : normalized_age;
  VERTEX *= 1.0 + clamp(age,0.0,1.0) * expansion;
+ if (instance_age) {
+  float seconds = max(effect_time-INSTANCE_CUSTOM.r,0.0);
+  float phase = INSTANCE_CUSTOM.g*6.283185;
+  vec3 curl = vec3(sin(phase+seconds*0.6),sin(phase*2.0+seconds*0.3),cos(phase+seconds*0.4));
+  // Trail bases are unrotated world axes, scaled by the stored puff radius.
+  VERTEX += (wind_velocity+curl*wind_curl)*seconds/max(INSTANCE_CUSTOM.b,0.001);
+ }
  aerial_world_position = (MODEL_MATRIX * vec4(VERTEX,1.0)).xyz;
  aerial_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 }
