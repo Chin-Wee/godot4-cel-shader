@@ -87,6 +87,7 @@ added. Proxy geometry is an outstanding limitation of silhouette fidelity.
 ```sh
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
 godot --path demo --script res://aerial/tests/capture_aerial.gd --resolution 1440x810 --always-on-top -- /tmp/godot-dmc-captures
+godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution 1000x600 --always-on-top
 ```
 
 The functional check covers opposing aircraft-part normals, static/live pose
@@ -102,7 +103,10 @@ counters are saved with frame names so unlike camera views are not conflated.
 These are desktop observations, not a device benchmark. Keep the capture window
 visible on macOS; a missing rendered frame fails through a watchdog. Headless mode
 is rejected immediately for visual capture. Shader validation requires rendered
-frames, not the headless functional check alone.
+frames, not the headless functional check alone. The separate soft-depth probe
+renders two intersecting spheres and checks that the enabled material fades at
+the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
+this path is verified on the current Mobile renderer.
 
 ## Visual review and remaining goal
 
