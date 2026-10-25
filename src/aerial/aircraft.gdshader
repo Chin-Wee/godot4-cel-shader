@@ -25,8 +25,10 @@ void fragment() {
  NDTL_DITHER_POSITION = FRAGCOORD.xy;
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
  vec3 base = mix(underside_color.rgb, body_color.rgb, mix(1.0, smoothstep(-0.35, 0.4, local_normal.y), orientation_bias));
- float wing_panel = step(9.0,abs(local_position.x)) * step(4.0,local_position.z) * step(local_position.z,11.0) * step(0.3,local_normal.y);
+ // Mesh vertex alpha is an opaque livery mask, independent of model orientation.
+ float wing_panel = 1.0-COLOR.a;
  base = mix(base,panel_color.rgb,wing_panel * panel_strength);
+ base *= COLOR.rgb;
  ALBEDO = base * (1.0 - haze);
  float rim_term = fresnel_factor(NORMAL, VIEW, rim_power);
  float rim = smoothstep(0.25,0.7,rim_term);

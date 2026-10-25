@@ -7,20 +7,36 @@ func _initialize() -> void:
 
 func _run() -> void:
 	create_timer(15.0).timeout.connect(_checks_timeout)
-	var prism := preload("res://aerial/geometry.gd")._triangular_prism([Vector3(12,0,-5),Vector3(25,0,10),Vector3(13,0,7)],Vector3.DOWN)
+	var prism := preload("res://aerial/geometry.gd")._panel_prism([Vector3(12,0,-5),Vector3(25,0,10),Vector3(23,0,14),Vector3(13,0,7)],Vector3.DOWN)
 	var normals: PackedVector3Array = prism.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
 	var top := false
 	var bottom := false
+	var bevel := false
 	for normal in normals:
 		top = top or normal.y > 0.99
 		bottom = bottom or normal.y < -0.99
+		bevel = bevel or (absf(normal.y) > 0.05 and absf(normal.y) < 0.95)
 	assert(top and bottom,"Detached aircraft parts lost opposing surface normals")
+	assert(bevel,"Aircraft panels lost their bevel normals for rim lighting")
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
 	await process_frame
 	await process_frame
 	assert(scene.hero.get_child_count() >= 4,"Aircraft body/canopy/exhaust missing")
+	var body_arrays: Array = scene.hero.get_node("Body").mesh.surface_get_arrays(0)
+	var panel_colors: PackedColorArray = body_arrays[Mesh.ARRAY_COLOR]
+	var has_body := false
+	var has_livery := false
+	for color in panel_colors:
+		has_body = has_body or color.a > 0.99
+		has_livery = has_livery or color.a < 0.01
+	assert(has_body and has_livery,"Aircraft livery is not attached to its panel geometry")
+	for wing_trail in scene.trails.slice(0,2):
+		var attached := false
+		for vertex in body_arrays[Mesh.ARRAY_VERTEX]:
+			attached = attached or vertex.is_equal_approx(wing_trail.emitter.position)
+		assert(attached,"A wingtip trail emitter is detached from its wing")
 	var frozen_pose: Transform3D = scene.hero.transform
 	scene._update_hero_pose(0.0)
 	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live aircraft poses disagree")

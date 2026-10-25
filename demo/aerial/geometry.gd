@@ -2,7 +2,7 @@ extends RefCounted
 
 # Visual reconstruction references: DELIVERY MUST COMPLETE's broad aircraft panels
 # and canyon silhouettes. These are deterministic material-test proxies, not asset imports.
-static func mesh_from_faces(faces: Array, center := Vector3.ZERO) -> ArrayMesh:
+static func mesh_from_faces(faces: Array, center := Vector3.ZERO, color := Color.WHITE) -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for face in faces:
@@ -18,6 +18,7 @@ static func mesh_from_faces(faces: Array, center := Vector3.ZERO) -> ArrayMesh:
 				normal = -normal
 			for vertex in [a,c,b]:
 				surface.set_normal(normal)
+				surface.set_color(color)
 				surface.add_vertex(vertex)
 	return surface.commit()
 
@@ -31,8 +32,9 @@ static func add_mesh(parent: Node3D, mesh: Mesh, material: Material) -> MeshInst
 static func aircraft(body: Material, canopy: Material, exhaust: Material) -> Node3D:
 	var aircraft_root := Node3D.new()
 	var parts: Array[ArrayMesh] = []
-	var sections := [Vector4(-25,0.04,0.1,-0.1),Vector4(-14,1.8,1.6,-1.2),
-		Vector4(-6,4.5,3.0,-2.0),Vector4(4,6,2.5,-2.5),Vector4(15,5.5,2,-2)]
+	var sections := [Vector4(-30,0.04,0.1,-0.1),Vector4(-19,2.0,1.0,-0.8),
+		Vector4(-11,3.8,2.0,-1.3),Vector4(-3,6.8,2.8,-1.7),
+		Vector4(8,7.0,2.2,-1.8),Vector4(17,5.8,1.3,-1.1)]
 	var rings := []
 	for section in sections:
 		var z: float = section.x
@@ -54,65 +56,88 @@ static func aircraft(body: Material, canopy: Material, exhaust: Material) -> Nod
 	for side in [-1.0,1.0]:
 		# Each convex part gets its own interior center before native SurfaceTool
 		# combines it into one surface. A fuselage center cannot orient a detached fin.
-		var wing := [Vector3(side*3,0,-10),Vector3(side*27,-0.6,13),Vector3(side*7,0,9)]
-		parts.append(_triangular_prism(wing,Vector3.DOWN))
-		var fin := [Vector3(side*6,1,8),Vector3(side*14,19,14),Vector3(side*10,1,18)]
-		parts.append(_triangular_prism(fin,Vector3(side*0.6,0,0)))
-		parts.append(_triangular_prism([Vector3(side*4,0,11),Vector3(side*14,0,19),Vector3(side*4,0,17)],Vector3.DOWN*0.6))
+		var wing_root := [Vector3(side*3,0,-10),Vector3(side*15,-0.2,-1),Vector3(side*14,-0.2,12),Vector3(side*6,0,12)]
+		var outer_wing := [Vector3(side*15,-0.2,-1),Vector3(side*25,-0.4,7),Vector3(side*24,-0.4,12),Vector3(side*14,-0.2,12)]
+		parts.append(_panel_prism(wing_root,Vector3.DOWN*0.8,Color(0.65,0.75,0.9)))
+		# Vertex alpha carries an opaque livery mask; all parts stay in one body surface.
+		parts.append(_panel_prism(outer_wing,Vector3.DOWN*0.8,Color(1,1,1,0)))
+		parts.append(_panel_prism([Vector3(side*2.5,0.3,-19),Vector3(side*7,0.3,-5),Vector3(side*5.5,0.3,1)],Vector3.DOWN*0.8,Color(0.8,0.85,0.9)))
+		var fin := [Vector3(side*5.6,1.5,8),Vector3(side*9,13,11),Vector3(side*9.7,12,16),Vector3(side*7.2,1.5,20)]
+		parts.append(_panel_prism(fin,Vector3(side*0.55,0,0),Color(0.7,0.75,0.8)))
+		parts.append(_panel_prism([Vector3(side*4,0.1,12),Vector3(side*15,0.1,17),Vector3(side*12,0.1,24),Vector3(side*4,0.1,20)],Vector3.DOWN*0.7,Color(0.75,0.8,0.85)))
 		var front := []
 		var back := []
 		for index in 8:
 			var angle := float(index)/8.0*TAU
-			var radial := Vector3(side*3.8+cos(angle)*2.3,-0.5+sin(angle)*2.3,0)
-			front.append(radial+Vector3(0,0,-2))
-			back.append(radial+Vector3(0,0,15.5))
+			var radial := Vector3(side*4.4+cos(angle)*2.7,-1.2+sin(angle)*1.9,0)
+			front.append(radial+Vector3(0,0,-4))
+			back.append(radial+Vector3(0,0,20.5))
 		var pod_faces := []
 		for index in 8:
 			var next := (index+1)%8
 			pod_faces.append([front[index],front[next],back[next],back[index]])
 		pod_faces.append(front)
 		pod_faces.append(back)
-		parts.append(mesh_from_faces(pod_faces,Vector3(side*3.8,-0.5,6)))
+		parts.append(mesh_from_faces(pod_faces,Vector3(side*4.4,-1.2,8),Color(0.5,0.55,0.65)))
 		# Dark intake and nozzle faces use the canopy/metal response independently.
 		var intake := []
 		var nozzle_face := []
 		for index in 8:
 			var angle := float(index)/8.0*TAU
-			intake.append(Vector3(side*3.8+cos(angle)*1.85,-0.5+sin(angle)*1.85,-2.05))
-			nozzle_face.append(Vector3(side*3.8+cos(angle)*1.85,-0.5+sin(angle)*1.85,15.55))
+			intake.append(Vector3(side*4.4+cos(angle)*2.3,-1.2+sin(angle)*1.5,-4.05))
+			nozzle_face.append(Vector3(side*4.4+cos(angle)*2.3,-1.2+sin(angle)*1.5,20.55))
 		dark_faces.append(intake)
 		dark_faces.append(nozzle_face)
-	var glass_edge := [Vector3(0,2.5,-19),Vector3(-2.2,4.5,-7),Vector3(0,4.7,-3),Vector3(2.2,4.5,-7)]
-	var frame_base := [Vector3(0,0.7,-19),Vector3(-2.2,2,-7),Vector3(0,2.6,-3),Vector3(2.2,2,-7)]
+	var glass_edge := [Vector3(0,1.7,-23),Vector3(-2.1,3.4,-13),Vector3(-1.7,3.2,-5),Vector3(0,2.8,-3),Vector3(1.7,3.2,-5),Vector3(2.1,3.4,-13)]
+	var frame_base := [Vector3(0,0.7,-23),Vector3(-2.1,1.6,-13),Vector3(-1.7,2.3,-5),Vector3(0,2.6,-3),Vector3(1.7,2.3,-5),Vector3(2.1,1.6,-13)]
 	var frame_faces := []
-	for edge in 4:
-		var next := (edge+1)%4
+	for edge in glass_edge.size():
+		var next := (edge+1)%glass_edge.size()
 		frame_faces.append([frame_base[edge],frame_base[next],glass_edge[next],glass_edge[edge]])
-	parts.append(mesh_from_faces(frame_faces,Vector3(0,2.8,-9)))
+	parts.append(mesh_from_faces(frame_faces,Vector3(0,2.5,-12),Color(0.7,0.7,0.7)))
 	var assembled := SurfaceTool.new()
 	assembled.begin(Mesh.PRIMITIVE_TRIANGLES)
 	for part in parts: assembled.append_from(part,0,Transform3D.IDENTITY)
-	add_mesh(aircraft_root,assembled.commit(),body)
-	var canopy_faces := [[Vector3(0,2.5,-19),Vector3(-2.2,4.5,-7),Vector3(0,6.5,-8)],
-		[Vector3(0,2.5,-19),Vector3(0,6.5,-8),Vector3(2.2,4.5,-7)],
-		[Vector3(-2.2,4.5,-7),Vector3(0,4.7,-3),Vector3(0,6.5,-8)],
-		[Vector3(0,6.5,-8),Vector3(0,4.7,-3),Vector3(2.2,4.5,-7)]]
-	add_mesh(aircraft_root,mesh_from_faces(canopy_faces,Vector3(0,3,-9)),canopy)
-	add_mesh(aircraft_root,mesh_from_faces(dark_faces,Vector3(0,0,6)),canopy)
+	add_mesh(aircraft_root,assembled.commit(),body).name = "Body"
+	var front_peak := Vector3(0,4.4,-16)
+	var rear_peak := Vector3(0,5.1,-9)
+	var canopy_faces := [[glass_edge[0],glass_edge[1],front_peak],
+		[glass_edge[1],glass_edge[2],rear_peak,front_peak],
+		[glass_edge[2],glass_edge[3],rear_peak],
+		[glass_edge[0],front_peak,glass_edge[5]],
+		[glass_edge[5],front_peak,rear_peak,glass_edge[4]],
+		[glass_edge[4],rear_peak,glass_edge[3]]]
+	add_mesh(aircraft_root,mesh_from_faces(canopy_faces,Vector3(0,3,-12)),canopy).name = "Canopy"
+	add_mesh(aircraft_root,mesh_from_faces(dark_faces,Vector3(0,-1.2,8)),canopy).name = "Intakes"
 	for side in [-1.0,1.0]:
 		var nozzle := add_mesh(aircraft_root,icosphere(),exhaust)
 		nozzle.name = "EngineFlame"+str(side)
-		nozzle.position = Vector3(side*3.8,-0.5,16.5)
-		nozzle.scale = Vector3(1.6,1.6,3.6)
+		nozzle.position = Vector3(side*4.4,-1.2,22.1)
+		nozzle.scale = Vector3(1.8,1.0,3.6)
 	return aircraft_root
 
-static func _triangular_prism(points: Array, thickness: Vector3) -> ArrayMesh:
-	var faces := [points,[points[2]+thickness,points[1]+thickness,points[0]+thickness]]
-	for index in 3:
-		var next := (index+1)%3
-		faces.append([points[index],points[next],points[next]+thickness,points[index]+thickness])
-	var center: Vector3 = (points[0]+points[1]+points[2])/3.0+thickness*0.5
-	return mesh_from_faces(faces,center)
+static func _panel_prism(points: Array, thickness: Vector3, color := Color.WHITE) -> ArrayMesh:
+	# A small physical bevel supplies grazing normals for the bright aircraft rim.
+	var back := []
+	var front := []
+	var edge := []
+	var center := Vector3.ZERO
+	for point in points:
+		center += point
+	center /= points.size()
+	for point in points:
+		var inset: Vector3 = point.move_toward(center,0.35)
+		front.append(inset)
+		back.append(inset+thickness)
+		edge.append(point+thickness*0.5)
+	var reversed_back := back.duplicate()
+	reversed_back.reverse()
+	var faces := [front,reversed_back]
+	for index in points.size():
+		var next := (index+1)%points.size()
+		faces.append([front[index],front[next],edge[next],edge[index]])
+		faces.append([edge[index],edge[next],back[next],back[index]])
+	return mesh_from_faces(faces,center+thickness*0.5,color)
 
 static func icosphere() -> ArrayMesh:
 	var t := (1.0 + sqrt(5.0)) / 2.0

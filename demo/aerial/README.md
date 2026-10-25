@@ -35,6 +35,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Aircraft shaders reuse the existing diffuse ramp, Bayer perturbation, stylized
   specular and Fresnel functions. Body orientation colors, a colored shadow floor,
   a bright rim and a separate canopy highlight material specialize those primitives.
+  Vertex RGB tints separate engine/fin/wing-root panels; vertex alpha carries an
+  opaque livery mask for the gold or olive outer wings. It does not drive transparency.
 - Terrain owns world-height/slope coloring and broad strata. Aircraft, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -66,8 +68,10 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 Reusable shader sources live in `src/aerial`; the identical runtime copies are
 in `demo/shaders/aerial`, following the repository's existing shader distribution.
 The shared cel include and original material settings are preserved. The aircraft
-proxy now lofts a faceted fuselage, closes each convex wing/fin with its own face
-orientation center, and combines parts through native SurfaceTool batching. Dark
+proxy now lofts a longer faceted fuselage and canopy, with clipped wings, leading
+strakes, lower fins and exposed twin engine housings. Closed panel prisms include
+small physical bevels that give rim lighting actual grazing normals. Each convex
+part has its own face orientation center before native SurfaceTool batching. Dark
 canopy/intake/nozzle surfaces retain a separate response. Static and live poses use
 the same function, so the frozen captures represent the running scene.
 
@@ -98,18 +102,21 @@ godot --path demo --script res://aerial/tests/capture_aerial.gd --resolution 144
 godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution 1000x600 --always-on-top
 ```
 
-The functional check covers opposing aircraft-part normals, static/live pose
+The functional check covers opposing aircraft-part/bevel normals, opaque livery
+attributes, exact wingtip attachment, static/live pose
 agreement, cloud coverage and entry/exit, storm rain activation, fixed world-space
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
 
-GPU captures include post on/off, sunset/daylight, aircraft above/below, explosion phases,
+GPU captures include post on/off, sunset/daylight, aircraft above/below/front, explosion phases,
 cloud entry, and wet/dry geometry. Pixel comparisons reject an inactive post or
 rain pass. The rain preview deliberately forces rain over visible geometry for
 inspection; normal play enables it only in storm cloud. Per-capture draw/primitive
 counters are saved with frame names so unlike camera views are not conflated.
 Native transform readbacks verify trail orientation/elongation and cloud placement;
 the headless check also verifies accent, fire and smoke lifetime ordering.
+Aircraft inspection cameras use the model's local axes, so banking cannot turn an
+"above" view into an underside view.
 These are desktop observations, not a device benchmark. Keep the capture window
 visible on macOS; a missing rendered frame fails through a watchdog. Headless mode
 is rejected immediately for visual capture. Shader validation requires rendered
@@ -147,7 +154,7 @@ Compared directly with the supplied references, these remain incomplete:
 
 | Area | Current evidence | Remaining visual work |
 |---|---|---|
-| Aircraft | Closed convex parts, opposing normals, canopy/housing, panel fill and rim render from above/below | Proxy silhouette and livery still need closer matching |
+| Aircraft | Beveled clipped wings, exposed engines, longer canopy/nose and geometry-bound livery render above/below/front | Proxy silhouette, finer panel hierarchy and rim consistency still need closer matching |
 | Environment | Warped mesas, talus skirts, open river valley and delayed haze render in both presets | Finer erosion shapes and more authored foreground/midground grouping still needed |
 | Trails/exhaust | Overlapping oriented puffs, historical wingtip poses, world wind and mesh flames render | Broader irregular breakup and near-camera shapes need refinement |
 | Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |

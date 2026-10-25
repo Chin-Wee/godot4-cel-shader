@@ -64,6 +64,10 @@ func _ready() -> void:
 	add_child(clouds)
 	clouds.build(cloud_material)
 	var body := _material("aircraft")
+	body.set_shader_parameter("body_color",Color(0.78,0.29,0.06))
+	body.set_shader_parameter("underside_color",Color(0.24,0.10,0.065))
+	body.set_shader_parameter("rim_color",Color(1.0,0.90,0.75))
+	body.set_shader_parameter("rim_strength",1.25)
 	body.set_shader_parameter("highlight_mask",0.08)
 	body.set_shader_parameter("diffuse_ramp_mode",1)
 	body.set_shader_parameter("diffuse_ramp_threshold",0.12)
@@ -84,7 +88,9 @@ func _ready() -> void:
 	_update_hero_pose(0.0)
 	var wing_body := body.duplicate() as ShaderMaterial
 	palette_materials.append(wing_body)
-	wing_body.set_shader_parameter("body_color",Color(0.56,0.59,0.48))
+	wing_body.set_shader_parameter("body_color",Color(0.34,0.38,0.29))
+	wing_body.set_shader_parameter("underside_color",Color(0.035,0.065,0.07))
+	wing_body.set_shader_parameter("panel_color",Color(0.48,0.51,0.34))
 	wingman = Geometry.aircraft(wing_body,canopy,exhaust)
 	wingman.position = wingman_position(0.0)
 	wingman.rotation = Vector3(0.1,0.5,-0.3)
@@ -161,7 +167,7 @@ func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 func _update_hero_pose(time: float) -> void:
 	hero.position = flight_position(time)
 	hero.look_at(flight_position(time+0.01))
-	hero.rotate_object_local(Vector3.FORWARD,-0.6+sin(time*0.3)*0.1)
+	hero.rotate_object_local(Vector3.FORWARD,-1.05+sin(time*0.3)*0.1)
 
 func flight_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
@@ -176,7 +182,7 @@ func _add_trails() -> void:
 	var material := _vfx_material(PackedColorArray([Color(0.9,0.83,0.7),Color(0.53,0.49,0.5)]))
 	for side in [-1.0,1.0]:
 		var emitter := Marker3D.new()
-		emitter.position = Vector3(side*20,0,10)
+		emitter.position = Vector3(side*24,-0.8,12)
 		hero.add_child(emitter)
 		var trail := PositionTrail.new()
 		trail.emitter = emitter
