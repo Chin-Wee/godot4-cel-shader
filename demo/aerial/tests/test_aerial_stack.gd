@@ -64,6 +64,7 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	assert(scene.environment.fog_enabled and scene.environment.fog_density > 0.02,"Cloud entry did not reduce visibility")
+	assert(scene.post_material.get_shader_parameter("sun_visible") == 0.0,"Cloud interior still enabled direct-sun optics")
 	scene.storm = true
 	scene.set_palette(false)
 	await process_frame
@@ -112,8 +113,10 @@ func _run() -> void:
 	explosion.set_time(0.7)
 	assert(scene.palette_materials.size() == palette_size,"Transient effects leaked into persistent palette storage")
 	assert(explosion.materials[0].get_shader_parameter("haze_color") == scene.current_haze,"New VFX did not inherit the active weather palette")
+	assert(explosion.materials[8].get_shader_parameter("sun_direction") == scene.sun_direction,"New smoke did not inherit the active sunlight")
 	scene.set_palette(false)
 	assert(explosion.materials[0].get_shader_parameter("haze_color") == scene.current_haze,"Live VFX missed a palette transition")
+	assert(explosion.materials[8].get_shader_parameter("sun_direction") == scene.sun_direction,"Live smoke missed a sunlight transition")
 	explosion._process(5.0)
 	await process_frame
 	await process_frame

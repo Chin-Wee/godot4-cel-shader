@@ -59,8 +59,10 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - One mesh VFX shader supplies age, color ramp, HDR emission, Fresnel, graphic fire
   masses, dither dissolve and optional depth intersection fading. Explosions combine
   eight fire lobes, twelve smoke lobes, a ring, three arcs, twelve streaks and four
-  debris shards. Uneven lobe meshes, seeded orange/core islands, and three smaller
-  foreground smoke lobes break up the column. Tapered arcs have yellow cores and
+  debris shards. Uneven lobe meshes, seeded orange/core islands and authored
+  overlapping smoke offsets form an asymmetrical plume. Smoke lobes vary in aspect
+  and vertex tint, and their value planes follow the shared sun direction.
+  Tapered arcs have yellow cores and
   orange edges, grow with onset, and expire at 1.6 seconds; fire cools and expires
   at 2.4 seconds, while smoke/debris persist through the four-second effect.
   Transient effects are freed without retaining palette references.
@@ -75,14 +77,19 @@ part has its own face orientation center before native SurfaceTool batching. Dar
 canopy/intake/nozzle surfaces retain a separate response. Static and live poses use
 the same function, so the frozen captures represent the running scene.
 
-A native CanvasLayer post pass runs after the 3D frame, below the HUD. It provides
-resolved-frame highlight glow, an analytic solar corona, eight-tap screen-space
-radial light scattering, and procedural normal-based rain refraction. Crysis is the
+WorldEnvironment supplies native HDR glow, verified by an on/off GPU capture on
+the current Godot 4.7 Mobile renderer. A CanvasLayer post pass runs after the 3D
+frame, below the HUD. It supplies an analytic solar corona, twelve-tap screen-space
+radial light scattering, chromatic flare ghosts and procedural normal-based rain
+refraction. The supplied DMC sunset is the optical flare reference. Crysis is the
 lightshaft visual reference; this is standard screen sampling, not a claim about
 its exact source implementation. Rain uses jittered stretched drop fields and is
-coupled to storm-cloud density. Sky, surface haze, fog, sunlight and live VFX all
-follow palette/storm changes. The post pass is not HDR bloom or true volumetric
-light transport; its approximation is an explicit remaining quality limit.
+coupled to storm-cloud density. Source luminance masks solar effects behind dark
+occluders, and cloud-interior density suppresses direct-sun optics. Bright white
+geometry remains a known limit of luminance masking; a depth mask would be needed
+to distinguish it reliably from the sun. Sky, surface haze, fog, sunlight and live
+VFX share palette/storm changes and sun direction. Glow is engine-owned HDR; the
+solar rays remain a screen-space approximation, with no volumetric light transport.
 
 ## Asset selection
 
@@ -108,9 +115,11 @@ agreement, cloud coverage and entry/exit, storm rain activation, fixed world-spa
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
 
-GPU captures include post on/off, sunset/daylight, aircraft above/below/front, explosion phases,
+GPU captures include native HDR glow on/off with Canvas disabled, Canvas on/off,
+isolated flare on/off, sun occlusion, sunset/daylight, aircraft above/below/front, explosion phases,
 cloud entry, and wet/dry geometry. Pixel comparisons reject an inactive post or
-rain pass. The rain preview deliberately forces rain over visible geometry for
+rain pass. A ghost-region pixel probe verifies flare contribution and suppression
+behind a dark sphere. The rain preview deliberately forces rain over visible geometry for
 inspection; normal play enables it only in storm cloud. Per-capture draw/primitive
 counters are saved with frame names so unlike camera views are not conflated.
 Native transform readbacks verify trail orientation/elongation and cloud placement;
@@ -158,8 +167,8 @@ Compared directly with the supplied references, these remain incomplete:
 | Environment | Warped mesas, talus skirts, open river valley and delayed haze render in both presets | Finer erosion shapes and more authored foreground/midground grouping still needed |
 | Trails/exhaust | Overlapping oriented puffs, historical wingtip poses, world wind and mesh flames render | Broader irregular breakup and near-camera shapes need refinement |
 | Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
-| Explosions | Uneven fire/smoke column, seeded core islands, tapered arcs and separate age phases render | Smoke overlap still reads as separate pebbles; fire patterns and shot hierarchy need refinement |
-| Weather/post | Storm palette, density-driven rain/refraction, cover, corona, glow and screen rays render | Glow/shafts are resolved-frame approximations; finer weather transitions remain |
+| Explosions | Connected asymmetrical smoke plume, vertex value variation, shared sunlight, fire islands and separate age phases render | More heated inner lobes/fire pockets and less patterned fire still needed |
+| Weather/post | Native HDR glow, orange horizon/crowns, isolated chromatic flare, sun occlusion and cloud-density optics gates render | Longer structured rays, white-geometry occlusion and finer weather transitions remain |
 
 The overall rendering goal stays active. Passing the functional checks does not
 prove that the frame matches the references, and no visual similarity percentage

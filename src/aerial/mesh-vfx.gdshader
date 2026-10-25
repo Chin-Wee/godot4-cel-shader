@@ -57,7 +57,7 @@ void fragment() {
   color = mix(orange,core,smoothstep(-0.08,0.12,mass));
  }
  color *= COLOR.rgb;
- float lighting = mix(0.45,1.0,smoothstep(-0.15,0.15,dot(aerial_world_normal,normalize(vec3(-0.5,0.6,-0.8)))));
+ float lighting = mix(0.45,1.0,smoothstep(-0.15,0.15,dot(aerial_world_normal,normalize(sun_direction))));
  // Unshaded materials use ALBEDO directly, including the HDR emissive contribution.
  ALBEDO = mix(color * (lighting + emission_strength) + color * fresnel_factor(NORMAL,VIEW,4.0) * vfx_rim,haze_color.rgb,haze);
 }

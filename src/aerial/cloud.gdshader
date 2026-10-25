@@ -5,7 +5,6 @@ render_mode ambient_light_disabled, specular_disabled;
 uniform vec4 cloud_light: source_color = vec4(1.0, 0.62, 0.38, 1.0);
 uniform vec4 cloud_shadow: source_color = vec4(0.22, 0.17, 0.29, 1.0);
 uniform float storm = 0.0;
-uniform vec3 sun_direction = vec3(-0.5,0.22,-0.84);
 varying float cloud_height;
 void vertex() {
  cloud_height = VERTEX.y;

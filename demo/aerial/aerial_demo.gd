@@ -30,6 +30,10 @@ func _ready() -> void:
 	environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	environment.glow_enabled = true
+	environment.glow_intensity = 0.8
+	environment.glow_strength = 0.85
+	environment.glow_hdr_threshold = 1.0
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.ambient_light_color = Color(0.14,0.17,0.25)
 	environment.ambient_light_energy = 0.25
@@ -121,6 +125,7 @@ func _material(shader_name: String) -> ShaderMaterial:
 	material.shader = load("res://shaders/aerial/"+shader_name+".gdshader")
 	if shader_name != "sky":
 		material.set_shader_parameter("haze_color",current_haze)
+		material.set_shader_parameter("sun_direction",sun_direction)
 		palette_materials.append(material)
 	return material
 
@@ -129,19 +134,19 @@ func set_palette(daylight: bool) -> void:
 	var haze := Color(0.48,0.30,0.36) if not daylight else Color(0.37,0.67,0.76)
 	if storm: haze = haze.lerp(Color(0.17,0.20,0.26),0.65)
 	current_haze = haze
-	for material in palette_materials:
-		material.set_shader_parameter("haze_color",haze)
-	sky_material.set_shader_parameter("zenith_color",Color(0.27,0.19,0.32) if not daylight else Color(0.035,0.27,0.4))
-	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.62,0.39,0.42))
 	var direction := Vector3(-0.5,0.22,-0.84) if not daylight else Vector3(-0.4,0.65,-0.64)
 	sun_direction = direction
+	for material in palette_materials:
+		material.set_shader_parameter("haze_color",haze)
+		material.set_shader_parameter("sun_direction",direction)
+	sky_material.set_shader_parameter("zenith_color",Color(0.27,0.19,0.32) if not daylight else Color(0.035,0.27,0.4))
+	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.66,0.38,0.31))
 	sky_material.set_shader_parameter("sun_direction",direction)
 	sun.look_at_from_position(Vector3.ZERO,-direction)
 	sun.light_color = Color(1.0,0.78,0.53) if not daylight else Color(1.0,0.94,0.79)
 	sun.light_energy = 0.65 if storm else 1.5
-	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.72,0.50) if not daylight else Color(0.91,0.94,0.86))
+	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.62,0.27) if not daylight else Color(0.91,0.94,0.86))
 	cloud_material.set_shader_parameter("cloud_shadow",Color(0.22,0.17,0.29) if not daylight else Color(0.11,0.36,0.47))
-	cloud_material.set_shader_parameter("sun_direction",direction)
 	cloud_material.set_shader_parameter("storm",float(storm))
 	if storm:
 		sky_material.set_shader_parameter("zenith_color",Color(0.075,0.09,0.14))
@@ -150,6 +155,7 @@ func set_palette(daylight: bool) -> void:
 		for node in explosion.get_children():
 			if node is MeshInstance3D and node.material_override is ShaderMaterial:
 				node.material_override.set_shader_parameter("haze_color",haze)
+				node.material_override.set_shader_parameter("sun_direction",direction)
 
 func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 	var material := _material("mesh-vfx")
@@ -237,7 +243,7 @@ func _add_trails() -> void:
 func trigger_explosion() -> void:
 	if is_instance_valid(explosion): explosion.queue_free()
 	var fire := _vfx_material(PackedColorArray([Color(1,0.95,0.22),Color(1,0.42,0.015),Color(0.65,0.06,0.01),Color(0.03,0.025,0.07)]),0.85)
-	var smoke := _vfx_material(PackedColorArray([Color(0.08,0.10,0.17),Color(0.11,0.13,0.22),Color(0.18,0.13,0.20)]))
+	var smoke := _vfx_material(PackedColorArray([Color(0.16,0.18,0.26),Color(0.2,0.22,0.32),Color(0.18,0.16,0.24)]))
 	var accent := _vfx_material(PackedColorArray([Color(1,1,0.45),Color(1,0.8,0.1),Color(1,0.35,0.01)]),0.85)
 	explosion = Explosion.new()
 	explosion.position = hero.position + Vector3(-180,30,-110)
@@ -281,7 +287,7 @@ func _process(delta: float) -> void:
 	var sun_point := camera.global_position + sun_direction*4000.0
 	var uv := camera.unproject_position(sun_point)/get_viewport().get_visible_rect().size
 	post_material.set_shader_parameter("sun_uv",uv)
-	post_material.set_shader_parameter("sun_visible",0.0 if camera.is_position_behind(sun_point) or storm or uv.x < -0.25 or uv.x > 1.25 or uv.y < -0.25 or uv.y > 1.25 else 1.0)
+	post_material.set_shader_parameter("sun_visible",0.0 if camera.is_position_behind(sun_point) or storm or uv.x < -0.25 or uv.x > 1.25 or uv.y < -0.25 or uv.y > 1.25 else 1.0-density)
 	post_material.set_shader_parameter("rain_strength",density*float(storm))
 	post_material.set_shader_parameter("weather_time",elapsed)
 

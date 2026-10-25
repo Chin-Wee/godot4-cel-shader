@@ -2,6 +2,7 @@
 uniform vec4 haze_color: source_color = vec4(0.54, 0.34, 0.39, 1.0);
 uniform float haze_start = 1300.0;
 uniform float haze_distance = 6500.0;
+uniform vec3 sun_direction = vec3(-0.5,0.22,-0.84);
 varying vec3 aerial_world_position;
 varying vec3 aerial_world_normal;
 float aerial_haze(vec3 camera_position) {

@@ -34,9 +34,42 @@ func _capture() -> void:
 	assert(absf(second.basis.z.normalized().dot(direction)) > 0.999,"Trail puffs do not follow their trajectory")
 	assert(second.basis.z.length() > second.basis.x.length()*1.4,"Trail puffs lost their overlapping elongated shape")
 	scene.post_material.set_shader_parameter("post_strength",0.0)
+	scene.environment.glow_enabled = false
+	await _save_frame(output.path_join("sunset-no-glow.png"))
+	scene.environment.glow_enabled = true
 	await _save_frame(output.path_join("sunset-no-post.png"))
+	assert(Image.load_from_file(output.path_join("sunset-no-glow.png")).get_data() != Image.load_from_file(output.path_join("sunset-no-post.png")).get_data(),"Native HDR glow produced no change in the current renderer")
 	scene.post_material.set_shader_parameter("post_strength",1.0)
 	await _save_frame(output.path_join("sunset.png"))
+	var flare_gain = scene.post_material.get_shader_parameter("flare_strength")
+	scene.post_material.set_shader_parameter("flare_strength",0.0)
+	await _save_frame(output.path_join("sunset-no-flare.png"))
+	scene.post_material.set_shader_parameter("flare_strength",flare_gain)
+	var sun_uv: Vector2 = scene.post_material.get_shader_parameter("sun_uv")
+	var ghost_uv := sun_uv+(Vector2(0.5,0.5)-sun_uv)*2.4
+	var occluder := MeshInstance3D.new()
+	var sphere := SphereMesh.new()
+	sphere.radius = 12.0
+	sphere.height = 24.0
+	occluder.mesh = sphere
+	var black := StandardMaterial3D.new()
+	black.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	black.albedo_color = Color.BLACK
+	occluder.material_override = black
+	occluder.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	scene.add_child(occluder)
+	occluder.global_position = scene.camera.global_position+scene.sun_direction.normalized()*150.0
+	await _save_frame(output.path_join("sun-occluded-post.png"))
+	scene.post_material.set_shader_parameter("post_strength",0.0)
+	await _save_frame(output.path_join("sun-occluded-raw.png"))
+	var visible_delta := _post_difference(Image.load_from_file(output.path_join("sunset-no-flare.png")),Image.load_from_file(output.path_join("sunset.png")),ghost_uv)
+	var hidden_delta := _post_difference(Image.load_from_file(output.path_join("sun-occluded-raw.png")),Image.load_from_file(output.path_join("sun-occluded-post.png")),ghost_uv)
+	assert(visible_delta > 0.001,"Sun optics produced no visible flare")
+	assert(hidden_delta < visible_delta*0.2+0.001,"Sun flare shone through its occluder")
+	print("Solar probe: visible ghost delta=",visible_delta," occluded delta=",hidden_delta)
+	occluder.queue_free()
+	await process_frame
+	scene.post_material.set_shader_parameter("post_strength",1.0)
 	scene.set_palette(true)
 	await _save_frame(output.path_join("daylight.png"))
 	var initial_camera: Transform3D = scene.camera.transform
@@ -83,6 +116,7 @@ func _capture() -> void:
 	var statistics := {
 		"renderer": RenderingServer.get_current_rendering_method(),
 		"captures": capture_statistics,
+		"solar_probe": {"visible_ghost_delta": visible_delta,"occluded_post_delta": hidden_delta},
 		"note": "Desktop capture counters; not a mobile device benchmark."
 	}
 	var report := FileAccess.open(output.path_join("render-stats.json"),FileAccess.WRITE)
@@ -92,6 +126,19 @@ func _capture() -> void:
 	completed = true
 	print("Aerial comparison captures: ",output)
 	quit()
+
+func _post_difference(before: Image, after: Image, uv: Vector2) -> float:
+	var center := Vector2i(uv*Vector2(before.get_size()))
+	var difference := 0.0
+	var samples := 0
+	for y in range(center.y-32,center.y+33,4):
+		for x in range(center.x-32,center.x+33,4):
+			if x < 0 or y < 0 or x >= before.get_width() or y >= before.get_height(): continue
+			var a := before.get_pixel(x,y)
+			var b := after.get_pixel(x,y)
+			difference += Vector3(b.r-a.r,b.g-a.g,b.b-a.b).length()
+			samples += 1
+	return difference/maxi(samples,1)
 
 func _save_frame(path: String) -> void:
 	print("Capturing ",path.get_file())
@@ -107,5 +154,5 @@ func _save_frame(path: String) -> void:
 
 func _capture_timeout() -> void:
 	if not completed:
-		push_error("Aerial capture timed out waiting for rendered frames. Keep the capture window visible.")
+		push_error("Aerial capture did not finish; inspect earlier errors or keep a stalled render window visible.")
 		quit(1)
