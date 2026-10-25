@@ -27,6 +27,12 @@ func _capture() -> void:
 	for bank in scene.clouds.bank_transforms.size():
 		var batch: MultiMeshInstance3D = scene.clouds.batches[bank%scene.clouds.SHAPE_COUNT]
 		assert(batch.multimesh.get_instance_transform(bank/scene.clouds.SHAPE_COUNT).is_equal_approx(scene.clouds.bank_transforms[bank]),"Visible cloud transform differs from its weather volume")
+	var trail: MultiMeshInstance3D = scene.trails[0]
+	var first := trail.multimesh.get_instance_transform(0)
+	var second := trail.multimesh.get_instance_transform(1)
+	var direction := (second.origin-first.origin).normalized()
+	assert(absf(second.basis.z.normalized().dot(direction)) > 0.999,"Trail puffs do not follow their trajectory")
+	assert(second.basis.z.length() > second.basis.x.length()*1.4,"Trail puffs lost their overlapping elongated shape")
 	scene.post_material.set_shader_parameter("post_strength",0.0)
 	await _save_frame(output.path_join("sunset-no-post.png"))
 	scene.post_material.set_shader_parameter("post_strength",1.0)
@@ -45,6 +51,10 @@ func _capture() -> void:
 	scene.explosion.set_process(false)
 	scene.explosion.set_time(0.7)
 	await _save_frame(output.path_join("explosion.png"))
+	for time in [0.2,1.8,3.4]:
+		scene.explosion.set_time(time)
+		await _save_frame(output.path_join("explosion-"+str(time)+".png"))
+	scene.explosion.set_time(0.7)
 	var outside: Vector3 = scene.camera.position
 	var bank: Vector4 = scene.clouds.banks[0]
 	scene.camera.position = scene.clouds.to_global(Vector3(bank.x,bank.y,bank.z))

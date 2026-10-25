@@ -50,12 +50,18 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Trails store a fixed 512-instance history per emitter. Samples stay in world
   space, expand and fade with age, expire in the shader, and restart on teleport.
   Hero wing trails, a looping distant aircraft trail, and denser missile smoke
-  have separate lifetimes and GPU wind/curl drift. Initial histories replay the same deterministic paths
-  used by the animated objects; live movement continues sampling those paths.
+  have separate lifetimes and GPU wind/curl drift. Overlapping elongated puffs
+  follow the trajectory tangent instead of forming evenly spaced round beads.
+  Wind remains in world space through the oriented instance transforms. Initial
+  wingtip histories replay the same aircraft poses used by live movement.
 - One mesh VFX shader supplies age, color ramp, HDR emission, Fresnel, graphic fire
   masses, dither dissolve and optional depth intersection fading. Explosions combine
   eight fire lobes, twelve smoke lobes, a ring, three arcs, twelve streaks and four
-  debris shards. Transient effects are freed without retaining palette references.
+  debris shards. Uneven lobe meshes, seeded orange/core islands, and three smaller
+  foreground smoke lobes break up the column. Tapered arcs have yellow cores and
+  orange edges, grow with onset, and expire at 1.6 seconds; fire cools and expires
+  at 2.4 seconds, while smoke/debris persist through the four-second effect.
+  Transient effects are freed without retaining palette references.
 
 Reusable shader sources live in `src/aerial`; the identical runtime copies are
 in `demo/shaders/aerial`, following the repository's existing shader distribution.
@@ -97,11 +103,13 @@ agreement, cloud coverage and entry/exit, storm rain activation, fixed world-spa
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
 
-GPU captures include post on/off, sunset/daylight, aircraft above/below, explosion,
+GPU captures include post on/off, sunset/daylight, aircraft above/below, explosion phases,
 cloud entry, and wet/dry geometry. Pixel comparisons reject an inactive post or
 rain pass. The rain preview deliberately forces rain over visible geometry for
 inspection; normal play enables it only in storm cloud. Per-capture draw/primitive
 counters are saved with frame names so unlike camera views are not conflated.
+Native transform readbacks verify trail orientation/elongation and cloud placement;
+the headless check also verifies accent, fire and smoke lifetime ordering.
 These are desktop observations, not a device benchmark. Keep the capture window
 visible on macOS; a missing rendered frame fails through a watchdog. Headless mode
 is rejected immediately for visual capture. Shader validation requires rendered
@@ -141,9 +149,9 @@ Compared directly with the supplied references, these remain incomplete:
 |---|---|---|
 | Aircraft | Closed convex parts, opposing normals, canopy/housing, panel fill and rim render from above/below | Proxy silhouette and livery still need closer matching |
 | Environment | Warped mesas, talus skirts, open river valley and delayed haze render in both presets | Finer erosion shapes and more authored foreground/midground grouping still needed |
-| Trails/exhaust | Persistent trajectory curves, dense smoke, wind drift and mesh flames render | Segmentation rhythm and near-camera shapes need refinement |
+| Trails/exhaust | Overlapping oriented puffs, historical wingtip poses, world wind and mesh flames render | Broader irregular breakup and near-camera shapes need refinement |
 | Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
-| Explosions | Enlarged fire/smoke masses, arcs, rings, debris and post glow animate and expire | Need closer authored fire/smoke breakup and shot hierarchy |
+| Explosions | Uneven fire/smoke column, seeded core islands, tapered arcs and separate age phases render | Smoke overlap still reads as separate pebbles; fire patterns and shot hierarchy need refinement |
 | Weather/post | Storm palette, density-driven rain/refraction, cover, corona, glow and screen rays render | Glow/shafts are resolved-frame approximations; finer weather transitions remain |
 
 The overall rendering goal stays active. Passing the functional checks does not

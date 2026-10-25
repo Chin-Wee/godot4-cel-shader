@@ -10,6 +10,7 @@ var next_slot := 0
 var previous_position := Vector3.ZERO
 var has_previous := false
 var sample_count := 0
+var last_sample_position := Vector3.ZERO
 
 func configure(material: ShaderMaterial) -> void:
 	top_level = true
@@ -21,8 +22,8 @@ func configure(material: ShaderMaterial) -> void:
 	var puff := SphereMesh.new()
 	puff.radius = 1.0
 	puff.height = 2.0
-	puff.radial_segments = 6
-	puff.rings = 3
+	puff.radial_segments = 8
+	puff.rings = 4
 	multimesh.mesh = puff
 	multimesh.instance_count = CAPACITY
 	for index in CAPACITY: multimesh.set_instance_transform(index,Transform3D(Basis.IDENTITY.scaled(Vector3.ZERO),Vector3.ZERO))
@@ -33,9 +34,18 @@ func configure(material: ShaderMaterial) -> void:
 	custom_aabb = AABB(Vector3(-10000,-10000,-10000),Vector3.ONE*20000)
 
 func emit_at(point: Vector3, birth_time: float) -> void:
-	var puff_width := width * (0.88 + 0.22*sin(float(sample_count)*2.399))
-	multimesh.set_instance_transform(next_slot,Transform3D(Basis.IDENTITY.scaled(Vector3.ONE*puff_width),to_local(point)))
+	var phase := float(sample_count)*2.399
+	var puff_width := width * (0.85 + 0.25*sin(phase))
+	var direction := point-last_sample_position
+	if sample_count == 0 or direction.length_squared() < 0.0001 or direction.length() > spacing*64.0:
+		direction = Vector3.FORWARD
+	direction = direction.normalized()
+	var up := Vector3.RIGHT if absf(direction.dot(Vector3.UP)) > 0.99 else Vector3.UP
+	var basis := Basis.looking_at(direction,up)
+	basis = basis.scaled_local(Vector3(1.0,0.8+0.15*cos(phase),1.8+0.35*sin(phase*0.7))*puff_width)
+	multimesh.set_instance_transform(next_slot,Transform3D(basis,to_local(point)))
 	multimesh.set_instance_custom_data(next_slot,Color(birth_time,float(sample_count%97)/97.0,puff_width,1))
+	last_sample_position = point
 	next_slot = (next_slot+1) % CAPACITY
 	sample_count += 1
 

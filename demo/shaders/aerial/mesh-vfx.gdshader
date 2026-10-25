@@ -14,6 +14,7 @@ uniform float wind_curl = 0.08;
 uniform float emission_strength = 0.0;
 uniform float soft_intersection = 0.0;
 uniform bool graphic_fire = false;
+uniform float shape_seed = 0.0;
 uniform float vfx_rim = 0.08;
 varying vec3 effect_local_position;
 varying float age;
@@ -25,8 +26,11 @@ void vertex() {
   float seconds = max(effect_time-INSTANCE_CUSTOM.r,0.0);
   float phase = INSTANCE_CUSTOM.g*6.283185;
   vec3 curl = vec3(sin(phase+seconds*0.6),sin(phase*2.0+seconds*0.3),cos(phase+seconds*0.4));
-  // Trail bases are unrotated world axes, scaled by the stored puff radius.
-  VERTEX += (wind_velocity+curl*wind_curl)*seconds/max(INSTANCE_CUSTOM.b,0.001);
+  // Oriented, stretched trail instances still drift in shared world-space wind.
+  // Unused slots have zero scale and no radius; do not invert their matrices.
+  if (INSTANCE_CUSTOM.b > 0.0) {
+   VERTEX += inverse(mat3(MODEL_MATRIX))*(wind_velocity+curl*wind_curl)*seconds;
+  }
  }
  aerial_world_position = (MODEL_MATRIX * vec4(VERTEX,1.0)).xyz;
  aerial_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
@@ -44,9 +48,15 @@ void fragment() {
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
  vec3 color = texture(color_ramp,vec2(clamp(age,0.0,1.0),0.5)).rgb;
  if (graphic_fire) {
-  float mass = sin(effect_local_position.x * 3.0 + sin(effect_local_position.y * 4.0) + effect_local_position.z * 2.0 + age * 9.0);
-  color = mix(color * vec3(1.0,0.4,0.05),vec3(1.0,0.98,0.5),smoothstep(-0.12,0.12,mass));
+  vec3 p = effect_local_position*5.0+shape_seed*vec3(9.0,17.0,6.0)+age*vec3(0.0,3.0,-1.0);
+  vec3 warp = sin(p.yzx*1.4+cos(p.zxy));
+  float mass = dot(sin(p+warp*0.8),vec3(0.45,0.35,0.2));
+  float heat = 1.0-smoothstep(0.3,0.85,age);
+  vec3 orange = mix(color*0.4,color*vec3(1.0,0.3,0.02),heat);
+  vec3 core = mix(color,vec3(1.0,0.95,0.24),heat);
+  color = mix(orange,core,smoothstep(-0.08,0.12,mass));
  }
+ color *= COLOR.rgb;
  float lighting = mix(0.45,1.0,smoothstep(-0.15,0.15,dot(aerial_world_normal,normalize(vec3(-0.5,0.6,-0.8)))));
  // Unshaded materials use ALBEDO directly, including the HDR emissive contribution.
  ALBEDO = mix(color * (lighting + emission_strength) + color * fresnel_factor(NORMAL,VIEW,4.0) * vfx_rim,haze_color.rgb,haze);

@@ -184,7 +184,9 @@ func _add_trails() -> void:
 		trail.configure(material)
 		for index in 280:
 			var time := -14.0+float(index)*0.05
-			trail.emit_at(flight_position(time)+hero.basis*emitter.position,20.0+time)
+			_update_hero_pose(time)
+			trail.emit_at(emitter.global_position,20.0+time)
+		_update_hero_pose(0.0)
 		trail.material_override.set_shader_parameter("effect_time",trail.elapsed)
 		trail.previous_position = emitter.global_position
 		trail.has_previous = true
@@ -229,15 +231,17 @@ func _add_trails() -> void:
 func trigger_explosion() -> void:
 	if is_instance_valid(explosion): explosion.queue_free()
 	var fire := _vfx_material(PackedColorArray([Color(1,0.95,0.22),Color(1,0.42,0.015),Color(0.65,0.06,0.01),Color(0.03,0.025,0.07)]),0.85)
-	var smoke := _vfx_material(PackedColorArray([Color(0.045,0.06,0.12),Color(0.075,0.085,0.16),Color(0.12,0.1,0.16)]))
+	var smoke := _vfx_material(PackedColorArray([Color(0.08,0.10,0.17),Color(0.11,0.13,0.22),Color(0.18,0.13,0.20)]))
+	var accent := _vfx_material(PackedColorArray([Color(1,1,0.45),Color(1,0.8,0.1),Color(1,0.35,0.01)]),0.85)
 	explosion = Explosion.new()
 	explosion.position = hero.position + Vector3(-180,30,-110)
 	explosion.scale = Vector3.ONE*1.8
 	add_child(explosion)
-	explosion.build(fire,smoke)
+	explosion.build(fire,smoke,accent)
 	# Material uniforms are local to the effect; do not retain freed effects in the palette list.
 	palette_materials.erase(fire)
 	palette_materials.erase(smoke)
+	palette_materials.erase(accent)
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(camera): return
