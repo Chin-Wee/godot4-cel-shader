@@ -24,6 +24,7 @@ void vertex() {
 void fragment() {
  NDTL_DITHER_POSITION = FRAGCOORD.xy;
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
+ vec3 world_normal = normalize(aerial_world_normal);
  vec3 base = mix(underside_color.rgb, body_color.rgb, mix(1.0, smoothstep(-0.35, 0.4, local_normal.y), orientation_bias));
  // Mesh vertex alpha is an opaque livery mask, independent of model orientation.
  float wing_panel = 1.0-COLOR.a;
@@ -34,8 +35,11 @@ void fragment() {
  float rim = smoothstep(0.25,0.7,rim_term);
  float stipple = step(bayer4x4(FRAGCOORD.xy/1.5),rim_term);
  rim = max(rim,stipple * 0.25);
+ // The sunward bevels carry the strong rim; cool silhouettes retain a small fill.
+ rim *= mix(0.18,1.0,smoothstep(-0.3,0.6,dot(world_normal,aerial_sun_vector())));
  float panel_fill = 0.12+0.24*max(smoothstep(0.2,0.8,local_normal.y),step(7.0,local_position.y));
- EMISSION = (base * panel_fill + shadow_color.rgb * shadow_fill + rim * rim_color.rgb * rim_strength) * (1.0 - haze) + haze_color.rgb * haze;
+ vec3 reflected_sky = aerial_surface_fill(world_normal);
+ EMISSION = (base * panel_fill + shadow_color.rgb * shadow_fill + reflected_sky * 0.4 + rim * rim_color.rgb * rim_strength) * (1.0 - haze) + aerial_haze_tint(CAMERA_POSITION_WORLD) * haze;
  ROUGHNESS = 1.0;
 }
 void light() {
