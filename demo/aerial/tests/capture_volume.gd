@@ -7,7 +7,7 @@ class FixtureClouds:
 func _initialize(): call_deferred("run")
 func frame():
  for index in 5: await process_frame
- await RenderingServer.frame_post_draw
+ RenderingServer.force_draw()
 func run():
  if DisplayServer.get_name()=="headless":
   push_error("Volume capture requires a native rendering display")

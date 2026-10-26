@@ -5,7 +5,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	create_timer(15.0).timeout.connect(func(): quit(1))
-	for name in ["atmosphere.gdshaderinc","aircraft.gdshader","terrain.gdshader","cloud.gdshader"]:
+	for name in ["atmosphere.gdshaderinc","aircraft.gdshader","terrain.gdshader","cloud.gdshader","post.gdshader","sky.gdshader","mesh-vfx.gdshader","afterburner.gdshader","atmosphere-volume.glsl","atmosphere-composite.glsl"]:
 		var canonical := FileAccess.get_file_as_string(ProjectSettings.globalize_path("res://../src/aerial/"+name))
 		assert(not canonical.is_empty(),"Canonical surface shader is missing: "+name)
 		assert(canonical == FileAccess.get_file_as_string("res://shaders/aerial/"+name),"Runtime surface shader drifted: "+name)

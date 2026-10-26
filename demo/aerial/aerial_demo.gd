@@ -18,7 +18,7 @@ var animate := true
 var elapsed := 0.0
 var storm := false
 var daylight_palette := false
-var sun_direction := Vector3(-0.5,0.22,-0.84)
+var sun_direction := Vector3(-0.660,0.232,-0.715).normalized()
 var post_material: ShaderMaterial
 var current_haze := Color(0.30,0.27,0.40)
 var current_haze_sun_color := Color(0.88,0.43,0.27)
@@ -32,6 +32,9 @@ var explosion_clock := 0.0
 @export_range(0.0,1.0,0.01) var afterburner_throttle := 1.0
 var afterburner_material: ShaderMaterial
 var afterburner_flow_phase := 0.0
+@export_range(0.0,3.0,0.05) var atmosphere_strength := 1.0
+@export_range(0.0,1.0,0.05) var atmosphere_shadow_strength := 1.0
+var volume_effect
 
 func _ready() -> void:
 	environment = Environment.new()
@@ -138,6 +141,26 @@ func _ready() -> void:
 	_make_hud()
 	set_palette(false)
 	_update_afterburners()
+	volume_effect = load("res://aerial/atmosphere_volume.gd").new()
+	var compositor := Compositor.new()
+	compositor.compositor_effects = [volume_effect]
+	camera.compositor = compositor
+	_update_atmosphere(camera.unproject_position(camera.global_position+sun_direction*4000.0)/get_viewport().get_visible_rect().size)
+
+func _update_atmosphere(sun_uv: Vector2) -> void:
+	volume_effect.configure(clouds,sun_direction,{
+		"strength":atmosphere_strength,"shadow_strength":atmosphere_shadow_strength,
+		"density":0.000085,"height_scale":600.0,"max_distance":4500.0,
+		"sun_strength":1.5 if daylight_palette else 4.5,
+		"light_color":sun.light_color,"ambient_color":current_sky_fill,
+		"sun_enabled":not storm,"sun_uv":sun_uv,
+	})
+	# The Texture2DRD has no RID before the first compositor callback.
+	if volume_effect.get_status().ready:
+		post_material.set_shader_parameter("solar_visibility_texture",volume_effect.solar_visibility_texture)
+		post_material.set_shader_parameter("use_depth_occlusion",true)
+	else:
+		post_material.set_shader_parameter("sun_visible",0.0)
 
 func set_afterburner_throttle(value: float) -> void:
 	afterburner_throttle = clampf(value,0.0,1.0)
@@ -187,7 +210,7 @@ func set_palette(daylight: bool) -> void:
 		current_haze_sun_strength = 0.08
 		current_sky_fill = Color(0.11,0.16,0.24)
 		current_sky_fill_strength = 0.12
-	var direction := Vector3(-0.5,0.22,-0.84) if not daylight else Vector3(-0.4,0.65,-0.64)
+	var direction := Vector3(-0.660,0.232,-0.715).normalized() if not daylight else Vector3(-0.4,0.65,-0.64).normalized()
 	sun_direction = direction
 	for material in palette_materials:
 		_set_surface_palette(material)
@@ -205,7 +228,8 @@ func set_palette(daylight: bool) -> void:
 	environment.ambient_light_energy = current_sky_fill_strength
 	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.66,0.30) if not daylight else Color(0.91,0.94,0.86))
 	cloud_material.set_shader_parameter("cloud_shadow",Color(0.22,0.14,0.29) if not daylight else Color(0.11,0.36,0.47))
-	cloud_material.set_shader_parameter("cloud_transmission",Color(1.0,0.29,0.065) if not daylight else Color(0.69,0.83,0.88))
+	cloud_material.set_shader_parameter("cloud_transmission",Color(1.0,0.48,0.10) if not daylight else Color(0.69,0.83,0.88))
+	cloud_material.set_shader_parameter("cloud_bank_glow_strength",0.7 if not daylight else 0.12)
 	cloud_material.set_shader_parameter("cloud_lining",Color(1.0,0.91,0.66) if not daylight else Color(0.97,0.99,1.0))
 	cloud_material.set_shader_parameter("storm",float(storm))
 	if storm:
@@ -347,6 +371,7 @@ func _process(delta: float) -> void:
 	post_material.set_shader_parameter("sun_visible",0.0 if camera.is_position_behind(sun_point) or storm or uv.x < -0.25 or uv.x > 1.25 or uv.y < -0.25 or uv.y > 1.25 else 1.0-density)
 	post_material.set_shader_parameter("rain_strength",density*float(storm))
 	post_material.set_shader_parameter("weather_time",elapsed)
+	if is_instance_valid(volume_effect): _update_atmosphere(uv)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:

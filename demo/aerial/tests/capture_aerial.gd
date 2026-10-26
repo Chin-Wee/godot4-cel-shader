@@ -164,7 +164,8 @@ func _post_difference(before: Image, after: Image, uv: Vector2) -> float:
 func _save_frame(path: String) -> void:
 	print("Capturing ",path.get_file())
 	for frame in 8: await process_frame
-	await RenderingServer.frame_post_draw
+	# A frozen/occluded macOS window can skip automatic redraws.
+	RenderingServer.force_draw()
 	var image := root.get_texture().get_image()
 	assert(not image.is_empty(),"Renderer returned an empty frame")
 	assert(image.save_png(path) == OK,"Could not save comparison frame")

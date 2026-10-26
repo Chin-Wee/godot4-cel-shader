@@ -103,19 +103,44 @@ part has its own face orientation center before native SurfaceTool batching. Dar
 canopy/intake/nozzle surfaces retain a separate response. Static and live poses use
 the same function, so the frozen captures represent the running scene.
 
-WorldEnvironment supplies native HDR glow, verified by an on/off GPU capture on
-the current Godot 4.7 Mobile renderer. A CanvasLayer post pass runs after the 3D
-frame, below the HUD. It supplies an analytic solar corona, twelve-tap screen-space
-radial light scattering, chromatic flare ghosts and procedural normal-based rain
-refraction. The supplied DMC sunset is the optical flare reference. Crysis is the
-lightshaft visual reference; this is standard screen sampling, not a claim about
-its exact source implementation. Rain uses jittered stretched drop fields and is
-coupled to storm-cloud density. Source luminance masks solar effects behind dark
-occluders, and cloud-interior density suppresses direct-sun optics. Bright white
-geometry remains a known limit of luminance masking; a depth mask would be needed
-to distinguish it reliably from the sun. Sky, surface haze, fog, sunlight and live
-VFX share palette/storm changes and sun direction. Glow is engine-owned HDR; the
-solar rays remain a screen-space approximation, with no volumetric light transport.
+WorldEnvironment supplies native HDR glow. A CanvasLayer pass below the HUD adds
+an overexposed white core, warm glare envelope, broad halo, soft starburst, three
+horizontal streak widths, large partial chromatic rings, two spectral ghosts and
+weaker reflections. Veiling glare explicitly reduces local contrast near the Sun.
+The supplied DMC sunset is the visual reference. Rain uses stretched drop fields
+coupled to storm-cloud density.
+
+A native CompositorEffect integrates atmospheric radiance and transmittance along
+24 depth-clipped view-ray steps at quarter resolution. The production technique
+reference is [Horizon Zero Dawn's volumetric cloudscapes](https://www.guerrilla-games.com/read/the-real-time-volumetric-cloudscapes-of-horizon-zero-dawn),
+using view-path integration and light-path cloud attenuation. This is a bounded
+adaptation, not a port of Guerrilla's renderer. A cached 256-square cloud-local
+shadow field creates darker columns between lit haze. Rigid cloud drift moves the
+lookup; cloud shape, coverage or Sun changes rebuild the field. Broad lobe
+intervals approximate these geometric clouds; fine crest noise and cavities are
+below the shadow field's resolution. A near fade protects cool foreground values.
+The cloud surface shader separately estimates optical thickness for orange
+transmission, broad bank glow and cream/gold lining; this surface approximation is
+not physical multiple scattering.
+
+The compositor reads actual multisample depth on Mobile, then bilaterally upsamples
+its scattering/transmittance into the native color attachment. Godot 4.7 Mobile's
+packed HDR color lacks storage-image access, so the final step uses native raster
+blending and preserves destination alpha. Packed HDR radiance is calibrated for
+the engine's luminance multiplier. A GPU-only depth mask suppresses every optical
+layer behind both dark and white geometry. The mask is bound only after its first
+render callback creates a valid texture. Offscreen/behind-camera Sun, storms and
+cloud interiors also suppress optics. No runtime CPU texture readback is used.
+
+The current volume path requires a RenderingDevice renderer (Mobile or Forward+)
+and is monoscopic. `atmosphere_strength` controls the solve; zero skips scattering
+but keeps the solar mask active. `atmosphere_shadow_strength` controls cloud-column
+contrast. Density, height falloff, range, Sun energy and ambient color are configured
+in `_update_atmosphere`; optics and cloud terms have separate shader strengths for
+A/B tuning. Sky, surfaces, new/live VFX and the volume share one Sun direction and
+warm/cool palette. Explicit sky fill is applied in the material shaders because
+they disable native ambient lighting. These captures validate desktop Metal
+Mobile rendering, not phone performance or exact reference fidelity.
 
 ## Asset selection
 
@@ -131,6 +156,10 @@ added. Proxy geometry is an outstanding limitation of silhouette fidelity.
 
 ```sh
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
+godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
+godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
+godot --path demo --script res://aerial/tests/capture_lighting.gd --resolution 1440x810 --always-on-top -- /tmp/dmc-lighting
+godot --path demo --script res://aerial/tests/capture_volume.gd --resolution 960x540 --always-on-top
 godot --path demo --script res://aerial/tests/capture_aerial.gd --resolution 1440x810 --always-on-top -- /tmp/godot-dmc-captures
 godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution 1000x600 --always-on-top
 ```
@@ -150,7 +179,14 @@ nonuniform aircraft scale, plus native HDR glow on/off with Canvas disabled, Can
 isolated flare on/off, sun occlusion, sunset/daylight, aircraft above/below/front, explosion phases,
 cloud entry, and wet/dry geometry. Pixel comparisons reject an inactive post or
 rain pass. A ghost-region pixel probe verifies flare contribution and suppression
-behind a dark sphere. The rain preview deliberately forces rain over visible geometry for
+behind a dark sphere. The light-focused capture isolates every optical, cloud and
+surface component, checks black/white solar occlusion and offscreen/behind-camera/
+storm/cloud-interior gates, verifies actual gray-patch contrast reduction, switches
+MSAA, resizes buffers and reloads the scene. The volume fixture checks foreground
+depth cutoff, shadow attenuation, zero-strength color identity and allocation
+stability. `lighting-metrics.json` records image deltas, resource counters and
+per-capture draw/primitive counts. A missing GPU timing is reported as null, never
+zero cost. The rain preview deliberately forces rain over visible geometry for
 inspection; normal play enables it only in storm cloud. Per-capture draw/primitive
 counters are saved with frame names so unlike camera views are not conflated.
 Native transform readbacks verify trail orientation/elongation and cloud placement;
@@ -158,7 +194,8 @@ the headless check also verifies accent, fire and smoke lifetime ordering.
 Aircraft inspection cameras use the model's local axes, so banking cannot turn an
 "above" view into an underside view.
 These are desktop observations, not a device benchmark. Keep the capture window
-visible on macOS; a missing rendered frame fails through a watchdog. Headless mode
+visible on macOS. Captures explicitly request a native redraw so a frozen window
+does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode
 is rejected immediately for visual capture. Shader validation requires rendered
 frames, not the headless functional check alone. The separate soft-depth probe
 renders two intersecting spheres and checks that the enabled material fades at
@@ -206,7 +243,7 @@ Compared directly with the supplied references, these remain incomplete:
 | Trails/exhaust | Oriented world-space puffs and nozzle-anchored cel afterburners with coupled throttle, flow and silhouette pulses render | Broader trail breakup and more authored afterburner envelopes/cell shapes need refinement |
 | Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
 | Explosions | Connected asymmetrical smoke plume, vertex value variation, shared sunlight, fire islands and separate age phases render | More heated inner lobes/fire pockets and less patterned fire still needed |
-| Weather/post | Native HDR glow, orange horizon/crowns, isolated chromatic flare, sun occlusion and cloud-density optics gates render | Longer structured rays, white-geometry occlusion and finer weather transitions remain |
+| Weather/post | Layered solar optics, directional haze/fill, cloud transmission/lining and depth-clipped cloud-shadowed scattering render; dark/white occlusion and visibility gates pass | More authored shaft/column placement and finer weather transitions remain |
 
 The overall rendering goal stays active. Passing the functional checks does not
 prove that the frame matches the references, and no visual similarity percentage

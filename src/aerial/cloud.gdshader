@@ -7,7 +7,8 @@ uniform vec4 cloud_shadow: source_color = vec4(0.22, 0.17, 0.29, 1.0);
 uniform vec4 cloud_transmission: source_color = vec4(1.0, 0.29, 0.065, 1.0);
 uniform vec4 cloud_lining: source_color = vec4(1.0, 0.91, 0.66, 1.0);
 uniform float cloud_scattering_strength = 1.0;
-uniform float cloud_edge_strength = 0.65;
+uniform float cloud_bank_glow_strength = 0.7;
+uniform float cloud_edge_strength = 1.0;
 uniform float storm = 0.0;
 varying float cloud_height;
 void vertex() {
@@ -37,9 +38,10 @@ void fragment() {
  float optical_thickness = mix(1.9,0.35,edge)*mix(1.2,0.7,crown);
  float transmission = exp(-optical_thickness*1.3);
  vec3 internal_light = mix(cloud_transmission.rgb*0.35,cloud_light.rgb,transmission);
- float scattering = max(bank_glow*0.8,forward_scatter)*(0.25+0.75*transmission);
+ float scattering = forward_scatter*(0.25+0.75*transmission);
  EMISSION += internal_light*scattering*cloud_scattering_strength*(1.0-storm)*(1.0-haze);
- float lining = smoothstep(0.65-crown*0.18,0.92-crown*0.05,edge)*sun_edge;
+ EMISSION += cloud_transmission.rgb*bank_glow*cloud_bank_glow_strength*(0.28+0.72*transmission)*(1.0-storm)*(1.0-haze);
+ float lining = smoothstep(0.45-crown*0.12,0.82-crown*0.05,edge)*sun_edge;
  EMISSION += cloud_lining.rgb*lining*cloud_edge_strength*(0.25+0.75*bank_glow)*(1.0-storm)*(1.0-haze);
 }
 void light() {

@@ -7,9 +7,9 @@ uniform vec2 sun_uv = vec2(0.3,0.25);
 uniform float sun_visible = 1.0;
 uniform float corona_strength = 0.45;
 uniform float glare_strength = 0.9;
-uniform float starburst_strength = 0.45;
+uniform float starburst_strength = 0.25;
 uniform float streak_strength = 0.35;
-uniform float ring_strength = 0.055;
+uniform float ring_strength = 0.085;
 uniform float flare_strength = 0.4;
 uniform float veil_strength = 0.45;
 uniform float rain_strength = 0.0;
@@ -80,10 +80,10 @@ void fragment() {
   // A low-frequency atmospheric halo remains broader than the clipped glare mass.
   float corona = exp(-radius*6.0)*0.16;
   color += mix(vec3(1.0,0.34,0.18),vec3(1.0,0.78,0.48),exp(-radius*10.0))*corona*corona_strength*solar_visibility;
-  float spikes = pow(abs(cos(angle*4.0)),40.0)*exp(-radius*10.5)*smoothstep(0.009,0.025,radius);
-  spikes += exp(-pow(ray.x/0.012,2.0))*exp(-abs(ray.y)*13.0)*0.35;
+  float spikes = pow(abs(cos(angle*4.0)),5.0)*exp(-radius*20.0)*smoothstep(0.009,0.025,radius);
+  spikes += exp(-pow(ray.x/0.012,2.0))*exp(-abs(ray.y)*18.0)*0.22;
   color += vec3(1.0,0.88,0.66)*spikes*starburst_strength*0.65*solar_visibility;
-  color += vec3(1.0,0.85,0.68)*(thin*0.6+medium*0.16+broad*0.065)*horizontal*streak_strength*solar_visibility;
+  color += vec3(1.0,0.85,0.68)*(thin*0.09+medium*0.26+broad*0.14)*horizontal*streak_strength*solar_visibility;
   // DELIVERY MUST COMPLETE's supplied sunset is the visual reference for these optics.
   vec2 axis = vec2(0.5)-sun_uv;
   vec2 direction = axis*aspect_scale/max(length(axis*aspect_scale),0.001);

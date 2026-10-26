@@ -140,9 +140,9 @@ void main() {
  vec3 direction=normalize(mat3(frame.camera_to_world)*normalize(far_point.xyz));
  vec3 origin=frame.camera_to_world[3].xyz;
  float cosine=dot(direction,normalize(frame.sun_direction.xyz));
- float g=0.62;
+ float g=0.72;
  float phase=(1.0-g*g)/pow(max(1.0+g*g-2.0*g*cosine,0.02),1.5);
- phase=min(phase,5.0)*0.07957747; // Henyey-Greenstein normalization: 1/(4*pi).
+ phase=min(phase,8.0)*0.07957747; // Henyey-Greenstein normalization: 1/(4*pi).
  float step_length=distance/24.0;
  vec3 radiance=vec3(0.0);
  float transmittance=1.0;
@@ -150,7 +150,7 @@ void main() {
   float along=(float(step_index)+0.5)*step_length;
   vec3 point=origin+direction*along;
   float density=frame.settings.x*exp(-max(point.y,0.0)/max(frame.settings.y,1.0));
-  density*=smoothstep(80.0,300.0,along);
+  density*=smoothstep(450.0,1600.0,along);
   float extinction=1.0-exp(-density*step_length*frame.settings.w);
   vec3 sunlight=frame.light_color.rgb*frame.light_color.w*phase*cloud_visibility(point)*frame.sun_direction.w;
   radiance+=transmittance*extinction*(frame.ambient_color.rgb+sunlight);

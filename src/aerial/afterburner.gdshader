@@ -57,5 +57,5 @@ void fragment() {
  color = mix(color,rim_color.rgb,step(0.7,fresnel_factor(NORMAL,VIEW,3.0)));
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
  float gain = (0.5+emission_strength*throttle)*mix(1.0,0.6,step(0.7,axial));
- ALBEDO = mix(color*gain,haze_color.rgb,haze);
+ ALBEDO = mix(color*gain,aerial_haze_tint(CAMERA_POSITION_WORLD),haze);
 }
