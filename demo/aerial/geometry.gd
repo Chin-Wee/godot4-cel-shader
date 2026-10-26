@@ -166,6 +166,7 @@ static func terrain() -> ArrayMesh:
 	var surface := SurfaceTool.new()
 	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
 	const STEPS := 240
+	# ponytail: the 22m proxy grid limits cliff/self-shadow fidelity; use finer authored cliffs for the final environment.
 	const STEP := 22.0
 	for z in STEPS:
 		for x in STEPS:
@@ -178,11 +179,17 @@ static func terrain() -> ArrayMesh:
 				var warp := Vector2(noise.get_noise_2d(px+1200,pz-400),noise.get_noise_2d(px-600,pz+900))*110.0
 				var n := noise.get_noise_2d(px+warp.x,pz+warp.y) * 0.5 + 0.5
 				n += noise.get_noise_2d(px*2.7+1500,pz*2.7)*0.045
-				var mesa := pow(smoothstep(0.55,0.64,n),0.50)
-				var talus := smoothstep(0.45,0.58,n)*40.0
+				# DMC's canyon reference has level caps, broken cliff rims and broad scree
+				# skirts. Erode the contour rather than putting noise on the plateau top.
+				var erosion := noise.get_noise_2d(px*4.0,pz*4.0)
+				var mesa := smoothstep(0.55,0.58,n+erosion*0.012)
+				var bench := smoothstep(0.48,0.50,n+erosion*0.018)*45.0
+				var talus := pow(smoothstep(0.36,0.54,n),3.0)*65.0
+				var outcrop := smoothstep(0.60,0.74,noise.get_noise_2d(px*3.5,pz*3.5)*0.5+0.5)*45.0*(1.0-mesa)
+				var ribs := pow(1.0-absf(erosion),3.0)*25.0*smoothstep(0.43,0.55,n)*(1.0-mesa)
 				var river_x := sin(pz*0.0028)*190.0 + sin(pz*0.006)*45.0
-				var canyon := smoothstep(200.0,550.0,absf(px-river_x))
-				var h := 8.0 + (talus+mesa*(210.0+noise.get_noise_2d(px+800,pz)*95.0))*canyon
+				var canyon := smoothstep(140.0,420.0,absf(px-river_x))
+				var h := 8.0 + (talus+bench+outcrop+ribs+mesa*(185.0+noise.get_noise_2d(px*0.4+800,pz*0.4)*35.0))*canyon
 				points.append(Vector3(px,h,pz))
 			for triangle in [[0,1,2],[2,1,3]]:
 				var a: Vector3 = points[triangle[0]]

@@ -23,6 +23,7 @@ func _run() -> void:
 	scene.animate = false
 	await process_frame
 	await process_frame
+	await _check_river_clearance(scene)
 	assert(scene.hero.get_child_count() >= 4,"Aircraft body/canopy/exhaust missing")
 	var body_arrays: Array = scene.hero.get_node("Body").mesh.surface_get_arrays(0)
 	var panel_colors: PackedColorArray = body_arrays[Mesh.ARRAY_COLOR]
@@ -126,6 +127,25 @@ func _run() -> void:
 	completed = true
 	print("Aerial checks passed: consistent pose, cloud coverage, storm entry rain, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
 	quit()
+
+func _check_river_clearance(scene: Node3D) -> void:
+	# Native raycasts test the actual generated geometry at the river's own vertices.
+	var ground := StaticBody3D.new()
+	ground.collision_layer = 2
+	var collider := CollisionShape3D.new()
+	collider.shape = scene.get_node("Terrain").mesh.create_trimesh_shape()
+	ground.add_child(collider)
+	scene.add_child(ground)
+	await physics_frame
+	var water: PackedVector3Array = scene.get_node("River").mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	for vertex in water:
+		var point := scene.to_global(vertex)
+		var ray := PhysicsRayQueryParameters3D.create(point+Vector3.UP*20.0,point-Vector3.UP*20.0,2)
+		var hit := scene.get_world_3d().direct_space_state.intersect_ray(ray)
+		assert(not hit.is_empty(),"Canyon floor is missing below the river")
+		assert(hit.position.y < point.y-0.05,"Canyon terrain clips through the river ribbon")
+	ground.queue_free()
+	await process_frame
 
 func _checks_timeout() -> void:
 	if not completed:

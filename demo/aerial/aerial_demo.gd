@@ -53,13 +53,13 @@ func _ready() -> void:
 	var terrain_material := _material("terrain")
 	terrain_material.set_shader_parameter("diffuse_ramp_mode",1)
 	terrain_material.set_shader_parameter("diffuse_ramp_threshold",0.20)
-	Geometry.add_mesh(self,Geometry.terrain(),terrain_material)
+	Geometry.add_mesh(self,Geometry.terrain(),terrain_material).name = "Terrain"
 	var river_material := _material("aircraft")
 	river_material.set_shader_parameter("body_color",Color(0.055,0.24,0.21))
 	river_material.set_shader_parameter("orientation_bias",0.0)
 	river_material.set_shader_parameter("panel_strength",0.0)
 	river_material.set_shader_parameter("rim_strength",0.05)
-	Geometry.add_mesh(self,Geometry.river(),river_material)
+	Geometry.add_mesh(self,Geometry.river(),river_material).name = "River"
 	cloud_material = _material("cloud")
 	cloud_material.set_shader_parameter("diffuse_ramp_mode",2)
 	cloud_material.set_shader_parameter("diffuse_ramp_threshold",0.08)

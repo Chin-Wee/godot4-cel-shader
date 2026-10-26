@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode ambient_light_disabled, specular_disabled;
 #include "../includes/base-cel-shader.gdshaderinc"
 #include "atmosphere.gdshaderinc"
-uniform vec4 rock_color: source_color = vec4(0.29, 0.23, 0.29, 1.0);
+uniform vec4 rock_color: source_color = vec4(0.38, 0.21, 0.19, 1.0);
 uniform vec4 cap_color: source_color = vec4(0.30, 0.24, 0.31, 1.0);
 uniform vec4 valley_color: source_color = vec4(0.025, 0.075, 0.16, 1.0);
 uniform float terrain_rim = 0.07;

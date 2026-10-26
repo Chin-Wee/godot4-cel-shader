@@ -40,6 +40,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Terrain owns world-height/slope coloring and broad strata. Aircraft, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
+  The existing heightfield now separates level mesa caps, eroded cliff contours,
+  lower benches and ribbed talus/outcrops. Warm exposed rock sits above blue valley
+  shadows; a broad river apron preserves the open canyon composition.
 - Clouds use 18 continuous banks across four native MultiMesh batches. Four native
   SphereMeshes follow different radial envelopes of broad cumulus lobes, with
   low-frequency crest breakup and compressed bases. The same envelopes define
@@ -109,7 +112,9 @@ godot --path demo --script res://aerial/tests/capture_aerial.gd --resolution 144
 godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution 1000x600 --always-on-top
 ```
 
-The functional check covers opposing aircraft-part/bevel normals, opaque livery
+The functional check uses native terrain raycasts at the river vertices to
+reject a missing floor or terrain clipping through the water. It also covers
+opposing aircraft-part/bevel normals, opaque livery
 attributes, exact wingtip attachment, static/live pose
 agreement, cloud coverage and entry/exit, storm rain activation, fixed world-space
 history, bounded trail allocation, teleport handling, palette changes and effect
@@ -159,12 +164,19 @@ fewer mesa caps, and talus skirts expose the blue valley floor. Shared haze begi
 farther away to retain foreground value separation. The initial flight/camera height
 now shows the open canyon while keeping the hero near the middle-right of the frame.
 
+The erosion pass separates flat caps from steeper cliff contours, lower benches
+and ribbed skirts, while preserving an open river apron. Native shadow on/off
+captures show cast shadows contribute to the remaining vertical cliff bands.
+Removing grid jitter/contour erosion did not eliminate them; increasing shadow
+bias reduced the bands but distorted contact. The current shadow settings remain
+in place, and the fixed 22-meter proxy grid remains a cliff-fidelity limitation.
+
 Compared directly with the supplied references, these remain incomplete:
 
 | Area | Current evidence | Remaining visual work |
 |---|---|---|
 | Aircraft | Beveled clipped wings, exposed engines, longer canopy/nose and geometry-bound livery render above/below/front | Proxy silhouette, finer panel hierarchy and rim consistency still need closer matching |
-| Environment | Warped mesas, talus skirts, open river valley and delayed haze render in both presets | Finer erosion shapes and more authored foreground/midground grouping still needed |
+| Environment | Level mesa caps, eroded contours, lower benches/ribbed skirts, warm exposed rock and a broad river apron render in both presets | Cliff shading strips, finer erosion shapes and more authored foreground/midground grouping still needed |
 | Trails/exhaust | Overlapping oriented puffs, historical wingtip poses, world wind and mesh flames render | Broader irregular breakup and near-camera shapes need refinement |
 | Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
 | Explosions | Connected asymmetrical smoke plume, vertex value variation, shared sunlight, fire islands and separate age phases render | More heated inner lobes/fire pockets and less patterned fire still needed |
