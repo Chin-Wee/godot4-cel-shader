@@ -6,7 +6,7 @@ const COMPUTE_PATH := "res://shaders/aerial/atmosphere-volume.glsl"
 const COMPOSITE_PATH := "res://shaders/aerial/atmosphere-composite.glsl"
 const SHADOW_SIZE := 256
 const FRAME_BYTES := 84 * 4
-const CLOUD_BYTES := (18 * 20 + 64 * 4) * 4
+const CLOUD_BYTES := (3 * 4 + 18 * 20) * 4
 
 var solar_visibility_texture := Texture2DRD.new()
 var _rd: RenderingDevice
@@ -15,10 +15,15 @@ var _state := {}
 var _status := {"ready": false,"frames": 0,"shadow_bakes": 0,"error": ""}
 var _cloud_key := 0
 var _cloud_bytes := PackedByteArray()
+var _field_key := 0
+var _field_bytes := PackedByteArray()
 var _shadow_x := Vector3.RIGHT
 var _shadow_y := Vector3.UP
 var _shadow_bounds := Vector4(-4000,-2000,8000,4000)
 var _gpu_cloud_key := -1
+var _gpu_field_key := -1
+var _field_dimensions := Vector3i.ZERO
+var _field_uploads := 0
 var _depth_samples := -1
 var _texture_allocations := 0
 var _framebuffer_builds := 0
@@ -28,6 +33,8 @@ var _framebuffer: RID
 var _color: RID
 var _frame_buffer: RID
 var _cloud_buffer: RID
+var _density_texture: RID
+var _density_sampler: RID
 var _shadow_texture: RID
 var _solar_texture: RID
 var _fog_texture: RID
@@ -55,46 +62,57 @@ func configure(clouds: Node3D, direction: Vector3, settings: Dictionary = {}) ->
   push_error("Atmospheric sunlight direction must be finite and nonzero")
   return
  var transforms: Array = clouds.get("bank_transforms")
- var shapes: Array = clouds.get("shapes")
+ var field_size: Vector3i = clouds.get("field_size")
+ var field_bounds: AABB = clouds.get("field_bounds")
+ var fields: Array = clouds.get("density_fields")
+ var sample_count := field_size.x*field_size.y*field_size.z
+ assert(field_size.x >= 2 and field_size.y >= 2 and field_size.z >= 2 and fields.size() > 0 and fields.size() <= 4,"Cloud shadows require sampled density grids")
+ var field_key := hash([clouds.get("field_revision"),field_size,field_bounds,fields.size()])
+ if field_key != _field_key or _field_bytes.is_empty():
+  var samples := PackedFloat32Array()
+  for field in fields:
+   assert(field.size() == sample_count,"Cloud density grid size does not match its layout")
+   samples.append_array(field)
+  _field_bytes = samples.to_byte_array()
+  _field_key = field_key
  var active := clampi(roundi(transforms.size()*float(clouds.get("coverage"))),0,18)
  var local_sun := (clouds.global_basis.inverse()*direction).normalized()
- var key := hash([transforms,shapes,active,local_sun])
+ var key := hash([transforms,field_key,active,local_sun])
  if key != _cloud_key or _cloud_bytes.is_empty():
   _cloud_key = key
   _shadow_x = Vector3.UP.cross(local_sun).normalized()
   if _shadow_x.length_squared() < 0.01: _shadow_x = Vector3.RIGHT
   _shadow_y = local_sun.cross(_shadow_x).normalized()
-  var values := PackedFloat32Array()
-  var offsets := []
-  var count := 0
-  for shape in shapes:
-   offsets.append(count)
-   count += shape.size()
-  assert(transforms.size() <= 18 and count <= 64,"Cloud shadow field exceeded its bounded layout")
+  var values := PackedFloat32Array([field_bounds.position.x,field_bounds.position.y,field_bounds.position.z,0,
+   field_bounds.size.x,field_bounds.size.y,field_bounds.size.z,0,
+   field_size.x,field_size.y,field_size.z,fields.size()])
+  assert(transforms.size() <= 18,"Cloud shadow field exceeded its bounded bank layout")
   var minimum := Vector2(INF,INF)
   var maximum := Vector2(-INF,-INF)
   for index in 18:
    if index < transforms.size():
     values.append_array(_matrix_values(Projection((transforms[index] as Transform3D).affine_inverse())))
-    var variant: int = index % shapes.size()
-    values.append_array(PackedFloat32Array([offsets[variant],shapes[variant].size(),0,0]))
-    for x in [-2.0,2.0]:
-     for y in [-2.0,2.0]:
-      for z in [-2.0,2.0]:
+    values.append_array(PackedFloat32Array([index % fields.size(),0,0,0]))
+    for x in [field_bounds.position.x,field_bounds.end.x]:
+     for y in [field_bounds.position.y,field_bounds.end.y]:
+      for z in [field_bounds.position.z,field_bounds.end.z]:
        var point: Vector3 = transforms[index]*Vector3(x,y,z)
        var projected := Vector2(point.dot(_shadow_x),point.dot(_shadow_y))
        minimum = minimum.min(projected)
        maximum = maximum.max(projected)
    else:
     values.resize(values.size()+20)
-  for shape in shapes:
-   for lobe in shape: values.append_array(PackedFloat32Array([lobe.x,lobe.y,lobe.z,lobe.w]))
-  values.resize(CLOUD_BYTES/4)
   _cloud_bytes = values.to_byte_array()
+  if transforms.is_empty():
+   minimum = Vector2(-100,-100)
+   maximum = Vector2(100,100)
   _shadow_bounds = Vector4(minimum.x-100,minimum.y-100,maximum.x-minimum.x+200,maximum.y-minimum.y+200)
  var state := settings.duplicate()
  state["cloud_key"] = key
  state["cloud_bytes"] = _cloud_bytes
+ state["field_key"] = field_key
+ state["field_bytes"] = _field_bytes
+ state["field_dimensions"] = Vector3i(field_size.x,field_size.y,field_size.z*fields.size())
  state["cloud_inverse"] = clouds.global_transform.affine_inverse()
  state["active"] = active
  state["sun_direction"] = direction.normalized()
@@ -129,6 +147,7 @@ func _render_callback(kind: int, data: RenderData) -> void:
  if not color.is_valid() or not depth.is_valid(): return
  var samples := int(_rd.texture_get_format(depth).samples)
  if not _prepare_gpu(color,size,samples): return
+ _prepare_density_field(state)
  var scene := data.get_render_scene_data()
  var projection: Projection = scene.get_cam_projection()
  var camera: Transform3D = scene.get_cam_transform()
@@ -165,7 +184,7 @@ func _render_callback(kind: int, data: RenderData) -> void:
   _rd.compute_list_end()
   _rd.buffer_update(_cloud_buffer,0,CLOUD_BYTES,state.cloud_bytes)
   compute = _rd.compute_list_begin()
-  _dispatch(compute,0,[_buffer_uniform(0,_frame_buffer),_buffer_uniform(1,_cloud_buffer),_image_uniform(3,_shadow_texture)],Vector2i(SHADOW_SIZE,SHADOW_SIZE))
+  _dispatch(compute,0,[_buffer_uniform(0,_frame_buffer),_buffer_uniform(1,_cloud_buffer),_image_uniform(3,_shadow_texture),_sample_uniform(7,_density_texture,_density_sampler)],Vector2i(SHADOW_SIZE,SHADOW_SIZE))
   _rd.compute_list_add_barrier(compute)
   _gpu_cloud_key = state.cloud_key
   _mutex.lock()
@@ -193,7 +212,29 @@ func _render_callback(kind: int, data: RenderData) -> void:
  _status.texture_allocations = _texture_allocations
  _status.framebuffer_builds = _framebuffer_builds
  _status.pipeline_builds = _pipeline_builds
+ _status.field_uploads = _field_uploads
+ _status.field_dimensions = _field_dimensions
  _mutex.unlock()
+
+func _prepare_density_field(state: Dictionary) -> void:
+ if _gpu_field_key == int(state.field_key): return
+ var dimensions: Vector3i = state.field_dimensions
+ if dimensions != _field_dimensions:
+  if _density_texture.is_valid(): _rd.free_rid(_density_texture)
+  _field_dimensions = dimensions
+  var format := RDTextureFormat.new()
+  format.texture_type = RenderingDevice.TEXTURE_TYPE_3D
+  format.width = dimensions.x
+  format.height = dimensions.y
+  format.depth = dimensions.z
+  format.format = RenderingDevice.DATA_FORMAT_R32_SFLOAT
+  format.usage_bits = RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT|RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT
+  _density_texture = _rd.texture_create(format,RDTextureView.new(),[state.field_bytes])
+  _texture_allocations += 1
+ else:
+  _rd.texture_update(_density_texture,0,state.field_bytes)
+ _field_uploads += 1
+ _gpu_field_key = state.field_key
 
 func _prepare_gpu(color: RID, size: Vector2i, samples: int) -> bool:
  if not _frame_buffer.is_valid():
@@ -203,6 +244,9 @@ func _prepare_gpu(color: RID, size: Vector2i, samples: int) -> bool:
   sampler.min_filter = RenderingDevice.SAMPLER_FILTER_NEAREST
   sampler.mag_filter = RenderingDevice.SAMPLER_FILTER_NEAREST
   _sampler = _rd.sampler_create(sampler)
+  sampler.min_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+  sampler.mag_filter = RenderingDevice.SAMPLER_FILTER_LINEAR
+  _density_sampler = _rd.sampler_create(sampler)
   _shadow_texture = _texture(Vector2i(SHADOW_SIZE,SHADOW_SIZE),RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT)
   _solar_texture = _texture(Vector2i.ONE,RenderingDevice.DATA_FORMAT_R16_SFLOAT)
   solar_visibility_texture.texture_rd_rid = _solar_texture
@@ -299,11 +343,11 @@ func _image_uniform(binding: int, texture: RID) -> RDUniform:
  uniform.add_id(texture)
  return uniform
 
-func _sample_uniform(binding: int, texture: RID) -> RDUniform:
+func _sample_uniform(binding: int, texture: RID, sampler: RID = RID()) -> RDUniform:
  var uniform := RDUniform.new()
  uniform.binding = binding
  uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
- uniform.add_id(_sampler)
+ uniform.add_id(sampler if sampler.is_valid() else _sampler)
  uniform.add_id(texture)
  return uniform
 
@@ -311,7 +355,7 @@ func _notification(what: int) -> void:
  if what != NOTIFICATION_PREDELETE or _rd == null: return
  solar_visibility_texture.texture_rd_rid = RID()
  var device := _rd
- var resources: Array[RID] = [_frame_buffer,_cloud_buffer,_shadow_texture,_solar_texture,_fog_texture,_distance_texture,_sampler]
+ var resources: Array[RID] = [_frame_buffer,_cloud_buffer,_shadow_texture,_solar_texture,_fog_texture,_distance_texture,_sampler,_density_texture,_density_sampler]
  resources.append_array(_shaders)
  var framebuffer := _framebuffer
  RenderingServer.call_on_render_thread(func():
