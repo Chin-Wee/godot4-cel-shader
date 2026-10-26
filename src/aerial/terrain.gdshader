@@ -13,6 +13,7 @@ void vertex() {
 void fragment() {
  NDTL_DITHER_POSITION = FRAGCOORD.xy;
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
+ vec3 world_normal = normalize(aerial_world_normal);
  float height = smoothstep(0.0, 260.0, aerial_world_position.y);
  float cap = smoothstep(0.62, 0.95, aerial_world_normal.y);
  vec3 base = mix(valley_color.rgb, rock_color.rgb, smoothstep(8.0, 90.0, aerial_world_position.y));
@@ -21,7 +22,9 @@ void fragment() {
  base *= mix(0.94, 1.0, step(0.24, fract(aerial_world_position.y / 65.0)));
  ALBEDO = base * (1.0 - haze);
  float rim = fresnel_factor(NORMAL, VIEW, 5.0) * terrain_rim;
- EMISSION = (mix(valley_color.rgb,base * 0.25,0.2) + rim * cap_color.rgb) * (1.0 - haze) + haze_color.rgb * haze;
+ rim *= smoothstep(-0.2,0.6,dot(world_normal,aerial_sun_vector()));
+ vec3 fill = valley_color.rgb*0.8+base*0.025+aerial_surface_fill(world_normal)*0.08;
+ EMISSION = (fill + rim * mix(cap_color.rgb,haze_sun_color.rgb,0.75)) * (1.0 - haze) + aerial_haze_tint(CAMERA_POSITION_WORLD) * haze;
 }
 void light() {
  DIFFUSE_LIGHT += diffuse_light(ALBEDO, LIGHT_COLOR, LIGHT, NORMAL, ATTENUATION);

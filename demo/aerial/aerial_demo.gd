@@ -20,7 +20,11 @@ var storm := false
 var daylight_palette := false
 var sun_direction := Vector3(-0.5,0.22,-0.84)
 var post_material: ShaderMaterial
-var current_haze := Color(0.54,0.34,0.39)
+var current_haze := Color(0.30,0.27,0.40)
+var current_haze_sun_color := Color(0.88,0.43,0.27)
+var current_haze_sun_strength := 0.8
+var current_sky_fill := Color(0.14,0.22,0.38)
+var current_sky_fill_strength := 0.3
 var hud: CanvasLayer
 var trails: Array[MultiMeshInstance3D] = []
 var explosion: Node3D
@@ -55,7 +59,7 @@ func _ready() -> void:
 	add_child(sun)
 	var terrain_material := _material("terrain")
 	terrain_material.set_shader_parameter("diffuse_ramp_mode",1)
-	terrain_material.set_shader_parameter("diffuse_ramp_threshold",0.20)
+	terrain_material.set_shader_parameter("diffuse_ramp_threshold",0.28)
 	Geometry.add_mesh(self,Geometry.terrain(),terrain_material).name = "Terrain"
 	var river_material := _material("aircraft")
 	river_material.set_shader_parameter("body_color",Color(0.055,0.24,0.21))
@@ -73,7 +77,7 @@ func _ready() -> void:
 	var body := _material("aircraft")
 	body.set_shader_parameter("body_color",Color(0.78,0.29,0.06))
 	body.set_shader_parameter("underside_color",Color(0.24,0.10,0.065))
-	body.set_shader_parameter("rim_color",Color(1.0,0.90,0.75))
+	body.set_shader_parameter("rim_color",Color(1.0,0.88,0.62))
 	body.set_shader_parameter("rim_strength",1.25)
 	body.set_shader_parameter("highlight_mask",0.08)
 	body.set_shader_parameter("diffuse_ramp_mode",1)
@@ -157,29 +161,52 @@ func _material(shader_name: String) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/aerial/"+shader_name+".gdshader")
 	if shader_name != "sky":
-		material.set_shader_parameter("haze_color",current_haze)
-		material.set_shader_parameter("sun_direction",sun_direction)
+		_set_surface_palette(material)
 		palette_materials.append(material)
 	return material
 
+func _set_surface_palette(material: ShaderMaterial) -> void:
+	material.set_shader_parameter("haze_color",current_haze)
+	material.set_shader_parameter("haze_sun_color",current_haze_sun_color)
+	material.set_shader_parameter("haze_sun_strength",current_haze_sun_strength)
+	material.set_shader_parameter("sky_fill_color",current_sky_fill)
+	material.set_shader_parameter("sky_fill_strength",current_sky_fill_strength)
+	material.set_shader_parameter("sun_direction",sun_direction)
+
 func set_palette(daylight: bool) -> void:
 	daylight_palette = daylight
-	var haze := Color(0.48,0.30,0.36) if not daylight else Color(0.37,0.67,0.76)
+	var haze := Color(0.30,0.27,0.40) if not daylight else Color(0.37,0.67,0.76)
 	if storm: haze = haze.lerp(Color(0.17,0.20,0.26),0.65)
 	current_haze = haze
+	current_haze_sun_color = Color(0.88,0.43,0.27) if not daylight else Color(0.78,0.86,0.84)
+	current_haze_sun_strength = 0.8 if not daylight else 0.3
+	current_sky_fill = Color(0.14,0.22,0.38) if not daylight else Color(0.22,0.35,0.43)
+	current_sky_fill_strength = 0.3 if not daylight else 0.24
+	if storm:
+		current_haze_sun_color = current_haze_sun_color.lerp(Color(0.24,0.27,0.34),0.8)
+		current_haze_sun_strength = 0.08
+		current_sky_fill = Color(0.11,0.16,0.24)
+		current_sky_fill_strength = 0.12
 	var direction := Vector3(-0.5,0.22,-0.84) if not daylight else Vector3(-0.4,0.65,-0.64)
 	sun_direction = direction
 	for material in palette_materials:
-		material.set_shader_parameter("haze_color",haze)
-		material.set_shader_parameter("sun_direction",direction)
-	sky_material.set_shader_parameter("zenith_color",Color(0.27,0.19,0.32) if not daylight else Color(0.035,0.27,0.4))
-	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.66,0.38,0.31))
+		_set_surface_palette(material)
+	sky_material.set_shader_parameter("zenith_color",Color(0.18,0.11,0.25) if not daylight else Color(0.035,0.27,0.4))
+	sky_material.set_shader_parameter("horizon_color",haze if daylight or storm else Color(0.43,0.28,0.37))
+	sky_material.set_shader_parameter("sun_color",Color(1.0,0.78,0.48) if not daylight else Color(1.0,0.95,0.84))
+	sky_material.set_shader_parameter("halo_strength",0.15 if storm else (0.35 if daylight else 1.0))
+	sky_material.set_shader_parameter("horizon_scatter_strength",0.0 if storm else (0.10 if daylight else 0.35))
+	sky_material.set_shader_parameter("solar_core_energy",0.0 if storm else 18.0)
 	sky_material.set_shader_parameter("sun_direction",direction)
 	sun.look_at_from_position(Vector3.ZERO,-direction)
-	sun.light_color = Color(1.0,0.78,0.53) if not daylight else Color(1.0,0.94,0.79)
+	sun.light_color = Color(1.0,0.73,0.47) if not daylight else Color(1.0,0.96,0.86)
 	sun.light_energy = 0.65 if storm else 1.5
-	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.62,0.27) if not daylight else Color(0.91,0.94,0.86))
-	cloud_material.set_shader_parameter("cloud_shadow",Color(0.22,0.17,0.29) if not daylight else Color(0.11,0.36,0.47))
+	environment.ambient_light_color = current_sky_fill
+	environment.ambient_light_energy = current_sky_fill_strength
+	cloud_material.set_shader_parameter("cloud_light",Color(1.0,0.66,0.30) if not daylight else Color(0.91,0.94,0.86))
+	cloud_material.set_shader_parameter("cloud_shadow",Color(0.22,0.14,0.29) if not daylight else Color(0.11,0.36,0.47))
+	cloud_material.set_shader_parameter("cloud_transmission",Color(1.0,0.29,0.065) if not daylight else Color(0.69,0.83,0.88))
+	cloud_material.set_shader_parameter("cloud_lining",Color(1.0,0.91,0.66) if not daylight else Color(0.97,0.99,1.0))
 	cloud_material.set_shader_parameter("storm",float(storm))
 	if storm:
 		sky_material.set_shader_parameter("zenith_color",Color(0.075,0.09,0.14))
@@ -187,8 +214,7 @@ func set_palette(daylight: bool) -> void:
 	if is_instance_valid(explosion):
 		for node in explosion.get_children():
 			if node is MeshInstance3D and node.material_override is ShaderMaterial:
-				node.material_override.set_shader_parameter("haze_color",haze)
-				node.material_override.set_shader_parameter("sun_direction",direction)
+				_set_surface_palette(node.material_override)
 
 func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 	var material := _material("mesh-vfx")
