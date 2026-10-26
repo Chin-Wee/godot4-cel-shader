@@ -16,12 +16,36 @@ uniform float soft_intersection = 0.0;
 uniform bool graphic_fire = false;
 uniform float shape_seed = 0.0;
 uniform float vfx_rim = 0.08;
+// Opt-in trail geometry; zero preserves explosions and other mesh VFX.
+uniform int trail_style = 0; // 1: faceted chunk, 2: camera-facing path ribbon.
+uniform int trail_profile = 0; // 1: wide vapor, 2: fine/emissive core.
+uniform float trail_roll_speed = 0.0;
+uniform float trail_opacity = 1.0;
+uniform vec4 trail_tint: source_color = vec4(1.0);
+varying float trail_active;
 varying vec3 effect_local_position;
 varying float age;
 void vertex() {
  effect_local_position = VERTEX;
  age = instance_age ? (effect_time - INSTANCE_CUSTOM.r) / lifetime : normalized_age;
- VERTEX *= 1.0 + clamp(age,0.0,1.0) * expansion;
+ trail_active = instance_age ? INSTANCE_CUSTOM.a : 1.0;
+ float growth = 1.0+clamp(age,0.0,1.0)*expansion;
+ if (trail_style == 1) {
+  float turn = sin(INSTANCE_CUSTOM.g*10.681)*max(effect_time-INSTANCE_CUSTOM.r,0.0)*trail_roll_speed;
+  mat2 roll = mat2(vec2(cos(turn),sin(turn)),vec2(-sin(turn),cos(turn)));
+  VERTEX.xy = roll*VERTEX.xy*growth;
+  float length_growth = 1.0+clamp(age,0.0,1.0)*0.15;
+  NORMAL = normalize(vec3(roll*NORMAL.xy/growth,NORMAL.z/length_growth));
+  VERTEX.z *= length_growth;
+ } else if (trail_style == 2 && INSTANCE_CUSTOM.b > 0.0 && trail_active > 0.0) {
+  vec3 tangent = normalize(MODEL_MATRIX[2].xyz);
+  vec3 side = cross(tangent,CAMERA_POSITION_WORLD-MODEL_MATRIX[3].xyz);
+  side = dot(side,side) > 0.000001 ? normalize(side) : INV_VIEW_MATRIX[0].xyz;
+  vec3 ribbon_position = side*VERTEX.x*length(MODEL_MATRIX[0].xyz)*growth
+                       +tangent*VERTEX.z*length(MODEL_MATRIX[2].xyz);
+  VERTEX = inverse(mat3(MODEL_MATRIX))*ribbon_position;
+  NORMAL = normalize(transpose(mat3(MODEL_MATRIX))*normalize(cross(side,tangent)));
+ } else { VERTEX *= growth; }
  if (instance_age) {
   float seconds = max(effect_time-INSTANCE_CUSTOM.r,0.0);
   float phase = INSTANCE_CUSTOM.g*6.283185;
@@ -36,8 +60,16 @@ void vertex() {
  aerial_world_normal = normalize(MODEL_NORMAL_MATRIX * NORMAL);
 }
 void fragment() {
- if (age < 0.0 || age >= 1.0) { discard; }
- float fade = 1.0 - smoothstep(0.65,1.0,age);
+ if (age < 0.0 || age >= 1.0 || trail_active < 0.5) { discard; }
+ float fade = (1.0-smoothstep(0.65,1.0,age))*trail_opacity;
+ if (trail_style == 2) {
+  vec2 p = UV*2.0-1.0;
+  if (trail_profile == 1) {
+   // Broad dithered density around the geometric core, never soft-alpha smoke.
+   float density = 1.0-smoothstep(0.25,1.0,dot(p,p));
+   fade *= density;
+  } else { fade *= 1.0-smoothstep(0.55,1.0,abs(p.x)); }
+ }
  if (soft_intersection > 0.0) {
   float depth = textureLod(depth_texture,SCREEN_UV,0.0).r;
   vec4 scene_position = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth,1.0);
@@ -56,8 +88,13 @@ void fragment() {
   vec3 core = mix(color,vec3(1.0,0.95,0.24),heat);
   color = mix(orange,core,smoothstep(-0.08,0.12,mass));
  }
- color *= COLOR.rgb;
- float lighting = mix(0.45,1.0,smoothstep(-0.15,0.15,dot(aerial_world_normal,normalize(sun_direction))));
+ color *= COLOR.rgb*trail_tint.rgb;
+ float ndl = dot(aerial_world_normal,aerial_sun_vector());
+ float lighting = mix(0.45,1.0,smoothstep(-0.15,0.15,ndl));
+ if (trail_style > 0) {
+  lighting = mix(0.32,0.67,smoothstep(0.02,0.06,ndl));
+  lighting = mix(lighting,1.0,smoothstep(0.55,0.59,ndl));
+ }
  // Unshaded materials use ALBEDO directly, including the HDR emissive contribution.
  ALBEDO = mix(color * (lighting + emission_strength) + color * fresnel_factor(NORMAL,VIEW,4.0) * vfx_rim,aerial_haze_tint(CAMERA_POSITION_WORLD),haze);
 }
