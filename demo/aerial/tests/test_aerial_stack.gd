@@ -24,6 +24,7 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	await _check_river_clearance(scene)
+	_check_afterburners(scene)
 	assert(scene.hero.get_child_count() >= 4,"Aircraft body/canopy/exhaust missing")
 	var body_arrays: Array = scene.hero.get_node("Body").mesh.surface_get_arrays(0)
 	var panel_colors: PackedColorArray = body_arrays[Mesh.ARRAY_COLOR]
@@ -146,6 +147,49 @@ func _check_river_clearance(scene: Node3D) -> void:
 		assert(hit.position.y < point.y-0.05,"Canyon terrain clips through the river ribbon")
 	ground.queue_free()
 	await process_frame
+
+func _check_afterburners(scene: Node3D) -> void:
+	var flames: Array[MeshInstance3D] = []
+	var anchors: Array[Vector3] = []
+	for aircraft in [scene.hero,scene.wingman]:
+		var exit_z: float = aircraft.get_node("Intakes").mesh.get_aabb().end.z
+		for child in aircraft.get_children():
+			if not child.name.begins_with("EngineFlame"): continue
+			flames.append(child)
+			anchors.append(child.global_position)
+			var bounds: AABB = child.mesh.get_aabb()
+			assert(is_zero_approx(bounds.position.z) and is_equal_approx(bounds.end.z,1.0),"Exhaust is not normalized from nozzle to tip")
+			assert(is_equal_approx(child.position.z,exit_z),"Exhaust anchor is detached from the nozzle exit")
+	assert(flames.size() == 4,"Twin afterburners are missing from the aircraft")
+	var previous_length := 0.0
+	for throttle in [0.0,0.35,1.0]:
+		scene.set_afterburner_throttle(throttle)
+		assert(scene.afterburner_material.get_shader_parameter("throttle") == throttle,"Mesh and shader throttle differ")
+		assert(flames[0].scale.z > previous_length,"Exhaust did not elongate with throttle")
+		previous_length = flames[0].scale.z
+		for index in flames.size():
+			assert(flames[index].global_position.is_equal_approx(anchors[index]),"Scaling moved the exhaust nozzle anchor")
+			assert(flames[index].visible == (throttle > 0.0),"Zero throttle left visible exhaust")
+	scene.set_afterburner_throttle(0.35)
+	scene._update_afterburners(0.1)
+	var slow_phase: float = scene.afterburner_flow_phase
+	scene.set_afterburner_throttle(1.0)
+	assert(scene.afterburner_flow_phase == slow_phase,"Throttle change reset the noise phase")
+	var before_pulse := flames[0].scale
+	scene._update_afterburners(0.1)
+	assert(scene.afterburner_flow_phase-slow_phase > slow_phase,"Higher throttle did not speed up the flow")
+	assert(not flames[0].scale.is_equal_approx(before_pulse),"Afterburner silhouette does not pulse")
+	assert(flames[0].global_position.is_equal_approx(anchors[0]),"Afterburner pulse shook the nozzle attachment")
+	var frozen_phase: float = scene.afterburner_flow_phase
+	var frozen_scale := flames[0].scale
+	scene._process(0.1)
+	assert(scene.afterburner_flow_phase == frozen_phase,"Paused scene still animated exhaust")
+	assert(flames[0].scale.is_equal_approx(frozen_scale),"Paused scene still pulsed the exhaust")
+	scene.afterburner_flow_phase = 99.99
+	scene._update_afterburners(1.0)
+	assert(scene.afterburner_flow_phase >= 0.0 and scene.afterburner_flow_phase < 100.0,"Exhaust clock grew without bound")
+	scene.afterburner_flow_phase = 0.0
+	scene._update_afterburners()
 
 func _checks_timeout() -> void:
 	if not completed:

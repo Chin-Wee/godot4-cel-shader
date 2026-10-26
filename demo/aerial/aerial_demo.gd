@@ -25,6 +25,9 @@ var hud: CanvasLayer
 var trails: Array[MultiMeshInstance3D] = []
 var explosion: Node3D
 var explosion_clock := 0.0
+@export_range(0.0,1.0,0.01) var afterburner_throttle := 1.0
+var afterburner_material: ShaderMaterial
+var afterburner_flow_phase := 0.0
 
 func _ready() -> void:
 	environment = Environment.new()
@@ -82,7 +85,18 @@ func _ready() -> void:
 	canopy.set_shader_parameter("orientation_bias",0.0)
 	canopy.set_shader_parameter("panel_strength",0.0)
 	canopy.set_shader_parameter("rim_strength",0.35)
-	var exhaust := _vfx_material(PackedColorArray([Color(1,0.05,0.22),Color(1,0.2,0.02)]),3.0)
+	afterburner_material = _material("afterburner")
+	var noise := FastNoiseLite.new()
+	noise.seed = 431
+	noise.frequency = 0.018
+	noise.fractal_octaves = 2
+	var texture := NoiseTexture2D.new()
+	texture.width = 256
+	texture.height = 256
+	texture.seamless = true
+	texture.noise = noise
+	afterburner_material.set_shader_parameter("flow_noise",texture)
+	var exhaust := afterburner_material
 	hero = Geometry.aircraft(body,canopy,exhaust)
 	hero.name = "HeroAircraft"
 	hero.position = flight_position(0.0)
@@ -119,6 +133,25 @@ func _ready() -> void:
 	_make_post()
 	_make_hud()
 	set_palette(false)
+	_update_afterburners()
+
+func set_afterburner_throttle(value: float) -> void:
+	afterburner_throttle = clampf(value,0.0,1.0)
+	_update_afterburners()
+
+func _update_afterburners(delta := 0.0) -> void:
+	# KSP2's production pattern: one throttle drives mesh scale, flow and intensity.
+	var throttle := clampf(afterburner_throttle,0.0,1.0)
+	# All texture scroll rates repeat after 100 phase units; keep the GPU clock precise.
+	afterburner_flow_phase = fposmod(afterburner_flow_phase+delta*lerpf(0.35,1.8,throttle),100.0)
+	afterburner_material.set_shader_parameter("flow_phase",afterburner_flow_phase)
+	afterburner_material.set_shader_parameter("throttle",throttle)
+	for aircraft in [hero,wingman]:
+		for node in aircraft.get_children():
+			if node.name.begins_with("EngineFlame"):
+				node.visible = throttle > 0.001
+				var phase := afterburner_flow_phase*TAU+float(node.get_instance_shader_parameter("phase_offset"))*TAU
+				node.scale = Vector3(lerpf(2.1,2.5,throttle)*(1.0+sin(phase*2.0)*0.04),lerpf(1.4,1.7,throttle)*(1.0+cos(phase*3.0)*0.03),lerpf(3.0,14.0,throttle)*(1.0+sin(phase*4.0)*0.07))
 
 func _material(shader_name: String) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
@@ -261,9 +294,7 @@ func _process(delta: float) -> void:
 		elapsed += delta
 		var old_position := hero.position
 		_update_hero_pose(elapsed)
-		for node in hero.get_children():
-			if node.name.begins_with("EngineFlame"):
-				node.scale.z = 3.6 + sin(elapsed*38.0)*0.35
+		_update_afterburners(delta)
 		if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
 			camera.position += hero.position-old_position
 		missile.position = missile_position(elapsed)
@@ -305,6 +336,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				storm = not storm
 				set_palette(daylight_palette)
 			KEY_4: clouds.set_coverage(0.4 if clouds.coverage > 0.5 else 1.0)
+			KEY_5: set_afterburner_throttle(0.0)
+			KEY_6: set_afterburner_throttle(0.35)
+			KEY_7: set_afterburner_throttle(1.0)
 			KEY_P: animate = not animate
 			KEY_SPACE: trigger_explosion()
 			KEY_ESCAPE: Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -326,7 +360,7 @@ func _make_hud() -> void:
 	hud.layer = 2
 	add_child(hud)
 	var label := Label.new()
-	label.text = "AERIAL RENDER STUDY   ·   DELIVERY MUST COMPLETE\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nRight click: fly camera · WASD / Q E · Shift: faster"
+	label.text = "AERIAL RENDER STUDY   ·   DELIVERY MUST COMPLETE\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\n5 / 6 / 7 Exhaust off / low / full · Right click: fly camera · WASD / Q E · Shift: faster"
 	label.position = Vector2(24,22)
 	label.add_theme_color_override("font_color",Color(1,0.88,0.73))
 	label.add_theme_font_size_override("font_size",16)

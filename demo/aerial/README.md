@@ -15,6 +15,7 @@ godot --path demo res://aerial/aerial_demo.tscn
 - **1 / 2:** sunset / daylight palette.
 - **3:** storm lighting and camera rain when inside cloud.
 - **4:** change cloud cover; hidden banks stop contributing visibility/weather.
+- **5 / 6 / 7:** afterburners off / low / full throttle.
 - **Space:** trigger a graphic explosion.
 - **P:** freeze aircraft, trails, cloud drift and effects for comparison.
 - **Right click:** toggle the fly camera. WASD moves, Q/E descends/ascends, Shift moves faster.
@@ -69,6 +70,28 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   orange edges, grow with onset, and expire at 1.6 seconds; fire cools and expires
   at 2.4 seconds, while smoke/debris persist through the four-second effect.
   Transient effects are freed without retaining palette references.
+- Aircraft afterburners use a dedicated cel shader. The production control
+  reference is [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
+  The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
+  tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
+  identical; no bound source textures/materials were present. The existing
+  GDQuest fire mask/noise candidates were inspected, but a shared native seamless
+  NoiseTexture2D avoids external texture dependencies.
+  The original BotW vertex code overwrites its scroll with a default-zero speed
+  component, and its added alpha masks can saturate opacity. Those equations are
+  not carried over. Coarse noise instead moves hard color-band boundaries and a
+  tail cutout; the surface does not display continuous texture shading.
+  A normalized, tapered 20-triangle mesh scales rearward from its nozzle. Shape
+  masks use normalized coordinates, while flow noise uses nozzle-local distance
+  including parent scale, preserving turbulence size without world-space swimming.
+  Small independent width/length pulses, tail sway and axial flutter change the
+  silhouette while leaving the nozzle locked. A clamped displacement and expanded
+  native AABB prevent movement from escaping the culling bounds. Separate instance
+  phase offsets vary the two engines without extra materials. The integrated flow
+  clock preserves phase across throttle changes, wraps seamlessly, and freezes
+  with the scene. Bright cell bands are an artistic approximation, not simulated
+  shock diamonds. Pressure regimes, blendshapes and exhaust heat refraction are
+  omitted because this scene has no engine/pressure model requiring them.
 
 Reusable shader sources live in `src/aerial`; the identical runtime copies are
 in `demo/shaders/aerial`, following the repository's existing shader distribution.
@@ -119,8 +142,11 @@ attributes, exact wingtip attachment, static/live pose
 agreement, cloud coverage and entry/exit, storm rain activation, fixed world-space
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
+Afterburner checks cover normalized bounds, nozzle contact, throttle/visibility,
+phase continuity, bounded flow time, silhouette pulses and pause behavior.
 
-GPU captures include native HDR glow on/off with Canvas disabled, Canvas on/off,
+GPU captures include afterburner off/low/full, changing flow, phase wrap and
+nonuniform aircraft scale, plus native HDR glow on/off with Canvas disabled, Canvas on/off,
 isolated flare on/off, sun occlusion, sunset/daylight, aircraft above/below/front, explosion phases,
 cloud entry, and wet/dry geometry. Pixel comparisons reject an inactive post or
 rain pass. A ghost-region pixel probe verifies flare contribution and suppression
@@ -177,7 +203,7 @@ Compared directly with the supplied references, these remain incomplete:
 |---|---|---|
 | Aircraft | Beveled clipped wings, exposed engines, longer canopy/nose and geometry-bound livery render above/below/front | Proxy silhouette, finer panel hierarchy and rim consistency still need closer matching |
 | Environment | Level mesa caps, eroded contours, lower benches/ribbed skirts, warm exposed rock and a broad river apron render in both presets | Cliff shading strips, finer erosion shapes and more authored foreground/midground grouping still needed |
-| Trails/exhaust | Overlapping oriented puffs, historical wingtip poses, world wind and mesh flames render | Broader irregular breakup and near-camera shapes need refinement |
+| Trails/exhaust | Oriented world-space puffs and nozzle-anchored cel afterburners with coupled throttle, flow and silhouette pulses render | Broader trail breakup and more authored afterburner envelopes/cell shapes need refinement |
 | Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
 | Explosions | Connected asymmetrical smoke plume, vertex value variation, shared sunlight, fire islands and separate age phases render | More heated inner lobes/fire pockets and less patterned fire still needed |
 | Weather/post | Native HDR glow, orange horizon/crowns, isolated chromatic flare, sun occlusion and cloud-density optics gates render | Longer structured rays, white-geometry occlusion and finer weather transitions remain |

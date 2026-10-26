@@ -110,10 +110,13 @@ static func aircraft(body: Material, canopy: Material, exhaust: Material) -> Nod
 	add_mesh(aircraft_root,mesh_from_faces(canopy_faces,Vector3(0,3,-12)),canopy).name = "Canopy"
 	add_mesh(aircraft_root,mesh_from_faces(dark_faces,Vector3(0,-1.2,8)),canopy).name = "Intakes"
 	for side in [-1.0,1.0]:
-		var nozzle := add_mesh(aircraft_root,icosphere(),exhaust)
+		var nozzle := add_mesh(aircraft_root,afterburner_mesh(),exhaust)
 		nozzle.name = "EngineFlame"+str(side)
-		nozzle.position = Vector3(side*4.4,-1.2,22.1)
-		nozzle.scale = Vector3(1.8,1.0,3.6)
+		nozzle.position = Vector3(side*4.4,-1.2,20.55)
+		nozzle.scale = Vector3(2.5,1.7,14.0)
+		nozzle.custom_aabb = nozzle.mesh.get_aabb().grow(0.2)
+		nozzle.set_instance_shader_parameter("phase_offset",(side+1.0)*0.31)
+		nozzle.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	return aircraft_root
 
 static func _panel_prism(points: Array, thickness: Vector3, color := Color.WHITE) -> ArrayMesh:
@@ -157,6 +160,24 @@ static func icosphere() -> ArrayMesh:
 			face.append(point)
 		faces.append(face)
 	return mesh_from_faces(faces)
+
+static func afterburner_mesh() -> ArrayMesh:
+	# Preserve the disclosed low-poly flame topology, but scale away from its nozzle.
+	var mesh := icosphere()
+	var arrays := mesh.surface_get_arrays(0)
+	var vertices: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var bounds := mesh.get_aabb()
+	for index in vertices.size():
+		var axial := (vertices[index].z-bounds.position.z)/bounds.size.z
+		var taper := 1.0-axial*0.95
+		vertices[index] = Vector3(vertices[index].x*taper,vertices[index].y*taper,axial)
+	arrays[Mesh.ARRAY_VERTEX] = vertices
+	var surface := SurfaceTool.new()
+	var anchored := ArrayMesh.new()
+	anchored.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES,arrays)
+	surface.create_from(anchored,0)
+	surface.generate_normals()
+	return surface.commit()
 
 static func terrain() -> ArrayMesh:
 	var noise := FastNoiseLite.new()

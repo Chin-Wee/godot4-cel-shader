@@ -83,6 +83,27 @@ func _capture() -> void:
 	scene.camera.position = scene.hero.global_position+aircraft_basis*Vector3(-80,45,-110)
 	scene.camera.look_at(scene.hero.global_position,aircraft_basis.y)
 	await _save_frame(output.path_join("aircraft-front.png"))
+	var nozzle: MeshInstance3D = scene.hero.find_child("EngineFlame*",false,false)
+	assert(nozzle != null,"Afterburner inspection target is missing")
+	scene.camera.position = nozzle.global_position+aircraft_basis*Vector3(-27,9,10)
+	scene.camera.look_at(nozzle.global_position+aircraft_basis*Vector3(0,0,8),aircraft_basis.y)
+	for sample in [[0.0,"off"],[0.35,"low"],[1.0,"full"]]:
+		scene.set_afterburner_throttle(sample[0])
+		await _save_frame(output.path_join("afterburner-"+sample[1]+".png"))
+	scene.afterburner_material.set_shader_parameter("flow_phase",100.0)
+	await _save_frame(output.path_join("afterburner-wrap.png"))
+	assert(_post_difference(Image.load_from_file(output.path_join("afterburner-full.png")),Image.load_from_file(output.path_join("afterburner-wrap.png")),Vector2(0.5,0.5)) < 0.01,"Exhaust texture jumped at the bounded clock wrap")
+	scene._update_afterburners(0.4)
+	await _save_frame(output.path_join("afterburner-flow.png"))
+	assert(Image.load_from_file(output.path_join("afterburner-full.png")).get_data() != Image.load_from_file(output.path_join("afterburner-flow.png")).get_data(),"Exhaust flow did not animate on the GPU")
+	var aircraft_scale: Vector3 = scene.hero.scale
+	scene.hero.scale *= Vector3(1.4,0.75,1.6)
+	scene.camera.position = nozzle.global_position+aircraft_basis*Vector3(-33,9,15)
+	scene.camera.look_at(nozzle.global_position+aircraft_basis*Vector3(0,0,12),aircraft_basis.y)
+	await _save_frame(output.path_join("afterburner-stretched.png"))
+	scene.hero.scale = aircraft_scale
+	scene.afterburner_flow_phase = 0.0
+	scene._update_afterburners()
 	scene.camera.transform = initial_camera
 	scene.trigger_explosion()
 	scene.explosion.set_process(false)
