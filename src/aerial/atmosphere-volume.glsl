@@ -16,30 +16,36 @@ layout(std430,set=0,binding=0) readonly buffer Frame {
  vec4 sizes; // full and quarter resolution
 } frame;
 #ifdef PASS_SHADOW
-struct Bank { mat4 inverse_transform; vec4 lobe_range; };
-layout(std430,set=0,binding=1) readonly buffer Clouds { Bank banks[18]; vec4 lobes[64]; } clouds;
+struct Bank { mat4 inverse_transform; vec4 variant; };
+layout(std430,set=0,binding=1) readonly buffer Clouds {
+ vec4 field_min;
+ vec4 field_extent;
+ vec4 field_size; // xyz samples per variant, w variant count
+ Bank banks[18];
+} clouds;
+layout(set=0,binding=7) uniform sampler3D density_texture;
 layout(rgba16f,set=0,binding=3) uniform writeonly image2D shadow_image;
-vec2 sphere_interval(vec3 origin,vec3 direction,vec4 lobe) {
- vec3 delta=origin-lobe.xyz;
- float a=dot(direction,direction);
- float b=dot(delta,direction);
- float c=dot(delta,delta)-(lobe.w+0.035)*(lobe.w+0.035);
- float discriminant=b*b-a*c;
- if(discriminant<=0.0) return vec2(1.0,-1.0);
- return (-b+vec2(-1.0,1.0)*sqrt(discriminant))/a;
-}
-vec2 clipped_interval(vec3 origin,vec3 direction,vec4 lobe,bool lower) {
- vec3 o=origin,d=direction;
- if(lower) { o.y=-0.38+(o.y+0.38)/0.23; d.y/=0.23; }
- vec2 interval=sphere_interval(o,d,lobe);
- if(abs(direction.y)<0.000001) {
-  if((origin.y< -0.38)!=lower) return vec2(1.0,-1.0);
- } else {
-  float boundary=(-0.38-origin.y)/direction.y;
-  if((direction.y>0.0)==lower) interval.y=min(interval.y,boundary);
-  else interval.x=max(interval.x,boundary);
+vec2 box_interval(vec3 origin,vec3 direction) {
+ float entry=-60000.0,exit=60000.0;
+ vec3 high=clouds.field_min.xyz+clouds.field_extent.xyz;
+ for(int axis=0;axis<3;axis++) {
+  if(abs(direction[axis])<0.000001) {
+   if(origin[axis]<clouds.field_min[axis] || origin[axis]>high[axis]) return vec2(1,-1);
+  } else {
+   vec2 slab=(vec2(clouds.field_min[axis],high[axis])-origin[axis])/direction[axis];
+   entry=max(entry,min(slab.x,slab.y));
+   exit=min(exit,max(slab.x,slab.y));
+  }
  }
- return interval;
+ return vec2(entry,exit);
+}
+float sampled_density(vec3 point,float variant) {
+ vec3 grid=(point-clouds.field_min.xyz)/clouds.field_extent.xyz*(clouds.field_size.xyz-1.0);
+ // Variant grids are stacked along Z. Texel centers preserve the CPU's x-fast
+ // trilinear interpolation without filtering across neighboring variants.
+ vec3 atlas_size=clouds.field_size.xyz*vec3(1,1,clouds.field_size.w);
+ vec3 uv=(grid+vec3(0.5,0.5,0.5+variant*clouds.field_size.z))/atlas_size;
+ return smoothstep(0.0,0.14,textureLod(density_texture,uv,0.0).r);
 }
 void main() {
  ivec2 pixel=ivec2(gl_GlobalInvocationID.xy);
@@ -49,26 +55,26 @@ void main() {
  vec2 plane=frame.shadow_bounds.xy+uv*frame.shadow_bounds.zw;
  vec3 origin=frame.shadow_x.xyz*plane.x+frame.shadow_y.xyz*plane.y;
  vec3 direction=normalize(cross(frame.shadow_x.xyz,frame.shadow_y.xyz));
- // ponytail: broad lobe intervals match the cloud banks; tiny radial crest noise
- // and internal cavities are intentionally below this 256px shadow field resolution.
  float front=-60000.0,back=60000.0,optical_depth=0.0;
  for(int index=0;index<int(frame.controls.x);index++) {
   Bank bank=clouds.banks[index];
   vec3 o=(bank.inverse_transform*vec4(origin,1.0)).xyz;
   vec3 d=(bank.inverse_transform*vec4(direction,0.0)).xyz;
-  float entry=60000.0,exit=-60000.0;
-  for(int j=0;j<int(bank.lobe_range.y);j++) {
-   vec4 lobe=clouds.lobes[int(bank.lobe_range.x)+j];
-   for(int region=0;region<2;region++) {
-    vec2 interval=clipped_interval(o,d,lobe,region==1);
-    if(interval.y>interval.x) { entry=min(entry,interval.x); exit=max(exit,interval.y); }
+  vec2 interval=box_interval(o,d);
+  if(interval.y<=interval.x) continue;
+  float step_length=(interval.y-interval.x)/32.0;
+  for(int sample_index=0;sample_index<32;sample_index++) {
+   float along=interval.x+(float(sample_index)+0.5)*step_length;
+   float density=sampled_density(o+d*along,bank.variant.x);
+   if(density>0.0001) {
+    front=max(front,along+step_length*0.5);
+    back=min(back,along-step_length*0.5);
+    optical_depth+=density*step_length*0.018;
    }
   }
-  if(exit>entry) {
-   front=max(front,exit); back=min(back,entry);
-   optical_depth+=(exit-entry)*0.018;
-  }
  }
+ // ponytail: the integrated column honors grid cavities and overhangs; only the
+ // distribution of shadow within that column is approximated by front/back depth.
  imageStore(shadow_image,pixel,vec4(front,back,min(optical_depth,40.0),1.0));
 }
 #else

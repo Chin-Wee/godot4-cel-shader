@@ -1,19 +1,25 @@
 extends SceneTree
-class FixtureClouds:
- extends Node3D
- var bank_transforms: Array = [Transform3D(Basis.IDENTITY.scaled(Vector3(130,80,100)),Vector3(0,350,-300))]
- var shapes: Array = [PackedVector4Array([Vector4(0,0,0,1)])]
- var coverage := 1.0
 func _initialize(): call_deferred("run")
 func frame():
  for index in 5: await process_frame
  RenderingServer.force_draw()
+func shadow_at(effect, point: Vector3) -> float:
+ # Test-only readback; production only consumes the GPU shadow field.
+ var texture=Texture2DRD.new()
+ texture.texture_rd_rid=effect._shadow_texture
+ var image=texture.get_image()
+ texture.texture_rd_rid=RID()
+ var state=effect._state
+ var plane=Vector2(point.dot(state.shadow_x),point.dot(state.shadow_y))
+ var bounds: Vector4=state.shadow_bounds
+ var uv=(plane-Vector2(bounds.x,bounds.y))/Vector2(bounds.z,bounds.w)
+ return image.get_pixel(clampi(int(uv.x*image.get_width()),0,image.get_width()-1),clampi(int(uv.y*image.get_height()),0,image.get_height()-1)).b
 func run():
  if DisplayServer.get_name()=="headless":
   push_error("Volume capture requires a native rendering display")
   quit(1)
   return
- create_timer(25.0).timeout.connect(func(): quit(2))
+ create_timer(35.0).timeout.connect(func(): quit(2))
  if "--no-msaa" in OS.get_cmdline_user_args(): root.msaa_3d=Viewport.MSAA_DISABLED
  var center=Vector2i(root.size/2)
  var stage=Node3D.new()
@@ -23,7 +29,7 @@ func run():
  environment.environment.background_mode=Environment.BG_COLOR
  environment.environment.background_color=Color(0.04,0.07,0.12)
  stage.add_child(environment)
- var clouds=FixtureClouds.new()
+ var clouds=load("res://aerial/tests/volume_fixture_clouds.gd").new()
  stage.add_child(clouds)
  var camera=Camera3D.new()
  stage.add_child(camera)
@@ -54,7 +60,11 @@ func run():
  var unshadowed=root.get_texture().get_image()
  unshadowed.save_png("/tmp/dmc-volume-unshadowed.png")
  assert(shadowed.get_data()!=unshadowed.get_data(),"Cloud occlusion produced no shadow columns")
- assert(shadowed.get_pixel(center.x,center.y).r<unshadowed.get_pixel(center.x,center.y).r,"Cloud shadow did not reduce atmospheric sunlight")
+ var strongest_shadow=0.0
+ for y in range(0,shadowed.get_height(),2):
+  for x in range(0,shadowed.get_width(),2):
+   strongest_shadow=maxf(strongest_shadow,unshadowed.get_pixel(x,y).r-shadowed.get_pixel(x,y).r)
+ assert(strongest_shadow>0.001,"Cloud shadow did not reduce atmospheric sunlight")
  settings.strength=0.0
  effect.configure(clouds,sun,settings)
  await frame()
@@ -101,17 +111,42 @@ func run():
  effect.configure(clouds,sun,settings)
  await frame()
  assert(effect.get_status().shadow_bakes==bakes,"Rigid cloud drift rebaked the shadow field")
+ assert(effect.get_status().field_uploads==1,"Rigid cloud drift uploaded the source density atlas")
  clouds.coverage=0
  effect.configure(clouds,sun,settings)
  await frame()
  assert(effect.get_status().shadow_bakes==bakes+1,"Coverage did not rebuild the shadow field")
+ assert(effect.get_status().field_uploads==1,"Coverage uploaded an unchanged density atlas")
+ clouds.coverage=1
+ effect.configure(clouds,Vector3.UP,settings)
+ await frame()
+ var center_point=clouds.bank_transforms[0].origin
+ assert(shadow_at(effect,center_point)>0.1,"Solid sampled grid did not block sunlight")
+ var allocations=effect.get_status().texture_allocations
+ clouds.rebuild(true)
+ effect.configure(clouds,Vector3.UP,settings)
+ await frame()
+ assert(shadow_at(effect,center_point)<0.001,"A sampled tunnel was filled by a proxy shadow")
+ assert(shadow_at(effect,center_point+Vector3(90,0,0))>0.1,"Tunnel regeneration erased its surrounding cloud")
+ assert(effect.get_status().field_uploads==2 and effect.get_status().texture_allocations==allocations,"Shape revision did not update the atlas in place")
  root.size=Vector2i(853,479)
  await frame()
  assert(effect.get_status().quarter_size==Vector2i(ceili(root.size.x/4.0),ceili(root.size.y/4.0)),"Volume buffers did not resize with the viewport")
- print("Volume GPU checks passed: shadows, foreground depth, white occlusion, drift, coverage, zero strength, resize.")
+ camera.compositor=null
+ compositor=null
+ effect=null
+ await frame()
+ effect=load("res://aerial/atmosphere_volume.gd").new()
+ effect.configure(clouds,sun,settings)
+ compositor=Compositor.new()
+ compositor.compositor_effects=[effect]
+ camera.compositor=compositor
+ await frame()
+ assert(effect.get_status().ready and effect.get_status().field_uploads==1,"Reload did not recreate the density atlas")
  camera.compositor=null
  compositor=null
  effect=null
  stage.queue_free()
  await frame()
+ print("Volume GPU checks passed: sampled tunnel, shadows, foreground depth, white occlusion, drift, coverage, zero strength, resize, reload.")
  quit()
