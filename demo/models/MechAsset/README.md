@@ -17,6 +17,10 @@ the selected mech. Shift still runs on George; MechAsset walks only. Inactive
 playable bodies continue braking, falling and landing. Grass follows the selected
 actor. Switching keeps each actor's position and mouse capture state.
 
+The reusable roster keeps its requested `(3, 0, -7)` slot. The sample scene
+overrides it to `(2.5, 0.4, -7)` to clear its boundary wall and terrain; gravity
+settles it vertically without collision recovery pushing it sideways.
+
 `Idle Pose` maps to `Idle`; `Walk_Forward` maps to `Walk`. Godot imports
 `Fall_Loop` as `Fall` through its built-in loop suffix handling. Jump plays during
 ascent, Fall loops during descent, and Land completes before idle/walk resumes.

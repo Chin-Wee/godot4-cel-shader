@@ -144,9 +144,25 @@ func _run_checks() -> void:
 	grass.queue_free()
 	await process_frame
 	await process_frame
+	await _check_scene_clearance()
 	Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 	if not failed: print("Playable mech checks passed: mapping, materials, root motion, switching, walking, jump/fall/land.")
 	quit(1 if failed else 0)
+
+func _check_scene_clearance() -> void:
+	var scene = load("res://sample-scene.tscn").instantiate()
+	root.add_child(scene)
+	var mech: CharacterBody3D = scene.get_node("MechRoster/MechAsset")
+	var spawn := mech.global_position
+	var horizontal_drift := 0.0
+	for frame in 60:
+		await physics_frame
+		var displacement := mech.global_position - spawn
+		horizontal_drift = maxf(horizontal_drift, Vector2(displacement.x, displacement.z).length())
+	_expect(mech.is_on_floor(), "MechAsset did not settle on the sample terrain")
+	_expect(horizontal_drift < 0.01, "MechAsset spawned inside terrain or a boundary collider")
+	scene.queue_free()
+	await process_frame
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition:

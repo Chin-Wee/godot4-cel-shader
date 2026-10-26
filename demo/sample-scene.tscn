@@ -852,6 +852,9 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.6844786, 4.5014763, 0.48863
 grass = NodePath("../ground-2/Grass")
 transform = Transform3D(-0.00623083, 0, -0.999981, 0, 1, 0, 0.999981, 0, -0.00623083, -0.513747, 0, 7.0)
 
+[node name="MechAsset" parent="MechRoster" index="4"]
+position = Vector3(2.5, 0.4, -7)
+
 [node name="Limit" type="StaticBody3D" parent="." unique_id=673441391]
 transform = Transform3D(0.052946, 0, 0.998597, 0, 1, 0, -0.998597, 0, 0.052946, -10.0047, 2.43506, 2.24282)
 metadata/_edit_group_ = true
