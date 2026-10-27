@@ -53,6 +53,9 @@ func _run() -> void:
 	assert(missile.palette_materials().size() == 3 and missile.emissive_core != null,"Missile needs smoke, vapor and a separate emissive core")
 	assert(missile.emissive_core.material_override.get_shader_parameter("emission_strength") > 1.0,"Missile core cannot feed HDR bloom")
 	assert(missile.emissive_core.material_override.get_shader_parameter("lifetime") < missile.lifetime,"Missile glow must end before its smoke")
+	assert(missile.material_override.get_shader_parameter("trail_smoke_delay") == 0.25 and missile.vapor.material_override.get_shader_parameter("trail_smoke_delay") == 0.25,"Missile opaque smoke covers its young HDR burn")
+	assert(missile.emissive_core.material_override.get_shader_parameter("trail_smoke_delay") == 0.0,"Missile glow inherits the smoke delay")
+	assert(smoke.material_override.get_shader_parameter("trail_smoke_delay") == 0.0,"Ordinary smoke gained a missile-only onset delay")
 	for trail in [smoke,thin,missile]:
 		for layer in trail._layers:
 			assert(layer.multimesh.instance_count == Trail.CAPACITY,"Trail layer storage grew beyond capacity")

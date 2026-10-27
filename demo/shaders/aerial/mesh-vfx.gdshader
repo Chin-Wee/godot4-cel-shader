@@ -21,6 +21,7 @@ uniform int trail_style = 0; // 1: faceted chunk, 2: camera-facing path ribbon.
 uniform int trail_profile = 0; // 1: wide vapor, 2: fine/emissive core.
 uniform float trail_roll_speed = 0.0;
 uniform float trail_opacity = 1.0;
+uniform float trail_smoke_delay = 0.0; // Seconds before missile exhaust condenses into opaque smoke.
 uniform vec4 trail_tint: source_color = vec4(1.0);
 varying float trail_active;
 varying vec3 effect_local_position;
@@ -62,6 +63,12 @@ void vertex() {
 void fragment() {
  if (age < 0.0 || age >= 1.0 || trail_active < 0.5) { discard; }
  float fade = (1.0-smoothstep(0.65,1.0,age))*trail_opacity;
+ // The narrow HDR burn must remain visible before opaque smoke forms around it.
+ // Keep depth testing: world geometry still occludes every trail layer.
+ if (trail_smoke_delay > 0.0) {
+  if (age*lifetime <= trail_smoke_delay) { discard; }
+  fade *= smoothstep(trail_smoke_delay,trail_smoke_delay+0.18,age*lifetime);
+ }
  if (trail_style == 2) {
   vec2 p = UV*2.0-1.0;
   if (trail_profile == 1) {

@@ -45,6 +45,8 @@ func configure(material: ShaderMaterial, style := SMOKE) -> void:
 		vapor.material_override.set_shader_parameter("trail_opacity",0.24)
 		vapor.material_override.set_shader_parameter("trail_tint",Color(0.82,0.89,0.96))
 	if kind == MISSILE:
+		material_override.set_shader_parameter("trail_smoke_delay",0.25)
+		vapor.material_override.set_shader_parameter("trail_smoke_delay",0.25)
 		emissive_core = MultiMeshInstance3D.new()
 		emissive_core.name = "EmissiveCore"
 		add_child(emissive_core)
@@ -70,6 +72,7 @@ func _setup_layer(node: MultiMeshInstance3D, mesh: Mesh, material: ShaderMateria
 	node.material_override.set_shader_parameter("instance_age",true)
 	node.material_override.set_shader_parameter("expansion",3.0)
 	node.material_override.set_shader_parameter("lifetime",lifetime)
+	node.material_override.set_shader_parameter("trail_smoke_delay",0.0)
 	node.custom_aabb = AABB(Vector3(-10000,-10000,-10000),Vector3.ONE*20000)
 	_layers.append(node)
 	_materials.append(node.material_override)
