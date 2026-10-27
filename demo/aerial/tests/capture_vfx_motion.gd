@@ -38,7 +38,7 @@ func _capture() -> void:
 	if "--explosion-only" not in args:
 		scene.explosion.visible = false
 		var aircraft_basis: Basis = scene.hero.global_basis.orthonormalized()
-		var nozzle: MeshInstance3D = scene.hero.find_child("EngineFlame*",false,false)
+		var nozzle: MeshInstance3D = scene.hero.find_child("EngineFlame*",true,false)
 		var anchor := nozzle.global_position
 		scene.camera.position = anchor+aircraft_basis*Vector3(-27,9,10)
 		scene.camera.look_at(anchor+aircraft_basis*Vector3(0,0,8),aircraft_basis.y)

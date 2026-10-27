@@ -4,6 +4,7 @@ const Geometry = preload("res://aerial/geometry.gd")
 const PositionTrail = preload("res://aerial/position_trail.gd")
 const Explosion = preload("res://aerial/graphic_explosion.gd")
 const CloudBanks = preload("res://aerial/cloud_banks.gd")
+const AerialMech = preload("res://aerial/aerial_mech.gd")
 var camera: Camera3D
 var environment: Environment
 var sun: DirectionalLight3D
@@ -34,6 +35,8 @@ var afterburner_material: ShaderMaterial
 var afterburner_flow_phase := 0.0
 @export_range(0.0,3.0,0.05) var atmosphere_strength := 1.0
 @export_range(0.0,1.0,0.05) var atmosphere_shadow_strength := 1.0
+var walking_time := 0.0
+var walk_ground: StaticBody3D
 var volume_effect
 
 func _ready() -> void:
@@ -75,13 +78,14 @@ func _ready() -> void:
 	add_child(clouds)
 	clouds.build(cloud_material)
 	var body := _material("aircraft")
-	body.set_shader_parameter("body_color",Color(0.78,0.29,0.06))
-	body.set_shader_parameter("underside_color",Color(0.24,0.10,0.065))
-	body.set_shader_parameter("rim_color",Color(1.0,0.88,0.62))
-	body.set_shader_parameter("rim_strength",1.25)
-	body.set_shader_parameter("highlight_mask",0.08)
+	body.set_shader_parameter("orientation_bias",0.0)
+	body.set_shader_parameter("panel_strength",0.0)
+	body.set_shader_parameter("rim_color",Color(0.85,0.9,1.0))
+	body.set_shader_parameter("rim_strength",0.18)
+	body.set_shader_parameter("highlight_mask",0.0)
+	body.set_shader_parameter("shadow_fill",0.28)
 	body.set_shader_parameter("diffuse_ramp_mode",1)
-	body.set_shader_parameter("diffuse_ramp_threshold",0.12)
+	body.set_shader_parameter("diffuse_ramp_threshold",0.18)
 	var canopy := _material("aircraft")
 	canopy.set_shader_parameter("body_color",Color(0.03,0.12,0.13))
 	canopy.set_shader_parameter("underside_color",Color(0.01,0.04,0.06))
@@ -100,24 +104,21 @@ func _ready() -> void:
 	texture.seamless = true
 	texture.noise = noise
 	afterburner_material.set_shader_parameter("flow_noise",texture)
-	var exhaust := afterburner_material
-	hero = Geometry.aircraft(body,canopy,exhaust)
-	hero.name = "HeroAircraft"
-	hero.position = flight_position(0.0)
-	hero.rotation = Vector3(0.05,1.4,0.6)
-	hero.scale = Vector3.ONE * 1.6
+	hero = AerialMech.new()
+	hero.name = "HeroMech"
+	hero.scale = Vector3.ONE*50.0
 	add_child(hero)
+	hero.build(body,afterburner_material)
+	palette_materials.append_array(hero.palette_materials)
 	_update_hero_pose(0.0)
-	var wing_body := body.duplicate() as ShaderMaterial
-	palette_materials.append(wing_body)
-	wing_body.set_shader_parameter("body_color",Color(0.34,0.38,0.29))
-	wing_body.set_shader_parameter("underside_color",Color(0.035,0.065,0.07))
-	wing_body.set_shader_parameter("panel_color",Color(0.48,0.51,0.34))
-	wingman = Geometry.aircraft(wing_body,canopy,exhaust)
-	wingman.position = wingman_position(0.0)
-	wingman.rotation = Vector3(0.1,0.5,-0.3)
-	wingman.scale = Vector3.ONE*0.8
+	wingman = AerialMech.new()
+	wingman.name = "WingmanMech"
+	wingman.scale = Vector3.ONE*35.0
 	add_child(wingman)
+	wingman.build(body,afterburner_material)
+	palette_materials.append_array(wingman.palette_materials)
+	wingman.position = wingman_position(0.0)
+	wingman.look_at(wingman_position(0.1))
 	camera = Camera3D.new()
 	camera.position = Vector3(140,610,540)
 	camera.fov = 65
@@ -170,12 +171,7 @@ func _update_afterburners(delta := 0.0) -> void:
 	afterburner_flow_phase = fposmod(afterburner_flow_phase+delta*lerpf(0.35,1.8,throttle),100.0)
 	afterburner_material.set_shader_parameter("flow_phase",afterburner_flow_phase)
 	afterburner_material.set_shader_parameter("throttle",throttle)
-	for aircraft in [hero,wingman]:
-		for node in aircraft.get_children():
-			if node.name.begins_with("EngineFlame"):
-				node.visible = throttle > 0.001
-				var phase := afterburner_flow_phase*TAU+float(node.get_instance_shader_parameter("phase_offset"))*TAU
-				node.scale = Vector3(lerpf(2.1,2.5,throttle)*(1.0+sin(phase*2.0)*0.07),lerpf(1.4,1.7,throttle)*(1.0+cos(phase*3.0)*0.05),lerpf(3.0,14.0,throttle)*(1.0+sin(phase*4.0)*0.12))
+	for mech in [hero,wingman]: mech.update_exhaust(throttle,afterburner_flow_phase)
 
 func _material(shader_name: String) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
@@ -251,9 +247,35 @@ func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 	return material
 
 func _update_hero_pose(time: float) -> void:
+	if not hero.flying:
+		var angle: float = walking_time*hero.walk_speed*hero.scale.x/100.0
+		hero.position = Vector3(650.0+sin(angle)*100.0,0,120.0+cos(angle)*100.0)
+		var ray := PhysicsRayQueryParameters3D.create(hero.position+Vector3.UP*2000.0,hero.position+Vector3.DOWN*1000.0,2)
+		var hit := get_world_3d().direct_space_state.intersect_ray(ray)
+		if not hit.is_empty(): hero.position.y = hit.position.y+0.9*hero.scale.y+0.1
+		hero.rotation = Vector3(0,-PI/2.0+angle,0)
+		return
 	hero.position = flight_position(time)
 	hero.look_at(flight_position(time+0.01))
-	hero.rotate_object_local(Vector3.FORWARD,-1.05+sin(time*0.3)*0.1)
+	hero.rotate_object_local(Vector3.FORWARD,-0.12+sin(time*0.3)*0.08)
+
+func set_walk_mode(enabled: bool) -> void:
+	if enabled and not is_instance_valid(walk_ground):
+		walk_ground = StaticBody3D.new()
+		walk_ground.collision_layer = 2
+		walk_ground.collision_mask = 0
+		var shape := CollisionShape3D.new()
+		shape.shape = get_node("Terrain").mesh.create_trimesh_shape()
+		walk_ground.add_child(shape)
+		add_child(walk_ground)
+	hero.flying = not enabled
+	hero.update_animation(0.0,afterburner_throttle)
+	_update_hero_pose(elapsed)
+	_update_afterburners()
+	# This remains a rendering showcase; the original roster keeps gameplay control.
+	camera.position = hero.position+Vector3(-130,65,180)
+	camera.look_at(hero.position+Vector3(0,10,-50))
+	for trail in trails.slice(0,2): trail.visible = not enabled
 
 func flight_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
@@ -266,10 +288,10 @@ func missile_position(time: float) -> Vector3:
 
 func _add_trails() -> void:
 	var material := _vfx_material(PackedColorArray([Color(0.9,0.83,0.7),Color(0.53,0.49,0.5)]))
-	for side in [-1.0,1.0]:
+	for flame in hero.flames:
 		var emitter := Marker3D.new()
-		emitter.position = Vector3(side*24,-0.8,12)
-		hero.add_child(emitter)
+		flame.get_parent().add_child(emitter)
+		emitter.position = flame.position
 		var trail := PositionTrail.new()
 		trail.emitter = emitter
 		add_child(trail)
@@ -337,6 +359,9 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(camera): return
 	if animate:
 		elapsed += delta
+		if not hero.flying: walking_time += delta
+		hero.update_animation(delta,afterburner_throttle)
+		wingman.update_animation(delta,afterburner_throttle)
 		var old_position := hero.position
 		_update_hero_pose(elapsed)
 		_update_afterburners(delta)
@@ -346,13 +371,13 @@ func _process(delta: float) -> void:
 		missile.look_at(missile_position(elapsed+0.1))
 		wingman.position = wingman_position(elapsed)
 		wingman.look_at(wingman_position(elapsed+0.1))
-		wingman.rotate_object_local(Vector3.FORWARD,0.3)
+		wingman.rotate_object_local(Vector3.FORWARD,0.08)
 		explosion_clock += delta
 		if explosion_clock > 8.0:
 			explosion_clock = 0.0
 			trigger_explosion()
 		clouds.position.x = sin(elapsed*0.015)*50.0
-	for trail in trails: trail.set_process(animate)
+	for index in trails.size(): trails[index].set_process(animate and (hero.flying or index > 1))
 	if is_instance_valid(explosion): explosion.set_process(animate)
 	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var motion := Vector3(Input.get_axis("left","right"),float(Input.is_physical_key_pressed(KEY_E))-float(Input.is_physical_key_pressed(KEY_Q)),Input.get_axis("forward","back"))
@@ -385,6 +410,11 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_5: set_afterburner_throttle(0.0)
 			KEY_6: set_afterburner_throttle(0.35)
 			KEY_7: set_afterburner_throttle(1.0)
+			KEY_G: set_walk_mode(hero.flying)
+			KEY_B:
+				for mech in [hero,wingman]:
+					mech.flight_pose = (mech.flight_pose+1)%AerialMech.FLIGHT_POSES.size()
+					mech.update_animation(0.0,afterburner_throttle)
 			KEY_P: animate = not animate
 			KEY_SPACE: trigger_explosion()
 			KEY_ESCAPE: Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -406,7 +436,7 @@ func _make_hud() -> void:
 	hud.layer = 2
 	add_child(hud)
 	var label := Label.new()
-	label.text = "AERIAL RENDER STUDY   ·   DELIVERY MUST COMPLETE\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\n5 / 6 / 7 Exhaust off / low / full · Right click: fly camera · WASD / Q E · Shift: faster"
+	label.text = "MECH RENDER STUDY\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nG Walk / fly · B Boost pose · 5 / 6 / 7 Exhaust off / low / full\nRight click: fly camera · WASD / Q E · Shift: faster"
 	label.position = Vector2(24,22)
 	label.add_theme_color_override("font_color",Color(1,0.88,0.73))
 	label.add_theme_font_size_override("font_size",16)

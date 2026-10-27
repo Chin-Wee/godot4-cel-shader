@@ -84,7 +84,7 @@ func _capture() -> void:
 	scene.camera.position = scene.hero.global_position+aircraft_basis*Vector3(-80,45,-110)
 	scene.camera.look_at(scene.hero.global_position,aircraft_basis.y)
 	await _save_frame(output.path_join("aircraft-front.png"))
-	var nozzle: MeshInstance3D = scene.hero.find_child("EngineFlame*",false,false)
+	var nozzle: MeshInstance3D = scene.hero.find_child("EngineFlame*",true,false)
 	assert(nozzle != null,"Afterburner inspection target is missing")
 	scene.camera.position = nozzle.global_position+aircraft_basis*Vector3(-27,9,10)
 	scene.camera.look_at(nozzle.global_position+aircraft_basis*Vector3(0,0,8),aircraft_basis.y)

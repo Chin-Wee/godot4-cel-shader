@@ -15,15 +15,18 @@ godot --path demo res://aerial/aerial_demo.tscn
 - **1 / 2:** sunset / daylight palette.
 - **3:** storm lighting and camera rain when inside cloud.
 - **4:** change cloud cover; hidden banks stop contributing visibility/weather.
-- **5 / 6 / 7:** afterburners off / low / full throttle.
+- **5 / 6 / 7:** afterburners off / low / full throttle. Low/off uses the supplied falling/hover loop; full uses the selected boost pose.
+- **G:** switch the hero between flying and a terrain-grounded walking preview.
+- **B:** cycle the supplied forward, left, right and backward boost poses.
 - **Space:** trigger a graphic explosion.
-- **P:** freeze aircraft, trails, cloud drift and effects for comparison.
+- **P:** freeze mechs, trails, cloud drift and effects for comparison.
 - **Right click:** toggle the fly camera. WASD moves, Q/E descends/ascends, Shift moves faster.
 - **Escape:** release the mouse.
 
 The camera follows the hero's translation until free flight is enabled. Fly into
 a cloud bank to see visibility drop. This scene demonstrates rendering rather
-than combat, aircraft physics, collision or a mission system.
+than combat or a mission system. Ground walking follows a demonstration path at
+the imported stride speed, using native terrain raycasts; it is not a new player controller.
 
 ## Implementation and reference
 
@@ -33,12 +36,21 @@ is not assumed to be known. The stretched unsubdivided icosphere exhaust follows
 the developer disclosure quoted in that brief; the other effects are visual
 reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilities.
 
-- Aircraft shaders reuse the existing diffuse ramp, Bayer perturbation, stylized
-  specular and Fresnel functions. Body orientation colors, a colored shadow floor,
-  a bright rim and a separate canopy highlight material specialize those primitives.
-  Vertex RGB tints separate engine/fin/wing-root panels; vertex alpha carries an
-  opaque livery mask for the gold or olive outer wings. It does not drive transparency.
-- Terrain owns world-height/slope coloring and broad strata. Aircraft, terrain,
+- Both former jets now instance the supplied white `MechAsset.glb`. The roster
+  actor supplies cloned animation resources, root displacement removal and source
+  color conversion; aerial materials add the same distance haze, sky fill and Sun
+  palette as the environment. Armor remains matte and desaturated, with visible
+  muted green accents. No orange aircraft livery is applied to the model.
+- Godot's AnimationPlayer blends the supplied `Walk_Forward`, `Fall_Loop` and four
+  directional boost poses over the existing 0.6 seconds. Ordinary playback stays
+  at 70%. The boost assets each contain only one authored pose; runtime clones hold
+  these poses for blending rather than claiming they are animated flight cycles.
+  Ground travel derives from the original walk root distance before its removal.
+  Manual animation advancement shares the scene pause clock. The production
+  movement reference is [Armored Core VI's walking, hover and boost modes](https://www.bandainamcoent.com/news/armored-core-vi-fires-of-rubicon-available-now);
+  native animation crossfades and BoneAttachment3D cover this rendering showcase.
+  The original roster/controller and source asset remain unchanged.
+- Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
   The existing heightfield now separates level mesa caps, eroded cliff contours,
@@ -87,7 +99,11 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   simulation framework, so pause and deterministic seeking remain available.
   Live bursts choose a fresh seed; captures can pass a seed for reproducibility.
   Transient effects are freed without retaining palette references.
-- Aircraft afterburners use a dedicated cel shader. The production control
+- Mech afterburners use the existing dedicated cel shader. Twin eight-sided
+  nozzle housings and flames attach to the animated Torso bone. Smoke emitters
+  share those attachments, replacing the former wingtip locations. Ground mode
+  hides hero exhaust and its trails; flight restores them. The same throttle,
+  phase clock and independent flame pulses drive both mechs. The production control
   reference is [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
   tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
@@ -112,13 +128,7 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 
 Reusable shader sources live in `src/aerial`; the identical runtime copies are
 in `demo/shaders/aerial`, following the repository's existing shader distribution.
-The shared cel include and original material settings are preserved. The aircraft
-proxy now lofts a longer faceted fuselage and canopy, with clipped wings, leading
-strakes, lower fins and exposed twin engine housings. Closed panel prisms include
-small physical bevels that give rim lighting actual grazing normals. Each convex
-part has its own face orientation center before native SurfaceTool batching. Dark
-canopy/intake/nozzle surfaces retain a separate response. Static and live poses use
-the same function, so the frozen captures represent the running scene.
+The shared cel include and original material settings are preserved.
 
 WorldEnvironment supplies native HDR glow. A CanvasLayer pass below the HUD adds
 an overexposed white core, warm glare envelope, broad halo, soft starburst, three
@@ -164,17 +174,20 @@ Mobile rendering, not phone performance or exact reference fidelity.
 
 ## Asset selection
 
-No aircraft, missile, contrail, explosion or 3D cloud asset was present in the
-workspace search. Existing `terrain-1`, `terrain-2` and `terrain-3` mesh/material
-metadata were inspected: they are the small grass/stone ground assets used by
-the mech demo. None supplies the broad aerial canyon shapes in the reference.
-The new scene therefore uses deterministic low-poly aircraft proxies, procedural
-mesa geometry and native primitives. No third-party assets or dependencies were
-added. Proxy geometry is an outstanding limitation of silhouette fidelity.
+The runtime model candidates were inspected: `MechAsset.glb` and the flat-color
+George, Leela, Mike and Stan glTFs.
+MechAsset is the white humanoid model with 76 mesh parts and 11 source
+clips. The other four are colored compact robots and lack its directional boost
+poses. The existing GLB is chosen over its FBX source for the same import reasons
+recorded in `models/MechAsset/README.md`. No new external asset is needed.
+The model has no named thruster sockets, so native Torso bone attachments and
+small procedural nozzle housings provide stable mount points without editing its
+skeleton. Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
 ## Checks and comparison captures
 
 ```sh
+godot --path demo --script res://aerial/tests/capture_mech.gd --resolution 1440x810 --always-on-top -- /tmp/aerial-mech
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
 godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
@@ -192,8 +205,8 @@ godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution
 
 The functional check uses native terrain raycasts at the river vertices to
 reject a missing floor or terrain clipping through the water. It also covers
-opposing aircraft-part/bevel normals, opaque livery
-attributes, exact wingtip attachment, static/live pose
+white-model selection, root displacement removal, stride-based walking, supplied
+boost/hover mapping, animation pause, torso attachment, static/live pose
 agreement, cloud coverage and entry/exit, storm rain activation, fixed world-space
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
@@ -221,8 +234,8 @@ explosion check covers independent lifetimes, drag deceleration, debris gravity,
 smoke buoyancy, seed variation, deterministic seeking and bounded storage. Motion
 captures include the complete dissipation tail rather than cutting the smoke off
 at the end of a short preview; `--explosion-only` skips unchanged exhaust footage.
-Aircraft inspection cameras use the model's local axes, so banking cannot turn an
-"above" view into an underside view.
+Mech captures inspect native torso attachment during directional pose blends,
+throttle states, a complete walk cycle and an exact frozen-frame comparison.
 These are desktop observations, not a device benchmark. Keep the capture window
 visible on macOS. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

@@ -7,17 +7,6 @@ func _initialize() -> void:
 
 func _run() -> void:
 	create_timer(15.0).timeout.connect(_checks_timeout)
-	var prism := preload("res://aerial/geometry.gd")._panel_prism([Vector3(12,0,-5),Vector3(25,0,10),Vector3(23,0,14),Vector3(13,0,7)],Vector3.DOWN)
-	var normals: PackedVector3Array = prism.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
-	var top := false
-	var bottom := false
-	var bevel := false
-	for normal in normals:
-		top = top or normal.y > 0.99
-		bottom = bottom or normal.y < -0.99
-		bevel = bevel or (absf(normal.y) > 0.05 and absf(normal.y) < 0.95)
-	assert(top and bottom,"Detached aircraft parts lost opposing surface normals")
-	assert(bevel,"Aircraft panels lost their bevel normals for rim lighting")
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
@@ -25,23 +14,10 @@ func _run() -> void:
 	await process_frame
 	await _check_river_clearance(scene)
 	_check_afterburners(scene)
-	assert(scene.hero.get_child_count() >= 4,"Aircraft body/canopy/exhaust missing")
-	var body_arrays: Array = scene.hero.get_node("Body").mesh.surface_get_arrays(0)
-	var panel_colors: PackedColorArray = body_arrays[Mesh.ARRAY_COLOR]
-	var has_body := false
-	var has_livery := false
-	for color in panel_colors:
-		has_body = has_body or color.a > 0.99
-		has_livery = has_livery or color.a < 0.01
-	assert(has_body and has_livery,"Aircraft livery is not attached to its panel geometry")
-	for wing_trail in scene.trails.slice(0,2):
-		var attached := false
-		for vertex in body_arrays[Mesh.ARRAY_VERTEX]:
-			attached = attached or vertex.is_equal_approx(wing_trail.emitter.position)
-		assert(attached,"A wingtip trail emitter is detached from its wing")
+	await _check_mechs(scene)
 	var frozen_pose: Transform3D = scene.hero.transform
 	scene._update_hero_pose(0.0)
-	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live aircraft poses disagree")
+	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live mech poses disagree")
 	var clouds = scene.clouds
 	assert(clouds.batches.size() == 4,"Cloud silhouette variants were not instanced")
 	var vertices_by_shape := []
@@ -128,7 +104,7 @@ func _run() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Aerial checks passed: consistent pose, cloud coverage, storm entry rain, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
+	print("Aerial checks passed: white mechs, walk/hover/boost mapping, torso exhaust, consistent pose, cloud coverage, storm entry rain, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
 	quit()
 
 func _check_river_clearance(scene: Node3D) -> void:
@@ -153,16 +129,15 @@ func _check_river_clearance(scene: Node3D) -> void:
 func _check_afterburners(scene: Node3D) -> void:
 	var flames: Array[MeshInstance3D] = []
 	var anchors: Array[Vector3] = []
-	for aircraft in [scene.hero,scene.wingman]:
-		var exit_z: float = aircraft.get_node("Intakes").mesh.get_aabb().end.z
-		for child in aircraft.get_children():
-			if not child.name.begins_with("EngineFlame"): continue
-			flames.append(child)
-			anchors.append(child.global_position)
-			var bounds: AABB = child.mesh.get_aabb()
+	for mech in [scene.hero,scene.wingman]:
+		for flame in mech.flames:
+			flames.append(flame)
+			anchors.append(flame.global_position)
+			var bounds: AABB = flame.mesh.get_aabb()
 			assert(is_zero_approx(bounds.position.z) and is_equal_approx(bounds.end.z,1.0),"Exhaust is not normalized from nozzle to tip")
-			assert(is_equal_approx(child.position.z,exit_z),"Exhaust anchor is detached from the nozzle exit")
-	assert(flames.size() == 4,"Twin afterburners are missing from the aircraft")
+			assert(flame.get_parent() is BoneAttachment3D and flame.get_parent().bone_name == &"Torso","Exhaust does not follow the animated torso")
+			assert(is_equal_approx(flame.position.z,-1.95),"Exhaust is detached from its nozzle exit")
+	assert(flames.size() == 4,"Twin afterburners are missing from the mechs")
 	var previous_length := 0.0
 	for throttle in [0.0,0.35,1.0]:
 		scene.set_afterburner_throttle(throttle)
@@ -192,6 +167,68 @@ func _check_afterburners(scene: Node3D) -> void:
 	assert(scene.afterburner_flow_phase >= 0.0 and scene.afterburner_flow_phase < 100.0,"Exhaust clock grew without bound")
 	scene.afterburner_flow_phase = 0.0
 	scene._update_afterburners()
+
+func _check_mechs(scene: Node3D) -> void:
+	var source := preload("res://models/MechAsset/MechAsset.glb").instantiate()
+	var source_player: AnimationPlayer = source.find_child("AnimationPlayer",true,false)
+	assert(source_player.get_animation(&"Boost_Forward").length < 0.01,"Runtime pose holding modified the source animation")
+	source.free()
+	for mech in [scene.hero,scene.wingman]:
+		assert(mech.find_child("MechAssetModel",true,false) != null,"The supplied white mech is missing")
+		assert(mech.find_child("Body",false,false) == null,"An aircraft proxy remains in the scene")
+		assert(not mech.actor.is_physics_processing(),"Showcase actor is still simulating the roster controller")
+		assert(not mech.actor.actor_camera.current,"Mech camera stole the showcase view")
+		assert(mech.actor.animation_player.callback_mode_process == AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL)
+		assert(is_equal_approx(mech.actor.animation_player.speed_scale,0.7),"Ordinary playback lost its 30% slowdown")
+		for clip_name in [&"Walk",&"Fall"] + mech.FLIGHT_POSES:
+			var clip: Animation = mech.actor.animation_player.get_animation(clip_name)
+			assert(clip.loop_mode == Animation.LOOP_LINEAR)
+			var track: int = mech.actor._find_position_track(clip,&"Root")
+			var origin: Vector3 = clip.track_get_key_value(track,0)
+			for key in clip.track_get_key_count(track):
+				assert(origin.is_equal_approx(clip.track_get_key_value(track,key)),"Animation translates the flying/walking mech twice")
+		for index in mech.FLIGHT_POSES.size():
+			mech.flight_pose = index
+			mech.update_animation(0.9,1.0)
+			assert(mech.actor.current_animation == mech.FLIGHT_POSES[index],"A supplied directional boost pose is unavailable")
+		mech.flight_pose = 0
+		mech.update_animation(0.9,0.35)
+		assert(mech.actor.current_animation == &"Fall","Hover did not use the supplied flying loop")
+		mech.update_animation(0.9,1.0)
+		for material in mech.palette_materials:
+			assert(material.get_shader_parameter("highlight_mask") == 0.0,"Matte armor regained glossy highlights")
+	scene.set_walk_mode(true)
+	await physics_frame
+	scene._update_hero_pose(scene.elapsed)
+	var ground_ray := PhysicsRayQueryParameters3D.create(scene.hero.position,scene.hero.position+Vector3.DOWN*2000.0,2)
+	var hit := scene.get_world_3d().direct_space_state.intersect_ray(ground_ray)
+	assert(not hit.is_empty() and absf(scene.hero.position.y-45.1-hit.position.y) < 0.01,"Walking preview floats above or penetrates the terrain")
+	scene.hero.update_animation(0.9,1.0)
+	assert(scene.hero.actor.current_animation == &"Walk")
+	var skeleton: Skeleton3D = scene.hero.actor.find_child("Skeleton3D",true,false)
+	var thigh := skeleton.find_bone("Thigh.L")
+	var pose := skeleton.get_bone_pose_rotation(thigh)
+	scene.hero.update_animation(0.3,1.0)
+	assert(not pose.is_equal_approx(skeleton.get_bone_pose_rotation(thigh)),"Walking is a static pose")
+	for flame in scene.hero.flames: assert(not flame.visible,"Walking leaves the afterburners lit")
+	for trail in scene.trails.slice(0,2): assert(not trail.visible,"Walking leaves airborne trails visible")
+	scene.animate = true
+	var start: Vector3 = scene.hero.position
+	scene._process(0.1)
+	assert(is_equal_approx(scene.walking_time,0.1) and scene.hero.position.distance_to(start) > 1.0,"Walking animation has no matching movement")
+	var movement: Vector3 = scene.hero.position-start
+	movement.y = 0.0
+	assert((-scene.hero.basis.z).dot(movement.normalized()) > 0.999,"Walking faces away from its movement")
+	scene.animate = false
+	var frozen: float = scene.hero.actor.animation_player.current_animation_position
+	scene._process(0.1)
+	assert(is_equal_approx(scene.hero.actor.animation_player.current_animation_position,frozen),"Paused scene still advances skeletal animation")
+	scene.elapsed = 0.0
+	scene.set_walk_mode(false)
+	scene.hero.update_animation(0.9,1.0)
+	assert(scene.hero.actor.current_animation == &"Boost_Forward")
+	assert(scene.camera.current,"Switching walk/flight lost camera ownership")
+	for flame in scene.hero.flames: assert(flame.visible,"Returning to flight did not restore the exhaust")
 
 func _checks_timeout() -> void:
 	if not completed:
