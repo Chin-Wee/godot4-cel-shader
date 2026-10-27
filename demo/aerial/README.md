@@ -61,7 +61,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Trails record fixed world-distance samples in a 512-slot history. Birth times
   interpolate along the input path, so both live motion and seeded histories use
   the same spacing and age semantics. Teleports break the path without moving old
-  smoke. Six-sided irregular flat-shaded wedges follow the tangent with varied
+  smoke. Distant trail coverage fades through the shared dither before the far
+  plane, using the scene's existing haze range. Six-sided irregular flat-shaded
+  wedges follow the tangent with varied
   deterministic roll, slight age spin, radial growth and dithered expiry. A separate
   wider camera-facing ribbon supplies low-opacity screen-door vapor around the
   core; it shares the same history and clock. The distant contrail uses a narrow

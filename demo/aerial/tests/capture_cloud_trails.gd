@@ -97,6 +97,16 @@ func _capture() -> void:
 			for layer_material in trail.palette_materials(): layer_material.set_shader_parameter("sun_direction",-scene.sun_direction)
 			await _save_frame(output.path_join("smoke-opposite-sun.png"))
 			_delta(output,"smoke-expanded.png","smoke-opposite-sun.png","directional_smoke")
+		if style == Trail.THIN:
+			trail.material_override.set_shader_parameter("haze_start",0.0)
+			trail.material_override.set_shader_parameter("haze_distance",100.0)
+			await _save_frame(output.path_join("thin-distance-faded.png"))
+			trail.visible = false
+			await _save_frame(output.path_join("thin-distance-hidden.png"))
+			assert(Image.load_from_file(output.path_join("thin-distance-faded.png")).get_data() == Image.load_from_file(output.path_join("thin-distance-hidden.png")).get_data(),"Distant trail retained an opaque silhouette")
+			trail.visible = true
+			trail.material_override.set_shader_parameter("haze_start",100000.0)
+			trail.material_override.set_shader_parameter("haze_distance",6500.0)
 		if style == Trail.MISSILE:
 			scene.environment.glow_enabled = false
 			await _save_frame(output.path_join("missile-no-bloom.png"))

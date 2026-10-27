@@ -84,6 +84,9 @@ void fragment() {
   float separation = -scene_position.z / scene_position.w + VERTEX.z;
   fade *= clamp(separation / soft_intersection,0.0,1.0);
  }
+ if (trail_style > 0) {
+  fade *= 1.0-smoothstep(haze_start+haze_distance*0.4,haze_start+haze_distance*0.8,length(aerial_world_position-CAMERA_POSITION_WORLD));
+ }
  if (fade < bayer4x4(FRAGCOORD.xy)) { discard; }
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
  vec3 color = texture(color_ramp,vec2(clamp(age,0.0,1.0),0.5)).rgb;
