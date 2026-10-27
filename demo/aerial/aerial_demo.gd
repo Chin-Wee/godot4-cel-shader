@@ -71,9 +71,6 @@ func _ready() -> void:
 	river_material.set_shader_parameter("rim_strength",0.05)
 	Geometry.add_mesh(self,Geometry.river(),river_material).name = "River"
 	cloud_material = _material("cloud")
-	cloud_material.set_shader_parameter("diffuse_ramp_mode",2)
-	cloud_material.set_shader_parameter("diffuse_ramp_threshold",0.08)
-	cloud_material.set_shader_parameter("diffuse_ramp_smoothing",0.12)
 	clouds = CloudBanks.new()
 	add_child(clouds)
 	clouds.build(cloud_material)
@@ -178,7 +175,7 @@ func _update_afterburners(delta := 0.0) -> void:
 			if node.name.begins_with("EngineFlame"):
 				node.visible = throttle > 0.001
 				var phase := afterburner_flow_phase*TAU+float(node.get_instance_shader_parameter("phase_offset"))*TAU
-				node.scale = Vector3(lerpf(2.1,2.5,throttle)*(1.0+sin(phase*2.0)*0.04),lerpf(1.4,1.7,throttle)*(1.0+cos(phase*3.0)*0.03),lerpf(3.0,14.0,throttle)*(1.0+sin(phase*4.0)*0.07))
+				node.scale = Vector3(lerpf(2.1,2.5,throttle)*(1.0+sin(phase*2.0)*0.07),lerpf(1.4,1.7,throttle)*(1.0+cos(phase*3.0)*0.05),lerpf(3.0,14.0,throttle)*(1.0+sin(phase*4.0)*0.12))
 
 func _material(shader_name: String) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
@@ -277,32 +274,30 @@ func _add_trails() -> void:
 		trail.emitter = emitter
 		add_child(trail)
 		trail.configure(material)
-		for index in 280:
-			var time := -14.0+float(index)*0.05
+		for index in 561:
+			var time := -14.0+float(index)*0.025
 			_update_hero_pose(time)
-			trail.emit_at(emitter.global_position,20.0+time)
+			trail.elapsed = 20.0+time
+			trail.sample_position(emitter.global_position)
 		_update_hero_pose(0.0)
-		trail.material_override.set_shader_parameter("effect_time",trail.elapsed)
-		trail.previous_position = emitter.global_position
-		trail.has_previous = true
+		trail.set_time(20.0)
 		trails.append(trail)
-		palette_materials.append(trail.material_override)
+		palette_materials.append_array(trail.palette_materials())
 
 	var distant_trail := PositionTrail.new()
 	distant_trail.emitter = wingman
 	distant_trail.lifetime = 26.0
-	distant_trail.width = 1.5
+	distant_trail.width = 0.7
+	distant_trail.spacing = 6.0
 	add_child(distant_trail)
-	distant_trail.configure(material)
-	for index in 480:
-		var time := -24.0+float(index)*0.05
-		distant_trail.emit_at(wingman_position(time),26.0+time)
-	distant_trail.elapsed = 26.0
-	distant_trail.material_override.set_shader_parameter("effect_time",26.0)
-	distant_trail.previous_position = wingman.position
-	distant_trail.has_previous = true
+	distant_trail.configure(material,PositionTrail.THIN)
+	for index in 961:
+		var time := -24.0+float(index)*0.025
+		distant_trail.elapsed = 26.0+time
+		distant_trail.sample_position(wingman_position(time))
+	distant_trail.set_time(26.0)
 	trails.append(distant_trail)
-	palette_materials.append(distant_trail.material_override)
+	palette_materials.append_array(distant_trail.palette_materials())
 
 	var smoke := _vfx_material(PackedColorArray([Color(0.9,0.85,0.72),Color(0.18,0.23,0.28)]))
 	var missile_trail := PositionTrail.new()
@@ -311,17 +306,17 @@ func _add_trails() -> void:
 	missile_trail.spacing = 2.0
 	missile_trail.width = 1.2
 	add_child(missile_trail)
-	missile_trail.configure(smoke)
-	missile_trail.material_override.set_shader_parameter("wind_velocity",Vector3(0.35,0.2,0.1))
-	missile_trail.material_override.set_shader_parameter("wind_curl",0.2)
-	for index in 120:
-		var time := -6.0+float(index)*0.05
-		missile_trail.emit_at(missile_position(time),20.0+time)
-	missile_trail.material_override.set_shader_parameter("effect_time",20.0)
-	missile_trail.previous_position = missile.position
-	missile_trail.has_previous = true
+	missile_trail.configure(smoke,PositionTrail.MISSILE)
+	for layer_material in missile_trail.palette_materials():
+		layer_material.set_shader_parameter("wind_velocity",Vector3(0.35,0.2,0.1))
+		layer_material.set_shader_parameter("wind_curl",0.2)
+	for index in 241:
+		var time := -6.0+float(index)*0.025
+		missile_trail.elapsed = 20.0+time
+		missile_trail.sample_position(missile_position(time))
+	missile_trail.set_time(20.0)
 	trails.append(missile_trail)
-	palette_materials.append(missile_trail.material_override)
+	palette_materials.append_array(missile_trail.palette_materials())
 
 func trigger_explosion() -> void:
 	if is_instance_valid(explosion): explosion.queue_free()

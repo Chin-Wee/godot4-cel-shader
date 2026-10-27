@@ -32,7 +32,8 @@ func _capture() -> void:
 	var second := trail.multimesh.get_instance_transform(1)
 	var direction := (second.origin-first.origin).normalized()
 	assert(absf(second.basis.z.normalized().dot(direction)) > 0.999,"Trail puffs do not follow their trajectory")
-	assert(second.basis.z.length() > second.basis.x.length()*1.4,"Trail puffs lost their overlapping elongated shape")
+	assert(trail.multimesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() == 72,"Trail core lost its faceted prism geometry")
+	assert(absf(first.origin.distance_to(second.origin)-trail.spacing) < 0.02,"Seeded trail bypassed fixed-distance sampling")
 	scene.post_material.set_shader_parameter("post_strength",0.0)
 	scene.environment.glow_enabled = false
 	await _save_frame(output.path_join("sunset-no-glow.png"))

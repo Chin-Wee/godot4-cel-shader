@@ -32,6 +32,7 @@ void vertex() {
  trail_active = instance_age ? INSTANCE_CUSTOM.a : 1.0;
  float growth = 1.0+clamp(age,0.0,1.0)*expansion;
  if (trail_style == 1) {
+  growth *= 1.0+sin(INSTANCE_CUSTOM.g*17.0+max(effect_time-INSTANCE_CUSTOM.r,0.0)*3.0)*0.045*smoothstep(0.0,0.2,max(effect_time-INSTANCE_CUSTOM.r,0.0));
   float turn = sin(INSTANCE_CUSTOM.g*10.681)*max(effect_time-INSTANCE_CUSTOM.r,0.0)*trail_roll_speed;
   mat2 roll = mat2(vec2(cos(turn),sin(turn)),vec2(-sin(turn),cos(turn)));
   VERTEX.xy = roll*VERTEX.xy*growth;

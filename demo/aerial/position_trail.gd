@@ -34,7 +34,7 @@ func configure(material: ShaderMaterial, style := SMOKE) -> void:
 	_setup_layer(self,_ribbon_mesh() if kind == THIN else _wedge_mesh(),material)
 	material_override.set_shader_parameter("trail_style",2 if kind == THIN else 1)
 	material_override.set_shader_parameter("trail_profile",2 if kind == THIN else 0)
-	material_override.set_shader_parameter("trail_roll_speed",0.055 if kind != THIN else 0.0)
+	material_override.set_shader_parameter("trail_roll_speed",0.11 if kind != THIN else 0.0)
 	if kind != THIN:
 		vapor = MultiMeshInstance3D.new()
 		vapor.name = "DitheredVapor"
@@ -55,7 +55,7 @@ func configure(material: ShaderMaterial, style := SMOKE) -> void:
 		emissive_core.material_override.set_shader_parameter("trail_profile",2)
 		emissive_core.material_override.set_shader_parameter("expansion",0.0)
 		emissive_core.material_override.set_shader_parameter("lifetime",minf(lifetime,0.8))
-		emissive_core.material_override.set_shader_parameter("emission_strength",3.5)
+		emissive_core.material_override.set_shader_parameter("emission_strength",6.0)
 		emissive_core.material_override.set_shader_parameter("trail_tint",Color(1.0,0.73,0.2))
 	set_time(elapsed)
 
@@ -105,7 +105,7 @@ func emit_at(point: Vector3, birth_time: float) -> void:
 		multimesh.set_instance_custom_data(next_slot,data)
 		_write_ribbon(vapor,basis,point,connected,puff_width*3.4,maxf(segment.length(),spacing)*2.2,data)
 		if emissive_core != null:
-			_write_ribbon(emissive_core,basis,point,connected,puff_width*0.16,segment.length(),data)
+			_write_ribbon(emissive_core,basis,point,connected,puff_width*0.5,segment.length(),data)
 	last_sample_position = point
 	next_slot = (next_slot+1)%CAPACITY
 	sample_count += 1

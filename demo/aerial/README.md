@@ -44,22 +44,32 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   The existing heightfield now separates level mesa caps, eroded cliff contours,
   lower benches and ribbed talus/outcrops. Warm exposed rock sits above blue valley
   shadows; a broad river apron preserves the open canyon composition.
-- Clouds use 18 continuous banks across four native MultiMesh batches. Four native
-  SphereMeshes follow different radial envelopes of broad cumulus lobes, with
-  low-frequency crest breakup and compressed bases. The same envelopes define
-  rotated visibility/weather regions, preventing fog below flattened bases.
-  Coverage affects all batches and their density together. Sunward crowns receive
-  broad warm transmission near the sun; shaded bases retain the stage palette.
-  Transmission is an art-directed surface term, not a volumetric scattering solve.
-  Native environment fog reduces visibility on entry; storm entry adds camera rain.
-  These remain geometric approximations, not a claim about DMC's cloud technique.
-- Trails store a fixed 512-instance history per emitter. Samples stay in world
-  space, expand and fade with age, expire in the shader, and restart on teleport.
-  Hero wing trails, a looping distant aircraft trail, and denser missile smoke
-  have separate lifetimes and GPU wind/curl drift. Overlapping elongated puffs
-  follow the trajectory tangent instead of forming evenly spaced round beads.
-  Wind remains in world space through the oriented instance transforms. Initial
-  wingtip histories replay the same aircraft poses used by live movement.
+- Clouds use 18 deterministic banks across four native MultiMesh batches. Each
+  variant is a coarse marching-cubes iso-surface extracted from a 33×21×29 signed
+  density grid. Broad compressed decks, selected towers, shelves, underside cuts
+  and weak secondary noise replace the previous origin-radial sphere deformation.
+  Gradient normals retain large readable color planes. Weather samples the same
+  trilinear field as the mesh; coverage and rigid drift affect both together.
+  The meshing production reference is [Space Engineers' published marching-cubes
+  mesher](https://github.com/KeenSoftwareHouse/SpaceEngineers/blob/master/Sources/Sandbox.Game/Engine/Voxels/MyMarchingCubesMesher.cs).
+  The implementation uses a standard BSD-licensed lookup table, with its license
+  retained beside the field generator. DMC's exact cloud generator is unpublished;
+  this is a visual reconstruction, not a claim that it uses marching cubes.
+  Three broad cloud tones use coarse world-space threshold noise and the shared
+  Bayer pattern. Sunward lining, orange transmission/bank glow, directional haze
+  and storm entry weather remain part of the lighting stack.
+- Trails record fixed world-distance samples in a 512-slot history. Birth times
+  interpolate along the input path, so both live motion and seeded histories use
+  the same spacing and age semantics. Teleports break the path without moving old
+  smoke. Six-sided irregular flat-shaded wedges follow the tangent with varied
+  deterministic roll, slight age spin, radial growth and dithered expiry. A separate
+  wider camera-facing ribbon supplies low-opacity screen-door vapor around the
+  core; it shares the same history and clock. The distant contrail uses a narrow
+  noisy-width ribbon, while the missile layers a short-lived HDR ribbon and native
+  bloom over its smoke/vapor aftermath. A short condensation delay exposes the
+  depth-tested missile burn before opaque smoke forms. All layers share directional cel shading,
+  palette changes, world-space wind and pause behavior. No soft round smoke texture
+  or continuous alpha blend is used.
 - One mesh VFX shader supplies age, color ramp, HDR emission, Fresnel, graphic fire
   masses, dither dissolve and optional depth intersection fading. Explosions combine
   eight fire lobes, twelve smoke lobes, a ring, three arcs, twelve streaks and four
@@ -69,7 +79,14 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Tapered arcs have yellow cores and
   orange edges, grow with onset, and expire at 1.6 seconds; fire cools and expires
   at 2.4 seconds, while smoke/debris persist through the four-second effect.
-  Transient effects are freed without retaining palette references.
+  Transient effects are freed without retaining palette references. Native Tween
+  easing gives the primary burst a fast attack, slight overshoot and settle; smoke
+  follows after a short delay with slower billowing, while the wave decelerates.
+  A brief energy flash reinforces onset. Destiny 2's production VFX timing/layering
+  is the timing reference; the existing DMC graphic shapes remain unchanged. All
+  motion is evaluated from the effect clock, so pause and deterministic seeking
+  still work. Trail chunks have small independent breathing/roll, and nozzle-locked
+  afterburners pulse more strongly without moving their attachment.
 - Aircraft afterburners use a dedicated cel shader. The production control
   reference is [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
@@ -115,10 +132,13 @@ A native CompositorEffect integrates atmospheric radiance and transmittance alon
 reference is [Horizon Zero Dawn's volumetric cloudscapes](https://www.guerrilla-games.com/read/the-real-time-volumetric-cloudscapes-of-horizon-zero-dawn),
 using view-path integration and light-path cloud attenuation. This is a bounded
 adaptation, not a port of Guerrilla's renderer. A cached 256-square cloud-local
-shadow field creates darker columns between lit haze. Rigid cloud drift moves the
-lookup; cloud shape, coverage or Sun changes rebuild the field. Broad lobe
-intervals approximate these geometric clouds; fine crest noise and cavities are
-below the shadow field's resolution. A near fade protects cool foreground values.
+shadow field creates darker columns between lit haze. The same signed grids used
+by marching cubes and weather are uploaded as one four-variant 3D density atlas.
+Sun rays sample the grids within each bank's field bounds, so openings affect
+shadow thickness too. Rigid drift moves the lookup; field revision, coverage or
+Sun changes rebuild the shadow field. The cached front/back/optical-depth map
+remains a bounded approximation to layered scattering. A near fade protects cool
+foreground values.
 The cloud surface shader separately estimates optical thickness for orange
 transmission, broad bank glow and cream/gold lining; this surface approximation is
 not physical multiple scattering.
@@ -158,6 +178,12 @@ added. Proxy geometry is an outstanding limitation of silhouette fidelity.
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
 godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
+godot --headless --path demo --script res://aerial/tests/test_cloud_field.gd
+godot --headless --path demo --script res://aerial/tests/test_faceted_trails.gd
+godot --headless --path demo --script res://aerial/tests/test_vfx_timing.gd
+godot --path demo --script res://aerial/tests/capture_vfx_motion.gd --resolution 1440x810 --always-on-top -- /tmp/dmc-vfx-motion
+godot --path demo --script res://aerial/tests/capture_cloud_tones.gd --resolution 960x540 --always-on-top
+godot --path demo --script res://aerial/tests/capture_cloud_trails.gd --resolution 1440x810 --always-on-top -- /tmp/dmc-cloud-trails
 godot --path demo --script res://aerial/tests/capture_lighting.gd --resolution 1440x810 --always-on-top -- /tmp/dmc-lighting
 godot --path demo --script res://aerial/tests/capture_volume.gd --resolution 960x540 --always-on-top
 godot --path demo --script res://aerial/tests/capture_aerial.gd --resolution 1440x810 --always-on-top -- /tmp/godot-dmc-captures
@@ -240,8 +266,8 @@ Compared directly with the supplied references, these remain incomplete:
 |---|---|---|
 | Aircraft | Beveled clipped wings, exposed engines, longer canopy/nose and geometry-bound livery render above/below/front | Proxy silhouette, finer panel hierarchy and rim consistency still need closer matching |
 | Environment | Level mesa caps, eroded contours, lower benches/ribbed skirts, warm exposed rock and a broad river apron render in both presets | Cliff shading strips, finer erosion shapes and more authored foreground/midground grouping still needed |
-| Trails/exhaust | Oriented world-space puffs and nozzle-anchored cel afterburners with coupled throttle, flow and silhouette pulses render | Broader trail breakup and more authored afterburner envelopes/cell shapes need refinement |
-| Clouds | Four cumulus silhouettes, warm sunward crowns, matched density regions and coverage work | Lobe silhouettes/internal breakup still need closer matching |
+| Trails/exhaust | Flat-shaded wedge cores, wide dithered vapor, thin/HDR ribbons and nozzle-anchored cel afterburners render | More authored smoke envelopes and afterburner cell shapes can refine reference fidelity |
+| Clouds | Four density-derived decks with shelves/overhangs, three-tone breakup and shared mesh/weather/shadow fields | More authored macro composition can refine reference fidelity |
 | Explosions | Connected asymmetrical smoke plume, vertex value variation, shared sunlight, fire islands and separate age phases render | More heated inner lobes/fire pockets and less patterned fire still needed |
 | Weather/post | Layered solar optics, directional haze/fill, cloud transmission/lining and depth-clipped cloud-shadowed scattering render; dark/white occlusion and visibility gates pass | More authored shaft/column placement and finer weather transitions remain |
 

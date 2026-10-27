@@ -49,8 +49,8 @@ func _run() -> void:
 		var vertices: PackedVector3Array = clouds.batches[variant].multimesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		vertices_by_shape.append(vertices)
 		for index in range(0,vertices.size(),23):
-			assert(absf(clouds._shape_density(vertices[index],variant)-0.074074) < 0.01,"Cloud density does not match its visible envelope")
-		assert(clouds._shape_density(Vector3(0,-0.85,0),variant) == 0.0,"Cloud fog leaked below a variant's flattened base")
+			assert(absf(clouds.field_value(vertices[index],variant)) < 0.0001,"Cloud mesh and weather field diverged at the iso-surface")
+		assert(clouds._shape_density(Vector3(0,-0.85,0),variant) == 0.0,"Cloud fog leaked below the density field")
 	assert(vertices_by_shape[0] != vertices_by_shape[1],"Clouds still repeat one silhouette")
 	for active in range(19):
 		clouds.set_coverage(float(active)/18.0)
@@ -88,6 +88,8 @@ func _run() -> void:
 	var trail = scene.trails[0]
 	assert(trail.sample_count > 200 and trail.multimesh.instance_count == 512,"Persistent trail history missing or unbounded")
 	assert(trail.material_override.get_shader_parameter("effect_time") == trail.elapsed,"Frozen trail history has no shader clock")
+	for layer_material in trail.palette_materials():
+		assert(layer_material.get_shader_parameter("effect_time") == trail.elapsed,"A frozen trail layer missed its history clock")
 	var fixed_transform: Transform3D = trail.multimesh.get_instance_transform(0)
 	scene.hero.position += Vector3(0,0,-30)
 	trail.sample_position(trail.emitter.global_position)
@@ -103,10 +105,10 @@ func _run() -> void:
 	explosion.set_time(0.7)
 	assert(explosion.lobes.size() == 20,"Explosion must contain eight fire and twelve smoke lobes")
 	assert(explosion.get_child_count() >= 36,"Explosion ring, arcs or streaks missing")
-	explosion.set_time(0.2)
+	explosion.set_time(0.02)
 	var early_arc_size: float = explosion.accents[-1].scale.length()
 	explosion.set_time(0.7)
-	assert(explosion.accents[-1].scale.length() > early_arc_size*4.0,"Explosion arcs appeared at full radius during onset")
+	assert(explosion.accents[-1].scale.length() > early_arc_size*4.0,"Explosion accents lost their fast onset")
 	explosion.set_time(1.8)
 	assert(explosion.ring.material_override.get_shader_parameter("normalized_age") == 1.0,"Explosion accents outlived their burst")
 	assert(explosion.materials[0].get_shader_parameter("normalized_age") < 1.0,"Fire ended before the smoke phase")

@@ -17,8 +17,10 @@ var sizes: Array[float] = []
 var ring: MeshInstance3D
 var accents: Array[MeshInstance3D] = []
 var accent_transforms: Array[Transform3D] = []
+var fire_emission := 0.0
 
 func build(fire: ShaderMaterial, smoke: ShaderMaterial, accent: ShaderMaterial) -> void:
+	fire_emission = float(fire.get_shader_parameter("emission_strength"))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 325
 	for index in 20:
@@ -114,14 +116,23 @@ func set_time(seconds: float) -> void:
 	var age := clampf(seconds/duration,0.0,1.0)
 	for index in materials.size():
 		materials[index].set_shader_parameter("normalized_age",clampf(seconds/2.4,0.0,1.0) if index < 8 else age)
-	var expansion := 1.0-exp(-seconds*3.0)
+	# Destiny 2 is the timing reference: fast primary energy, delayed secondary smoke.
+	# Evaluate native easing on the shared clock so pause/scrubbing stay deterministic.
+	var fire_growth: float = Tween.interpolate_value(0.0,1.0,clampf(seconds,0.0,0.4),0.4,Tween.TRANS_BACK,Tween.EASE_OUT)
+	var smoke_growth: float = Tween.interpolate_value(0.0,1.0,clampf(seconds-0.07,0.0,0.9),0.9,Tween.TRANS_QUART,Tween.EASE_OUT)
 	for index in lobes.size():
-		lobes[index].position = offsets[index]*expansion+Vector3.UP*seconds*(4.0 if index < 8 else 9.0)
-		lobes[index].scale = shapes[index]*sizes[index]*expansion*(1.0+age*0.4)
-	var onset := smoothstep(0.05,0.7,seconds)
+		var expansion := fire_growth if index < 8 else smoke_growth
+		var phase := float(index)*2.399
+		var billow := Vector3(sin(seconds*2.2+phase),0.0,cos(seconds*1.7+phase))*smoke_growth*2.0 if index >= 8 else Vector3.ZERO
+		lobes[index].position = offsets[index]*expansion+Vector3.UP*seconds*(4.0 if index < 8 else 9.0)+billow
+		var stretch := Vector3(1.0,1.0+sin(seconds*3.0+phase)*0.08*smoke_growth,1.0) if index >= 8 else Vector3.ONE
+		lobes[index].scale = shapes[index]*stretch*sizes[index]*expansion*(1.0+age*0.4)
+		if index < 8: materials[index].set_shader_parameter("emission_strength",fire_emission*(1.0+1.5*exp(-seconds*24.0)))
+	var onset: float = Tween.interpolate_value(0.0,1.0,clampf(seconds,0.0,0.45),0.45,Tween.TRANS_BACK,Tween.EASE_OUT)
 	for index in accents.size():
 		accents[index].transform = accent_transforms[index].scaled(Vector3.ONE*onset)
-	ring.scale = Vector3.ONE*(8.0+seconds*32.0)
+	var wave: float = Tween.interpolate_value(0.0,1.0,clampf(seconds,0.0,1.3),1.3,Tween.TRANS_QUART,Tween.EASE_OUT)
+	ring.scale = Vector3.ONE*(8.0+wave*52.0)
 	# Shared arc/ring/streak material ages with the same reusable VFX shader.
 	(ring.material_override as ShaderMaterial).set_shader_parameter("normalized_age",clampf(seconds/1.6,0.0,1.0))
 
