@@ -4,43 +4,76 @@ const Explosion = preload("res://aerial/graphic_explosion.gd")
 
 func _initialize() -> void: call_deferred("_run")
 
-func _run() -> void:
-	create_timer(10.0).timeout.connect(func(): quit(1))
+func _burst(seed_value: int) -> Node3D:
 	var material := ShaderMaterial.new()
 	material.shader = load("res://shaders/aerial/mesh-vfx.gdshader")
 	material.set_shader_parameter("emission_strength",0.85)
 	var burst := Explosion.new()
 	root.add_child(burst)
-	burst.build(material,material.duplicate(),material.duplicate())
+	burst.build(material,material.duplicate(),material.duplicate(),seed_value)
 	burst.set_process(false)
-	burst.set_time(0.04)
-	assert(burst.lobes[0].scale.length() > 0.0 and burst.lobes[8].scale == Vector3.ZERO,"Secondary smoke must follow the first flash")
-	burst.set_time(0.1)
-	var snap := burst.lobes[0].scale.x/burst.sizes[0]/(1.0+0.4*0.1/burst.duration)
-	assert(snap > 0.7,"Primary burst still eases in too slowly")
-	burst.set_time(0.25)
-	var overshoot := burst.lobes[0].scale.x/burst.sizes[0]/(1.0+0.4*0.25/burst.duration)
-	assert(overshoot > 1.05,"Primary burst lost its overshoot")
-	burst.set_time(0.6)
-	var settled := burst.lobes[0].scale.x/burst.sizes[0]/(1.0+0.4*0.6/burst.duration)
-	assert(absf(settled-1.0) < 0.001,"Primary overshoot did not settle")
-	var poses := []
-	for lobe in burst.lobes: poses.append(lobe.transform)
+	return burst
+
+func _run() -> void:
+	create_timer(15.0).timeout.connect(func(): quit(1))
+	var burst = _burst(325)
+	var repeat = _burst(325)
+	var alternate = _burst(326)
+	assert(burst.lobes.size() == 20 and burst.accents.size() == 12 and burst.debris.size() == 6)
+	assert(burst.get_child_count() <= 40,"Explosion storage is unbounded")
+	for child in burst.get_children(): assert(not child.mesh is TorusMesh,"Explosion contains a long-lived graphic ring")
+	var births := {}
+	var lifetimes := {}
+	for state in burst.particles:
+		births[state.birth] = true
+		lifetimes[state.life] = true
+	assert(births.size() > 10 and lifetimes.size() > 20,"Explosion components are synchronized again")
+	# Drag slows an outward launch toward its terminal flow without a tween recoil.
+	var early := Explosion.transport(Vector3(40,0,0),Vector3.ZERO,3.0,0.2)
+	var middle := Explosion.transport(Vector3(40,0,0),Vector3.ZERO,3.0,0.4)
+	var late := Explosion.transport(Vector3(40,0,0),Vector3.ZERO,3.0,0.6)
+	assert(early.x < middle.x and middle.x < late.x and (middle-early).length() > (late-middle).length(),"Blast motion is not a decelerating launch")
+	burst.set_time(0.35)
+	repeat.set_time(0.35)
+	alternate.set_time(0.35)
+	var distinct := false
+	var transforms := []
+	for index in burst.particles.size():
+		var node: MeshInstance3D = burst.particles[index].node
+		transforms.append(node.transform)
+		assert(node.transform.is_finite() and node.transform.is_equal_approx(repeat.particles[index].node.transform),"Fixed-seed VFX is not reproducible")
+		distinct = distinct or not node.transform.is_equal_approx(alternate.particles[index].node.transform)
+	assert(distinct,"Every explosion repeats the same choreography")
+	burst.set_time(2.5)
+	burst.set_time(0.35)
+	for index in transforms.size(): assert(transforms[index].is_equal_approx(burst.particles[index].node.transform),"Seeking changes particle trajectories")
 	burst.set_time(0.03)
 	var flash: float = burst.materials[0].get_shader_parameter("emission_strength")
-	burst.set_time(0.6)
-	assert(flash > burst.materials[0].get_shader_parameter("emission_strength")*1.5,"Initial energy flash has no punch")
-	for index in poses.size(): assert(poses[index].is_equal_approx(burst.lobes[index].transform),"VFX depends on frame history instead of its clock")
-	burst.set_time(0.05)
-	var early_wave: float = burst.ring.scale.x
-	burst.set_time(0.15)
-	var early_speed: float = burst.ring.scale.x-early_wave
-	burst.set_time(0.75)
-	var late_wave: float = burst.ring.scale.x
-	burst.set_time(0.85)
-	assert(early_speed > (burst.ring.scale.x-late_wave)*3.0,"Shockwave lost its fast attack and slower tail")
-	burst._process(5.0)
+	burst.set_time(0.3)
+	assert(flash > burst.materials[0].get_shader_parameter("emission_strength")*2.0,"Flash does not cool rapidly")
+	var falling: Dictionary = burst.particles[-1]
+	var before: Vector3 = Explosion.transport(falling.velocity,falling.terminal,falling.drag,0.2)
+	var center: Vector3 = Explosion.transport(falling.velocity,falling.terminal,falling.drag,0.3)
+	var after: Vector3 = Explosion.transport(falling.velocity,falling.terminal,falling.drag,0.4)
+	assert((after-center).y < (center-before).y,"Debris does not arc under gravity")
+	burst.set_time(0.8)
+	var smoke_height := 0.0
+	for node in burst.lobes.slice(8): smoke_height += node.position.y
+	burst.set_time(1.8)
+	for node in burst.lobes.slice(0,8): assert(not node.visible,"Fire lasts as long as the smoke")
+	for node in burst.accents: assert(not node.visible,"Sparks remain as frozen graphic ornaments")
+	var risen := 0.0
+	for node in burst.lobes.slice(8): risen += node.position.y
+	assert(risen > smoke_height and burst.lobes[8].visible,"Smoke does not rise after the flash")
+	var count: int = burst.get_child_count()
+	for frame in 100: burst.set_time(float(frame)*0.04)
+	assert(burst.get_child_count() == count,"Playback allocates more mesh particles")
+	var end: float = burst.duration
+	burst._process(end+1.0)
 	await process_frame
-	assert(not is_instance_valid(burst),"Juiced VFX no longer expires")
-	print("VFX timing checks passed: flash, fast attack, overshoot/settle, delayed smoke, decelerating wave, deterministic seeking and expiry.")
+	assert(not is_instance_valid(burst),"Explosion no longer expires")
+	repeat.queue_free()
+	alternate.queue_free()
+	await process_frame
+	print("Explosion checks passed: independent births/cooling, drag, gravity, buoyancy, seed variation, deterministic seeking, bounded storage and expiry.")
 	quit()

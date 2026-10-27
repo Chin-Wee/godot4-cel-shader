@@ -318,16 +318,16 @@ func _add_trails() -> void:
 	trails.append(missile_trail)
 	palette_materials.append_array(missile_trail.palette_materials())
 
-func trigger_explosion() -> void:
+func trigger_explosion(seed_value := -1) -> void:
 	if is_instance_valid(explosion): explosion.queue_free()
 	var fire := _vfx_material(PackedColorArray([Color(1,0.95,0.22),Color(1,0.42,0.015),Color(0.65,0.06,0.01),Color(0.03,0.025,0.07)]),0.85)
-	var smoke := _vfx_material(PackedColorArray([Color(0.16,0.18,0.26),Color(0.2,0.22,0.32),Color(0.18,0.16,0.24)]))
+	var smoke := _vfx_material(PackedColorArray([Color(0.28,0.31,0.38),Color(0.24,0.27,0.34),Color(0.18,0.20,0.26)]))
 	var accent := _vfx_material(PackedColorArray([Color(1,1,0.45),Color(1,0.8,0.1),Color(1,0.35,0.01)]),0.85)
 	explosion = Explosion.new()
 	explosion.position = hero.position + Vector3(-180,30,-110)
 	explosion.scale = Vector3.ONE*1.8
 	add_child(explosion)
-	explosion.build(fire,smoke,accent)
+	explosion.build(fire,smoke,accent,seed_value)
 	# Material uniforms are local to the effect; do not retain freed effects in the palette list.
 	palette_materials.erase(fire)
 	palette_materials.erase(smoke)

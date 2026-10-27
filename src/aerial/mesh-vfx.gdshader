@@ -16,6 +16,8 @@ uniform float soft_intersection = 0.0;
 uniform bool graphic_fire = false;
 uniform float shape_seed = 0.0;
 uniform float vfx_rim = 0.08;
+uniform float vfx_soft_edge = 0.0;
+uniform bool vfx_bands = false;
 // Opt-in trail geometry; zero preserves explosions and other mesh VFX.
 uniform int trail_style = 0; // 1: faceted chunk, 2: camera-facing path ribbon.
 uniform int trail_profile = 0; // 1: wide vapor, 2: fine/emissive core.
@@ -64,6 +66,15 @@ void vertex() {
 void fragment() {
  if (age < 0.0 || age >= 1.0 || trail_active < 0.5) { discard; }
  float fade = (1.0-smoothstep(0.65,1.0,age))*trail_opacity;
+ float fire_mass = 0.0;
+ if (graphic_fire) {
+  vec3 p = effect_local_position*4.0+shape_seed*vec3(9.0,17.0,6.0)+effect_time*vec3(0.9,3.4,-1.2);
+  vec3 warp = sin(p.yzx*1.4+cos(p.zxy));
+  fire_mass = dot(sin(p+warp*0.8),vec3(0.45,0.35,0.2));
+  // Cooling consumes the lobe in moving pockets instead of shrinking a solid ball.
+  float erosion = smoothstep(0.2,1.0,age);
+  fade *= smoothstep(-0.7+erosion*0.9,-0.4+erosion*0.9,fire_mass);
+ }
  // The narrow HDR burn must remain visible before opaque smoke forms around it.
  // Keep depth testing: world geometry still occludes every trail layer.
  if (trail_smoke_delay > 0.0) {
@@ -78,6 +89,9 @@ void fragment() {
    fade *= density;
   } else { fade *= 1.0-smoothstep(0.55,1.0,abs(p.x)); }
  }
+ if (vfx_soft_edge > 0.0) {
+  fade *= mix(1.0,1.0-smoothstep(0.25,1.0,fresnel_factor(NORMAL,VIEW,1.0)),vfx_soft_edge);
+ }
  if (soft_intersection > 0.0) {
   float depth = textureLod(depth_texture,SCREEN_UV,0.0).r;
   vec4 scene_position = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth,1.0);
@@ -91,18 +105,15 @@ void fragment() {
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
  vec3 color = texture(color_ramp,vec2(clamp(age,0.0,1.0),0.5)).rgb;
  if (graphic_fire) {
-  vec3 p = effect_local_position*5.0+shape_seed*vec3(9.0,17.0,6.0)+age*vec3(0.0,3.0,-1.0);
-  vec3 warp = sin(p.yzx*1.4+cos(p.zxy));
-  float mass = dot(sin(p+warp*0.8),vec3(0.45,0.35,0.2));
   float heat = 1.0-smoothstep(0.3,0.85,age);
   vec3 orange = mix(color*0.4,color*vec3(1.0,0.3,0.02),heat);
   vec3 core = mix(color,vec3(1.0,0.95,0.24),heat);
-  color = mix(orange,core,smoothstep(-0.08,0.12,mass));
+  color = mix(orange,core,smoothstep(-0.08,0.12,fire_mass+(0.35-age)*0.7));
  }
  color *= COLOR.rgb*trail_tint.rgb;
  float ndl = dot(aerial_world_normal,aerial_sun_vector());
  float lighting = mix(0.45,1.0,smoothstep(-0.15,0.15,ndl));
- if (trail_style > 0) {
+ if (trail_style > 0 || vfx_bands) {
   lighting = mix(0.32,0.67,smoothstep(0.02,0.06,ndl));
   lighting = mix(lighting,1.0,smoothstep(0.55,0.59,ndl));
  }

@@ -106,7 +106,7 @@ func _capture() -> void:
 	scene.afterburner_flow_phase = 0.0
 	scene._update_afterburners()
 	scene.camera.transform = initial_camera
-	scene.trigger_explosion()
+	scene.trigger_explosion(325)
 	scene.explosion.set_process(false)
 	scene.explosion.set_time(0.7)
 	await _save_frame(output.path_join("explosion.png"))

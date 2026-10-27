@@ -1,92 +1,94 @@
 extends Node3D
 
-# Production visual reference: DELIVERY MUST COMPLETE's few large fire/smoke
-# masses and sweeping energy arcs. Its unpublished implementation is not assumed.
+# Battlefront II is the production reference for independently simulated VFX
+# particles with gravity and air resistance; DMC remains the cel visual reference.
+# https://forums.ea.com/discussions/star-wars-battlefront-2-en/community-transmission-%E2%80%94-visual-effects-in-star-wars-battlefront-ii/10820960
+# Closed-form drag keeps this small mesh effect deterministic when paused/scrubbed.
 const Geometry = preload("res://aerial/geometry.gd")
-const SMOKE_OFFSETS := [Vector3(-20,-9,-6),Vector3(-24,-1,18),Vector3(8,-5,-14),
-	Vector3(-24,16,-4),Vector3(-22,22,18),Vector3(18,14,-13),
-	Vector3(-13,38,-8),Vector3(9,41,-12),Vector3(22,31,10),
-	Vector3(-1,56,-10),Vector3(18,53,-18),Vector3(-26,42,-3)]
 var elapsed := 0.0
-var duration := 4.0
+var duration := 0.0
+var burst_seed := 0
 var materials: Array[ShaderMaterial] = []
 var lobes: Array[MeshInstance3D] = []
-var offsets: Array[Vector3] = []
-var shapes: Array[Vector3] = []
-var sizes: Array[float] = []
-var ring: MeshInstance3D
 var accents: Array[MeshInstance3D] = []
-var accent_transforms: Array[Transform3D] = []
+var debris: Array[MeshInstance3D] = []
+var particles: Array[Dictionary] = []
 var fire_emission := 0.0
+var _flow := FastNoiseLite.new()
 
-func build(fire: ShaderMaterial, smoke: ShaderMaterial, accent: ShaderMaterial) -> void:
+func build(fire: ShaderMaterial, smoke: ShaderMaterial, accent: ShaderMaterial, seed_value := -1) -> void:
 	fire_emission = float(fire.get_shader_parameter("emission_strength"))
 	var rng := RandomNumberGenerator.new()
-	rng.seed = 325
+	if seed_value < 0: rng.randomize()
+	else: rng.seed = seed_value
+	burst_seed = rng.seed
+	_flow.seed = int(burst_seed%2147483647)
+	_flow.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	_flow.fractal_type = FastNoiseLite.FRACTAL_NONE
+	_flow.frequency = 0.7
+	var wind := Vector3(rng.randf_range(-3,3),0,rng.randf_range(-2,2))
 	for index in 20:
-		var material := (fire if index < 8 else smoke).duplicate() as ShaderMaterial
-		if index < 8:
+		var fiery := index < 8
+		var material := (fire if fiery else smoke).duplicate() as ShaderMaterial
+		if fiery:
 			material.set_shader_parameter("graphic_fire",true)
-			material.set_shader_parameter("shape_seed",float(index)*0.618)
-		materials.append(material)
-		var tint := Color.WHITE if index < 8 else Color(0.65+0.25*sin(index*1.7),0.72+0.2*sin(index*1.7),0.9)
-		var lobe := Geometry.add_mesh(self,_lobe_mesh(float(index)*1.37,tint),material)
-		lobes.append(lobe)
-		var angle := float(index)*2.399
-		if index < 8:
-			offsets.append(Vector3(sin(angle)*13.0-6.0,float(index)*6.4-8.0,cos(angle)*9.0+18.0))
-			sizes.append(rng.randf_range(12.0,18.0))
-			shapes.append(Vector3.ONE)
-		else:
-			offsets.append(SMOKE_OFFSETS[index-8])
-			sizes.append(rng.randf_range(15.0,21.0))
-			shapes.append(Vector3(1.1+0.15*sin(angle),0.95+0.18*cos(angle),1.0))
-	materials.append(smoke) # The four debris shards share this source material.
-	var torus := TorusMesh.new()
-	torus.inner_radius = 0.94
-	torus.outer_radius = 1.0
-	torus.rings = 56
-	torus.ring_segments = 5
-	ring = Geometry.add_mesh(self,torus,accent)
+			material.set_shader_parameter("shape_seed",rng.randf_range(0,32))
+		if not fiery:
+			material.set_shader_parameter("vfx_soft_edge",0.8)
+			material.set_shader_parameter("vfx_bands",true)
+			material.set_shader_parameter("trail_opacity",rng.randf_range(0.75,0.95))
+		var direction := Vector3(rng.randf_range(-1,1),rng.randf_range(-0.25,0.9),rng.randf_range(-1,1)).normalized()
+		var tint := Color.WHITE if fiery else Color(0.72,0.79,0.9)*rng.randf_range(0.85,1.1)
+		var state := {
+			"kind":0 if fiery else 1,"birth":0.0 if index == 0 else rng.randf_range(0.01,0.12) if fiery else rng.randf_range(0.05,0.22),
+			"life":rng.randf_range(0.55,1.05) if fiery else rng.randf_range(2.9,4.2),
+			"origin":direction*rng.randf_range(0,2.5) if fiery else direction*rng.randf_range(3,8),
+			"velocity":direction*rng.randf_range(42,65)+Vector3.UP*7.0 if fiery else direction*rng.randf_range(24,45)+Vector3.UP*8.0,
+			"terminal":wind+Vector3.UP*(rng.randf_range(4,8) if fiery else rng.randf_range(10,16)),
+			"drag":rng.randf_range(2.7,4.5) if fiery else rng.randf_range(1.0,2.2),
+			"radius":rng.randf_range(7,12) if fiery else rng.randf_range(9,15),
+			"growth":rng.randf_range(13,24) if fiery else rng.randf_range(2.6,4.1),
+			"shape":Vector3(rng.randf_range(0.85,1.2),rng.randf_range(0.85,1.15),rng.randf_range(0.85,1.2)),
+			"rotation":Vector3(rng.randf_range(-PI,PI),rng.randf_range(-PI,PI),rng.randf_range(-PI,PI)),
+			"spin":Vector3(rng.randf_range(-0.3,0.3),rng.randf_range(-0.3,0.3),rng.randf_range(-0.3,0.3)),
+			"flow_anchor":Vector3(rng.randf_range(-20,20),rng.randf_range(-20,20),rng.randf_range(-20,20)),
+		}
+		var node := _spawn(_lobe_mesh(rng.randf_range(0,100),tint),material,state)
+		lobes.append(node)
 	for index in 12:
-		var streak := Geometry.add_mesh(self,Geometry.icosphere(),accent)
-		var direction := Vector3(rng.randf_range(-1,1),rng.randf_range(-1,1),rng.randf_range(-1,1)).normalized()
-		streak.position = direction*rng.randf_range(22,55)
-		streak.look_at_from_position(streak.position,streak.position-direction)
-		streak.scale = Vector3(0.5,0.5,rng.randf_range(5,14))
-		accents.append(streak)
-		accent_transforms.append(streak.transform)
-	# Graphic curling arcs use a small opaque ribbon rather than transparent flipbooks.
-	for index in 3:
-		var surface := SurfaceTool.new()
-		surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-		for segment in 48:
-			var t := float(segment)/48.0
-			var u := float(segment+1)/48.0
-			var a := t*TAU*0.78
-			var b := u*TAU*0.78
-			var radial_p := Vector3(cos(a),sin(a),0)
-			var radial_q := Vector3(cos(b),sin(b),0)
-			var p := radial_p*(48.0+t*22.0)+Vector3.BACK*a*3.0
-			var q := radial_q*(48.0+u*22.0)+Vector3.BACK*b*3.0
-			var outer_p := p+radial_p*(0.1+pow(sin(t*PI),0.8)*4.8)
-			var outer_q := q+radial_q*(0.1+pow(sin(u*PI),0.8)*4.8)
-			for vertex in [[p,true],[q,true],[outer_p,false],[q,true],[outer_q,false],[outer_p,false]]:
-				surface.set_normal(Vector3.FORWARD)
-				surface.set_color(Color(1,1,0.65) if vertex[1] else Color(1,0.17,0.005))
-				surface.add_vertex(vertex[0])
-		var arc := Geometry.add_mesh(self,surface.commit(),accent)
-		arc.rotation = Vector3(index*0.7,index*0.9,index*0.4)
-		accents.append(arc)
-		accent_transforms.append(arc.transform)
-	for index in 4:
-		var shard := Geometry.add_mesh(self,Geometry.icosphere(),smoke)
-		shard.position = Vector3(rng.randf_range(-30,30),rng.randf_range(-20,30),rng.randf_range(-10,10))
-		shard.scale = Vector3(1,0.7,2)
-	for node in get_children():
-		if node is GeometryInstance3D:
-			node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var direction := Vector3(rng.randf_range(-1,1),rng.randf_range(-0.5,1),rng.randf_range(-1,1)).normalized()
+		var state := {"kind":2,"birth":rng.randf_range(0,0.04),"life":rng.randf_range(0.14,0.48),
+			"origin":Vector3.ZERO,"velocity":direction*rng.randf_range(65,130),"terminal":Vector3(0,-12,0),
+			"drag":rng.randf_range(1.8,3.2),"width":rng.randf_range(0.18,0.4),"length":rng.randf_range(3,9)}
+		accents.append(_spawn(Geometry.icosphere(),accent.duplicate(),state))
+	for index in 6:
+		var drag := rng.randf_range(0.2,0.45)
+		var state := {"kind":3,"birth":0.0,"life":rng.randf_range(1.0,2.2),
+			"origin":Vector3.ZERO,"velocity":Vector3(rng.randf_range(-32,32),rng.randf_range(18,42),rng.randf_range(-32,32)),
+			"terminal":Vector3(wind.x,-28.0/drag,wind.z),"drag":drag,
+			"shape":Vector3(rng.randf_range(0.5,1.0),rng.randf_range(0.4,0.8),rng.randf_range(1.3,2.4)),
+			"rotation":Vector3(rng.randf_range(-PI,PI),rng.randf_range(-PI,PI),rng.randf_range(-PI,PI)),
+			"spin":Vector3(rng.randf_range(-4,4),rng.randf_range(-4,4),rng.randf_range(-4,4))}
+		debris.append(_spawn(Geometry.icosphere(),smoke.duplicate(),state))
+	duration += 0.15
 	set_time(0)
+
+func _spawn(mesh: Mesh, material: ShaderMaterial, state: Dictionary) -> MeshInstance3D:
+	var node := Geometry.add_mesh(self,mesh,material)
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	state["node"] = node
+	state["material"] = material
+	if state.has("flow_anchor"): state["flow_start"] = _flow_vector(state.flow_anchor)
+	particles.append(state)
+	materials.append(material)
+	duration = maxf(duration,state.birth+state.life)
+	return node
+
+func _flow_vector(point: Vector3) -> Vector3:
+	return Vector3(_flow.get_noise_3dv(point),_flow.get_noise_3dv(point+Vector3(31,17,9)),_flow.get_noise_3dv(point+Vector3(7,43,23)))
+
+static func transport(velocity: Vector3, terminal: Vector3, drag: float, seconds: float) -> Vector3:
+	return terminal*seconds+(velocity-terminal)*((1.0-exp(-drag*seconds))/drag)
 
 func _lobe_mesh(seed: float, tint: Color) -> ArrayMesh:
 	var sphere := SphereMesh.new()
@@ -112,29 +114,34 @@ func _lobe_mesh(seed: float, tint: Color) -> ArrayMesh:
 	return surface.commit()
 
 func set_time(seconds: float) -> void:
-	elapsed = seconds
-	var age := clampf(seconds/duration,0.0,1.0)
-	for index in materials.size():
-		materials[index].set_shader_parameter("normalized_age",clampf(seconds/2.4,0.0,1.0) if index < 8 else age)
-	# Destiny 2 is the timing reference: fast primary energy, delayed secondary smoke.
-	# Evaluate native easing on the shared clock so pause/scrubbing stay deterministic.
-	var fire_growth: float = Tween.interpolate_value(0.0,1.0,clampf(seconds,0.0,0.4),0.4,Tween.TRANS_BACK,Tween.EASE_OUT)
-	var smoke_growth: float = Tween.interpolate_value(0.0,1.0,clampf(seconds-0.07,0.0,0.9),0.9,Tween.TRANS_QUART,Tween.EASE_OUT)
-	for index in lobes.size():
-		var expansion := fire_growth if index < 8 else smoke_growth
-		var phase := float(index)*2.399
-		var billow := Vector3(sin(seconds*2.2+phase),0.0,cos(seconds*1.7+phase))*smoke_growth*2.0 if index >= 8 else Vector3.ZERO
-		lobes[index].position = offsets[index]*expansion+Vector3.UP*seconds*(4.0 if index < 8 else 9.0)+billow
-		var stretch := Vector3(1.0,1.0+sin(seconds*3.0+phase)*0.08*smoke_growth,1.0) if index >= 8 else Vector3.ONE
-		lobes[index].scale = shapes[index]*stretch*sizes[index]*expansion*(1.0+age*0.4)
-		if index < 8: materials[index].set_shader_parameter("emission_strength",fire_emission*(1.0+1.5*exp(-seconds*24.0)))
-	var onset: float = Tween.interpolate_value(0.0,1.0,clampf(seconds,0.0,0.45),0.45,Tween.TRANS_BACK,Tween.EASE_OUT)
-	for index in accents.size():
-		accents[index].transform = accent_transforms[index].scaled(Vector3.ONE*onset)
-	var wave: float = Tween.interpolate_value(0.0,1.0,clampf(seconds,0.0,1.3),1.3,Tween.TRANS_QUART,Tween.EASE_OUT)
-	ring.scale = Vector3.ONE*(8.0+wave*52.0)
-	# Shared arc/ring/streak material ages with the same reusable VFX shader.
-	(ring.material_override as ShaderMaterial).set_shader_parameter("normalized_age",clampf(seconds/1.6,0.0,1.0))
+	elapsed = maxf(seconds,0.0)
+	for state in particles:
+		var t := clampf(elapsed-float(state.birth),0.0,float(state.life))
+		var age := t/float(state.life)
+		var node: MeshInstance3D = state.node
+		var material: ShaderMaterial = state.material
+		node.visible = elapsed >= float(state.birth) and age < 1.0
+		material.set_shader_parameter("normalized_age",age)
+		material.set_shader_parameter("effect_time",t)
+		node.position = state.origin+transport(state.velocity,state.terminal,state.drag,t)
+		if int(state.kind) <= 1:
+			var fiery := int(state.kind) == 0
+			var flow := _flow_vector(state.flow_anchor+Vector3(0,t*0.9,t*0.35))-Vector3(state.flow_start)
+			node.position += flow*(1.0-exp(-t*1.5))*(1.8 if fiery else 4.0)
+			node.rotation = state.rotation+state.spin*t
+			var radius := float(state.radius)*(1.0-exp(-t*float(state.growth)))*(1.0+age*0.3)
+			if fiery: radius *= 1.0-smoothstep(0.6,1.0,age)*0.45
+			node.scale = Vector3(state.shape)*radius
+			if fiery: material.set_shader_parameter("emission_strength",fire_emission*exp(-age*2.8)*(1.0+2.5*exp(-t*28.0)))
+		elif int(state.kind) == 2:
+			var velocity: Vector3 = (Vector3(state.velocity)-Vector3(state.terminal))*exp(-float(state.drag)*t)+Vector3(state.terminal)
+			var up := Vector3.RIGHT if absf(velocity.normalized().dot(Vector3.UP)) > 0.98 else Vector3.UP
+			node.basis = Basis.looking_at(velocity.normalized(),up)
+			node.scale = Vector3(state.width,state.width,float(state.length)*(1.0-age*0.75))
+			material.set_shader_parameter("emission_strength",2.5+(1.0-age)*1.5)
+		else:
+			node.rotation = state.rotation+state.spin*t
+			node.scale = state.shape
 
 func _process(delta: float) -> void:
 	set_time(elapsed+delta)

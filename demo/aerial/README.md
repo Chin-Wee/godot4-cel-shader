@@ -72,23 +72,21 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   depth-tested missile burn before opaque smoke forms. All layers share directional cel shading,
   palette changes, world-space wind and pause behavior. No soft round smoke texture
   or continuous alpha blend is used.
-- One mesh VFX shader supplies age, color ramp, HDR emission, Fresnel, graphic fire
-  masses, dither dissolve and optional depth intersection fading. Explosions combine
-  eight fire lobes, twelve smoke lobes, a ring, three arcs, twelve streaks and four
-  debris shards. Uneven lobe meshes, seeded orange/core islands and authored
-  overlapping smoke offsets form an asymmetrical plume. Smoke lobes vary in aspect
-  and vertex tint, and their value planes follow the shared sun direction.
-  Tapered arcs have yellow cores and
-  orange edges, grow with onset, and expire at 1.6 seconds; fire cools and expires
-  at 2.4 seconds, while smoke/debris persist through the four-second effect.
-  Transient effects are freed without retaining palette references. Native Tween
-  easing gives the primary burst a fast attack, slight overshoot and settle; smoke
-  follows after a short delay with slower billowing, while the wave decelerates.
-  A brief energy flash reinforces onset. Destiny 2's production VFX timing/layering
-  is the timing reference; the existing DMC graphic shapes remain unchanged. All
-  motion is evaluated from the effect clock, so pause and deterministic seeking
-  still work. Trail chunks have small independent breathing/roll, and nozzle-locked
-  afterburners pulse more strongly without moving their attachment.
+- One mesh VFX shader supplies age, color ramp, HDR emission, graphic fire,
+  dither dissolve and optional depth intersection fading. Explosions keep eight
+  fire lobes, twelve smoke lobes, twelve short sparks and six debris fragments.
+  Each component has its own birth time, lifetime, launch velocity and drag.
+  Fire cools within roughly a second, smoke slows into buoyant flow, and fragments
+  tumble and fall under gravity. Low-frequency coherent flow bends the billows;
+  smoke uses softer dithered edges and three lighting values. Fire patches advect
+  and burn through on each lobe's local clock. Long-lived rings/arcs and shared spring overshoot
+  have been removed: pressure reads through the fast outward burst and sparks.
+  The production motion reference is
+  [Battlefront II's independently simulated VFX particles](https://forums.ea.com/discussions/star-wars-battlefront-2-en/community-transmission-%E2%80%94-visual-effects-in-star-wars-battlefront-ii/10820960).
+  Closed-form drag evaluates the existing bounded mesh particles without a new
+  simulation framework, so pause and deterministic seeking remain available.
+  Live bursts choose a fresh seed; captures can pass a seed for reproducibility.
+  Transient effects are freed without retaining palette references.
 - Aircraft afterburners use a dedicated cel shader. The production control
   reference is [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
@@ -218,7 +216,11 @@ zero cost. The rain preview deliberately forces rain over visible geometry for
 inspection; normal play enables it only in storm cloud. Per-capture draw/primitive
 counters are saved with frame names so unlike camera views are not conflated.
 Native transform readbacks verify trail orientation/elongation and cloud placement;
-the headless check also verifies accent, fire and smoke lifetime ordering.
+the headless check also verifies spark, fire and smoke lifetime ordering. The
+explosion check covers independent lifetimes, drag deceleration, debris gravity,
+smoke buoyancy, seed variation, deterministic seeking and bounded storage. Motion
+captures include the complete dissipation tail rather than cutting the smoke off
+at the end of a short preview; `--explosion-only` skips unchanged exhaust footage.
 Aircraft inspection cameras use the model's local axes, so banking cannot turn an
 "above" view into an underside view.
 These are desktop observations, not a device benchmark. Keep the capture window
@@ -247,7 +249,8 @@ smooth terrain normals and a river, lifted upward aircraft panels separately fro
 cool underside fill, added a wider canopy frame/engine housings, narrowed the broad
 additive sun lobe that was over-warming the entire sky, and scaled the explosion
 for a stronger fire/smoke hierarchy. Lower fire gain preserves orange secondary
-masses, while lobe breakup is restricted to fire meshes so the energy arcs stay solid.
+masses. The later natural-motion pass replaces the decorative arcs with short
+  sparks and independently moving fire, smoke and debris.
 
 Cloud/canyon comparison then replaced repeated flattened banks with four taller
 cumulus silhouettes and broad sunward crown lighting. A wider valley and river,
