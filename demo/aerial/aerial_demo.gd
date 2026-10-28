@@ -53,7 +53,6 @@ var shot_cursor := 0
 var reticle: Label
 var hit_time := 0.0
 var shots_fired := 0
-var look_intent := 0.0
 var flight_stats: Label
 var walk_ground: StaticBody3D
 var volume_effect
@@ -398,8 +397,6 @@ func _process(delta: float) -> void:
 		if hero.flying:
 			hero.controller.aim_direction = aim_direction()
 			hero.controller.aim_point = focus_target.global_position if is_instance_valid(focus_target) else hero.position+hero.controller.aim_direction*4500.0
-			hero.controller.aim_chassis_follow = look_intent > 0.0 or is_instance_valid(focus_target)
-			look_intent = maxf(0.0,look_intent-delta)
 			hero.step_flight(delta,FlightController.read_input(),camera_yaw)
 		else:
 			walking_time += delta
@@ -442,12 +439,13 @@ func focus_next() -> void:
 
 func _update_flight_stats() -> void:
 	var fc = hero.controller
-	var warning := ""
+	var warning := " · AoA LIMIT" if fc.pull_limit > 0.1 else ""
+	if fc.aim_direction.dot(fc.weapon_aim) < cos(deg_to_rad(10)): warning += " · OUTSIDE FIRING ARC"
 	if fc.time_to_impact < 2.4: warning = " · TERRAIN %.1fs%s"%[fc.time_to_impact," — RECOVERY CAPPED" if fc.uncaged else " — PULL UP"]
 	flight_stats.text = "%s · THRUST %.1f× · %.0f m/s · AERO %.0f%% · %.1f G%s\nW/S: %s · A/D: %s · Focus: %s"%[
 		"UNCAGED" if fc.uncaged else "ASSIST",fc.DETENTS[fc.detent],fc.velocity.length(),fc.aero_authority*100,fc.g_load,warning,
-		"PITCH" if fc.uncaged or fc.latches.get("forward",fc.latches.get("back",fc.attitude_bindings)) else "TRANSLATE",
-		"ROLL" if fc.uncaged or fc.latches.get("left",fc.latches.get("right",fc.attitude_bindings)) else "STRAFE",
+		"TRANSLATE" if Input.is_action_pressed("flight_vector") else "PITCH",
+		"STRAFE" if Input.is_action_pressed("flight_vector") else "ROLL",
 		str(focus_target.name) if is_instance_valid(focus_target) else "free aim"]
 	flight_stats.modulate = Color(1,0.4,0.25) if fc.time_to_impact < 2.4 else Color.WHITE
 	reticle.text = "×" if hit_time > 0.0 else "+"
@@ -478,6 +476,7 @@ func _update_weapon(delta: float) -> void:
 
 func fire_weapon() -> void:
 	if not animate or fire_cooldown > 0: return
+	if hero.controller.aim_direction.dot(hero.controller.limit_aim_direction(hero.controller.aim_direction)) < cos(deg_to_rad(10)): return
 	var start: Vector3 = hero.rig.weapon.muzzle.origin
 	var direction: Vector3 = hero.rig.weapon.barrel_direction
 	if direction.dot(hero.controller.aim_direction) < cos(deg_to_rad(12)): return
@@ -516,8 +515,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_4: clouds.set_coverage(0.4 if clouds.coverage > 0.5 else 1.0)
 			KEY_G: set_walk_mode(hero.flying)
 			KEY_P: animate = not animate
-			KEY_F: trigger_explosion()
-			KEY_R: reset_camera()
+			KEY_F8: trigger_explosion()
+			KEY_HOME: reset_camera()
 			KEY_TAB: focus_next()
 			KEY_ESCAPE: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
@@ -525,7 +524,6 @@ func _orbit(relative: Vector2) -> void:
 	# Camera remains gravity-upright even during inverted/body-independent flight.
 	focus_target = null
 	focus_index = -1
-	look_intent = 0.3
 	camera_yaw -= relative.x*0.004
 	camera_pitch = clampf(camera_pitch+relative.y*0.004,-1.45,1.45)
 	_update_camera(0.0)
@@ -556,13 +554,16 @@ func _make_hud() -> void:
 	panel.offset_right = -20
 	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "GUNDAM · CONTINUOUS FLIGHT\nW/S: vector / pitch · A/D: strafe / roll · Q/E: yaw\nSpace / C: thrust detent · RMB hold: uncage · Shift+WASD: vernier burst · X: drag\nClick: capture mouse · Mouse: aim · LMB: fire · MMB / Tab: focus · Esc: release mouse\nWheel: zoom · R: camera reset · P: pause · G: walk · 1/2: palette · 3/4: weather · F: explosion"
+	label.text = "GUNDAM · CONTINUOUS FLIGHT\nW/S: pitch · A/D: roll · Q/E: yaw · Arrows: pitch / roll\nR/F: vertical thrust · Alt+WASD: always translate · Ctrl: precision\nSpace / C: thrust detent · RMB hold: uncage · Shift+WASD: burst · X: drag\nMouse: aim · LMB: fire · MMB / Tab: focus · Esc: release · Wheel: zoom\nHome: camera reset · P: pause · G: walk · 1/2: palette · 3/4: weather · F8: explosion"
 	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
 	label.add_theme_font_size_override("font_size",15)
 	panel.add_child(label)
 	flight_stats = Label.new()
 	flight_stats.text = "ASSIST · THRUST 1.0×"
 	panel.add_child(flight_stats)
+	for text in [label,flight_stats]:
+		text.add_theme_constant_override("outline_size",3)
+		text.add_theme_color_override("font_outline_color",Color(0.03,0.04,0.06,0.85))
 
 	reticle = Label.new()
 	reticle.text = "+"

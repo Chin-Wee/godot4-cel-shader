@@ -54,6 +54,7 @@ func _capture() -> void:
 			0: _keys([])
 			6: _keys([KEY_W,KEY_SPACE])
 			7: _keys([KEY_W])
+			24: _keys([])
 			66: _keys([KEY_S]); _uncage(true)
 			78: _keys([KEY_C])
 			79: _keys([])
@@ -93,6 +94,36 @@ func _capture() -> void:
 		scene.camera_yaw += PI
 		scene._update_camera(0.0)
 		await _save_frame(output.path_join(scenario+"-front.png"))
+	# Sustained banked pull through the vertical: inspect load-driven legs and
+	# reject the old hover-brake/heading break under the same pilot input.
+	scene.follow_camera = false
+	mech.controller.reset(Vector3(175,1800,340))
+	mech.controller.attitude = Quaternion(Vector3.FORWARD,0.6)*Quaternion(Vector3.RIGHT,-PI/2)
+	mech.controller.velocity = Vector3(0,0,-70)
+	mech.controller.detent = 3
+	for frame in 60: mech.step_flight(1.0/120.0,{},0)
+	var knee_min := INF
+	var knee_max := -INF
+	var minimum_speed := INF
+	var maximum_aoa := 0.0
+	for frame in 60:
+		mech.step_flight(1.0/12.0,{"pitch_up":true},0)
+		scene._update_afterburners(1.0/12.0)
+		scene.camera.position = mech.position+Vector3(150,45,110)
+		scene.camera.look_at(mech.position)
+		await _save_frame(output.path_join("turn-%03d.png"%frame))
+		_check_mounts(mech)
+		assert(mech.controller.velocity.length() > 55,"Banked pull triggered hover braking")
+		assert(absf(mech.controller.angle_of_attack) < deg_to_rad(30),"Assisted banked pull departed")
+		minimum_speed = minf(minimum_speed,mech.controller.velocity.length())
+		maximum_aoa = maxf(maximum_aoa,absf(rad_to_deg(mech.controller.angle_of_attack)))
+		knee_min = minf(knee_min,mech.rig.legs[1].value.x)
+		knee_max = maxf(knee_max,mech.rig.legs[1].value.x)
+	assert(mech.controller.velocity.z > 20,"Banked pull cannot pass through vertical flight")
+	assert(knee_max-knee_min > 0.3,"Turn loads do not move the knees visibly")
+	var metrics := FileAccess.open(output.path_join("turn-metrics.json"),FileAccess.WRITE)
+	metrics.store_string(JSON.stringify({"minimum_speed":minimum_speed,"maximum_aoa_degrees":maximum_aoa,"knee_range_degrees":rad_to_deg(knee_max-knee_min),"final_velocity":str(mech.controller.velocity)},"  "))
+	metrics.close()
 	var data := FileAccess.open(output.path_join("telemetry.json"),FileAccess.WRITE)
 	data.store_string(JSON.stringify(telemetry,"  "))
 	data.close()
@@ -166,7 +197,7 @@ func _capture() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Native flight checks passed: keyboard detent/uncage/burst/recovery sequence, cruise/drift/inverted/stall poses, local motors, visible cold jets, walk and pause.")
+	print("Native flight checks passed: keyboard detent/uncage/burst/recovery sequence, cruise/drift/inverted/stall poses, protected banked loop, load-driven legs, local motors, visible cold jets, walk and pause.")
 	quit()
 
 func _check_mounts(mech: Node3D) -> void:

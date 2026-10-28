@@ -7,8 +7,12 @@ const Spring = preload("res://aerial/flight_pose.gd").Spring
 const DETENTS := [0.0,0.5,1.0,2.0,4.0]
 const GRAVITY := 9.81
 const ACTION_KEYS := {
-	"flight_forward":[KEY_W,KEY_UP],"flight_back":[KEY_S,KEY_DOWN],
-	"flight_left":[KEY_A,KEY_LEFT],"flight_right":[KEY_D,KEY_RIGHT],
+	"flight_forward":[KEY_W],"flight_back":[KEY_S],
+	"flight_left":[KEY_A],"flight_right":[KEY_D],
+	"flight_pitch_down":[KEY_UP],"flight_pitch_up":[KEY_DOWN],
+	"flight_roll_left":[KEY_LEFT],"flight_roll_right":[KEY_RIGHT],
+	"flight_rise":[KEY_R],"flight_sink":[KEY_F],
+	"flight_vector":[KEY_ALT],"flight_precision":[KEY_CTRL],
 	"flight_yaw_left":[KEY_Q],"flight_yaw_right":[KEY_E],
 	"flight_thrust_up":[KEY_SPACE],"flight_thrust_down":[KEY_C],
 	"flight_burst":[KEY_SHIFT],"flight_brake":[KEY_X],
@@ -21,7 +25,7 @@ var angular_velocity := Vector3.ZERO
 var angular_acceleration := Vector3.ZERO
 var aim_direction := Vector3.FORWARD
 var aim_point := Vector3(INF,INF,INF)
-var aim_chassis_follow := false
+var weapon_aim := Vector3.FORWARD
 var gaze_target := Vector3.ZERO
 var local_velocity := Vector3.ZERO
 var local_acceleration := Vector3.ZERO
@@ -32,6 +36,11 @@ var angle_of_attack := 0.0
 var sideslip := 0.0
 var attached_flow := 0.0
 var aero_authority := 0.0
+var flight_blend := 0.0
+var control_blend := 0.0
+var pull_limit := 0.0
+var translation_input := Vector3.ZERO
+var rotation_command := Vector3.ZERO
 var vector_stabilization := 1.0
 var departure := 0.0
 var uncaged := false
@@ -51,12 +60,12 @@ var yaw_acceleration := 0.0
 # Control/pose units are meters; the giant display model travels at this scale.
 var distance_scale := 10.0
 var model_scale := 50.0
-var latches := {} # true = attitude, false = vector, absent = released.
 var previous := {}
-var attitude_bindings := false
 var brake := Spring.new()
 var accel := Spring.new()
 var authority := Spring.new()
+var envelope := Spring.new()
+var command := Spring.new()
 
 static func install_input_actions() -> void:
 	for action in ACTION_KEYS:
@@ -69,7 +78,7 @@ static func install_input_actions() -> void:
 
 static func read_input() -> Dictionary:
 	var result := {"uncage":Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)}
-	for key in ["forward","back","left","right","yaw_left","yaw_right","thrust_up","thrust_down","burst","brake"]:
+	for key in ["forward","back","left","right","yaw_left","yaw_right","thrust_up","thrust_down","burst","brake","pitch_up","pitch_down","roll_left","roll_right","rise","sink","vector","precision"]:
 		result[key] = Input.is_action_pressed("flight_"+key)
 	return result
 
@@ -90,7 +99,7 @@ func reset(origin: Vector3, yaw_angle := 0.0) -> void:
 	g_load = 1.0
 	burst_direction = Vector3.ZERO
 	aim_point = Vector3(INF,INF,INF)
-	aim_chassis_follow = false
+	weapon_aim = -Basis(attitude).z
 	aim_direction = -Basis(attitude).z
 	gaze_target = position+aim_direction*4500.0
 	local_velocity = Vector3.ZERO
@@ -99,6 +108,11 @@ func reset(origin: Vector3, yaw_angle := 0.0) -> void:
 	required_force = Vector3.UP*GRAVITY
 	aerodynamic_force = Vector3.ZERO
 	aero_authority = 0.0
+	flight_blend = 0.0
+	control_blend = 0.0
+	pull_limit = 0.0
+	translation_input = Vector3.ZERO
+	rotation_command = Vector3.ZERO
 	vector_stabilization = 1.0
 	departure = 0.0
 	uncaged = false
@@ -109,28 +123,22 @@ func reset(origin: Vector3, yaw_angle := 0.0) -> void:
 	burst_cooldown = 0.0
 	clock = 0.0
 	time_to_impact = INF
-	latches.clear()
 	previous.clear()
-	attitude_bindings = false
-	for spring in [brake,accel,authority]:
+	for spring in [brake,accel,authority,envelope,command]:
 		spring.value = Vector3.ZERO
 		spring.velocity = Vector3.ZERO
 
-func advance(delta: float, controls: Dictionary, camera_yaw: float) -> void:
+func advance(delta: float, controls: Dictionary, _camera_yaw := 0.0) -> void:
 	# Edges are sampled once per display update, never once per integration step.
-	_read_edges(controls,camera_yaw)
+	_read_edges(controls)
 	var remaining := minf(delta,0.25)
 	while remaining > 0.000001:
 		var step := minf(remaining,1.0/120.0)
-		_step(step,controls,camera_yaw)
+		_step(step,controls)
 		remaining -= step
 
-func _read_edges(raw: Dictionary, camera_yaw: float) -> void:
-	var was_uncaged := uncaged
+func _read_edges(raw: Dictionary) -> void:
 	uncaged = bool(raw.get("uncage",false))
-	for key in ["forward","back","left","right"]:
-		if not raw.get(key,false): latches.erase(key)
-		elif not previous.get(key,false) or was_uncaged and not uncaged: latches[key] = attitude_bindings
 	for key in ["thrust_up","thrust_down"]:
 		if raw.get(key,false) and not previous.get(key,false): detent = clampi(detent+(1 if key == "thrust_up" else -1),0,DETENTS.size()-1)
 	var directional_edge := false
@@ -139,12 +147,12 @@ func _read_edges(raw: Dictionary, camera_yaw: float) -> void:
 	if raw.get("burst",false) and (not previous.get("burst",false) or directional_edge) and burst_cooldown <= 0.0:
 		var direction := Vector3(float(raw.get("right",false))-float(raw.get("left",false)),0,float(raw.get("back",false))-float(raw.get("forward",false)))
 		if not direction.is_zero_approx():
-			burst_direction = Basis(Vector3.UP,camera_yaw)*direction.normalized()
+			burst_direction = pilot_frame()*direction.normalized()
 			burst_remaining = 0.20
 			burst_cooldown = 0.50
 	previous = raw.duplicate()
 
-func _step(delta: float, raw: Dictionary, camera_yaw: float) -> void:
+func _step(delta: float, raw: Dictionary) -> void:
 	clock += delta
 	burst_remaining = maxf(0.0,burst_remaining-delta)
 	burst_cooldown = maxf(0.0,burst_cooldown-delta)
@@ -159,65 +167,69 @@ func _step(delta: float, raw: Dictionary, camera_yaw: float) -> void:
 	attached_flow = (1.0-smoothstep(deg_to_rad(15),deg_to_rad(55),absf(angle_of_attack)))*(1.0-smoothstep(0.3,1.2,absf(sideslip)))
 	var lift_orientation := 1.0-absf(velocity.normalized().dot(airframe.y)) if speed > 0.1 else 0.0
 	aero_authority = authority.step(Vector3(smoothstep(20,70,speed)*attached_flow*lift_orientation,0,0),delta,0.16).x
-	if aero_authority > 0.65: attitude_bindings = true
-	elif aero_authority < 0.35: attitude_bindings = false
-	vector_stabilization = 0.0 if uncaged else 1.0-aero_authority
+	# Airflow controls lift, not the hover brake. A high-AoA pull must not
+	# suddenly cancel momentum or level the bank in the middle of a turn.
+	var speed_envelope := smoothstep(12,50,speed)
+	var longitudinal := 1.0-smoothstep(0.55,1.35,absf(sideslip))
+	flight_blend = envelope.step(Vector3(speed_envelope*longitudinal,0,0),delta,0.25).x
+	var tilt := acos(clampf(basis.y.dot(Vector3.UP),-1.0,1.0))
+	var hover_support := 1.0-smoothstep(deg_to_rad(15),deg_to_rad(60),tilt)
+	vector_stabilization = 0.0 if uncaged else (1.0-flight_blend)*hover_support
 	departure = smoothstep(20,60,speed)*(1.0-attached_flow)
-	var vector_input := Vector3.ZERO
-	var rotation_input := Vector3.ZERO
-	for key in latches:
-		var attitude_key: bool = uncaged or latches[key]
-		match key:
-			"forward":
-				if attitude_key: rotation_input.x -= 1.0
-				else: vector_input.z -= 1.0
-			"back":
-				if attitude_key: rotation_input.x += 1.0
-				else: vector_input.z += 1.0
-			"left":
-				if attitude_key: rotation_input.z += 1.0
-				else: vector_input.x -= 1.0
-			"right":
-				if attitude_key: rotation_input.z -= 1.0
-				else: vector_input.x += 1.0
+	var planar := Vector3(float(raw.get("right",false))-float(raw.get("left",false)),0,float(raw.get("back",false))-float(raw.get("forward",false)))
+	var vector_input := planar if raw.get("vector",false) else Vector3.ZERO
+	# Constant bindings. Shift selects a burst without also rolling the suit.
+	var rotation_input := Vector3.ZERO if raw.get("vector",false) or raw.get("burst",false) else Vector3(planar.z,0,-planar.x)
 	rotation_input.y = float(raw.get("yaw_left",false))-float(raw.get("yaw_right",false))
-	var control_frame := aim_frame()
-	var desired_rates := control_frame.x*rotation_input.x*1.25+control_frame.z*rotation_input.z*1.65+control_frame.y*rotation_input.y*1.1
+	rotation_input.x += float(raw.get("pitch_up",false))-float(raw.get("pitch_down",false))
+	rotation_input.z += float(raw.get("roll_left",false))-float(raw.get("roll_right",false))
+	rotation_input = rotation_input.clamp(Vector3(-1,-1,-1),Vector3.ONE)
+	# Hold the pilot axes through a maneuver. Gravity-relative tilt used to rotate
+	# the controls themselves during a loop or bank. Native body axes do not.
+	if not uncaged and absf(rotation_input.y) < 0.01 and absf(rotation_input.z) < 0.01 and absf(rotation_command.y) < 0.02 and absf(rotation_command.z) < 0.02: control_blend = flight_blend
+	var control_frame := pilot_frame()
+	var precision := 0.35 if raw.get("precision",false) else 1.0
+	rotation_command = command.step(rotation_input*precision,delta,0.14)
+	var pitch_rate := rotation_command.x*(1.15 if uncaged else lerpf(1.0,0.9,flight_blend))
+	pull_limit = 0.0
+	# DCS Su-27 reference: assisted AoA protection, with deliberate departure
+	# available when uncaged or spreading the airbrake. This limits rates, not pose.
+	if not uncaged and flight_blend > 0.35 and brake_amount < 0.2:
+		var maximum := deg_to_rad(23.0)
+		var allowed := maxf(0.0,(maximum-signf(pitch_rate)*angle_of_attack)/0.45)
+		var limited := signf(pitch_rate)*minf(absf(pitch_rate),allowed)
+		pull_limit = 1.0-absf(limited)/maxf(absf(pitch_rate),0.001) if absf(pitch_rate) > 0.01 else 0.0
+		pitch_rate = limited
+	var desired_rates := control_frame.x*pitch_rate+control_frame.z*rotation_command.z*1.4+control_frame.y*rotation_command.y*0.9
 	if not uncaged:
-		# Continuous body-lift transition. Latches change interpretation only on a
-		# new press, while an already-held translation request keeps working.
+		# Continuous body-lift assist; control bindings stay fixed at every speed.
 		var horizontal := Vector3(velocity.x,0,velocity.z)
 		var forward := -Basis(Vector3.UP,heading_yaw).z
 		var forward_alignment := horizontal.normalized().dot(forward)
 		if horizontal.length() > 8.0 and forward_alignment > 0.5: forward = horizontal.normalized()
-		var cruise := smoothstep(8,45,speed)*smoothstep(0.45,0.9,forward_alignment)
 		var upright := Basis.looking_at(forward,Vector3.UP).get_rotation_quaternion()
-		var target := (upright*Quaternion(Vector3.RIGHT,-PI/2.0*cruise)).normalized()
-		# Banking remains the pilot's; no automatic wings-level correction during
-		# aerodynamic flight. Flight-path assist acts only on the nose direction.
-		var error := target*attitude.inverse()
+		var error := upright*attitude.inverse()
 		if error.w < 0.0: error = -error
-		var alignment := error.get_axis()*error.get_angle()*lerpf(2.4,0.65,aero_authority)
-		if aero_authority > 0.4: alignment = alignment.slide(airframe.z)
-		if absf(rotation_input.x) > 0.05: alignment = alignment.slide(basis.x)
+		var level := error.get_axis()*error.get_angle()*2.0
+		# Shortest-arc nose alignment preserves bank and works through vertical
+		# flight. It has no Euler heading singularity and never asks for wings level.
+		var swing := Quaternion(basis.y.normalized(),velocity.normalized()) if speed > 0.1 else Quaternion.IDENTITY
+		if swing.w < 0.0: swing = -swing
+		var path := swing.get_axis()*swing.get_angle()*0.75
+		var guide := maxf(flight_blend,smoothstep(deg_to_rad(20),deg_to_rad(70),tilt)*smoothstep(3,15,speed))
+		var alignment := level*(1.0-guide)+path*guide
+		if absf(rotation_input.x) > 0.05: alignment = alignment.slide(control_frame.x)
 		if absf(rotation_input.z) > 0.05: alignment = alignment.slide(control_frame.z)
 		if absf(rotation_input.y) > 0.05: alignment = alignment.slide(control_frame.y)
 		desired_rates += alignment.limit_length(1.2)
-	# Outer aim envelope: head/weapon/torso do the small corrections first.
-	var aim_local := aim_frame().inverse()*aim_direction
-	var aim_yaw := atan2(-aim_local.x,-aim_local.z)
-	var aim_pitch := atan2(aim_local.y,Vector2(aim_local.x,aim_local.z).length())
-	var follow := (1.25 if uncaged else lerpf(0.65,0.18,aero_authority))
-	if aim_chassis_follow and absf(rotation_input.y) < 0.05: desired_rates += control_frame.y*signf(aim_yaw)*maxf(0.0,absf(aim_yaw)-deg_to_rad(75))*follow
-	if aim_chassis_follow and absf(rotation_input.x) < 0.05: desired_rates += basis.x*signf(aim_pitch)*maxf(0.0,absf(aim_pitch)-deg_to_rad(65))*follow
 	var old_rates := angular_velocity
 	# Finite vernier torque servo; releasing input damps angular rates, not motion.
-	angular_velocity = angular_velocity.move_toward(desired_rates.limit_length(2.2),delta*4.5)
+	angular_velocity = angular_velocity.move_toward(desired_rates.limit_length(1.8),delta*(3.2 if rotation_input.length() > 0.01 else 5.5))
 	angular_acceleration = (angular_velocity-old_rates)/delta
 	if angular_velocity.length() > 0.00001: attitude = (Quaternion(angular_velocity.normalized(),angular_velocity.length()*delta)*attitude).normalized()
 	basis = Basis(attitude)
 	var nose := basis.y
-	heading_yaw = atan2(-nose.x,-nose.z) if Vector2(nose.x,nose.z).length() > 0.2 else atan2(basis.z.x,basis.z.z)
+	heading_yaw = atan2(-nose.x,-nose.z) if Vector2(nose.x,nose.z).length() > 0.2 else (atan2(basis.z.x,basis.z.z) if flight_blend < 0.3 else heading_yaw)
 	yaw_acceleration = (angular_velocity.y-yaw_rate)/delta
 	yaw_rate = angular_velocity.y
 	# A lifting-body approximation: finite q, attached-flow lift, induced/broadside
@@ -231,18 +243,19 @@ func _step(delta: float, raw: Dictionary, camera_yaw: float) -> void:
 	aerodynamic_force = lift-direction*q*cd
 	var thrust: float = DETENTS[detent]*GRAVITY
 	required_force = basis.y*thrust
+	translation_input = Vector3(vector_input.x,float(raw.get("rise",false))-float(raw.get("sink",false)),vector_input.z)
 	if not uncaged:
-		var camera_basis := Basis(Vector3.UP,camera_yaw)
-		var requested_velocity := camera_basis*vector_input.limit_length(1.0)*65.0
 		var horizontal_velocity := Vector3(velocity.x,0,velocity.z)
-		var correction := (requested_velocity-horizontal_velocity)*1.1
-		if vector_input.is_zero_approx(): correction *= pow(vector_stabilization,3)
-		correction = correction.limit_length(16.0)
+		var correction := (-horizontal_velocity*1.1*pow(vector_stabilization,3)).limit_length(16.0)
 		var support := (GRAVITY-aerodynamic_force.y-required_force.y-velocity.y*1.8)*vector_stabilization if detent == 2 else -velocity.y*0.3*vector_stabilization
-		# FBW verniers supplement the main thrust. Budget is finite; detent zero
-		# really cuts power, and recaging bends velocity rather than replacing it.
+		# Hover trim fades with speed and deliberate body tilt. It must not cancel
+		# a pilot-commanded launch into forward flight.
 		var trim := Vector3(correction.x-required_force.x*vector_stabilization,support,correction.z-required_force.z*vector_stabilization)
 		required_force += trim.limit_length(thrust*1.5)
+	# Assisted vectoring uses chassis heading/gravity, never camera orientation.
+	# Uncaged vectoring retains the body's full three-dimensional pilot frame.
+	var translation_basis := control_frame if uncaged else Basis(Vector3.UP,heading_yaw)
+	required_force += translation_basis*translation_input.limit_length(1.0)*GRAVITY*2.0*precision
 	recovery_request = 1.0-smoothstep(0.6,1.3,time_to_impact)
 	if not is_finite(time_to_impact): recovery_request = 0.0
 	var escape := recovery_request*(0.25 if uncaged else 4.0)*GRAVITY
@@ -257,8 +270,22 @@ func _step(delta: float, raw: Dictionary, camera_yaw: float) -> void:
 	local_airflow = -local_velocity
 	g_load = (required_force+aerodynamic_force).length()/GRAVITY
 	gaze_target = aim_point if aim_point.is_finite() else position+aim_direction*4500.0
+	weapon_aim = limit_aim_direction(aim_direction)
 
 func aim_frame() -> Basis:
 	var body := Basis(attitude)
-	var tilt := acos(clampf(body.y.dot(Vector3.UP),-1.0,1.0))
-	return body*Basis(Vector3.RIGHT,PI/2.0*smoothstep(0.0,PI/2.0,tilt))
+	# Resolve pitch separately from bank: rolling a standing suit must not
+	# turn its forward firing arc into an overhead firing arc.
+	var projection := Vector2(body.y.y,body.z.y)
+	var blend := control_blend if projection.length() < 0.15 else atan2(absf(projection.y),absf(projection.x))/(PI/2.0)
+	return body*Basis(Vector3.RIGHT,PI/2.0*blend)
+
+func pilot_frame() -> Basis:
+	return Basis(attitude)*Basis(Vector3.RIGHT,PI/2.0*control_blend)
+
+func limit_aim_direction(direction: Vector3) -> Vector3:
+	var frame := aim_frame()
+	var local := frame.inverse()*direction
+	var yaw := clampf(atan2(-local.x,-local.z),-deg_to_rad(85),deg_to_rad(85))
+	var pitch := clampf(atan2(local.y,Vector2(local.x,local.z).length()),-deg_to_rad(70),deg_to_rad(70))
+	return (frame*Vector3(-sin(yaw)*cos(pitch),sin(pitch),-cos(yaw)*cos(pitch))).normalized()

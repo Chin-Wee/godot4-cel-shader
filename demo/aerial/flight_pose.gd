@@ -110,27 +110,40 @@ func update(delta: float, controller) -> void:
 	turn.step(Vector3(omega.y,0,0),delta,0.12)
 	# Chassis attitude is physical. These small secondary offsets trail its rates
 	# and loads: pelvis first, torso 30ms later, arms another 30ms behind.
-	var lag := Vector3(omega.x*0.07+alpha.x*0.006,omega.y*0.045,omega.z*0.07+alpha.z*0.006)
+	var lag := Vector3(omega.x*0.11+alpha.x*0.01,omega.y*0.07,omega.z*0.11+alpha.z*0.01)
 	lag += Vector3(acceleration.z*0.004,-acceleration.x*0.002,-acceleration.x*0.005)
 	hips.step(lag*0.35,delta,0.09)
 
 	root_angles = hips.value*Vector3(-1,1,1)
 	com.step(Vector3(-acceleration.x*0.004,-clampf(controller.g_load-1,-1,3)*0.025,acceleration.z*0.004).limit_length(0.16),delta,0.1)
-	var aim: Vector3 = get_skeleton().global_basis.inverse()*controller.aim_direction
+	var bounded_aim: Vector3 = controller.limit_aim_direction(controller.aim_direction)
+	var aim: Vector3 = get_skeleton().global_basis.inverse()*bounded_aim
 	var yaw := atan2(aim.x,aim.z)
 	var pitch := atan2(-aim.y,Vector2(aim.x,aim.z).length())
-	# ±30/20 head zone, then shoulder/torso articulation, then controller chassis.
+	# Head/shoulder/torso articulation only; aim never steers the chassis.
 	var torso_aim := Vector3(signf(pitch)*clampf(absf(pitch)-deg_to_rad(20),0,deg_to_rad(35)),signf(yaw)*clampf(absf(yaw)-deg_to_rad(30),0,deg_to_rad(35)),0)
 	chest.step(lag+torso_aim,delta,0.12)
 	head.step(Vector3(clampf(pitch-torso_aim.x,-1.2,1.2),clampf(yaw-torso_aim.y,-deg_to_rad(30),deg_to_rad(30)),-chest.value.z*0.6),delta,0.10)
+	var load := clampf((controller.g_load-1.0)/3.0,0,1.2)
+	var kick := clampf(alpha.length()*0.08,0,1)
+	var burst: Vector3 = Basis(controller.attitude).inverse()*controller.burst_direction*controller.boost_amount
+	var demand: Vector3 = controller.translation_input
+	var side_load := clampf(acceleration.x/22.0,-1,1)
+	var compression := clampf(load*0.75+kick*0.35+controller.boost_amount*0.65+absf(demand.y)*0.25,0,1.3)
+	var trail_pitch := atan2(flow.z,maxf(0.35,-flow.y))
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
-		var tau := 0.16+side*0.025
-		# Broadside airflow opens limbs; aligned flow streamlines them. No flight clips.
-		legs[side*3].step(Vector3(-0.12-0.48*spread+flow.z*0.24,flow.x*0.16,sx*(0.08+0.28*spread)-flow.x*0.2),delta,tau)
-		legs[side*3+1].step(Vector3(0.24+0.64*spread+absf(flow.x)*0.18,0,0),delta,tau+0.03)
-		legs[side*3+2].step(Vector3(0.24*cruise-0.20*spread,0,0),delta,tau+0.06)
-		var hand := Vector3(sx*(3.2+0.9*spread),-2.3+0.8*spread,0.3)+flow*Vector3(1.1,0.6,1.4)
+		var tau := (0.14 if controller.boost_amount > 0.1 else 0.24)+side*0.035
+		var brace := clampf(sx*(side_load+burst.x*0.8)+omega.z*0.25,-1,1)
+		var hover_sway := sin(clock*1.7+side*2.1)*0.045*(1.0-cruise)
+		# Load-driven tuck, opposed burst kicks and slower ankle follow-through.
+		# The weapon remains stabilized while the free limbs absorb the maneuver.
+		var thigh := Vector3(-0.25*(1.0-cruise)-0.65*spread-compression*0.32+trail_pitch*0.38+brace*0.22+hover_sway,-flow.x*0.22+omega.y*0.12,sx*(0.12+0.32*spread+compression*0.10)-flow.x*0.28-side_load*0.12)
+		var knee := 0.42*(1.0-cruise)+0.12*cruise+0.85*compression+0.65*spread+brace*0.28-hover_sway
+		legs[side*3].step(thigh.clamp(Vector3(-1.15,-0.5,-0.65),Vector3(0.65,0.5,0.65)),delta,tau)
+		legs[side*3+1].step(Vector3(clampf(knee,0.1,1.65),0,0),delta,tau+0.04)
+		legs[side*3+2].step(Vector3(clampf(0.32*cruise-0.24*spread-compression*0.30-brace*0.15,-0.65,0.5),-flow.x*0.12,0),delta,tau+0.08)
+		var hand := Vector3(sx*(3.2+0.9*spread),-2.3+0.8*spread,0.3)+flow*Vector3(1.3,0.8,1.8)+Vector3(-side_load*0.45,compression*0.2,omega.x*0.35)
 		if side == 1:
 			# Rifle arm resists airflow. The native IK positions the wrist; a final
 			# modifier points the skinned rifle using the solved wrist transform.
@@ -140,7 +153,10 @@ func update(delta: float, controller) -> void:
 	force = force_spring.step(controller.required_force,delta,0.10)
 	for index in 6: shares[index] = 1.0/6.0
 	var wrist: Vector3 = get_skeleton().global_transform*get_skeleton().get_bone_global_rest(bones["Torso"])*hands[1].value
-	var rifle_aim: Vector3 = (controller.gaze_target-wrist).normalized()
+	# Project once before parallax correction. An exactly rearward look has two
+	# equally close yaw limits; the wrist offset must not choose the opposite one.
+	var target: Vector3 = controller.position+bounded_aim*controller.position.distance_to(controller.gaze_target)
+	var rifle_aim: Vector3 = controller.limit_aim_direction((target-wrist).normalized())
 	var aim_rotation := Quaternion(weapon.smoothed_aim.normalized(),rifle_aim)
 	weapon.smoothed_aim = (Quaternion.IDENTITY.slerp(aim_rotation,1.0-exp(-delta/0.12))*weapon.smoothed_aim).normalized()
 

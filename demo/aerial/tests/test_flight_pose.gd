@@ -10,7 +10,8 @@ func _initialize() -> void:
 func _run() -> void:
 	create_timer(25).timeout.connect(func():
 		if not completed: push_error("Continuous flight checks did not complete"); quit(1))
-	_check_controller()
+	assert(_check_controller(),"Flight controller checks failed")
+	assert(_check_handling(),"Flight handling checks failed")
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
@@ -28,7 +29,25 @@ func _run() -> void:
 		assert(not mech.actor.animation_player.is_playing(),"Flight uses an authored clip")
 		assert(_check_ik(mech),"Native arm IK missed its target")
 		assert(_check_motors(mech),"A motor exceeded its local mechanical cone")
-		assert(mech.rig.weapon.barrel_direction.dot(mech.controller.aim_direction) > 0.99,"Rifle does not follow independent aim")
+		# The weapon deliberately trails a moving aim boundary. Verify its final
+		# alignment after settling, rather than requiring a zero-lag wrist snap.
+		for frame in 45: mech.update_animation(1.0/60.0)
+		await process_frame
+		await process_frame
+		assert(mech.rig.weapon.barrel_direction.dot(mech.controller.limit_aim_direction(mech.controller.aim_direction)) > 0.99,"Settled rifle missed its bounded aim")
+	# Readable leg response to real loads, with opposed vernier bracing.
+	mech.controller.reset(Vector3(175,1600,340))
+	for frame in 90: mech.update_animation(1.0/60.0)
+	var relaxed: float = mech.rig.legs[1].value.x
+	mech.controller.g_load = 4.0
+	mech.controller.boost_amount = 1.0
+	mech.controller.burst_direction = Vector3.RIGHT
+	mech.controller.local_acceleration = Vector3(22,0,0)
+	for frame in 30: mech.update_animation(1.0/60.0)
+	assert(mech.rig.legs[1].value.x > relaxed+0.5,"Legs do not tuck under maneuver/burst load")
+	assert(absf(mech.rig.legs[1].value.x-mech.rig.legs[4].value.x) > 0.2,"Vernier burst moves both legs identically")
+	await process_frame
+	assert(_check_ik(mech) and _check_motors(mech))
 	# Aim moves the weapon/head without first rotating the chassis.
 	mech.controller.reset(Vector3(175,1000,340))
 	mech.controller.aim_direction = Vector3(-0.25,0,-1).normalized()
@@ -78,15 +97,15 @@ func _run() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Flight checks passed: detents, latched controls, continuous aero, independent momentum/attitude/aim, bursts, drag, ground prediction/collision, IK, seated motors, walk, gunfire, focus and pause.")
+	print("Flight checks passed: fixed attitude controls, six-axis thrust, independent mouse vision/aim, protected banked loops, precision, load-driven legs, detents, bursts, drag, terrain, IK, seated motors, walk, gunfire, focus and pause.")
 	quit()
 
 func _advance(fc, seconds: float, raw: Dictionary) -> void:
 	for frame in roundi(seconds*120): fc.advance(1.0/120.0,raw,0.0)
 
-func _check_controller() -> void:
+func _check_controller() -> bool:
 	Controller.install_input_actions()
-	for pair in [[KEY_W,"forward"],[KEY_S,"back"],[KEY_A,"left"],[KEY_D,"right"],[KEY_Q,"yaw_left"],[KEY_E,"yaw_right"],[KEY_SPACE,"thrust_up"],[KEY_C,"thrust_down"],[KEY_SHIFT,"burst"],[KEY_X,"brake"]]:
+	for pair in [[KEY_W,"forward"],[KEY_S,"back"],[KEY_A,"left"],[KEY_D,"right"],[KEY_Q,"yaw_left"],[KEY_E,"yaw_right"],[KEY_SPACE,"thrust_up"],[KEY_C,"thrust_down"],[KEY_SHIFT,"burst"],[KEY_X,"brake"],[KEY_R,"rise"],[KEY_F,"sink"],[KEY_ALT,"vector"],[KEY_CTRL,"precision"],[KEY_UP,"pitch_down"],[KEY_DOWN,"pitch_up"],[KEY_LEFT,"roll_left"],[KEY_RIGHT,"roll_right"]]:
 		for pressed in [true,false]:
 			var event := InputEventKey.new()
 			event.physical_keycode = pair[0]
@@ -114,16 +133,12 @@ func _check_controller() -> void:
 		fc.advance(0.01,{},0)
 		fc.advance(0.01,{"thrust_down":true},0)
 	assert(fc.detent == 0,"Thrust detents do not clamp at zero")
-	fc.reset(Vector3.ZERO)
-	fc.advance(0.01,{"right":true},0)
-	fc.attitude_bindings = true
-	fc.advance(0.01,{"right":true},0)
-	assert(fc.latches.right == false,"Held vector input changed meaning")
-	fc.attitude_bindings = true
-	fc.advance(0.01,{},0)
-	fc.attitude_bindings = true
-	fc.advance(0.01,{"right":true},0)
-	assert(fc.latches.right == true,"New press did not recapture aerodynamic binding")
+	# WASD has one meaning at every speed; translation is explicitly Alt.
+	for speed in [0.0,70.0]:
+		fc.reset(Vector3.ZERO)
+		fc.velocity = Vector3(0,0,-speed)
+		_advance(fc,0.3,{"back":true,"right":true})
+		assert(fc.rotation_command.x > 0.5 and fc.rotation_command.z < -0.5,"WASD changes meaning with airspeed")
 	fc.reset(Vector3.ZERO)
 	fc.velocity = Vector3(16,0,0)
 	fc.detent = 0
@@ -139,11 +154,29 @@ func _check_controller() -> void:
 		_advance(fc,0.4,{"uncage":true,control:true})
 		if control == "right": assert(absf(Basis(fc.attitude).y.x) > 0.1,"Low-speed roll became yaw")
 		else: assert(absf(Basis(fc.attitude).z.x) > 0.1,"Q/E stopped being yaw in hover")
+	# Camera and independent aim may never steer the physical chassis.
+	var straight = Controller.new()
+	var looking = Controller.new()
+	for actor in [straight,looking]:
+		actor.reset(Vector3.ZERO)
+		actor.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+		actor.velocity = Vector3(0,0,-70)
+		actor.detent = 3
+	looking.aim_direction = Vector3.BACK
+	for frame in 240:
+		straight.advance(1.0/120.0,{"back":true},0)
+		looking.advance(1.0/120.0,{"back":true},PI/2)
+	assert(straight.position.distance_to(looking.position) < 0.001 and straight.attitude.angle_to(looking.attitude) < 0.001,"Mouse vision still steers the mech")
+	assert(looking.weapon_aim.dot(looking.aim_direction) < 0.9,"Weapon twists beyond its firing arc")
 	fc.reset(Vector3.ZERO)
-	fc.aim_direction = Vector3(-1,0,0.4).normalized()
-	fc.aim_chassis_follow = true
-	_advance(fc,1,{"uncage":true})
-	assert(Basis(fc.attitude).z.x > 0.2 and absf(Basis(fc.attitude).z.y) < 0.02,"Outer aim envelope rolls instead of yawing the chassis")
+	fc.attitude = Quaternion(Vector3.FORWARD,PI/2)
+	assert(fc.limit_aim_direction(Vector3.FORWARD).dot(Vector3.FORWARD) > 0.999,"Banking moves the forward firing arc overhead")
+	for actor in [straight,looking]: actor.reset(Vector3.ZERO)
+	looking.aim_direction = Vector3.BACK
+	for frame in 36:
+		straight.advance(1.0/120.0,{"burst":true,"right":true},0)
+		looking.advance(1.0/120.0,{"burst":true,"right":true},PI/2)
+	assert(straight.position.distance_to(looking.position) < 0.001,"Mouse vision changes vernier burst direction")
 	var caged = Controller.new()
 	var uncaged = Controller.new()
 	for actor in [caged,uncaged]: actor.reset(Vector3.ZERO)
@@ -166,7 +199,9 @@ func _check_controller() -> void:
 	assert(drop.velocity.y < 0 and stall.velocity.y < 0,"Dropping/airbraking cancels gravity")
 	assert(drop.aero_authority > 0.8,"Aligned high-speed flow never gains aerodynamic authority")
 	fc.reset(Vector3.ZERO)
-	_advance(fc,6,{"forward":true})
+	fc.detent = 3
+	_advance(fc,1.4,{"forward":true})
+	_advance(fc,4.6,{})
 	assert(fc.aero_authority > 0.6 and Basis(fc.attitude).y.dot(Vector3.FORWARD) > 0.9,"Automatic body-lift transition failed")
 	fc.reset(Vector3.ZERO)
 	fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
@@ -179,6 +214,61 @@ func _check_controller() -> void:
 	var limited: float = fc.required_force.y
 	_advance(fc,0.05,{})
 	assert(fc.required_force.y > limited+20,"Recaging does not permit full ground escape assistance")
+
+	return true
+
+func _check_handling() -> bool:
+	for bank in [0.0,0.6]:
+		var fc = Controller.new()
+		fc.reset(Vector3(0,2000,0))
+		fc.attitude = Quaternion(Vector3.FORWARD,bank)*Quaternion(Vector3.RIGHT,-PI/2)
+		fc.velocity = Vector3(0,0,-70)
+		fc.detent = 3
+		_advance(fc,0.5,{})
+		var initial_stabilization: float = fc.vector_stabilization
+		for frame in 600:
+			var before: Quaternion = fc.attitude
+			fc.advance(1.0/120.0,{"back":true},0.0)
+			assert(fc.attitude.is_finite() and fc.velocity.is_finite())
+			assert(before.angle_to(fc.attitude) < 0.02,"Attitude jumps during a sustained pull")
+			assert(fc.velocity.length() > 55,"Assisted hard pull killed forward energy")
+			assert(absf(fc.angle_of_attack) < deg_to_rad(30),"Assisted pull departed instead of limiting AoA")
+			assert(fc.vector_stabilization <= initial_stabilization+0.02,"AoA decline enabled hover braking in a turn")
+		assert(fc.velocity.z > 20,"Full vertical turn cannot pass through the vertical")
+		assert(fc.pull_limit > 0.1,"Pilot receives no indication of pull limiting")
+	# Both explicit overrides still permit deliberate high-AoA departures.
+	for override in ["uncage","brake"]:
+		var fc = Controller.new()
+		fc.reset(Vector3.ZERO)
+		fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+		fc.velocity = Vector3(0,0,-70)
+		fc.detent = 3
+		_advance(fc,0.5,{})
+		_advance(fc,1.5,{"pitch_up":true,override:true})
+		assert(absf(fc.angle_of_attack) > deg_to_rad(35),"Departure override is constrained by assisted AoA protection")
+	var normal = Controller.new()
+	var precise = Controller.new()
+	for fc in [normal,precise]: fc.reset(Vector3.ZERO)
+	_advance(normal,0.4,{"pitch_up":true})
+	_advance(precise,0.4,{"pitch_up":true,"precision":true})
+	assert(normal.attitude.angle_to(Quaternion.IDENTITY) > 0.15,"Direct pitch is unavailable at hover speed")
+	assert(precise.attitude.angle_to(Quaternion.IDENTITY) < normal.attitude.angle_to(Quaternion.IDENTITY)*0.6,"Precision input does not reduce control sensitivity")
+	for direction in ["rise","sink"]:
+		var fc = Controller.new()
+		fc.reset(Vector3.ZERO)
+		_advance(fc,1,{direction:true})
+		assert(fc.velocity.y*(1 if direction == "rise" else -1) > 5,"Vertical translation is unavailable")
+	var fc = Controller.new()
+	fc.reset(Vector3.ZERO)
+	fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+	fc.velocity = Vector3(0,0,-70)
+	fc.detent = 3
+	_advance(fc,0.5,{})
+	_advance(fc,0.5,{"vector":true,"right":true,"uncage":true})
+	assert(fc.velocity.x > 8 and -fc.velocity.z > 60,"Independent lateral translation erased cruise momentum")
+	assert(fc.rotation_command.is_zero_approx(),"Translation override also rolls the chassis")
+
+	return true
 
 func _check_motors(mech: Node3D) -> bool:
 	var pivots: Array = mech.gimbals+mech.gas_gimbals
