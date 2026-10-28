@@ -275,7 +275,7 @@ func set_walk_mode(enabled: bool) -> void:
 	# This remains a rendering showcase; the original roster keeps gameplay control.
 	camera.position = hero.position+Vector3(-130,65,180)
 	camera.look_at(hero.position+Vector3(0,10,-50))
-	for trail in trails.slice(0,2): trail.visible = not enabled
+	for trail in trails.slice(0,1): trail.visible = not enabled
 
 func flight_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
@@ -288,7 +288,7 @@ func missile_position(time: float) -> Vector3:
 
 func _add_trails() -> void:
 	var material := _vfx_material(PackedColorArray([Color(0.9,0.83,0.7),Color(0.53,0.49,0.5)]))
-	for flame in hero.flames:
+	for flame in hero.flames.slice(0,1):
 		var emitter := Marker3D.new()
 		flame.get_parent().add_child(emitter)
 		emitter.position = flame.position
@@ -377,7 +377,7 @@ func _process(delta: float) -> void:
 			explosion_clock = 0.0
 			trigger_explosion()
 		clouds.position.x = sin(elapsed*0.015)*50.0
-	for index in trails.size(): trails[index].set_process(animate and (hero.flying or index > 1))
+	for index in trails.size(): trails[index].set_process(animate and (hero.flying or index > 0))
 	if is_instance_valid(explosion): explosion.set_process(animate)
 	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var motion := Vector3(Input.get_axis("left","right"),float(Input.is_physical_key_pressed(KEY_E))-float(Input.is_physical_key_pressed(KEY_Q)),Input.get_axis("forward","back"))
@@ -436,7 +436,7 @@ func _make_hud() -> void:
 	hud.layer = 2
 	add_child(hud)
 	var label := Label.new()
-	label.text = "MECH RENDER STUDY\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nG Walk / fly · B Boost pose · 5 / 6 / 7 Exhaust off / low / full\nRight click: fly camera · WASD / Q E · Shift: faster"
+	label.text = "MECH RENDER STUDY\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nG Walk / fly · B Pose / vector · 5 / 6 / 7 Exhaust off / low / full\nRight click: fly camera · WASD / Q E · Shift: faster"
 	label.position = Vector2(24,22)
 	label.add_theme_color_override("font_color",Color(1,0.88,0.73))
 	label.add_theme_font_size_override("font_size",16)

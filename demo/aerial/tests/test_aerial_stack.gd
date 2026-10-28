@@ -135,9 +135,8 @@ func _check_afterburners(scene: Node3D) -> void:
 			anchors.append(flame.global_position)
 			var bounds: AABB = flame.mesh.get_aabb()
 			assert(is_zero_approx(bounds.position.z) and is_equal_approx(bounds.end.z,1.0),"Exhaust is not normalized from nozzle to tip")
-			assert(flame.get_parent() is BoneAttachment3D and flame.get_parent().bone_name == &"Torso","Exhaust does not follow the animated torso")
-			assert(is_equal_approx(flame.position.z,-1.95),"Exhaust is detached from its nozzle exit")
-	assert(flames.size() == 4,"Twin afterburners are missing from the mechs")
+			assert(flame.get_parent() in mech.gimbals and flame.position == Vector3.ZERO,"Exhaust is detached from its vectoring pivot")
+	assert(flames.size() == 10,"Each mech must have exactly five thrusters")
 	var previous_length := 0.0
 	for throttle in [0.0,0.35,1.0]:
 		scene.set_afterburner_throttle(throttle)
@@ -180,6 +179,21 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(not mech.actor.actor_camera.current,"Mech camera stole the showcase view")
 		assert(mech.actor.animation_player.callback_mode_process == AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL)
 		assert(is_equal_approx(mech.actor.animation_player.speed_scale,0.7),"Ordinary playback lost its 30% slowdown")
+		assert(mech.sockets.size() == 5 and mech.gimbals.size() == 5)
+		var bones := []
+		for socket in mech.sockets: bones.append(StringName(socket.bone_name))
+		assert(bones == [&"Torso",&"Shin.L",&"Shin.R",&"Feet.L",&"Feet.R"],"Unexpected thruster mount")
+		for flame in mech.flames:
+			assert(flame.scale.x > 0.27 and flame.scale.x < 0.33 and flame.scale.z > 4.8 and flame.scale.z < 6.2,"Thrusters are no longer roughly equal size")
+		# Independent commands rotate the nozzle and flame together, with a bounded motor range.
+		mech.set_thrust_vector(0,Vector2(2.0,-2.0))
+		assert(mech.vector_targets[0].is_equal_approx(Vector2(mech.VECTOR_LIMIT,-mech.VECTOR_LIMIT)))
+		for index in range(1,5): assert(mech.vector_targets[index] == Vector2.ZERO,"One vector command moved other nozzles")
+		mech.update_animation(0.1,1.0)
+		assert(mech.vector_angles[0].length() > 0.0 and mech.vector_angles[0].length() < mech.vector_targets[0].length(),"Vectoring jumps instead of blending")
+		for index in 5: mech.set_thrust_vector(index,Vector2.ZERO)
+		mech.update_animation(2.0,1.0)
+		mech.update_exhaust(1.0,scene.afterburner_flow_phase)
 		for clip_name in [&"Walk",&"Fall"] + mech.FLIGHT_POSES:
 			var clip: Animation = mech.actor.animation_player.get_animation(clip_name)
 			assert(clip.loop_mode == Animation.LOOP_LINEAR)
@@ -211,7 +225,7 @@ func _check_mechs(scene: Node3D) -> void:
 	scene.hero.update_animation(0.3,1.0)
 	assert(not pose.is_equal_approx(skeleton.get_bone_pose_rotation(thigh)),"Walking is a static pose")
 	for flame in scene.hero.flames: assert(not flame.visible,"Walking leaves the afterburners lit")
-	for trail in scene.trails.slice(0,2): assert(not trail.visible,"Walking leaves airborne trails visible")
+	for trail in scene.trails.slice(0,1): assert(not trail.visible,"Walking leaves airborne trails visible")
 	scene.animate = true
 	var start: Vector3 = scene.hero.position
 	scene._process(0.1)
