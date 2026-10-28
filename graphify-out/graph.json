@@ -2093,7 +2093,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L183"
+      "source_location": "L192"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2105,7 +2105,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L196"
+      "source_location": "L208"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2141,7 +2141,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L260"
+      "source_location": "L275"
     },
     {
       "id": "readme",
@@ -12043,7 +12043,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L183",
+      "source_location": "L192",
       "weight": 1.0
     },
     {
@@ -12054,7 +12054,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L196",
+      "source_location": "L208",
       "weight": 1.0
     },
     {
@@ -12065,7 +12065,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L260",
+      "source_location": "L275",
       "weight": 1.0
     },
     {
@@ -12842,5 +12842,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c4d566331313a1e7770c1f30d96ce830363f10fc"
+  "built_at_commit": "e32e05987c4d5f358374bea5b254b5cf38ce8757"
 }
