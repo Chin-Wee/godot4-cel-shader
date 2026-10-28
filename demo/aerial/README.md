@@ -208,12 +208,12 @@ MechAsset is the white humanoid model with 76 mesh parts and 11 source
 clips. The other four are colored compact robots and lack its directional boost
 poses. The existing GLB is chosen over its FBX source for the same import reasons
 recorded in `models/MechAsset/README.md`. No new external asset is needed.
-The model has no named thruster sockets. Native Torso, Shin and Feet attachments
+The model has no named thruster sockets. Native Torso, Shin, Feet, Shoulder and Thigh attachments
 provide paired backpack, calf and heel mounts plus shoulder/thigh control jets
 without editing the skeleton. All mount coordinates were inspected in native
 close-ups and measured against source triangles in bone-local space. The backpack
-uses the paired lower barrels, rather than an estimated point beneath the pack. Missile, trail, explosion, terrain and cloud geometry remain
-procedural.
+uses the paired lower barrels, rather than an estimated point beneath the pack.
+Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
 ## Checks and comparison captures
 

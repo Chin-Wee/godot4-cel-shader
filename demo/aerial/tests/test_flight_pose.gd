@@ -26,12 +26,12 @@ func _run() -> void:
 	var mech = scene.hero
 	await process_frame
 	assert(mech.flames.size() == 6 and mech.gas_jets.size() == 4,"Wrong propulsion layout")
-	_check_mount_surfaces(mech)
+	assert(_check_mount_surfaces(mech),"A booster is not seated against its armor")
 	for socket in mech.sockets+mech.gas_sockets:
 		assert(not "Hands" in socket.bone_name and not "Arm" in socket.bone_name,"Hand/arm booster reintroduced")
 	for frame in 120: mech.update_animation(1.0/60,0.35)
 	await process_frame
-	_check_ik(mech)
+	assert(_check_ik(mech),"Native arm IK missed its target or produced a non-finite pose")
 	for flame in mech.flames:
 		assert(flame.global_basis.z.normalized().dot(Vector3.DOWN) > 0.95,"Neutral jets are not downward")
 	mech.flight_amount = 1.0
@@ -41,7 +41,7 @@ func _run() -> void:
 	assert(mech.rig.hands[0].value.z > -1.0,"Arms snapped to a target")
 	for frame in 120: mech.update_animation(1.0/60,1.0)
 	await process_frame
-	_check_ik(mech)
+	assert(_check_ik(mech),"Native arm IK missed its target or produced a non-finite pose")
 	assert(mech.rig.shares[0] != mech.rig.shares[1],"Turning never shifts thruster load")
 	var total := 0.0
 	for share in mech.rig.shares:
@@ -74,15 +74,15 @@ func _run() -> void:
 	print("Procedural flight checks passed: springs, mass lag, native arm IK, thrust allocation, six seated boosters, four control jets, heading wrap, walk and pause.")
 	quit()
 
-func _check_ik(mech: Node3D) -> void:
+func _check_ik(mech: Node3D) -> bool:
 	for side in 2:
 		var suffix := ".L" if side == 0 else ".R"
 		var hand: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands"+suffix)]
 		var target: Vector3 = mech.rig.hand_targets[side].position
-		assert(hand.origin.is_finite() and hand.basis.is_finite(),"IK produced a non-finite pose")
-		assert(hand.origin.distance_to(target) < 0.05,"Native arm IK missed its soft-reach target")
+		if not hand.origin.is_finite() or not hand.basis.is_finite() or hand.origin.distance_to(target) >= 0.05: return false
+	return true
 
-func _check_mount_surfaces(mech: Node3D) -> void:
+func _check_mount_surfaces(mech: Node3D) -> bool:
 	# Test against source triangles, excluding the collars we add ourselves. Bone
 	# attachment alone cannot prove that a booster is seated against the armor.
 	var sk: Skeleton3D = mech.skeleton
@@ -102,7 +102,10 @@ func _check_mount_surfaces(mech: Node3D) -> void:
 				var faces: PackedVector3Array = mesh.mesh.get_faces()
 				for index in range(0,faces.size(),3):
 					nearest = minf(nearest,_triangle_distance(mount[2],to_bone*faces[index],to_bone*faces[index+1],to_bone*faces[index+2]))
-		assert(nearest < 0.02,"Booster floats away from source armor: %s (%s source units)"%[mount[0],nearest])
+		if nearest >= 0.02:
+			push_error("Booster floats away from source armor: %s (%s source units)"%[mount[0],nearest])
+			return false
+	return true
 
 func _triangle_distance(point: Vector3, a: Vector3, b: Vector3, c: Vector3) -> float:
 	var normal := (b-a).cross(c-a).normalized()

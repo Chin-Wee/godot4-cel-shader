@@ -211,7 +211,8 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(mech.actor.current_animation == &"Airborne","Hover did not use the relaxed airborne stance")
 		mech.update_animation(0.9,1.0)
 		for material in mech.palette_materials:
-			assert(material.get_shader_parameter("highlight_mask") in [null,0.0],"Matte armor regained glossy highlights")
+			if material.shader == preload("res://shaders/aerial/aircraft.gdshader"):
+				assert(material.get_shader_parameter("highlight_mask") == 0.0,"Matte armor regained glossy highlights")
 	scene.set_walk_mode(true)
 	await physics_frame
 	scene._update_hero_pose(scene.elapsed)
