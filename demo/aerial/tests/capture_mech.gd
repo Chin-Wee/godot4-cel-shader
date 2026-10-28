@@ -46,6 +46,14 @@ func _capture() -> void:
 	root.mode = Window.MODE_MINIMIZED
 	scene.animate = false
 	await _save_frame(output.path_join("controls.png"))
+	if "--combat-only" in args:
+		await _capture_combat(scene,output)
+		scene.queue_free()
+		await process_frame
+		completed = true
+		print("Native combat checks passed: real X/WASD input, aero gate, held-maneuver continuity, mouse-independent attitude and local thruster limits.")
+		quit()
+		return
 	scene.hud.visible = false
 	var mech = scene.hero
 	var telemetry := []
@@ -71,6 +79,7 @@ func _capture() -> void:
 		if frame%6 == 0: telemetry.append({"frame":frame,"velocity":str(mech.controller.velocity),"head_axis":str(mech.basis.y.normalized()),"aero":mech.controller.aero_authority,"uncaged":mech.controller.uncaged})
 	_keys([])
 	_uncage(false)
+	await _capture_combat(scene,output)
 	# Isolate physics-derived poses from both sides, including belly-up drift.
 	scene.clouds.set_coverage(0.0)
 	for trail in scene.trails: trail.visible = false
@@ -227,3 +236,50 @@ func _uncage(pressed: bool) -> void:
 	event.pressed = pressed
 	Input.parse_input_event(event)
 	Input.flush_buffered_events()
+
+func _capture_combat(scene: Node3D, output: String) -> void:
+	var was_following: bool = scene.follow_camera
+	_keys([])
+	_uncage(false)
+	scene.follow_camera = false
+	scene.clouds.set_coverage(0.0)
+	for trail in scene.trails: trail.visible = false
+	var mech = scene.hero
+	mech.controller.reset(Vector3(175,1800,340))
+	mech.controller.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+	mech.controller.velocity = Vector3(0,0,-95)
+	mech.controller.detent = 3
+	for frame in 60: mech.step_flight(1.0/120.0,{},0)
+	assert(mech.controller.aero_authority > 0.5)
+	var telemetry := []
+	var saw_pitch := false
+	var saw_roll := false
+	var saw_held_low_aero := false
+	for frame in 42:
+		match frame:
+			0: _keys([KEY_X])
+			2: _keys([KEY_X,KEY_S])
+			8: _keys([KEY_X,KEY_S,KEY_D])
+			24: _keys([KEY_X])
+			28: _keys([KEY_D])
+			36: _keys([])
+		_step(scene,1.0/20.0)
+		var fc = mech.controller
+		scene.camera.position = mech.position+Vector3(160,40,100)
+		scene.camera.look_at(mech.position)
+		await _save_frame(output.path_join("combat-%03d.png"%frame))
+		_check_mounts(mech)
+		if frame in range(4,24):
+			assert(fc.combat_bindings,"Held X maneuver lost captured bindings")
+			saw_pitch = saw_pitch or fc.rotation_command.x > 0.4
+			saw_roll = saw_roll or fc.rotation_command.z < -0.4
+			saw_held_low_aero = saw_held_low_aero or (fc.aero_authority <= 0.5 and not fc.combat_attitude and fc.combat_bindings)
+		assert(fc.combat_attitude == (Input.is_action_pressed("flight_brake") and fc.aero_authority > 0.5),"Rendered authority violates the strict 50% gate")
+		if frame >= 28: assert(not fc.combat_attitude,"X release does not restore movement")
+		telemetry.append({"frame":frame,"aero":fc.aero_authority,"combat_attitude":fc.combat_attitude,"combat_bindings":fc.combat_bindings,"rotation":str(fc.rotation_command),"velocity":str(fc.velocity)})
+	assert(saw_pitch and saw_roll and saw_held_low_aero,"Combat replay missed pitch, roll or a flow dip")
+	_keys([])
+	var report := FileAccess.open(output.path_join("combat-telemetry.json"),FileAccess.WRITE)
+	report.store_string(JSON.stringify(telemetry,"  "))
+	report.close()
+	scene.follow_camera = was_following

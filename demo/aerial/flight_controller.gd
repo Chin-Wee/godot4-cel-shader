@@ -7,6 +7,7 @@ const Spring = preload("res://aerial/flight_pose.gd").Spring
 const DETENTS := [0.0,0.5,1.0,2.0,4.0]
 const GRAVITY := 9.81
 const HIGH_SPEED_DRAG := 0.28
+const COMBAT_AERO_THRESHOLD := 0.5
 const ACTION_KEYS := {
 	"flight_forward":[KEY_W],"flight_back":[KEY_S],
 	"flight_left":[KEY_A],"flight_right":[KEY_D],
@@ -39,6 +40,8 @@ var flight_blend := 0.0
 var control_blend := 0.0
 var high_speed_drag := 0.0
 var aiming := false
+var combat_attitude := false
+var combat_bindings := false
 var translation_input := Vector3.ZERO
 var rotation_command := Vector3.ZERO
 var vector_stabilization := 1.0
@@ -113,6 +116,8 @@ func reset(origin: Vector3, yaw_angle := 0.0) -> void:
 	control_blend = 0.0
 	high_speed_drag = 0.0
 	aiming = false
+	combat_attitude = false
+	combat_bindings = false
 	translation_input = Vector3.ZERO
 	rotation_command = Vector3.ZERO
 	vector_stabilization = 1.0
@@ -141,6 +146,15 @@ func advance(delta: float, controls: Dictionary, _camera_yaw := 0.0) -> void:
 
 func _read_edges(raw: Dictionary) -> void:
 	uncaged = bool(raw.get("uncage",false))
+	var held_direction := false
+	for key in ["forward","back","left","right"]:
+		if raw.get(key,false) and previous.get(key,false): held_direction = true
+	var was_combat := combat_bindings
+	# Capture input meaning through a flow dip, while the authority gate remains
+	# strict. Captured keys go neutral below 50%, never straight into translation.
+	combat_attitude = bool(raw.get("brake",false)) and aero_authority > COMBAT_AERO_THRESHOLD
+	combat_bindings = combat_attitude or bool(raw.get("brake",false)) and combat_bindings and held_direction
+	if combat_bindings and not was_combat: control_blend = 1.0
 	for key in ["thrust_up","thrust_down"]:
 		if raw.get(key,false) and not previous.get(key,false): detent = clampi(detent+(1 if key == "thrust_up" else -1),0,DETENTS.size()-1)
 	var directional_edge := false
@@ -169,6 +183,10 @@ func _step(delta: float, raw: Dictionary) -> void:
 	attached_flow = (1.0-smoothstep(deg_to_rad(15),deg_to_rad(55),absf(angle_of_attack)))*(1.0-smoothstep(0.3,1.2,absf(sideslip)))
 	var lift_orientation := 1.0-absf(velocity.normalized().dot(airframe.y)) if speed > 0.1 else 0.0
 	aero_authority = authority.step(Vector3(smoothstep(20,70,speed)*attached_flow*lift_orientation,0,0),delta,0.16).x
+	combat_attitude = bool(raw.get("brake",false)) and aero_authority > COMBAT_AERO_THRESHOLD
+	if combat_attitude and not combat_bindings:
+		combat_bindings = true
+		control_blend = 1.0
 	# Airflow controls lift, not the hover brake. A high-AoA pull must not
 	# suddenly cancel momentum or level the bank in the middle of a turn.
 	var speed_envelope := smoothstep(12,50,speed)
@@ -176,21 +194,29 @@ func _step(delta: float, raw: Dictionary) -> void:
 	flight_blend = envelope.step(Vector3(speed_envelope*longitudinal,0,0),delta,0.25).x
 	var tilt := acos(clampf(basis.y.dot(Vector3.UP),-1.0,1.0))
 	var hover_support := 1.0-smoothstep(deg_to_rad(15),deg_to_rad(60),tilt)
-	vector_stabilization = 0.0 if uncaged else (1.0-flight_blend)*hover_support
+	vector_stabilization = 0.0 if uncaged or combat_bindings else (1.0-flight_blend)*hover_support
 	departure = smoothstep(20,60,speed)*(1.0-attached_flow)
 	var planar := Vector3(float(raw.get("right",false))-float(raw.get("left",false)),0,float(raw.get("back",false))-float(raw.get("forward",false)))
 	var precision := 0.35 if raw.get("precision",false) else 1.0
-	var move := move_command.step(planar.limit_length(1.0)*precision,delta,0.20)
+	var vector_planar := Vector3.ZERO if combat_bindings else planar
+	var move := move_command.step(vector_planar.limit_length(1.0)*precision,delta,0.20)
+	if combat_bindings: move = Vector3.ZERO
+	var rotation_input := Vector3.ZERO
+	if combat_attitude and not raw.get("burst",false): rotation_input = Vector3(planar.z,0,-planar.x)
 	var yaw_input := float(raw.get("yaw_left",false))-float(raw.get("yaw_right",false))
-	rotation_command = command.step(Vector3(0,yaw_input*precision,0),delta,0.14)
+	rotation_command = command.step(Vector3(rotation_input.x,yaw_input,rotation_input.z)*precision,delta,0.14)
 	var requested_yaw_rate := rotation_command.y*lerpf(0.9,0.32,flight_blend)
 	heading_yaw = wrapf(heading_yaw+requested_yaw_rate*delta,-PI,PI)
-	control_blend = flight_blend
+	if not combat_bindings: control_blend = flight_blend
 	var heading := Basis(Vector3.UP,heading_yaw)
 	var desired_rates := Vector3.UP*requested_yaw_rate
-	if not uncaged:
+	if combat_attitude:
+		# DCS-style body-axis pitch/roll; the mouse remains independent aim/look.
+		var frame := pilot_frame()
+		desired_rates += frame.x*rotation_command.x+frame.z*rotation_command.z*1.25
+	if not uncaged and not combat_bindings:
 		# Elite Dangerous-style assisted translation, with automatic suit streamlining.
-		# WASD never becomes a pitch/roll command, including at cruise speed.
+		# X plus sufficient aero explicitly overrides WASD with body attitude.
 		var forward_speed := maxf(0.0,velocity.dot(-heading.z))
 		var cruise := smoothstep(8,45,forward_speed)
 		var target := (heading.get_rotation_quaternion()*Quaternion(Vector3.RIGHT,-PI/2.0*cruise)).normalized()
@@ -219,12 +245,12 @@ func _step(delta: float, raw: Dictionary) -> void:
 	required_force = basis.y*thrust
 	translation_input = Vector3(move.x,float(raw.get("rise",false))-float(raw.get("sink",false)),move.z)
 	var translation_basis := heading
-	if not uncaged:
+	if not uncaged and not combat_bindings:
 		var target_speed := lerpf(24.0,65.0,flight_blend)
 		var requested_velocity := translation_basis*move*target_speed
 		var horizontal_velocity := Vector3(velocity.x,0,velocity.z)
 		var correction := (requested_velocity-horizontal_velocity)*1.8
-		if planar.is_zero_approx(): correction *= pow(vector_stabilization,3)
+		if vector_planar.is_zero_approx(): correction *= pow(vector_stabilization,3)
 		correction = correction.limit_length(16.0)
 		var support := (GRAVITY-aerodynamic_force.y-required_force.y-velocity.y*1.8)*vector_stabilization if detent == 2 else -velocity.y*0.3*vector_stabilization
 		var trim := Vector3(correction.x-required_force.x*vector_stabilization,support,correction.z-required_force.z*vector_stabilization)

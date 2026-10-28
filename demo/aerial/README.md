@@ -12,17 +12,24 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **W/S:** forward/back movement. **A/D:** strafe left/right at every speed.
-- **Q/E:** yaw; response softens at flight speed. Manual pitch/roll and their
-  arrow-key bindings are disabled. Body streamlining remains automatic.
+- **W/S:** forward/back movement. **A/D:** strafe left/right normally.
+- **Q/E:** yaw; response softens at flight speed. Arrow-key attitude bindings
+  remain disabled. Body streamlining remains automatic outside combat attitude.
 - **R/F:** vertical thrust up/down. **Ctrl held:** precision movement/yaw.
 - **Space / C:** increase/decrease thrust through 0, 0.5, 1, 2 and 4 × hover.
   Each press changes one detent; holding the key does not repeat.
 - **RMB held:** uncage momentum and raise the weapon to combat-ready.
-  Angular damping stays active; WASD still translates.
+  Angular damping stays active; WASD still translates outside the X/aero gate.
 - **Shift + WASD:** 0.2-second vernier burst, with a 0.5-second recharge.
   Assisted flight catches the slide; uncaged flight keeps the momentum.
-- **X held:** spread the limbs and add strong airbrake drag. Passive drag also
+- **X held:** combat brake. With aerodynamic authority **strictly above 50%**,
+  **W/S pitches down/up and A/D rolls left/right**. The HUD shows those bindings.
+  A flow dip disables attitude input immediately. Held keys stay captured and
+  neutral until release, so they cannot suddenly request translation. Releasing
+  all directional keys below the threshold restores movement. Releasing X restores
+  movement immediately. Shift+WASD remains a burst without also pitching/rolling.
+  Outside that gate, WASD keeps normal movement. X still spreads the limbs and
+  adds strong airbrake drag. Passive drag also
   increases above 35 m/s and reaches full strength at 100 m/s without pressing X.
 - **Click:** capture mouse. **Mouse:** aim/look only; it never steers the chassis.
 - **LMB:** raise, brace and fire the rifle. **MMB / Tab:** focus target/free aim.
@@ -31,11 +38,12 @@ godot --path demo res://aerial/aerial_demo.tscn
 
 Flight starts in stabilized 1× hover. WASD directly requests movement at low
 speed, including braking when released. As speed builds, the suit streamlines
-itself automatically; the keys keep their movement meaning. Higher-speed drag
+itself automatically. X plus the aero gate is the explicit attitude override.
+Higher-speed drag
 remains a physical force, so thrust can balance it rather than abruptly clamping
 speed. The camera, head and weapon remain independent of movement.
 
-The rifle rests low while moving normally. RMB, LMB or target focus raises it
+The rifle rests low while moving normally. RMB, LMB, combat braking or target focus raises it
 into braced aim. The offhand cradles the measured receiver underside for central
 aim, releases to a chest guard for wide tracking, then regrips on return. Shot
 recoil travels through the wrists/elbows. An out-of-arc aim cannot turn the chassis
@@ -66,8 +74,14 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Aerodynamic authority multiplies speed, attached-flow quality and useful lift
   orientation. Lift falls away with AoA/sideslip; X increases real quadratic drag.
   Low-speed FBW applies bounded target-velocity corrections and 1× vertical
-  support, following the existing vector-controller pattern. WASD remains
-  translation throughout the envelope. Pilot yaw is tracked independently of
+  support, following the existing vector-controller pattern. The X/aero gate
+  overrides WASD with DCS-style body-axis pitch/roll. Entry requires aero >0.5;
+  an overlapping held direction captures its binding through reduced airflow.
+  Below the threshold, rotation input is disabled and those keys remain neutral
+  until release; the existing attitude stays damped instead of auto-leveling.
+  Automatic attitude alignment and hover velocity correction stop during that
+  maneuver, while angular damping, physical X drag and ground recovery remain.
+  No velocity replacement occurs on entry/exit. Pilot yaw is tracked independently of
   the automatic body-pitch target; no view or aim vector enters movement.
   Assisted flight pitches the body toward a prone stance as forward speed builds.
   Uncage removes path/velocity corrections while retaining yaw and angular damping.
@@ -317,13 +331,16 @@ poses, local thrust cones, articulation, individual nozzle
 close-ups, throttle states, a complete walk cycle and an exact frozen frame.
 Cold-gas close-ups compare each outlet on/off to reject hidden plumes. Functional
 checks cover normal movement and braking, 30/60/120 Hz agreement, detent edges,
-ignored pitch/roll requests at hover/cruise and while uncaged, high-speed passive
+the exact X/aero threshold, combat pitch/roll axes, held-input continuity,
+restored low-aero movement, X release, high-speed passive
 and X drag, camera-independent movement, native terrain prediction/collision,
 source-triangle thruster seating, native IK, local motor cones, low-ready/raised
 arm travel, exact offhand contact, wide release, recoil, rifle hits, walk and pause.
 Motion captures show forward/side movement, bursts and braking, followed by an
 isolated low-ready → braced aim → recoil → wide release → regrip sequence.
 `arm-metrics.json` records the measured support weight and contact error.
+`capture_mech.gd -- /tmp/combat --combat-only` runs a short native X/WASD replay;
+`combat-telemetry.json` records aero, binding state, rotation commands and velocity.
 These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 1280×800 resolution
 with its host window minimized. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

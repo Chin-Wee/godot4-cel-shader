@@ -12,6 +12,7 @@ func _run() -> void:
 		if not completed: push_error("Continuous flight checks did not complete"); quit(1))
 	assert(_check_controller(),"Flight controller checks failed")
 	assert(_check_handling(),"Flight handling checks failed")
+	assert(_check_combat_gate(),"Combat aero gate checks failed")
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
@@ -126,7 +127,7 @@ func _run() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Flight checks passed: restored vector movement, disabled pitch/roll, passive high-speed drag, independent aim, low-ready/braced/offhand poses, recoil, IK, seated motors, terrain, walk and pause.")
+	print("Flight checks passed: restored movement, X/aero-gated combat pitch/roll, held-input continuity, passive high-speed drag, independent aim, low-ready/braced/offhand poses, recoil, IK, seated motors, terrain, walk and pause.")
 	quit()
 
 func _advance(fc, seconds: float, raw: Dictionary) -> void:
@@ -222,6 +223,61 @@ func _check_handling() -> bool:
 		straight.advance(1.0/120.0,{"forward":true,"yaw_left":true},0)
 		looking.advance(1.0/120.0,{"forward":true,"yaw_left":true},PI/2)
 	assert(straight.position.distance_to(looking.position) < 0.001 and straight.attitude.angle_to(looking.attitude) < 0.001,"Mouse vision steers normal movement")
+	return true
+
+func _check_combat_gate() -> bool:
+	for aero in [0.0,0.5,0.5001,0.9]:
+		for braking in [false,true]:
+			var fc = Controller.new()
+			fc.reset(Vector3.ZERO)
+			fc.aero_authority = aero
+			fc.advance(0,{"brake":braking,"back":true})
+			assert(fc.combat_attitude == (braking and aero > 0.5),"Combat gate does not require X and aero strictly above 50%")
+	var fc = Controller.new()
+	fc.reset(Vector3.ZERO)
+	fc.aero_authority = 0.8
+	fc.advance(0,{"forward":true})
+	fc.advance(0,{"forward":true,"brake":true})
+	assert(fc.combat_attitude,"X does not override an already-held movement key")
+	fc.aero_authority = 0.2
+	fc.advance(0,{"forward":true,"brake":true})
+	assert(not fc.combat_attitude and fc.combat_bindings,"Flow dip violates the strict gate or loses captured keys")
+	fc.velocity = Vector3.ZERO
+	fc.authority.value = Vector3.ZERO
+	fc.advance(0.1,{"forward":true,"brake":true})
+	assert(not fc.combat_attitude and fc.combat_bindings and fc.translation_input.is_zero_approx(),"Captured low-aero key requests movement")
+	fc.advance(0,{"brake":true})
+	assert(not fc.combat_attitude,"Released maneuver stays latched below the aero gate")
+	fc.advance(0,{"back":true,"brake":true})
+	assert(not fc.combat_attitude,"New low-aero input incorrectly gains attitude control")
+	fc.aero_authority = 0.7
+	fc.advance(0,{"back":true,"brake":true})
+	assert(fc.combat_attitude)
+	fc.advance(0,{"back":true})
+	assert(not fc.combat_attitude,"Releasing X does not restore movement")
+	for key in ["forward","back","left","right"]:
+		fc.reset(Vector3.ZERO)
+		fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+		fc.velocity = Vector3(0,0,-90)
+		_advance(fc,0.5,{"uncage":true})
+		assert(fc.aero_authority > 0.5)
+		var before: Quaternion = fc.attitude
+		_advance(fc,0.4,{"brake":true,key:true})
+		assert(fc.combat_attitude and fc.combat_bindings and fc.attitude.angle_to(before) > 0.15,"Combat WASD cannot pitch/roll")
+		assert(Vector2(fc.translation_input.x,fc.translation_input.z).length() < 0.001,"Combat WASD also requests translation")
+		var sign_value := -1.0 if key in ["forward","right"] else 1.0
+		var value: float = fc.rotation_command.x if key in ["forward","back"] else fc.rotation_command.z
+		assert(value*sign_value > 0.5,"Combat pitch/roll input has the wrong axis or direction")
+		assert(fc.vector_stabilization == 0.0,"Combat maneuver activates hover braking")
+	fc.reset(Vector3.ZERO)
+	_advance(fc,1,{"brake":true,"right":true})
+	assert(not fc.combat_attitude and fc.velocity.x > 4,"Low-aero combat brake loses normal strafe")
+	fc.reset(Vector3.ZERO)
+	fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+	fc.velocity = Vector3(0,0,-90)
+	_advance(fc,0.5,{"uncage":true})
+	fc.advance(0.1,{"brake":true,"right":true,"burst":true})
+	assert(fc.combat_attitude and fc.boost_amount > 0 and is_zero_approx(fc.rotation_command.z),"Vernier burst also rolls the chassis")
 	return true
 
 func _check_motors(mech: Node3D) -> bool:
