@@ -2093,7 +2093,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L203"
+      "source_location": "L213"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2105,7 +2105,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L218"
+      "source_location": "L228"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2117,7 +2117,7 @@
       "node_kind": "heading",
       "norm_label": "implementation and reference",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L31"
+      "source_location": "L36"
     },
     {
       "id": "demo_aerial_readme_run_and_controls",
@@ -2141,7 +2141,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L290"
+      "source_location": "L300"
     },
     {
       "id": "readme",
@@ -12043,7 +12043,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L203",
+      "source_location": "L213",
       "weight": 1.0
     },
     {
@@ -12054,7 +12054,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L218",
+      "source_location": "L228",
       "weight": 1.0
     },
     {
@@ -12065,7 +12065,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L290",
+      "source_location": "L300",
       "weight": 1.0
     },
     {
@@ -12076,7 +12076,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L31",
+      "source_location": "L36",
       "weight": 1.0
     },
     {
@@ -12842,5 +12842,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "a99570f16bfdecd17c66f713f8c64573822a270a"
+  "built_at_commit": "21ac50f009214f89636bb35bb5eaf3e5147ebbb3"
 }
