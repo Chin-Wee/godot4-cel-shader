@@ -21,6 +21,10 @@ var head := Spring.new()
 var com := Spring.new()
 var turn := Spring.new()
 var force_spring := Spring.new()
+var readiness := Spring.new()
+var support := Spring.new()
+var recoil := Spring.new()
+var finger_poses := {}
 var legs: Array[Spring] = []
 var hands: Array[Spring] = []
 var poles: Array[Spring] = []
@@ -34,8 +38,20 @@ var root_angles := Vector3.ZERO
 var force := Vector3.UP*9.81
 var shares := PackedFloat32Array([1.0/6,1.0/6,1.0/6,1.0/6,1.0/6,1.0/6])
 
-func configure() -> void:
+func configure(player: AnimationPlayer) -> void:
 	var sk := get_skeleton()
+	# Gears 5 is the presentation reference: low-ready, braced aim and offhand
+	# release for wide tracking. Reuse the asset's grip; flight remains procedural.
+	player.play(&"GunPose")
+	player.advance(0.0)
+	var right := sk.get_bone_global_pose(sk.find_bone("Hands.R"))
+	var left := sk.get_bone_global_pose(sk.find_bone("Hands.L"))
+	var support_rotation := right.basis.inverse()*left.basis
+	for index in sk.get_bone_count():
+		var name := sk.get_bone_name(index)
+		if "Finger" in name or "Thumb" in name: finger_poses[index] = sk.get_bone_pose_rotation(index)
+	player.stop()
+	sk.reset_bone_poses()
 	for bone in ["PelvisBase","Low_Waist","Torso_WaistConnect","Torso","Neck","ShoulderJoint.L","ShoulderJoint.R","Thigh.L","Thigh.R","Knee.L","Knee.R","Feet.L","Feet.R"]:
 		var index := sk.find_bone(bone)
 		assert(index >= 0,"Missing procedural flight bone: "+bone)
@@ -69,12 +85,16 @@ func configure() -> void:
 	weapon = WeaponAim.new()
 	weapon.name = "FlightWeaponAim"
 	sk.add_child(weapon)
+	weapon.support_rotation = support_rotation
 	var gun: MeshInstance3D = sk.find_child("GUN",false,false)
 	for bind in gun.skin.get_bind_count():
 		if gun.skin.get_bind_name(bind) == &"Hands.R":
 			# Skin bind can differ from inverse skeleton rest. Use the actual asset.
 			var transform := gun.skin.get_bind_pose(bind)
 			weapon.barrel_axis = (transform.basis*Vector3.DOWN).normalized()
+			weapon.top_axis = (transform.basis*Vector3.BACK).normalized()
+			# Measured receiver underside, projected onto a source mesh triangle.
+			weapon.support_offset = transform*Vector3(-2.4,5.661993,-0.832874)
 			weapon.muzzle_local = transform*Vector3(-2.412204,-0.004719,0.436474)
 
 class WeaponAim:
@@ -84,21 +104,35 @@ class WeaponAim:
 	var barrel_direction := Vector3.FORWARD
 	var barrel_axis := Vector3.UP
 	var muzzle_local := Vector3.ZERO
+	var top_axis := Vector3.BACK
+	var support_offset := Vector3.ZERO
+	var support_rotation := Basis.IDENTITY
+	var support_weight := 0.0
+	func hand_basis() -> Basis:
+		var sk := get_skeleton()
+		var desired := (sk.global_basis.inverse()*smoothed_aim).normalized()
+		var up := (sk.global_basis.inverse()*Vector3.UP).normalized()
+		if absf(desired.dot(up)) > 0.98: up = desired.cross(Vector3.RIGHT if absf(desired.x) < 0.9 else Vector3.FORWARD).normalized()
+		return Basis.looking_at(-desired,up)*Basis.looking_at(-barrel_axis,top_axis).inverse()
 	func _process_modification() -> void:
 		var sk := get_skeleton()
 		var index := sk.find_bone("Hands.R")
 		var hand := sk.get_bone_global_pose(index)
-		var desired := (sk.global_basis.inverse()*smoothed_aim).normalized()
-		var rotation := Quaternion((hand.basis*barrel_axis).normalized(),desired)
-		hand.basis = Basis(rotation)*hand.basis
+		hand.basis = hand_basis()
 		var parent := sk.get_bone_global_pose(sk.get_bone_parent(index)).basis
 		sk.set_bone_pose_rotation(index,(parent.inverse()*hand.basis).get_rotation_quaternion().normalized())
 		# Measured center of the lowest-Y rifle end, transformed to Hands.R space.
 		muzzle = sk.global_transform*Transform3D(hand.basis,hand.origin+hand.basis*muzzle_local)
 		barrel_direction = (sk.global_basis*hand.basis*barrel_axis).normalized()
+		var offhand := sk.find_bone("Hands.L")
+		var off_parent := sk.get_bone_global_pose(sk.get_bone_parent(offhand)).basis
+		var desired_support := (off_parent.inverse()*hand.basis*support_rotation).get_rotation_quaternion().normalized()
+		sk.set_bone_pose_rotation(offhand,sk.get_bone_pose_rotation(offhand).slerp(desired_support,support_weight))
 
 func update(delta: float, controller) -> void:
 	clock = controller.clock
+	var ready := readiness.step(Vector3(1.0 if controller.aiming else 0.0,0,0),delta,0.18).x
+	var kickback := recoil.step(Vector3.ZERO,delta,0.10).x
 	var acceleration: Vector3 = controller.local_acceleration
 	var omega: Vector3 = Basis(controller.attitude).inverse()*controller.angular_velocity
 	var alpha: Vector3 = Basis(controller.attitude).inverse()*controller.angular_acceleration
@@ -143,22 +177,31 @@ func update(delta: float, controller) -> void:
 		legs[side*3].step(thigh.clamp(Vector3(-1.15,-0.5,-0.65),Vector3(0.65,0.5,0.65)),delta,tau)
 		legs[side*3+1].step(Vector3(clampf(knee,0.1,1.65),0,0),delta,tau+0.04)
 		legs[side*3+2].step(Vector3(clampf(0.32*cruise-0.24*spread-compression*0.30-brace*0.15,-0.65,0.5),-flow.x*0.12,0),delta,tau+0.08)
-		var hand := Vector3(sx*(3.2+0.9*spread),-2.3+0.8*spread,0.3)+flow*Vector3(1.3,0.8,1.8)+Vector3(-side_load*0.45,compression*0.2,omega.x*0.35)
-		if side == 1:
-			# Rifle arm resists airflow. The native IK positions the wrist; a final
-			# modifier points the skinned rifle using the solved wrist transform.
-			hand = Vector3(-2.7,0.6,0.0)+aim.normalized()*3.5+flow*0.12
-		hands[side].step(hand,delta,0.15 if side == 1 else 0.18)
-		poles[side].step(Vector3(sx*5.4,-0.3,-2.8)+flow*0.25,delta,0.15+side*0.02)
+		# Aim hand stays close to the shoulder/receiver instead of extending at
+		# every look angle. The offhand guards the chest until it can cradle the gun.
+		var guard := Vector3(2.5,-1.7,0.8)+flow*Vector3(0.35,0.2,0.4)+Vector3(-side_load*0.35,compression*0.2,0)
+		var low_ready := Vector3(-1.8,-2.1,0.7)
+		var raised := Vector3(-0.4,0.1,-0.2)+aim.normalized()*0.4-aim.normalized()*kickback
+		var hand := guard if side == 0 else low_ready.lerp(raised,ready)
+		hands[side].step(hand,delta,0.14 if side == 1 else 0.20)
+		var pole := Vector3(4.5,-1.1,1.5) if side == 0 else Vector3(-4.7,-1.4,-2.1)
+		poles[side].step(pole+flow*0.15,delta,0.18+side*0.02)
+	var support_demand := ready*(1.0-smoothstep(deg_to_rad(30),deg_to_rad(65),absf(yaw)))
+	support.step(Vector3(support_demand,0,0),delta,0.15)
 	force = force_spring.step(controller.required_force,delta,0.10)
 	for index in 6: shares[index] = 1.0/6.0
 	var wrist: Vector3 = get_skeleton().global_transform*get_skeleton().get_bone_global_rest(bones["Torso"])*hands[1].value
 	# Project once before parallax correction. An exactly rearward look has two
 	# equally close yaw limits; the wrist offset must not choose the opposite one.
 	var target: Vector3 = controller.position+bounded_aim*controller.position.distance_to(controller.gaze_target)
-	var rifle_aim: Vector3 = controller.limit_aim_direction((target-wrist).normalized())
+	var aimed_direction: Vector3 = controller.limit_aim_direction((target-wrist).normalized())
+	var low_direction: Vector3 = controller.aim_frame()*Vector3(0,-0.7,-1).normalized()
+	var rifle_aim := low_direction.lerp(aimed_direction,ready).normalized()
 	var aim_rotation := Quaternion(weapon.smoothed_aim.normalized(),rifle_aim)
 	weapon.smoothed_aim = (Quaternion.IDENTITY.slerp(aim_rotation,1.0-exp(-delta/0.12))*weapon.smoothed_aim).normalized()
+
+func kick_weapon() -> void:
+	recoil.velocity.x += 12.0
 
 func _rotate(bone: String, angles: Vector3) -> void:
 	var sk := get_skeleton()
@@ -185,6 +228,9 @@ func _process_modification() -> void:
 		for name in ["UpperArm"+suffix+".001","LowerArm"+suffix]:
 			var index := sk.find_bone(name)
 			sk.set_bone_pose_rotation(index,sk.get_bone_rest(index).basis.get_rotation_quaternion())
+	for index in finger_poses:
+		var weight := 1.0 if ".R" in sk.get_bone_name(index) else support.value.x
+		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],weight))
 	var torso := sk.get_bone_global_pose(bones["Torso"])
 	for side in 2:
 		var target := torso*hands[side].value
@@ -199,3 +245,13 @@ func _process_modification() -> void:
 			distance = reach-cushion+cushion*(1.0-exp(-(distance-reach+cushion)/cushion))
 		hand_targets[side].position = shoulder+(target-shoulder).normalized()*distance
 		pole_targets[side].position = torso*poles[side].value
+
+	var gun := Transform3D(weapon.hand_basis(),hand_targets[1].position)
+	var contact := gun*weapon.support_offset
+	var shoulder := sk.get_bone_global_pose(ik.get_root_bone(0)).origin
+	var rest_middle := sk.get_bone_global_rest(ik.get_middle_bone(0)).origin
+	var rest_root := sk.get_bone_global_rest(ik.get_root_bone(0)).origin
+	var rest_end := sk.get_bone_global_rest(ik.get_end_bone(0)).origin
+	var reach := rest_root.distance_to(rest_middle)+rest_middle.distance_to(rest_end)
+	weapon.support_weight = support.value.x*(1.0-smoothstep(reach*0.90,reach*0.985,shoulder.distance_to(contact)))
+	hand_targets[0].position = hand_targets[0].position.lerp(contact,weapon.support_weight)

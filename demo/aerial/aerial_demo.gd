@@ -395,6 +395,7 @@ func _process(delta: float) -> void:
 	if animate:
 		elapsed += delta
 		if hero.flying:
+			hero.controller.aiming = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or is_instance_valid(focus_target)
 			hero.controller.aim_direction = aim_direction()
 			hero.controller.aim_point = focus_target.global_position if is_instance_valid(focus_target) else hero.position+hero.controller.aim_direction*4500.0
 			hero.step_flight(delta,FlightController.read_input(),camera_yaw)
@@ -439,13 +440,13 @@ func focus_next() -> void:
 
 func _update_flight_stats() -> void:
 	var fc = hero.controller
-	var warning := " · AoA LIMIT" if fc.pull_limit > 0.1 else ""
+	var warning := ""
 	if fc.aim_direction.dot(fc.weapon_aim) < cos(deg_to_rad(10)): warning += " · OUTSIDE FIRING ARC"
 	if fc.time_to_impact < 2.4: warning = " · TERRAIN %.1fs%s"%[fc.time_to_impact," — RECOVERY CAPPED" if fc.uncaged else " — PULL UP"]
 	flight_stats.text = "%s · THRUST %.1f× · %.0f m/s · AERO %.0f%% · %.1f G%s\nW/S: %s · A/D: %s · Focus: %s"%[
 		"UNCAGED" if fc.uncaged else "ASSIST",fc.DETENTS[fc.detent],fc.velocity.length(),fc.aero_authority*100,fc.g_load,warning,
-		"TRANSLATE" if Input.is_action_pressed("flight_vector") else "PITCH",
-		"STRAFE" if Input.is_action_pressed("flight_vector") else "ROLL",
+		"FORWARD / BACK",
+		"STRAFE",
 		str(focus_target.name) if is_instance_valid(focus_target) else "free aim"]
 	flight_stats.modulate = Color(1,0.4,0.25) if fc.time_to_impact < 2.4 else Color.WHITE
 	reticle.text = "×" if hit_time > 0.0 else "+"
@@ -495,6 +496,7 @@ func fire_weapon() -> void:
 	shot.mesh.scale = Vector3(1,1,start.distance_to(finish))
 	fire_cooldown = 0.16
 	shots_fired += 1
+	hero.rig.kick_weapon()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
@@ -554,7 +556,7 @@ func _make_hud() -> void:
 	panel.offset_right = -20
 	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "GUNDAM · CONTINUOUS FLIGHT\nW/S: pitch · A/D: roll · Q/E: yaw · Arrows: pitch / roll\nR/F: vertical thrust · Alt+WASD: always translate · Ctrl: precision\nSpace / C: thrust detent · RMB hold: uncage · Shift+WASD: burst · X: drag\nMouse: aim · LMB: fire · MMB / Tab: focus · Esc: release · Wheel: zoom\nHome: camera reset · P: pause · G: walk · 1/2: palette · 3/4: weather · F8: explosion"
+	label.text = "GUNDAM · CONTINUOUS FLIGHT\nW/S: forward / back · A/D: strafe · Q/E: yaw\nR/F: vertical thrust · Ctrl: precision · High-speed drag: automatic\nSpace / C: thrust detent · RMB hold: uncage · Shift+WASD: burst · X: drag\nMouse: aim · LMB: fire · MMB / Tab: focus · Esc: release · Wheel: zoom\nHome: camera reset · P: pause · G: walk · 1/2: palette · 3/4: weather · F8: explosion"
 	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
 	label.add_theme_font_size_override("font_size",15)
 	panel.add_child(label)

@@ -12,44 +12,36 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **W/S:** pitch down/up at every speed. **A/D:** roll left/right at every speed.
-- **Arrow Up/Down:** direct pitch down/up. **Arrow Left/Right:** direct roll.
-  These remain attitude controls at every speed.
-- **R/F:** vertical thrust up/down. **Alt + WASD:** translation at any speed,
-  including uncaged flight. **Ctrl held:** 35% precision rotation/translation.
-- **Q/E:** yaw throughout the envelope.
+- **W/S:** forward/back movement. **A/D:** strafe left/right at every speed.
+- **Q/E:** yaw; response softens at flight speed. Manual pitch/roll and their
+  arrow-key bindings are disabled. Body streamlining remains automatic.
+- **R/F:** vertical thrust up/down. **Ctrl held:** precision movement/yaw.
 - **Space / C:** increase/decrease thrust through 0, 0.5, 1, 2 and 4 × hover.
   Each press changes one detent; holding the key does not repeat.
-- **RMB held:** uncage. Velocity damping and flight-path alignment stop;
-  angular damping stays active. Pitch/roll bindings remain unchanged.
-- **Shift + WASD:** a 0.2-second directional vernier burst. Release/repress to
-  trigger another burst after its 0.5-second recharge. Caged assist catches the
-  resulting slide; uncaged flight keeps the momentum. Shift selects the burst
-  without also applying the same key as a pitch/roll command.
-- **X held:** spread the limbs and increase aerodynamic drag. Thrust reduction
-  while uncaged produces a drop; X sheds substantially more horizontal energy.
-- **Click:** capture mouse. **Mouse:** aim/look only; it never steers the chassis. **Esc:** release mouse.
-- **LMB:** fire the rifle preview. **MMB / Tab:** focus wingman, missile, free aim.
-- **Wheel:** zoom. **Home:** reset follow camera. **P:** pause motion, springs and VFX.
-- **G:** terrain-grounded walking preview / return to flight at the current location.
-- **1 / 2:** sunset / daylight. **3 / 4:** storm / cloud coverage. **F8:** explosion.
+- **RMB held:** uncage momentum and raise the weapon to combat-ready.
+  Angular damping stays active; WASD still translates.
+- **Shift + WASD:** 0.2-second vernier burst, with a 0.5-second recharge.
+  Assisted flight catches the slide; uncaged flight keeps the momentum.
+- **X held:** spread the limbs and add strong airbrake drag. Passive drag also
+  increases above 35 m/s and reaches full strength at 100 m/s without pressing X.
+- **Click:** capture mouse. **Mouse:** aim/look only; it never steers the chassis.
+- **LMB:** raise, brace and fire the rifle. **MMB / Tab:** focus target/free aim.
+- **Wheel:** zoom. **Home:** reset camera. **Esc:** release mouse. **P:** pause.
+- **G:** ground-walk preview. **1 / 2:** palette. **3 / 4:** weather. **F8:** explosion.
 
-Flight starts in stabilized 1× hover. There are no player movement-mode buttons.
-Airflow, attitude and speed continuously determine the aerodynamic envelope.
-WASD never changes meaning with airflow. Alt explicitly selects translation;
-assisted translation uses chassis heading and gravity, while uncaged translation
-uses the body's 3D pilot frame. Mouse motion and focus affect vision, head,
-torso and rifle only. The rifle stops at its articulation limit; the HUD reports
-an out-of-arc aim instead of turning the chassis. The wingman remains a
-stationary practice target. Focus changes aim/camera, never
-velocity. Rifle fire is a bounded hitscan/tracer preview with hit confirmation,
-not a combat/health or mission system. The factory/roster project settings remain
-intact. The giant canyon display uses ten world units per motion meter.
+Flight starts in stabilized 1× hover. WASD directly requests movement at low
+speed, including braking when released. As speed builds, the suit streamlines
+itself automatically; the keys keep their movement meaning. Higher-speed drag
+remains a physical force, so thrust can balance it rather than abruptly clamping
+speed. The camera, head and weapon remain independent of movement.
 
-For a forward-flight launch, press Space once for 2× thrust, pitch forward
-with W, then release W near a prone attitude. Assist aligns the existing flight
-path; you do not need to hold forward input to sustain cruise. Use S to pull up,
-A/D to bank, and Ctrl for small corrections. RMB or X permits deliberate stalls.
+The rifle rests low while moving normally. RMB, LMB or target focus raises it
+into braced aim. The offhand cradles the measured receiver underside for central
+aim, releases to a chest guard for wide tracking, then regrips on return. Shot
+recoil travels through the wrists/elbows. An out-of-arc aim cannot turn the chassis
+or fire backwards through it. Rifle fire remains a bounded hitscan/tracer preview.
+The factory/roster project settings remain intact; the giant canyon display uses
+ten world units per motion meter.
 
 ## Implementation and reference
 
@@ -73,18 +65,14 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   The existing controller integrates thrust, lift, drag and gravity at up to 120 Hz.
   Aerodynamic authority multiplies speed, attached-flow quality and useful lift
   orientation. Lift falls away with AoA/sideslip; X increases real quadratic drag.
-  Low-speed FBW applies bounded velocity corrections and 1× vertical support;
-  automatic body pitch streamlines the chassis as speed increases. Airspeed and
-  sideslip drive the control envelope separately from attached-flow lift, so a
-  hard pull does not suddenly activate hover braking. High-speed assist uses a
-  native shortest-arc Quaternion to align the nose with the 3D path while
-  preserving bank through vertical flight. Pilot axes stay fixed through a
-  held attitude maneuver. Following the DCS Su-27 envelope-limiter reference,
-  assisted pitch rates taper as predicted AoA approaches a tuned 23° limit;
-  RMB or X explicitly permits deliberate departures. Ctrl reduces input response
-  for small corrections. Uncage removes velocity/path corrections while a finite angular-rate servo damps spin.
-  Thrust and vernier bursts change velocity through acceleration, never by rotating
-  or replacing the velocity vector. Recaging bends the existing path gradually.
+  Low-speed FBW applies bounded target-velocity corrections and 1× vertical
+  support, following the existing vector-controller pattern. WASD remains
+  translation throughout the envelope. Pilot yaw is tracked independently of
+  the automatic body-pitch target; no view or aim vector enters movement.
+  Assisted flight pitches the body toward a prone stance as forward speed builds.
+  Uncage removes path/velocity corrections while retaining yaw and angular damping.
+  Additional quadratic drag ramps over 35–100 m/s and remains separate from X.
+  Motion is integrated through forces; velocity is never replaced or rotated.
 - Native swept CharacterBody capsule queries replace the old altitude floor clamp.
   Three swept segments predict the next three seconds of the current curved path.
   HUD warning begins below 2.4 seconds; recovery ramps from 1.3 to 0.6 seconds.
@@ -102,11 +90,19 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   ankles follow later than hips/knees. Departure and X open the limbs,
   and the rifle arm resists airflow more strongly. The head leads within its
   30° yaw / 20° pitch zone; shoulder/torso articulation handles wider aim.
-  Rifle aim is bounded to an 85° yaw / 70° pitch envelope relative to the
-  articulated forward frame. An out-of-arc request cannot steer the chassis or
-  fire backwards through it. Native TwoBoneIK3D positions
-  hands; a final SkeletonModifier3D stabilizes the rifle using its actual skin
-  bind and measured muzzle. The camera stays gravity-upright during rolls.
+  Rifle aim is bounded to an 85° yaw / 70° pitch envelope. Gears 5's low-ready
+  and braced two-hand presentation is the visual reference, rather than a claim
+  about its implementation. The supplied `GunPose` is sampled once for finger
+  grip rotations and the left/right wrist relationship, then stopped. Those
+  grip poses blend through the existing procedural rig; no static flight clip plays.
+  Native TwoBoneIK3D solves both hands. The receiver underside was projected onto
+  the GUN source triangles at (-2.4, 5.661993, -0.832874) and transformed through
+  its actual skin bind. A predicted wrist basis gives the offhand the same contact
+  point used by the final weapon modifier, avoiding an extra IK pipeline.
+  The rifle keeps a stable up axis, a tucked aiming elbow and a distinct low-ready
+  stance. Offhand support fades for wide/unreachable aim and returns to a chest
+  guard. Fingers release/regrip; a damped shot impulse drives arm follow-through.
+  The camera stays gravity-upright and aiming never steers the chassis.
   No flight/hover/stall clips play. Imported clips remain for Animation dock
   preview and dynamic walking; native modifier influence fades out for walking.
   This supplied model has no independently rigged binders, so no binder animation
@@ -320,22 +316,14 @@ Mech captures inspect all six main mount attachments during directional pose
 poses, local thrust cones, articulation, individual nozzle
 close-ups, throttle states, a complete walk cycle and an exact frozen frame.
 Cold-gas close-ups compare each outlet on/off to reject hidden plumes. Functional
-checks cover the control bindings, 30/60/120 Hz agreement, detent edges and limits,
-fixed pitch/roll bindings at all speeds, low-speed uncaged pitch, angular settling with retained drift,
-caged/uncaged bursts, drop versus drag, automatic aerodynamic transition, bounded
-terrain recovery, native swept collision, source-triangle seating, IK endpoints,
-local motor limits, independent rifle aim, bounded/rate-limited fire, focus, walk
-and pause. Regression checks sustain level and banked pulls through the vertical,
-reject hover-brake engagement and AoA departure, verify the explicit departure
-overrides, direct attitude keys, vertical thrust, independent translation and
-precision input, and measure load-driven/asymmetric knee movement. Different
-mouse/camera directions must produce identical physical trajectories.
-Motion capture injects native input through acceleration → uncage →
-upright drift → directional burst → pitch down → recage, then inspects hover,
-cruise, drift, inverted flight and stall from both sides. A separate five-second
-banked pull capture checks sustained turn energy, AoA, attachment integrity and
-visible knee articulation through the vertical. Telemetry records the
-actual velocity, attitude, authority and uncage state during the sequence.
+checks cover normal movement and braking, 30/60/120 Hz agreement, detent edges,
+ignored pitch/roll requests at hover/cruise and while uncaged, high-speed passive
+and X drag, camera-independent movement, native terrain prediction/collision,
+source-triangle thruster seating, native IK, local motor cones, low-ready/raised
+arm travel, exact offhand contact, wide release, recoil, rifle hits, walk and pause.
+Motion captures show forward/side movement, bursts and braking, followed by an
+isolated low-ready → braced aim → recoil → wide release → regrip sequence.
+`arm-metrics.json` records the measured support weight and contact error.
 These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 1280×800 resolution
 with its host window minimized. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

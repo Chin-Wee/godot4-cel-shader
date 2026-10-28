@@ -54,21 +54,20 @@ func _capture() -> void:
 			0: _keys([])
 			6: _keys([KEY_W,KEY_SPACE])
 			7: _keys([KEY_W])
-			24: _keys([])
-			66: _keys([KEY_S]); _uncage(true)
-			78: _keys([KEY_C])
-			79: _keys([])
-			96: _keys([KEY_D,KEY_SHIFT])
-			99: _keys([])
-			112: _keys([KEY_W])
-			126: _keys([KEY_SPACE]); _uncage(false)
-			127: _keys([])
+			48: _keys([KEY_W,KEY_D])
+			66: _keys([]); _uncage(true)
+			90: _keys([KEY_A,KEY_SHIFT])
+			93: _keys([])
+			108: _keys([KEY_S]); _uncage(false)
+			132: _keys([])
+			144: _keys([KEY_W,KEY_Q])
+			165: _keys([])
 		_step(scene,1.0/12.0)
 		await _save_frame(output.path_join("flight-%03d.png"%frame))
 		assert(not mech.actor.animation_player.is_playing(),"Authored flight animation is still running")
 		_check_mounts(mech)
-		if frame == 65: assert(mech.controller.aero_authority > 0.65,"Sequence failed to reach aerodynamic cruise")
-		if frame == 90: assert(mech.basis.y.normalized().y > 0.8 and -mech.controller.velocity.z > 50,"Upright drift lost its original momentum")
+		if frame == 47: assert(mech.controller.velocity.length() > 25,"W did not accelerate normal movement")
+		assert(is_zero_approx(mech.controller.rotation_command.x) and is_zero_approx(mech.controller.rotation_command.z),"WASD controls pitch or roll")
 		if frame%6 == 0: telemetry.append({"frame":frame,"velocity":str(mech.controller.velocity),"head_axis":str(mech.basis.y.normalized()),"aero":mech.controller.aero_authority,"uncaged":mech.controller.uncaged})
 	_keys([])
 	_uncage(false)
@@ -94,35 +93,39 @@ func _capture() -> void:
 		scene.camera_yaw += PI
 		scene._update_camera(0.0)
 		await _save_frame(output.path_join(scenario+"-front.png"))
-	# Sustained banked pull through the vertical: inspect load-driven legs and
-	# reject the old hover-brake/heading break under the same pilot input.
+	# Native low-ready -> measured receiver support -> wide release -> regrip.
 	scene.follow_camera = false
-	mech.controller.reset(Vector3(175,1800,340))
-	mech.controller.attitude = Quaternion(Vector3.FORWARD,0.6)*Quaternion(Vector3.RIGHT,-PI/2)
-	mech.controller.velocity = Vector3(0,0,-70)
-	mech.controller.detent = 3
-	for frame in 60: mech.step_flight(1.0/120.0,{},0)
-	var knee_min := INF
-	var knee_max := -INF
-	var minimum_speed := INF
-	var maximum_aoa := 0.0
-	for frame in 60:
-		mech.step_flight(1.0/12.0,{"pitch_up":true},0)
+	mech.controller.reset(Vector3(175,1200,340))
+	mech.position = mech.controller.position
+	mech.quaternion = Quaternion.IDENTITY
+	for frame in 90: mech.update_animation(1.0/60.0)
+	var minimum_support := 1.0
+	var maximum_support := 0.0
+	var maximum_contact_error := 0.0
+	for frame in 72:
+		mech.controller.aiming = frame >= 10
+		var yaw := sin(float(frame)*0.09)*0.25 if frame < 38 or frame > 55 else -1.3
+		mech.controller.aim_direction = Vector3(sin(yaw),0,-cos(yaw))
+		mech.controller.gaze_target = mech.position+mech.controller.aim_direction*4500
+		if frame in [26,31,36]: mech.rig.kick_weapon()
+		mech.update_animation(1.0/12.0)
 		scene._update_afterburners(1.0/12.0)
-		scene.camera.position = mech.position+Vector3(150,45,110)
-		scene.camera.look_at(mech.position)
-		await _save_frame(output.path_join("turn-%03d.png"%frame))
+		scene.camera.position = mech.position+Vector3(135,25,-165)
+		scene.camera.look_at(mech.position+Vector3.UP*15)
+		await _save_frame(output.path_join("arms-%03d.png"%frame))
 		_check_mounts(mech)
-		assert(mech.controller.velocity.length() > 55,"Banked pull triggered hover braking")
-		assert(absf(mech.controller.angle_of_attack) < deg_to_rad(30),"Assisted banked pull departed")
-		minimum_speed = minf(minimum_speed,mech.controller.velocity.length())
-		maximum_aoa = maxf(maximum_aoa,absf(rad_to_deg(mech.controller.angle_of_attack)))
-		knee_min = minf(knee_min,mech.rig.legs[1].value.x)
-		knee_max = maxf(knee_max,mech.rig.legs[1].value.x)
-	assert(mech.controller.velocity.z > 20,"Banked pull cannot pass through vertical flight")
-	assert(knee_max-knee_min > 0.3,"Turn loads do not move the knees visibly")
-	var metrics := FileAccess.open(output.path_join("turn-metrics.json"),FileAccess.WRITE)
-	metrics.store_string(JSON.stringify({"minimum_speed":minimum_speed,"maximum_aoa_degrees":maximum_aoa,"knee_range_degrees":rad_to_deg(knee_max-knee_min),"final_velocity":str(mech.controller.velocity)},"  "))
+		var right: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands.R")]
+		var left: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands.L")]
+		var weight: float = mech.rig.weapon.support_weight
+		minimum_support = minf(minimum_support,weight)
+		maximum_support = maxf(maximum_support,weight)
+		if weight > 0.98:
+			var error: float = left.origin.distance_to(right*mech.rig.weapon.support_offset)
+			maximum_contact_error = maxf(maximum_contact_error,error)
+			assert(error < 0.08,"Offhand detached from the rifle receiver")
+	assert(maximum_support > 0.95 and minimum_support < 0.05,"Offhand cannot brace/release")
+	var metrics := FileAccess.open(output.path_join("arm-metrics.json"),FileAccess.WRITE)
+	metrics.store_string(JSON.stringify({"maximum_contact_error_source_units":maximum_contact_error,"maximum_support":maximum_support,"minimum_support":minimum_support},"  "))
 	metrics.close()
 	var data := FileAccess.open(output.path_join("telemetry.json"),FileAccess.WRITE)
 	data.store_string(JSON.stringify(telemetry,"  "))
@@ -131,6 +134,7 @@ func _capture() -> void:
 	mech.controller.reset(Vector3(175,700,340))
 	mech.position = mech.controller.position
 	mech.quaternion = mech.controller.attitude
+	mech.controller.aiming = true
 	mech.controller.aim_direction = (scene.wingman.position-mech.position).normalized()
 	mech.controller.aim_point = scene.wingman.position
 	mech.controller.gaze_target = scene.wingman.position
@@ -197,7 +201,7 @@ func _capture() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Native flight checks passed: keyboard detent/uncage/burst/recovery sequence, cruise/drift/inverted/stall poses, protected banked loop, load-driven legs, local motors, visible cold jets, walk and pause.")
+	print("Native flight checks passed: restored movement, disabled pitch/roll, low-ready/brace/release/recoil, measured offhand contact, rifle hit, thrusters, walk and pause.")
 	quit()
 
 func _check_mounts(mech: Node3D) -> void:

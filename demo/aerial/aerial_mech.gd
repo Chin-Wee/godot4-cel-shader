@@ -77,7 +77,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	rig = FlightPose.new()
 	rig.name = "SpringFlightPose"
 	skeleton.add_child(rig)
-	rig.configure()
+	rig.configure(actor.animation_player)
 	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
 	rig.weapon.modification_processed.connect(_on_pose_modified)
 	var nozzle_material := surface.duplicate() as ShaderMaterial
