@@ -12,26 +12,33 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **W/S or Up/Down:** forward thrust / reverse.
-- **A/D or Left/Right:** yaw left / right.
-- **Q/E:** strafe left / right.
-- **Space:** climb. **C or Ctrl:** descend.
-- **Shift:** boost. **X:** hard airbrake.
-- **Drag either mouse button:** orbit the camera and aim gaze. **Wheel:** zoom.
-- **R / Reset camera button:** restore the follow view.
-- **Flight buttons:** Manual, Hover, Cruise, Boost, Brake cycle, Bank left,
-  Bank right and Figure 8, matching the supplied Iron Man procedural rig.
-- **P:** freeze movement, springs and VFX. Camera orbit still works for inspection.
+- **W/S:** forward/back translation at vector speed; pitch at aerodynamic speed.
+- **A/D:** strafe at vector speed; roll at aerodynamic speed. Arrows are aliases.
+- **Q/E:** yaw throughout the envelope.
+- **Space / C:** increase/decrease thrust through 0, 0.5, 1, 2 and 4 × hover.
+  Each press changes one detent; holding the key does not repeat.
+- **RMB held:** uncage. WASD controls attitude at every speed; velocity damping
+  and flight-path alignment stop. Angular damping stays active.
+- **Shift + WASD:** a 0.2-second directional vernier burst. Release/repress to
+  trigger another burst after its 0.5-second recharge. Caged assist catches the
+  resulting slide; uncaged flight keeps the momentum.
+- **X held:** spread the limbs and increase aerodynamic drag. Thrust reduction
+  while uncaged produces a drop; X sheds substantially more horizontal energy.
+- **Click:** capture mouse. **Mouse:** aim/look. **Esc:** release mouse.
+- **LMB:** fire the rifle preview. **MMB / Tab:** focus wingman, missile, free aim.
+- **Wheel:** zoom. **R:** reset follow camera. **P:** pause motion, springs and VFX.
 - **G:** terrain-grounded walking preview / return to flight at the current location.
-- **1 / 2:** sunset / daylight. **3:** storm. **4:** cloud coverage.
-- **F:** explosion. Space is reserved for climbing.
+- **1 / 2:** sunset / daylight. **3 / 4:** storm / cloud coverage. **F:** explosion.
 
-Manual is selected at startup. Movement keys control the hero mech; maneuver
-buttons run the reference's continuously simulated presets. The second mech uses
-its own controller and Figure 8 preset. The camera follows with spring target
-and acceleration lag. This remains a rendering/flight-control study, without
-combat or a mission system. Walking uses the existing animated, stride-matched
-terrain preview. The factory/roster project settings remain intact.
+Flight starts in stabilized 1× hover. There are no player movement-mode buttons.
+Airflow, attitude and speed continuously determine the aerodynamic envelope.
+A WASD key keeps the interpretation captured on press until release; uncage
+explicitly overrides it, and recaging samples the envelope once. The HUD shows
+those actual bindings, aerodynamic authority, thrust, speed and terrain warnings.
+The wingman remains a stationary practice target. Focus changes aim/camera, never
+velocity. Rifle fire is a bounded hitscan/tracer preview with hit confirmation,
+not a combat/health or mission system. The factory/roster project settings remain
+intact. The giant canyon display uses ten world units per motion meter.
 
 ## Implementation and reference
 
@@ -46,29 +53,43 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   color conversion; aerial materials add the same distance haze, sky fill and Sun
   palette as the environment. Armor remains matte and desaturated, with visible
   muted green accents. No orange aircraft livery is applied to the model.
-- Flight uses the supplied Iron Man script's velocity controller and procedural
-  pose logic, adapted to Godot's -Z-facing actor and the Gundam's +Z-facing bones.
-  The production motion reference is
-  [Marvel's Iron Man VR](https://blog.playstation.com/archive/2019/07/18/how-marvels-iron-man-vr-nails-flying/).
-  There is no scripted hero/wingman route and no static `Airborne`, idle or boost
-  animation playing in flight. Each frame starts from the skeleton rest pose.
-  Imported clips remain intact for Animation dock preview and dynamic walking.
-  Six control inputs spool through critically damped springs. Heading inertia,
-  target velocity, acceleration limits, coasting drag and the X brake reproduce
-  the reference's controller equations. Integration uses substeps up to 1/120 s.
-  The canyon display uses ten world units per reference motion unit, while pose
-  tuning remains in the reference's units. A native terrain raycast replaces the
-  prototype's flat-floor cushion; this is a velocity controller with vertical
-  clearance, rather than Camouflaj's rigid-body/collision flight simulation.
-  Actual forward/lateral speed, acceleration, boost, braking, climb and yaw rate
-  produce continuous pose weights. Four articulated waist/chest joints distribute
-  the difference between leading chest and lagging hips. Head gaze follows turn
-  intent and camera orbit; legs trail with staggered spring response. Native
-  SkeletonModifier3D generates the pose, then TwoBoneIK3D solves soft-reach hand
-  targets and elbow poles. Arms are relaxed balance limbs without hand propulsion.
-  Godot/source coordinate conversion preserves the correct bank direction.
-  Flight influence fades out for the supplied dynamic walking clip. Springs,
-  motors, movement and VFX pause together; camera inspection remains available.
+- Flight tracks attitude (native Quaternion), world velocity and aim separately.
+  Behavioral production references are the
+  [DCS Su-27](https://www.digitalcombatsimulator.com/upload/iblock/ed7/Su-27%20DCS%20Flaming%20Cliffs%20Flight%20Manual%20EN.pdf)
+  aerodynamic envelope, [Elite Dangerous flight assist](https://d1wv0x2frmpnh.cloudfront.net/elite/website/assets/English-PlayersGuide_v2.00-Horizons.pdf)
+  for independent attitude/momentum, and [Armored Core VI quick boost](https://www.fromsoftware.jp/manual/armoredcore6/win/action.html).
+  These are behavior references, not claims about unpublished game internals.
+  The existing controller integrates thrust, lift, drag and gravity at up to 120 Hz.
+  Aerodynamic authority multiplies speed, attached-flow quality and useful lift
+  orientation. Lift falls away with AoA/sideslip; X increases real quadratic drag.
+  Low-speed FBW applies bounded velocity corrections and 1× vertical support;
+  automatic body pitch streamlines the chassis as speed increases. High-speed
+  assist gently aligns the nose without leveling a pilot-commanded bank. Uncage
+  removes velocity/path corrections while a finite angular-rate servo damps spin.
+  Thrust and vernier bursts change velocity through acceleration, never by rotating
+  or replacing the velocity vector. Recaging bends the existing path gradually.
+- Native swept CharacterBody capsule queries replace the old altitude floor clamp.
+  Three swept segments predict the next three seconds of the current curved path.
+  HUD warning begins below 2.4 seconds; recovery ramps from 1.3 to 0.6 seconds.
+  Uncaged recovery is capped at 0.25 G; recaging permits a 4 G escape request.
+  Actual collision clips travel at the native safe fraction and slides velocity
+  along the surface. This is a chassis capsule, not per-limb collision. The
+  aerodynamic coefficients and finite FBW/vernier forces are tunable game
+  approximations, not measured Gundam flight data or a six-engine wrench solver.
+- The physical root attitude leads the pose. Airflow, local acceleration, angular
+  rates/acceleration, AoA departure, drag command, G load, aim and requested thrust
+  drive the existing procedural rig. Pelvis, torso and arms overlap with 30 ms
+  response differences. Free limbs trail airflow; departure and X open the limbs,
+  and the rifle arm resists airflow more strongly. The head leads within its
+  30° yaw / 20° pitch zone; shoulder/torso articulation handles wider aim before
+  a deliberately moved look/focus requests chassis follow. Chassis follow is
+  slower in aerodynamic cruise and stronger uncaged. Native TwoBoneIK3D positions
+  hands; a final SkeletonModifier3D stabilizes the rifle using its actual skin
+  bind and measured muzzle. The camera stays gravity-upright during rolls.
+  No flight/hover/stall clips play. Imported clips remain for Animation dock
+  preview and dynamic walking; native modifier influence fades out for walking.
+  This supplied model has no independently rigged binders, so no binder animation
+  is invented. Movement, motors, weapon clocks, pose and VFX pause together.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -133,15 +154,13 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   motor moves. Bone animation is never canceled to maintain a world-down axis;
   legs and feet carry their booster axes through the procedural pose. A saturated
   motor remains at its local limit even when the requested force is unreachable.
-  Gravity, desired acceleration and aerodynamic drag produce requested load,
-  normalized across the six main boosters with smooth boost/brake/turn transfers.
-  Per-instance power changes brightness and length without material copies.
-  Opposed shoulder/thigh control pulses replace the reference's hand repulsors.
-  As in the supplied script, requested force drives the animation and VFX; the
-  independent velocity controller owns translation. This is not a constrained
-  six-engine rigid-body optimizer. Final modifier poses update all attachment
-  readbacks and local motor targets before rendering. Trails record actual flown
-  paths and remain hidden during stationary hover or ground walking.
+  Requested thrust/G load sets the six main engines' visible power. Per-instance
+  power changes brightness and length without material copies. Shoulder/thigh
+  pulses respond to angular demand, acceleration and directional bursts. The
+  force integrator uses aggregate thrust/FBW budgets; local engine cones drive
+  the visual actuators, not an individual-engine force/torque optimizer. Final
+  modifier poses update attachment readbacks and local motor targets before
+  rendering. Trails record actual paths and stay hidden at rest or on foot.
 - Cel exhaust follows [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
   tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
@@ -248,7 +267,7 @@ godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution
 The functional check uses native terrain raycasts at the river vertices to
 reject a missing floor or terrain clipping through the water. It also covers
 white-model selection, root displacement removal, stride-based walking, supplied
-boost/hover mapping, animation pause, torso attachment, static/live pose
+procedural flight, animation pause, bone attachment, static/live pose
 agreement, cloud coverage and entry/exit, storm rain activation, fixed world-space
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
@@ -280,16 +299,17 @@ Mech captures inspect all six main mount attachments during directional pose
 poses, local thrust cones, articulation, individual nozzle
 close-ups, throttle states, a complete walk cycle and an exact frozen frame.
 Cold-gas close-ups compare each outlet on/off to reject hidden plumes. Functional
-checks also exercise all reference key bindings, eight continuously simulated
-modes, 30/60/120 Hz controller agreement, boost/coasting/braking, strafe, climb,
-reverse, floor clearance, camera input/gaze, source-triangle seating (within 0.02
-source units), IK endpoints, local motor cones, normalized load and pause.
-Checks cover exact outlet count, equal main sizing, independent vector commands,
-motor limits and smooth response. The motion capture injects native key events
-through hover → W → W+Shift → W+Shift+A → X. It verifies actual yaw, braking,
-stopped clip playback and attachment integrity on every rendered frame.
-These are desktop observations, not a device benchmark. Keep the capture window
-visible on macOS. Captures explicitly request a native redraw so a frozen window
+checks cover the control bindings, 30/60/120 Hz agreement, detent edges and limits,
+held-input latching, low-speed uncaged pitch, angular settling with retained drift,
+caged/uncaged bursts, drop versus drag, automatic aerodynamic transition, bounded
+terrain recovery, native swept collision, source-triangle seating, IK endpoints,
+local motor limits, independent rifle aim, bounded/rate-limited fire, focus, walk
+and pause. Motion capture injects native input through acceleration → uncage →
+upright drift → directional burst → pitch down → recage, then inspects hover,
+cruise, drift, inverted flight and stall from both sides. Telemetry records the
+actual velocity, attitude, authority and uncage state during the sequence.
+These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 1280×800 resolution
+with its host window minimized. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode
 is rejected immediately for visual capture. Shader validation requires rendered
 frames, not the headless functional check alone. The separate soft-depth probe

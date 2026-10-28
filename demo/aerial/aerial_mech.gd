@@ -1,6 +1,6 @@
 extends Node3D
 
-# Marvel's Iron Man VR is the flight reference: upright hover, then body-led acceleration.
+# DCS / Elite Dangerous / AC VI behavior references; continuous body-lift flight.
 # Reuse the roster actor's cloned animation library, root cleanup and matte color conversion.
 const Actor = preload("res://actors/mechs/mech_asset.tscn")
 const Geometry = preload("res://aerial/geometry.gd")
@@ -21,6 +21,8 @@ var controller = FlightController.new()
 var motor_springs: Array = []
 var neutral_bases: Array[Basis] = []
 var motor_delta := 0.0
+var prediction_clock := 0.0
+var collided := false
 var exhaust_throttle := 0.35
 var exhaust_phase := 0.0
 const VECTOR_LIMIT := PI/6.0
@@ -49,6 +51,8 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	add_child(actor)
 	actor.position.y = -0.9
 	actor.set_physics_process(false)
+	actor.collision_layer = 0
+	actor.collision_mask = 2
 	actor.get_node("CameraPivot").process_mode = Node.PROCESS_MODE_DISABLED
 	actor.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	actor.animation_player.speed_scale = actor.NON_JUMP_ANIMATION_RATE_SCALE
@@ -75,7 +79,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	skeleton.add_child(rig)
 	rig.configure()
 	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-	rig.ik.modification_processed.connect(_on_pose_modified)
+	rig.weapon.modification_processed.connect(_on_pose_modified)
 	var nozzle_material := surface.duplicate() as ShaderMaterial
 	nozzle_material.set_shader_parameter("body_color",Color(0.065,0.075,0.085))
 	palette_materials.append(nozzle_material)
@@ -140,11 +144,46 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	controller.reset(global_position,rotation.y)
 	update_animation(0.0)
 
-func step_flight(delta: float, controls: Dictionary, camera_yaw: float, floor_height := -INF) -> void:
-	controller.advance(delta,controls,camera_yaw,floor_height)
-	position = controller.position
-	rotation = Vector3(0,controller.heading_yaw,0)
+func step_flight(delta: float, controls: Dictionary, camera_yaw: float) -> void:
+	prediction_clock -= delta
+	if prediction_clock <= 0.0:
+		controller.time_to_impact = predict_impact()
+		prediction_clock = 0.1
+	var origin := global_position
+	controller.advance(delta,controls,camera_yaw)
+	quaternion = controller.attitude
+	# Sweep the existing native capsule through the complete requested motion.
+	# ponytail: chassis capsule only; add limb shapes when limb impacts matter.
+	var parameters := PhysicsTestMotionParameters3D.new()
+	parameters.from = actor.global_transform
+	parameters.motion = controller.position-origin
+	parameters.margin = 0.2
+	var result := PhysicsTestMotionResult3D.new()
+	collided = PhysicsServer3D.body_test_motion(actor.get_rid(),parameters,result)
+	if collided:
+		controller.position = origin+result.get_travel()
+		var normal := result.get_collision_normal()
+		if controller.velocity.dot(normal) < 0.0: controller.velocity = controller.velocity.slide(normal)
+	global_position = controller.position
 	update_animation(delta)
+
+func predict_impact() -> float:
+	if controller.velocity.length() < 0.5: return INF
+	var parameters := PhysicsTestMotionParameters3D.new()
+	parameters.from = actor.global_transform
+	parameters.margin = 0.5
+	var result := PhysicsTestMotionResult3D.new()
+	# Three native swept segments cover the curved, three-second flight path.
+	var previous_point := Vector3.ZERO
+	for segment in 3:
+		var time := float(segment+1)
+		var point: Vector3 = (controller.velocity*time+controller.acceleration*time*time*0.5)*controller.distance_scale
+		parameters.motion = point-previous_point
+		if PhysicsServer3D.body_test_motion(actor.get_rid(),parameters,result):
+			return float(segment)+result.get_collision_safe_fraction()
+		parameters.from.origin += parameters.motion
+		previous_point = point
+	return INF
 
 func update_animation(delta: float) -> void:
 	rig.update(delta,controller)
@@ -158,8 +197,10 @@ func update_animation(delta: float) -> void:
 		actor.animation_player.advance(delta)
 	rig.active = mix > 0.0001
 	rig.ik.active = rig.active
+	rig.weapon.active = rig.active
 	rig.influence = mix
 	rig.ik.influence = mix
+	rig.weapon.influence = mix
 	actor.rotation = rig.root_angles*mix
 	actor.position = -(actor.basis*Vector3(0,0.9,0))+rig.com.value*mix
 	motor_delta += delta
@@ -216,9 +257,10 @@ func _refresh_exhaust() -> void:
 		var sx := 1.0 if index%2 == 0 else -1.0
 		var lever := 1.0 if index < 2 else -1.0
 		# Opposed shoulder/thigh pulses produce a control couple, freeing the hands.
-		var demand := clampf(maxf(0.0,-sx*lever*rig.turn.value.x)*0.8+absf(controller.local_acceleration.z)*0.015+absf(controller.yaw_rate)*0.3,0.0,0.85)
+		var local_burst: Vector3 = global_basis.orthonormalized().inverse()*controller.burst_direction
+		var demand := clampf(maxf(0.0,-sx*lever*rig.turn.value.x)*0.8+absf(controller.local_acceleration.z)*0.015+controller.angular_velocity.length()*0.25+maxf(0.0,sx*local_burst.x)*controller.boost_amount,0.0,1.0)
 		var pulse := fposmod(rig.clock*6.0+index*0.27,1.0)
-		gas_jets[index].visible = flying and exhaust_throttle > 0.001 and demand > 0.02 and pulse < demand
+		gas_jets[index].visible = flying and demand > 0.02 and pulse < demand
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
 		gas_jets[index].set_instance_shader_parameter("thrust_load",0.6)
 		gas_jets[index].set_instance_shader_parameter("engine_throttle",1.0)

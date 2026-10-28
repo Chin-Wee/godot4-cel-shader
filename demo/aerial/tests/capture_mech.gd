@@ -48,38 +48,74 @@ func _capture() -> void:
 	await _save_frame(output.path_join("controls.png"))
 	scene.hud.visible = false
 	var mech = scene.hero
+	var telemetry := []
 	for frame in 180:
 		match frame:
 			0: _keys([])
-			18: _keys([KEY_W])
-			48: _keys([KEY_W,KEY_SHIFT])
-			84: _keys([KEY_W,KEY_SHIFT,KEY_A])
-			120: _keys([KEY_X])
-		_step(scene,1.0/24.0)
+			6: _keys([KEY_W,KEY_SPACE])
+			7: _keys([KEY_W])
+			66: _keys([KEY_S]); _uncage(true)
+			78: _keys([KEY_C])
+			79: _keys([])
+			96: _keys([KEY_D,KEY_SHIFT])
+			99: _keys([])
+			112: _keys([KEY_W])
+			126: _keys([KEY_SPACE]); _uncage(false)
+			127: _keys([])
+		_step(scene,1.0/12.0)
 		await _save_frame(output.path_join("flight-%03d.png"%frame))
 		assert(not mech.actor.animation_player.is_playing(),"Authored flight animation is still running")
 		_check_mounts(mech)
-		if frame == 119: assert(mech.controller.heading_yaw > 0.5,"A did not yaw the mech left")
+		if frame == 65: assert(mech.controller.aero_authority > 0.65,"Sequence failed to reach aerodynamic cruise")
+		if frame == 90: assert(mech.basis.y.normalized().y > 0.8 and -mech.controller.velocity.z > 50,"Upright drift lost its original momentum")
+		if frame%6 == 0: telemetry.append({"frame":frame,"velocity":str(mech.controller.velocity),"head_axis":str(mech.basis.y.normalized()),"aero":mech.controller.aero_authority,"uncaged":mech.controller.uncaged})
 	_keys([])
-	assert(mech.controller.velocity.length() < 0.5,"X did not brake to a hover")
-	# Isolate the rig for pose review; actual cloud traversal is retained above.
+	_uncage(false)
+	# Isolate physics-derived poses from both sides, including belly-up drift.
 	scene.clouds.set_coverage(0.0)
-	# Inspect every continuous maneuver in native rendering, from both sides.
-	for mode in Controller.MODES:
-		mech.controller.reset(Vector3(175,600,340))
-		scene.set_flight_mode(mode)
-		for frame in 180: mech.step_flight(1.0/60.0,{},scene.camera_yaw)
+	for trail in scene.trails: trail.visible = false
+	for scenario in ["hover","cruise","drift","inverted","stall"]:
+		mech.controller.reset(Vector3(175,1200,340))
+		mech.controller.aim_direction = Vector3.FORWARD
+		var raw := {}
+		if scenario != "hover":
+			mech.controller.attitude = Quaternion(Vector3.RIGHT,-PI/2)
+			mech.controller.velocity = Vector3(0,0,-70)
+		if scenario in ["drift","inverted","stall"]:
+			raw.uncage = true
+			mech.controller.attitude = Quaternion.IDENTITY if scenario == "drift" else Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2)
+		if scenario == "stall": raw.brake = true
+		for frame in 90: mech.step_flight(1.0/60.0,raw,0.0)
 		scene._update_afterburners()
 		scene.reset_camera()
-		await _save_frame(output.path_join(str(mode)+"-rear.png"))
+		await _save_frame(output.path_join(scenario+"-rear.png"))
 		_check_mounts(mech)
 		scene.camera_yaw += PI
 		scene._update_camera(0.0)
-		await _save_frame(output.path_join(str(mode)+"-front.png"))
+		await _save_frame(output.path_join(scenario+"-front.png"))
+	var data := FileAccess.open(output.path_join("telemetry.json"),FileAccess.WRITE)
+	data.store_string(JSON.stringify(telemetry,"  "))
+	data.close()
+	scene.follow_camera = false
+	mech.controller.reset(Vector3(175,700,340))
+	mech.position = mech.controller.position
+	mech.quaternion = mech.controller.attitude
+	mech.controller.aim_direction = (scene.wingman.position-mech.position).normalized()
+	mech.controller.aim_point = scene.wingman.position
+	mech.controller.gaze_target = scene.wingman.position
+	for frame in 90: mech.update_animation(1.0/60.0)
+	await process_frame
+	await process_frame
+	scene.animate = true
+	scene.fire_weapon()
+	scene.animate = false
+	assert(scene.hit_time > 0.0,"Rifle failed to hit the native target collider")
+	scene.camera.position = mech.position+Vector3(150,45,90)
+	scene.camera.look_at(mech.position)
+	await _save_frame(output.path_join("rifle-fire.png"))
 	# Outlet close-ups: all bases stay seated on their animated attachment bones.
 	scene.follow_camera = false
 	mech.controller.reset(Vector3(175,600,340))
-	mech.controller.set_mode(&"manual")
 	for frame in 180: mech.step_flight(1.0/60.0,{},0.0)
 	scene.set_afterburner_throttle(1.0)
 	await process_frame
@@ -91,10 +127,10 @@ func _capture() -> void:
 		await _save_frame(output.path_join(str(flame.name)+".png"))
 	for index in mech.gas_jets.size():
 		mech.controller.reset(Vector3(175,600,340))
-		mech.controller.set_mode(&"bank_right" if (index%2 == 0) == (index < 2) else &"bank_left")
-		for frame in 180: mech.step_flight(1.0/60.0,{},0.0)
+		var controls := {"yaw_right":true,"uncage":true}
+		for frame in 30: mech.step_flight(1.0/60.0,controls,0.0)
 		for frame in 60:
-			mech.step_flight(1.0/60.0,{},0.0)
+			mech.step_flight(1.0/60.0,controls,0.0)
 			scene._update_afterburners()
 			if mech.gas_jets[index].visible: break
 		await process_frame
@@ -130,7 +166,7 @@ func _capture() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Native flight checks passed: keyboard thrust/boost/yaw/brake, rest-pose IK, eight maneuvers, locally constrained mounts, visible cold jets, walk and pause.")
+	print("Native flight checks passed: keyboard detent/uncage/burst/recovery sequence, cruise/drift/inverted/stall poses, local motors, visible cold jets, walk and pause.")
 	quit()
 
 func _check_mounts(mech: Node3D) -> void:
@@ -149,3 +185,10 @@ func _save_frame(path: String) -> void:
 	var rendered := viewport.get_texture().get_image()
 	assert(not rendered.is_empty() and rendered.get_size() == viewport.size,"Native viewport changed resolution")
 	assert(rendered.save_png(path) == OK)
+
+func _uncage(pressed: bool) -> void:
+	var event := InputEventMouseButton.new()
+	event.button_index = MOUSE_BUTTON_RIGHT
+	event.pressed = pressed
+	Input.parse_input_event(event)
+	Input.flush_buffered_events()
