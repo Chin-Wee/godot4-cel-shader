@@ -5,13 +5,11 @@ extends Node3D
 const Actor = preload("res://actors/mechs/mech_asset.tscn")
 const Geometry = preload("res://aerial/geometry.gd")
 const FlightPose = preload("res://aerial/flight_pose.gd")
-const FLIGHT_POSES := [&"Boost_Forward", &"Boost_Left", &"Boost_Right", &"Boost_Backward"]
+const FlightController = preload("res://aerial/flight_controller.gd")
 var actor: CharacterBody3D
 var flames: Array[MeshInstance3D] = []
 var sockets: Array[BoneAttachment3D] = []
 var gimbals: Array[Node3D] = []
-var vector_angles: Array[Vector2] = []
-var vector_targets: Array[Vector2] = []
 var skeleton: Skeleton3D
 var rig: SkeletonModifier3D
 var gas_material: ShaderMaterial
@@ -19,37 +17,31 @@ var gas_jets: Array[MeshInstance3D] = []
 var gas_sockets: Array[BoneAttachment3D] = []
 var gas_gimbals: Array[Node3D] = []
 var bone_poses := {}
-var motion_ready := false
-var previous_position := Vector3.ZERO
-var previous_velocity := Vector3.ZERO
-var previous_yaw := 0.0
-var local_velocity := Vector3.ZERO
-var local_acceleration := Vector3.ZERO
-var yaw_rate := 0.0
+var controller = FlightController.new()
+var motor_springs: Array = []
+var neutral_bases: Array[Basis] = []
+var motor_delta := 0.0
 var exhaust_throttle := 0.35
 var exhaust_phase := 0.0
 const VECTOR_LIMIT := PI/6.0
-const NEUTRAL_EXHAUST := Basis(Vector3.RIGHT,Vector3.BACK,Vector3.DOWN)
-var flight_amount := 0.0
 # Measured centers of the actual barrel ends / recessed ports, in source bone space.
 # The paired lower backpack barrels are angled down and aft; use their inset caps.
 const MOUNTS := [
- ["BackpackL",&"Torso",Vector3(0.9018,-2.9555,-4.4456)],
- ["BackpackR",&"Torso",Vector3(-0.9018,-2.9555,-4.4456)],
- ["CalfL",&"Shin.L",Vector3(0,1.90103,-0.76695)],
- ["CalfR",&"Shin.R",Vector3(0,1.90103,-0.76695)],
- ["HeelL",&"Feet.L",Vector3(0,-0.297,-0.009)],
- ["HeelR",&"Feet.R",Vector3(0,-0.297,-0.009)],
+ ["BackpackL",&"Torso",Vector3(0.9018,-2.9555,-4.4456),Vector3(0,-0.789,-0.615)],
+ ["BackpackR",&"Torso",Vector3(-0.9018,-2.9555,-4.4456),Vector3(0,-0.789,-0.615)],
+ ["CalfL",&"Shin.L",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
+ ["CalfR",&"Shin.R",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
+ ["HeelL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
+ ["HeelR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
 ]
 const COLD_MOUNTS := [
- ["ShoulderL",&"Shoulder.L",Vector3(-0.63559,0.002,-0.047)],
- ["ShoulderR",&"Shoulder.R",Vector3(0.63559,0.002,-0.047)],
- ["ThighL",&"Thigh.L",Vector3(-0.47860,2.339,-0.187)],
- ["ThighR",&"Thigh.R",Vector3(0.47860,2.339,-0.187)],
+ ["ShoulderL",&"Shoulder.L",Vector3(-0.63559,0.002,-0.047),Vector3(-1,0,0)],
+ ["ShoulderR",&"Shoulder.R",Vector3(0.63559,0.002,-0.047),Vector3(1,0,0)],
+ ["ThighL",&"Thigh.L",Vector3(-0.47860,2.339,-0.187),Vector3(-1,0,0)],
+ ["ThighR",&"Thigh.R",Vector3(0.47860,2.339,-0.187),Vector3(1,0,0)],
 ]
 var palette_materials: Array[ShaderMaterial] = []
 var flying := true
-var flight_pose := 0
 var walk_speed := 0.0
 
 func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
@@ -73,20 +65,10 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 				colors[color] = material
 				palette_materials.append(material)
 			mesh.set_surface_override_material(index, colors[color])
-	# The supplied boost clips are one-frame poses. Hold them for native crossfades.
-	var rest: Vector3 = actor.animation_player.get_animation(&"Idle").track_get_key_value(actor._find_position_track(actor.animation_player.get_animation(&"Idle"), &"Root"), 0)
-	for name in FLIGHT_POSES:
-		var clip: Animation = actor.animation_player.get_animation(name)
-		clip.length = 1.0
-		clip.loop_mode = Animation.LOOP_LINEAR
-		var track: int = actor._find_position_track(clip, &"Root")
-		for key in clip.track_get_key_count(track): clip.track_set_key_value(track,key,rest)
-	# The source idle has relaxed arms and straight legs. Keep authored boost/fall
-	# clips for preview, but use this held stance for hover and streamlined flight.
-	var airborne := actor.animation_player.get_animation(&"Idle").duplicate(true) as Animation
-	airborne.length = 1.0
-	airborne.loop_mode = Animation.LOOP_LINEAR
-	actor.animation_player.get_animation_library(&"").add_animation(&"Airborne",airborne)
+	# Flight starts from the skeleton rest pose. Imported clips are retained only
+	# for asset preview and the dynamic ground-walk option; no idle/boost hold plays.
+	actor.animation_player.stop()
+	actor.current_animation = &""
 	skeleton = actor.find_child("Skeleton3D",true,false)
 	rig = FlightPose.new()
 	rig.name = "SpringFlightPose"
@@ -115,6 +97,12 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		gimbal.name = "VectoringPivot"
 		socket.add_child(gimbal)
 		gimbal.position = mount[2]
+		var direction: Vector3 = mount[3].normalized()
+		var up := Vector3.FORWARD if absf(direction.dot(Vector3.UP)) > 0.95 else Vector3.UP
+		var neutral := Basis.looking_at(-direction,up)
+		neutral_bases.append(neutral)
+		motor_springs.append(FlightPose.Spring.new())
+		gimbal.basis = neutral
 		var radius := (0.10 if str(mount[0]).begins_with("Shoulder") else 0.065) if cold else 0.18
 		# A seated ball joint connects the vectoring bell to its modeled recess.
 		var collar := SphereMesh.new()
@@ -147,55 +135,61 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		else:
 			sockets.append(socket)
 			gimbals.append(gimbal)
-			vector_angles.append(Vector2.ZERO)
-			vector_targets.append(Vector2.ZERO)
 			flames.append(flame)
-	update_animation(0.0,0.35)
+	controller.model_scale = global_basis.get_scale().x
+	controller.reset(global_position,rotation.y)
+	update_animation(0.0)
 
-func reset_motion() -> void:
-	motion_ready = false
-	previous_velocity = Vector3.ZERO
-	local_velocity = Vector3.ZERO
-	local_acceleration = Vector3.ZERO
-	yaw_rate = 0.0
+func step_flight(delta: float, controls: Dictionary, camera_yaw: float, floor_height := -INF) -> void:
+	controller.advance(delta,controls,camera_yaw,floor_height)
+	position = controller.position
+	rotation = Vector3(0,controller.heading_yaw,0)
+	update_animation(delta)
 
-func update_animation(delta: float, throttle: float) -> void:
-	if delta > 0.0 and motion_ready:
-		var velocity := (global_position-previous_position)/delta
-		var axes := global_basis.orthonormalized().inverse()
-		var size := maxf(absf(global_basis.get_scale().x),0.001)
-		local_velocity = axes*velocity/size
-		local_acceleration = (axes*(velocity-previous_velocity)/delta/size).limit_length(8.0)
-		yaw_rate = clampf(angle_difference(previous_yaw,global_rotation.y)/delta,-3.0,3.0)
-		previous_velocity = velocity
-	previous_position = global_position
-	previous_yaw = global_rotation.y
-	motion_ready = true
-	rig.update(delta,flight_amount if flying else 0.0,flight_pose,local_velocity,local_acceleration,yaw_rate)
+func update_animation(delta: float) -> void:
+	rig.update(delta,controller)
 	var mix: float = rig.blend.step(Vector3(1 if flying else 0,0,0),delta,0.16).x
-	actor._play_animation(&"Airborne" if flying else &"Walk")
-	actor.animation_player.advance(delta)
+	if flying:
+		actor.animation_player.stop()
+		actor.current_animation = &""
+		skeleton.reset_bone_poses()
+	else:
+		actor._play_animation(&"Walk")
+		actor.animation_player.advance(delta)
 	rig.active = mix > 0.0001
 	rig.ik.active = rig.active
 	rig.influence = mix
 	rig.ik.influence = mix
 	actor.rotation = rig.root_angles*mix
-	actor.position = -(actor.basis*Vector3(0,0.9,0))
-	actor.position += rig.com.value*mix
-	# Force demand steers the six main bells; individual preview offsets remain additive.
-	# Calf recesses face down/aft. A 15-degree aft neutral clears the lower armor lip.
-	var force_direction: Vector3 = actor.basis.inverse()*rig.force.normalized()
-	var command := Vector2(-atan2(force_direction.x,force_direction.y),atan2(force_direction.z,force_direction.y))
-	for index in gimbals.size():
-		var clearance := Vector2(0,-0.26) if index in [2,3] else Vector2.ZERO
-		var target: Vector2 = (command+clearance+vector_targets[index]).clamp(Vector2(-VECTOR_LIMIT,-VECTOR_LIMIT),Vector2(VECTOR_LIMIT,VECTOR_LIMIT))
-		vector_angles[index] = vector_angles[index].lerp(target,1.0-exp(-8.0*delta))
-	exhaust_throttle = throttle
+	actor.position = -(actor.basis*Vector3(0,0.9,0))+rig.com.value*mix
+	motor_delta += delta
 	skeleton.advance(delta)
 
 func _on_pose_modified() -> void:
-	for index in skeleton.get_bone_count():
-		bone_poses[index] = skeleton.get_bone_global_pose(index)
+	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
+	var all_sockets := sockets+gas_sockets
+	for index in all_sockets.size():
+		var bone := skeleton.find_bone(all_sockets[index].bone_name)
+		var neutral_world: Basis = (skeleton.global_basis*bone_poses[bone].basis*neutral_bases[index]).orthonormalized()
+		var yaw_demand := clampf(controller.yaw_rate*0.45+controller.yaw_acceleration*0.08,-0.5,0.5)
+		var desired: Vector3 = -rig.force.normalized()
+		if index < flames.size():
+			var anchor: Vector3 = skeleton.global_transform*bone_poses[bone]*MOUNTS[index][2]
+			var lever := (anchor-global_position)/maxf(global_basis.get_scale().x,0.001)
+			# Tangential exhaust offsets form a yaw couple around the suit center.
+			desired = (desired+lever.cross(Vector3.UP)*yaw_demand).normalized()
+		if index >= flames.size():
+			var sx := 1.0 if (index-flames.size())%2 == 0 else -1.0
+			desired = global_basis.orthonormalized()*Vector3(-sx,clampf(-controller.local_acceleration.y*0.015,-0.3,0.3),clampf(-controller.local_acceleration.z*0.02-sx*yaw_demand*0.6,-0.45,0.45)).normalized()
+		var local_direction: Vector3 = neutral_world.inverse()*desired
+		var angle := minf(acos(clampf(local_direction.z,-1,1)),VECTOR_LIMIT)
+		var axis := Vector3.BACK.cross(local_direction).normalized()
+		if axis.is_zero_approx(): axis = Vector3.RIGHT
+		# The motor state is relative to the physical inlay. Never cancel bone
+		# rotation or force a world-down orientation outside its local cone.
+		motor_springs[index].step(axis*angle,motor_delta,0.16)
+		motor_springs[index].value = motor_springs[index].value.limit_length(VECTOR_LIMIT)
+	motor_delta = 0.0
 	_refresh_exhaust()
 
 func update_exhaust(throttle: float, phase: float) -> void:
@@ -204,36 +198,27 @@ func update_exhaust(throttle: float, phase: float) -> void:
 	_refresh_exhaust()
 
 func _refresh_exhaust() -> void:
-	var body_basis := skeleton.global_basis.inverse()*actor.global_basis.orthonormalized()
-	var nozzle_scale := Basis.from_scale(skeleton.global_basis.get_scale())
+	var all_gimbals := gimbals+gas_gimbals
+	for index in all_gimbals.size():
+		var angle: Vector3 = motor_springs[index].value
+		var rotation_basis := Basis.IDENTITY if angle.is_zero_approx() else Basis(Quaternion(angle.normalized(),angle.length()))
+		all_gimbals[index].basis = neutral_bases[index]*rotation_basis
 	for index in flames.size():
-		var bone := skeleton.find_bone(sockets[index].bone_name)
-		var pose: Transform3D = bone_poses.get(bone,skeleton.get_bone_global_pose(bone)) if rig.active else skeleton.get_bone_global_pose(bone)
-		var angles := vector_angles[index]
-		var desired := body_basis*NEUTRAL_EXHAUST*Basis.from_euler(Vector3(angles.y,angles.x,0))*nozzle_scale
-		gimbals[index].basis = pose.basis.inverse()*desired
 		var flame := flames[index]
 		flame.visible = flying and exhaust_throttle > 0.001
 		var load := clampf(rig.shares[index]*6.0*sqrt(rig.force.length()/9.81),0.6,1.5)
 		flame.set_instance_shader_parameter("thrust_load",load)
+		flame.set_instance_shader_parameter("engine_throttle",exhaust_throttle)
 		var beat := (exhaust_phase+float(flame.get_instance_shader_parameter("phase_offset")))*TAU
 		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,exhaust_throttle)*load*(1.0+sin(beat*4.0)*0.12))
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
 		var sx := 1.0 if index%2 == 0 else -1.0
-		var bone := skeleton.find_bone(gas_sockets[index].bone_name)
-		var pose: Transform3D = bone_poses.get(bone,skeleton.get_bone_global_pose(bone)) if rig.active else skeleton.get_bone_global_pose(bone)
-		var direction := Vector3(-sx,clampf(-local_acceleration.y*0.1,-0.3,0.3),clampf(local_acceleration.z*0.15,-0.45,0.45)).normalized()
-		var desired := body_basis*Basis.looking_at(-direction,Vector3.UP)*nozzle_scale
-		gas_gimbals[index].basis = pose.basis.inverse()*desired
 		var lever := 1.0 if index < 2 else -1.0
 		# Opposed shoulder/thigh pulses produce a control couple, freeing the hands.
-		var demand := clampf(maxf(0.0,-sx*lever*rig.turn.value.x)*0.8+absf(local_acceleration.z)*0.15+absf(yaw_rate)*0.3,0.0,0.85)
+		var demand := clampf(maxf(0.0,-sx*lever*rig.turn.value.x)*0.8+absf(controller.local_acceleration.z)*0.015+absf(controller.yaw_rate)*0.3,0.0,0.85)
 		var pulse := fposmod(rig.clock*6.0+index*0.27,1.0)
 		gas_jets[index].visible = flying and exhaust_throttle > 0.001 and demand > 0.02 and pulse < demand
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
 		gas_jets[index].set_instance_shader_parameter("thrust_load",0.6)
-
-func set_thrust_vector(index: int, yaw_pitch: Vector2) -> void:
-	assert(index >= 0 and index < gimbals.size())
-	vector_targets[index] = yaw_pitch.clamp(Vector2(-VECTOR_LIMIT,-VECTOR_LIMIT),Vector2(VECTOR_LIMIT,VECTOR_LIMIT))
+		gas_jets[index].set_instance_shader_parameter("engine_throttle",1.0)

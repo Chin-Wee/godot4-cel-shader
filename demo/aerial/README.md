@@ -12,21 +12,26 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **1 / 2:** sunset / daylight palette.
-- **3:** storm lighting and camera rain when inside cloud.
-- **4:** change cloud cover; hidden banks stop contributing visibility/weather.
-- **5 / 6 / 7:** jets off for comparison / upright hover / accelerate into forward flight. The scene starts hovering at 35% throttle.
-- **G:** switch the hero between flying and a terrain-grounded walking preview.
-- **B:** preview forward, left, right and braking maneuvers with body lean and thrust vectoring.
-- **Space:** trigger a graphic explosion.
-- **P:** freeze mechs, trails, cloud drift and effects for comparison.
-- **Right click:** toggle the fly camera. WASD moves, Q/E descends/ascends, Shift moves faster.
-- **Escape:** release the mouse.
+- **W/S or Up/Down:** forward thrust / reverse.
+- **A/D or Left/Right:** yaw left / right.
+- **Q/E:** strafe left / right.
+- **Space:** climb. **C or Ctrl:** descend.
+- **Shift:** boost. **X:** hard airbrake.
+- **Drag either mouse button:** orbit the camera and aim gaze. **Wheel:** zoom.
+- **R / Reset camera button:** restore the follow view.
+- **Flight buttons:** Manual, Hover, Cruise, Boost, Brake cycle, Bank left,
+  Bank right and Figure 8, matching the supplied Iron Man procedural rig.
+- **P:** freeze movement, springs and VFX. Camera orbit still works for inspection.
+- **G:** terrain-grounded walking preview / return to flight at the current location.
+- **1 / 2:** sunset / daylight. **3:** storm. **4:** cloud coverage.
+- **F:** explosion. Space is reserved for climbing.
 
-The camera follows the hero's translation until free flight is enabled. Fly into
-a cloud bank to see visibility drop. This scene demonstrates rendering rather
-than combat or a mission system. Ground walking follows a demonstration path at
-the imported stride speed, using native terrain raycasts; it is not a new player controller.
+Manual is selected at startup. Movement keys control the hero mech; maneuver
+buttons run the reference's continuously simulated presets. The second mech uses
+its own controller and Figure 8 preset. The camera follows with spring target
+and acceleration lag. This remains a rendering/flight-control study, without
+combat or a mission system. Walking uses the existing animated, stride-matched
+terrain preview. The factory/roster project settings remain intact.
 
 ## Implementation and reference
 
@@ -41,29 +46,29 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   color conversion; aerial materials add the same distance haze, sky fill and Sun
   palette as the environment. Armor remains matte and desaturated, with visible
   muted green accents. No orange aircraft livery is applied to the model.
-- Flight uses a relaxed `Airborne` stance cloned from the supplied `Idle Pose`,
-  with arms beside the body and extended legs. The authored boost and falling
-  clips remain available for preview, but no longer force the in-game suit into
-  a combat crouch. AnimationPlayer keeps the existing 0.6-second walk/flight
-  crossfade and 70% ordinary playback rate. Ground stride still derives from the
-  original walk root distance before displacement removal.
-  The movement reference is [Marvel's Iron Man VR](https://blog.playstation.com/archive/2019/07/18/how-marvels-iron-man-vr-nails-flying/):
-  upright hover, acceleration into travel and a controlled return to hover.
-  This scene adapts that posture/momentum presentation to its existing kinematic
-  demonstration route; it does not reproduce Camouflaj's force-based simulator.
-  A smoothed route clock slows to a complete stop at hover throttle. The supplied
-  procedural flight-rig prototype informs the animation layer: velocity,
-  acceleration and heading rate drive continuous hover/cruise/brake weights.
-  Exact critically damped springs retain velocity across target changes. Chest
-  response is 0.35 seconds, hips 0.50, and staggered leg joints 0.58–0.72; four
-  waist/chest joints distribute the difference instead of tilting the whole suit
-  rigidly. A faster, clamped neck response stabilizes gaze. Native
-  SkeletonModifier3D applies these offsets after AnimationPlayer, followed by
-  native TwoBoneIK3D for soft-reach, chest-local hand targets and elbow poles.
-  Arms remain relaxed balance limbs; they provide no propulsion. Intermediate
-  arm bends are reset before the virtual-bone IK solve. Spring influence fades
-  out for walking. All springs and modifiers use the scene clock, including pause.
-  The original roster, imported resources and gameplay controller remain unchanged.
+- Flight uses the supplied Iron Man script's velocity controller and procedural
+  pose logic, adapted to Godot's -Z-facing actor and the Gundam's +Z-facing bones.
+  The production motion reference is
+  [Marvel's Iron Man VR](https://blog.playstation.com/archive/2019/07/18/how-marvels-iron-man-vr-nails-flying/).
+  There is no scripted hero/wingman route and no static `Airborne`, idle or boost
+  animation playing in flight. Each frame starts from the skeleton rest pose.
+  Imported clips remain intact for Animation dock preview and dynamic walking.
+  Six control inputs spool through critically damped springs. Heading inertia,
+  target velocity, acceleration limits, coasting drag and the X brake reproduce
+  the reference's controller equations. Integration uses substeps up to 1/120 s.
+  The canyon display uses ten world units per reference motion unit, while pose
+  tuning remains in the reference's units. A native terrain raycast replaces the
+  prototype's flat-floor cushion; this is a velocity controller with vertical
+  clearance, rather than Camouflaj's rigid-body/collision flight simulation.
+  Actual forward/lateral speed, acceleration, boost, braking, climb and yaw rate
+  produce continuous pose weights. Four articulated waist/chest joints distribute
+  the difference between leading chest and lagging hips. Head gaze follows turn
+  intent and camera orbit; legs trail with staggered spring response. Native
+  SkeletonModifier3D generates the pose, then TwoBoneIK3D solves soft-reach hand
+  targets and elbow poles. Arms are relaxed balance limbs without hand propulsion.
+  Godot/source coordinate conversion preserves the correct bank direction.
+  Flight influence fades out for the supplied dynamic walking clip. Springs,
+  motors, movement and VFX pause together; camera inspection remains available.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -118,20 +123,25 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   cold-gas outlets occupy the shoulder and thigh recesses. There are no hand,
   forearm or upper-arm boosters. Mount centers were projected onto source mesh
   triangles; seated ball joints connect vectoring bells to the modeled ports.
-  Neutral main exhaust points down, with a 15-degree aft calf bias to clear the
-  lower armor lip. Every main bell has independent, smoothly blended yaw/pitch
-  bounded to 30 degrees per axis. Scale compensation preserves commanded world
-  directions under nonuniform actor scaling.
-  Gravity plus observed acceleration estimates visual load, normalized across
-  the six boosters, with lateral load shifts during turns. Per-instance load
-  changes flame length and brightness without copying materials. Opposed
-  shoulder/thigh gas pulses provide a control couple and respond to turning or
-  acceleration; they remain quiet in stationary hover. Their bells also vector.
-  This is animation/VFX load allocation, not a constrained rigid-body force
-  solver: the existing demonstration route still owns world movement. Final
-  modifier poses update the mounts before rendering, so exhaust stays attached
-  during spinal articulation and limb IK. One backpack outlet owns the long
-  demonstration trail; hover and ground mode hide movement contrails.
+  Each port's measured opening normal defines its neutral orientation in its
+  attachment bone's space. Backpack barrel normals point down/aft, calf recesses
+  point aft/down, and heel openings point down in the standing rest pose.
+  Every main and cold-gas motor uses a spring-damped, 30-degree local cone.
+  Yaw intent adds tangential main-exhaust offsets around each mount lever arm
+  and opposite shoulder/thigh axial offsets to produce a visible control couple.
+  Desired exhaust is transformed into that local frame and clamped before the
+  motor moves. Bone animation is never canceled to maintain a world-down axis;
+  legs and feet carry their booster axes through the procedural pose. A saturated
+  motor remains at its local limit even when the requested force is unreachable.
+  Gravity, desired acceleration and aerodynamic drag produce requested load,
+  normalized across the six main boosters with smooth boost/brake/turn transfers.
+  Per-instance power changes brightness and length without material copies.
+  Opposed shoulder/thigh control pulses replace the reference's hand repulsors.
+  As in the supplied script, requested force drives the animation and VFX; the
+  independent velocity controller owns translation. This is not a constrained
+  six-engine rigid-body optimizer. Final modifier poses update all attachment
+  readbacks and local motor targets before rendering. Trails record actual flown
+  paths and remain hidden during stationary hover or ground walking.
 - Cel exhaust follows [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
   tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
@@ -267,17 +277,17 @@ smoke buoyancy, seed variation, deterministic seeking and bounded storage. Motio
 captures include the complete dissipation tail rather than cutting the smoke off
 at the end of a short preview; `--explosion-only` skips unchanged exhaust footage.
 Mech captures inspect all six main mount attachments during directional pose
-blends, commanded thrust directions, downward neutral axes, individual nozzle
+poses, local thrust cones, articulation, individual nozzle
 close-ups, throttle states, a complete walk cycle and an exact frozen frame.
 Cold-gas close-ups compare each outlet on/off to reject hidden plumes. Functional
-checks also measure every anchor against source triangles (within 0.02 source
-units), frame-rate-independent springs, native IK endpoint accuracy, normalized
-thrust shares, heading wrap, mass lag, walk pass-through and frozen redraws.
+checks also exercise all reference key bindings, eight continuously simulated
+modes, 30/60/120 Hz controller agreement, boost/coasting/braking, strafe, climb,
+reverse, floor clearance, camera input/gaze, source-triangle seating (within 0.02
+source units), IK endpoints, local motor cones, normalized load and pause.
 Checks cover exact outlet count, equal main sizing, independent vector commands,
-motor limits and smooth response. The motion capture follows a full
-hover → acceleration/lean → braking/hover cycle. Functional checks reject hover
-translation, abrupt velocity changes, a missing cruise lean, contrails while
-hovering, failure to stop, or clocks continuing while paused.
+motor limits and smooth response. The motion capture injects native key events
+through hover → W → W+Shift → W+Shift+A → X. It verifies actual yaw, braking,
+stopped clip playback and attachment integrity on every rendered frame.
 These are desktop observations, not a device benchmark. Keep the capture window
 visible on macOS. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

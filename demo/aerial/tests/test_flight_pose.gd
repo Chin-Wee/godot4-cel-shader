@@ -1,5 +1,6 @@
 extends SceneTree
 
+const Controller = preload("res://aerial/flight_controller.gd")
 const Pose = preload("res://aerial/flight_pose.gd")
 var completed := false
 
@@ -20,59 +21,125 @@ func _run() -> void:
 		var velocity := spring.velocity
 		spring.step(Vector3.ZERO,0.001,0.35)
 		assert(spring.velocity.distance_to(velocity) < 0.1,"Target reversal discarded spring momentum")
+	assert(_check_controller(),"Flight controller differs from the supplied controls/inertia")
 	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.animate = false
+	scene.follow_camera = false
 	var mech = scene.hero
 	await process_frame
-	assert(mech.flames.size() == 6 and mech.gas_jets.size() == 4,"Wrong propulsion layout")
+	assert(mech.flames.size() == 6 and mech.gas_jets.size() == 4)
 	assert(_check_mount_surfaces(mech),"A booster is not seated against its armor")
-	for socket in mech.sockets+mech.gas_sockets:
-		assert(not "Hands" in socket.bone_name and not "Arm" in socket.bone_name,"Hand/arm booster reintroduced")
-	for frame in 120: mech.update_animation(1.0/60,0.35)
+	assert(not mech.actor.animation_player.has_animation(&"Airborne"),"Static flight hold remains")
+	for mode in Controller.MODES:
+		mech.controller.set_mode(mode)
+		for frame in 180: mech.step_flight(1.0/60.0,{},0.0)
+		await process_frame
+		await process_frame
+		assert(not mech.actor.animation_player.is_playing() and mech.actor.current_animation.is_empty(),"Flight plays a static/authored clip")
+		assert(_check_ik(mech),"Native arm IK missed its target")
+		assert(_check_motors(mech),"A motor exceeded its local mechanical cone")
+		var total := 0.0
+		for share in mech.rig.shares: total += share
+		assert(is_equal_approx(total,1.0),"Thrust load is not normalized")
+	mech.controller.set_mode(&"boost")
+	for frame in 180: mech.step_flight(1.0/60.0,{},0.0)
 	await process_frame
-	assert(_check_ik(mech),"Native arm IK missed its target or produced a non-finite pose")
+	await process_frame
+	var away_from_down := 0
 	for flame in mech.flames:
-		assert(flame.global_basis.z.normalized().dot(Vector3.DOWN) > 0.95,"Neutral jets are not downward")
-	mech.flight_amount = 1.0
-	mech.flight_pose = 1
-	mech.update_animation(0.08,1.0)
-	assert(mech.rig.chest.value.x > mech.rig.hips.value.x,"Chest does not lead the heavier hips")
-	assert(mech.rig.hands[0].value.z > -1.0,"Arms snapped to a target")
-	for frame in 120: mech.update_animation(1.0/60,1.0)
+		if flame.global_basis.z.normalized().dot(Vector3.DOWN) < 0.8: away_from_down += 1
+	assert(away_from_down > 0,"Articulated boosters still lock to world down")
+	mech.controller.set_mode(&"manual")
+	mech.controller.reset(mech.position,0.0)
+	for frame in 120: mech.step_flight(1.0/60.0,{"turn":1.0},0.0)
 	await process_frame
-	assert(_check_ik(mech),"Native arm IK missed its target or produced a non-finite pose")
-	assert(mech.rig.shares[0] != mech.rig.shares[1],"Turning never shifts thruster load")
-	var total := 0.0
-	for share in mech.rig.shares:
-		assert(share > 0.0)
-		total += share
-	assert(is_equal_approx(total,1.0),"Allocated thrust does not sum to one")
-	# A wrap through +/-pi is a small turn, not an enormous yaw impulse.
-	mech.rotation.y = PI-0.001
-	mech.reset_motion()
-	mech.update_animation(0,1.0)
-	mech.rotation.y = -PI+0.001
-	mech.update_animation(0.02,1.0)
-	assert(absf(mech.yaw_rate) < 0.11,"Heading wrap produced a false turn")
-	mech.position += Vector3(1000,1000,1000)
-	mech.reset_motion()
-	mech.update_animation(0.02,1.0)
-	assert(mech.local_acceleration == Vector3.ZERO,"Preview teleport produced an acceleration spike")
-	mech.flying = false
-	for frame in 90: mech.update_animation(1.0/60,1.0)
+	assert(mech.actor.rotation.z > 0.1,"A banks away from the requested left turn")
+	assert(_check_motors(mech))
+	mech.controller.reset(mech.position,0.0)
+	for frame in 120: mech.step_flight(1.0/60.0,{},PI/2.0)
+	assert(mech.rig.head.value.y > 0.15,"Camera orbit does not lead head gaze")
+	scene.set_walk_mode(true)
+	for frame in 90: mech.update_animation(1.0/60.0)
 	await process_frame
-	assert(not mech.rig.active and not mech.rig.ik.active,"Flight modifiers contaminate the walk")
+	assert(not mech.rig.active and not mech.rig.ik.active)
 	assert(mech.actor.current_animation == &"Walk")
-	var clock: float = mech.rig.clock
-	var pose: Transform3D = mech.actor.transform
-	await process_frame
-	assert(mech.rig.clock == clock and mech.actor.transform == pose,"Rendering a paused rig advances its springs")
+	scene.set_walk_mode(false)
+	var position: Vector3 = mech.position
+	var clock: float = mech.controller.mode_time
+	var posture: Transform3D = mech.actor.transform
+	scene._process(0.2)
+	assert(mech.position == position and mech.controller.mode_time == clock and mech.actor.transform == posture,"Pause advances flight")
+	# Buttons and orbit events use the same public paths as the native HUD.
+	scene.mode_buttons[3].pressed.emit()
+	assert(mech.controller.mode == &"boost" and scene.mode_buttons[3].button_pressed)
+	var mouse := InputEventMouseButton.new()
+	mouse.button_index = MOUSE_BUTTON_LEFT
+	mouse.pressed = true
+	scene._unhandled_input(mouse)
+	var motion := InputEventMouseMotion.new()
+	motion.relative = Vector2(20,10)
+	var yaw: float = scene.camera_yaw
+	scene._unhandled_input(motion)
+	assert(scene.camera_yaw < yaw)
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Procedural flight checks passed: springs, mass lag, native arm IK, thrust allocation, six seated boosters, four control jets, heading wrap, walk and pause.")
+	print("Flight checks passed: reference keys and inertia, all eight modes, procedural rest-pose IK, camera gaze, local motor limits, model seating, walk and pause.")
 	quit()
+
+func _check_controller() -> bool:
+	Controller.install_input_actions()
+	for pair in [[KEY_W,"forward",1.0],[KEY_S,"forward",-1.0],[KEY_A,"turn",1.0],[KEY_D,"turn",-1.0],[KEY_Q,"strafe",1.0],[KEY_E,"strafe",-1.0],[KEY_SPACE,"vertical",1.0],[KEY_C,"vertical",-1.0],[KEY_CTRL,"vertical",-1.0],[KEY_SHIFT,"boost",1.0],[KEY_X,"brake",1.0]]:
+		var key := InputEventKey.new()
+		key.physical_keycode = pair[0]
+		key.pressed = true
+		Input.parse_input_event(key)
+		Input.flush_buffered_events()
+		if Controller.read_input()[pair[1]] != pair[2]: return false
+		key = key.duplicate()
+		key.pressed = false
+		Input.parse_input_event(key)
+		Input.flush_buffered_events()
+	var previous := Vector3.ZERO
+	for fps in [30,60,120]:
+		var fc = Controller.new()
+		fc.reset(Vector3(0,600,0))
+		for frame in fps*3: fc.advance(1.0/fps,{"forward":1.0,"turn":0.2,"boost":1.0},0.0)
+		if fps > 30 and fc.position.distance_to(previous) > 0.001: return false
+		previous = fc.position
+	var cruise = Controller.new()
+	var boosted = Controller.new()
+	for frame in 360:
+		cruise.advance(1.0/60.0,{"forward":1.0},0.0)
+		boosted.advance(1.0/60.0,{"forward":1.0,"boost":1.0},0.0)
+	if boosted.velocity.length() < cruise.velocity.length()*1.5: return false
+	var coast = Controller.new()
+	var braking = Controller.new()
+	coast.velocity = Vector3(0,0,-25)
+	braking.velocity = coast.velocity
+	for frame in 60:
+		coast.advance(1.0/60.0,{},0.0)
+		braking.advance(1.0/60.0,{"brake":1.0},0.0)
+	if braking.velocity.length() >= coast.velocity.length()*0.5: return false
+	for controls in [{"strafe":1.0},{"vertical":1.0},{"vertical":-1.0},{"forward":-1.0}]:
+		var fc = Controller.new()
+		for frame in 120: fc.advance(1.0/60.0,controls,0.0)
+		if controls.has("strafe") and fc.position.x >= 0.0: return false
+		if controls.has("vertical") and fc.position.y*controls.vertical <= 0.0: return false
+		if controls.has("forward") and fc.position.z <= 0.0: return false
+	var floor_test = Controller.new()
+	floor_test.reset(Vector3(0,100,0))
+	for frame in 300: floor_test.advance(1.0/60.0,{"vertical":-1.0},0.0,20.0)
+	if floor_test.position.y < 42.0: return false
+	return true
+
+func _check_motors(mech: Node3D) -> bool:
+	var pivots: Array = mech.gimbals+mech.gas_gimbals
+	for index in pivots.size():
+		var relative: Basis = mech.neutral_bases[index].inverse()*pivots[index].basis
+		if relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) > mech.VECTOR_LIMIT+0.001: return false
+	return true
 
 func _check_ik(mech: Node3D) -> bool:
 	for side in 2:

@@ -5,6 +5,8 @@ const PositionTrail = preload("res://aerial/position_trail.gd")
 const Explosion = preload("res://aerial/graphic_explosion.gd")
 const CloudBanks = preload("res://aerial/cloud_banks.gd")
 const AerialMech = preload("res://aerial/aerial_mech.gd")
+const FlightController = preload("res://aerial/flight_controller.gd")
+const Spring = preload("res://aerial/flight_pose.gd").Spring
 var camera: Camera3D
 var environment: Environment
 var sun: DirectionalLight3D
@@ -36,12 +38,21 @@ var afterburner_flow_phase := 0.0
 @export_range(0.0,3.0,0.05) var atmosphere_strength := 1.0
 @export_range(0.0,1.0,0.05) var atmosphere_shadow_strength := 1.0
 var walking_time := 0.0
-var flight_time := 0.0
-var flight_rate := 0.0
+var automatic_exhaust := true
+var follow_camera := true
+var camera_yaw := 0.45
+var camera_pitch := 0.22
+var camera_distance := 3.8
+var camera_dragging := false
+var camera_target := Spring.new()
+var camera_lag := Spring.new()
+var mode_buttons: Array[Button] = []
+var flight_stats: Label
 var walk_ground: StaticBody3D
 var volume_effect
 
 func _ready() -> void:
+	FlightController.install_input_actions()
 	environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
 	environment.tonemap_mode = Environment.TONE_MAPPER_FILMIC
@@ -112,14 +123,14 @@ func _ready() -> void:
 	add_child(hero)
 	hero.build(body,afterburner_material)
 	palette_materials.append_array(hero.palette_materials)
-	_update_hero_pose(0.0)
+	hero.position = Vector3(175,600,340)
 	wingman = AerialMech.new()
 	wingman.name = "WingmanMech"
 	wingman.scale = Vector3.ONE*35.0
 	add_child(wingman)
 	wingman.build(body,afterburner_material)
 	palette_materials.append_array(wingman.palette_materials)
-	_update_wingman_pose(0.0)
+	wingman.position = Vector3(-400,580,-700)
 	camera = Camera3D.new()
 	camera.position = Vector3(140,610,540)
 	camera.fov = 65
@@ -140,8 +151,11 @@ func _ready() -> void:
 	_make_hud()
 	set_palette(false)
 	for mech in [hero,wingman]:
-		mech.reset_motion()
-		mech.update_animation(0.0,afterburner_throttle)
+		mech.controller.reset(mech.position,mech.rotation.y)
+		mech.update_animation(0.0)
+	wingman.controller.set_mode(&"figure8")
+	_make_ground()
+	reset_camera()
 	_update_afterburners()
 	for trail in trails.slice(0,2): trail.visible = false
 	volume_effect = load("res://aerial/atmosphere_volume.gd").new()
@@ -166,17 +180,19 @@ func _update_atmosphere(sun_uv: Vector2) -> void:
 		post_material.set_shader_parameter("sun_visible",0.0)
 
 func set_afterburner_throttle(value: float) -> void:
+	automatic_exhaust = false
 	afterburner_throttle = clampf(value,0.0,1.0)
 	_update_afterburners()
 
 func _update_afterburners(delta := 0.0) -> void:
 	# KSP2's production pattern: one throttle drives mesh scale, flow and intensity.
+	if automatic_exhaust: afterburner_throttle = _flight_throttle(hero)
 	var throttle := clampf(afterburner_throttle,0.0,1.0)
 	# All texture scroll rates repeat after 100 phase units; keep the GPU clock precise.
 	afterburner_flow_phase = fposmod(afterburner_flow_phase+delta*lerpf(0.35,1.8,throttle),100.0)
 	afterburner_material.set_shader_parameter("flow_phase",afterburner_flow_phase)
 	afterburner_material.set_shader_parameter("throttle",throttle)
-	for mech in [hero,wingman]: mech.update_exhaust(throttle,afterburner_flow_phase)
+	for mech in [hero,wingman]: mech.update_exhaust(_flight_throttle(mech) if automatic_exhaust else throttle,afterburner_flow_phase)
 
 func _material(shader_name: String) -> ShaderMaterial:
 	var material := ShaderMaterial.new()
@@ -251,53 +267,64 @@ func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 	material.set_shader_parameter("emission_strength",emission)
 	return material
 
-func _update_hero_pose(time: float) -> void:
-	if not hero.flying:
-		var angle: float = walking_time*hero.walk_speed*hero.scale.x/100.0
-		hero.position = Vector3(650.0+sin(angle)*100.0,0,120.0+cos(angle)*100.0)
-		var ray := PhysicsRayQueryParameters3D.create(hero.position+Vector3.UP*2000.0,hero.position+Vector3.DOWN*1000.0,2)
-		var hit := get_world_3d().direct_space_state.intersect_ray(ray)
-		if not hit.is_empty(): hero.position.y = hit.position.y+0.9*hero.scale.y+0.1
-		hero.rotation = Vector3(0,-PI/2.0+angle,0)
-		return
-	hero.position = flight_position(time)
-	var ahead := flight_position(time+0.01)
-	ahead.y = hero.position.y
-	hero.look_at(ahead)
+func _flight_throttle(mech: Node3D) -> float:
+	return clampf(0.35+mech.controller.velocity.length()/52.0*0.3+mech.controller.boost_amount*0.35+mech.controller.brake_amount*0.15,0.0,1.0)
 
-func _update_wingman_pose(time: float) -> void:
-	wingman.position = wingman_position(time)
-	var ahead := wingman_position(time+0.1)
-	ahead.y = wingman.position.y
-	wingman.look_at(ahead)
+func _make_ground() -> void:
+	walk_ground = StaticBody3D.new()
+	walk_ground.collision_layer = 2
+	walk_ground.collision_mask = 0
+	var shape := CollisionShape3D.new()
+	shape.shape = get_node("Terrain").mesh.create_trimesh_shape()
+	walk_ground.add_child(shape)
+	add_child(walk_ground)
+
+func ground_height(point: Vector3) -> float:
+	var ray := PhysicsRayQueryParameters3D.create(Vector3(point.x,4000,point.z),Vector3(point.x,-1000,point.z),2)
+	var hit := get_world_3d().direct_space_state.intersect_ray(ray)
+	return float(hit.position.y) if not hit.is_empty() else 0.0
+
+func _update_walk_pose() -> void:
+	var angle: float = walking_time*hero.walk_speed*hero.scale.x/100.0
+	hero.position = Vector3(650.0+sin(angle)*100.0,0,120.0+cos(angle)*100.0)
+	hero.position.y = ground_height(hero.position)+0.9*hero.scale.y+0.1
+	hero.rotation = Vector3(0,-PI/2.0+angle,0)
 
 func set_walk_mode(enabled: bool) -> void:
-	if enabled and not is_instance_valid(walk_ground):
-		walk_ground = StaticBody3D.new()
-		walk_ground.collision_layer = 2
-		walk_ground.collision_mask = 0
-		var shape := CollisionShape3D.new()
-		shape.shape = get_node("Terrain").mesh.create_trimesh_shape()
-		walk_ground.add_child(shape)
-		add_child(walk_ground)
 	hero.flying = not enabled
-	_update_hero_pose(flight_time)
-	hero.reset_motion()
-	hero.update_animation(0.0,afterburner_throttle)
+	if enabled: _update_walk_pose()
+	hero.controller.reset(hero.position,hero.rotation.y)
+	hero.update_animation(0.0)
 	_update_afterburners()
-	# This remains a rendering showcase; the original roster keeps gameplay control.
-	camera.position = hero.position+Vector3(-130,65,180)
-	camera.look_at(hero.position+Vector3(0,10,-50))
-	for trail in trails.slice(0,1): trail.visible = not enabled and flight_rate > 0.1
+	reset_camera()
+	trails[0].visible = not enabled and hero.controller.velocity.length() > 1.5
 
-func flight_position(time: float) -> Vector3:
-	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
+func set_flight_mode(mode: StringName) -> void:
+	if not hero.flying: set_walk_mode(false)
+	hero.controller.set_mode(mode)
+	for index in mode_buttons.size(): mode_buttons[index].button_pressed = FlightController.MODES[index] == mode
 
-func wingman_position(time: float) -> Vector3:
-	return Vector3(-400+sin(time*0.18)*600,580+cos(time*0.18)*160,-700+cos(time*0.18)*500)
+func reset_camera() -> void:
+	camera_yaw = hero.controller.heading_yaw+0.55
+	camera_pitch = 0.22
+	camera_distance = 3.8
+	camera_target.value = hero.position+Vector3.UP*hero.scale.y*0.35
+	camera_target.velocity = Vector3.ZERO
+	camera_lag.value = Vector3.ZERO
+	camera_lag.velocity = Vector3.ZERO
+	_update_camera(0.0)
+
+func _update_camera(delta: float) -> void:
+	if not follow_camera: return
+	var center: Vector3 = hero.position+Vector3.UP*hero.scale.y*0.35
+	var lag: Vector3 = (-hero.controller.acceleration*0.016*hero.scale.y).limit_length(0.45*hero.scale.y)
+	var target: Vector3 = camera_target.step(center,delta,0.14)+camera_lag.step(lag,delta,0.35)
+	var offset := Vector3(sin(camera_yaw)*cos(camera_pitch),sin(camera_pitch),cos(camera_yaw)*cos(camera_pitch))*camera_distance*hero.scale.x
+	camera.position = target+offset
+	camera.look_at(center+hero.global_basis.orthonormalized()*hero.rig.com.value*hero.scale.x*0.5)
 
 func missile_position(time: float) -> Vector3:
-	return flight_position(time)+Vector3(-120.0+cos(time*0.6)*80.0,50.0+sin(time*0.6)*50.0,-200.0-sin(time*0.6)*100.0)
+	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)+Vector3(-120.0+cos(time*0.6)*80.0,50.0+sin(time*0.6)*50.0,-200.0-sin(time*0.6)*100.0)
 
 func _add_trails() -> void:
 	var material := _vfx_material(PackedColorArray([Color(0.9,0.83,0.7),Color(0.53,0.49,0.5)]))
@@ -309,13 +336,6 @@ func _add_trails() -> void:
 		trail.emitter = emitter
 		add_child(trail)
 		trail.configure(material)
-		for index in 561:
-			var time := -14.0+float(index)*0.025
-			_update_hero_pose(time)
-			trail.elapsed = 20.0+time
-			trail.sample_position(emitter.global_position)
-		_update_hero_pose(0.0)
-		trail.set_time(20.0)
 		trails.append(trail)
 		palette_materials.append_array(trail.palette_materials())
 
@@ -326,11 +346,6 @@ func _add_trails() -> void:
 	distant_trail.spacing = 6.0
 	add_child(distant_trail)
 	distant_trail.configure(material,PositionTrail.THIN)
-	for index in 961:
-		var time := -24.0+float(index)*0.025
-		distant_trail.elapsed = 26.0+time
-		distant_trail.sample_position(wingman_position(time))
-	distant_trail.set_time(26.0)
 	trails.append(distant_trail)
 	palette_materials.append_array(distant_trail.palette_materials())
 
@@ -372,21 +387,16 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(camera): return
 	if animate:
 		elapsed += delta
-		if not hero.flying: walking_time += delta
-		var target_rate := clampf((afterburner_throttle-0.4)/0.6,0.0,1.0) if hero.flight_pose != 3 else 0.0
-		flight_rate = lerpf(flight_rate,target_rate,1.0-exp(-2.8*delta))
-		if absf(flight_rate-target_rate) < 0.001: flight_rate = target_rate
-		flight_time += delta*flight_rate
-		hero.flight_amount = flight_rate
-		wingman.flight_amount = flight_rate
-		var old_position := hero.position
-		_update_hero_pose(flight_time)
-		_update_wingman_pose(flight_time)
-		hero.update_animation(delta,afterburner_throttle)
-		wingman.update_animation(delta,afterburner_throttle)
+		if hero.flying:
+			hero.step_flight(delta,FlightController.read_input(),camera_yaw,ground_height(hero.position)+0.9*hero.scale.y)
+		else:
+			walking_time += delta
+			_update_walk_pose()
+			hero.update_animation(delta)
+		wingman.step_flight(delta,{},camera_yaw,ground_height(wingman.position)+0.9*wingman.scale.y)
 		_update_afterburners(delta)
-		if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
-			camera.position += hero.position-old_position
+		_update_camera(delta)
+		flight_stats.text = "%s  ·  %.0f m/s  ·  Boost %.0f%%  ·  Brake %.0f%%"%[str(hero.controller.mode).capitalize(),hero.controller.velocity.length()*hero.controller.distance_scale,hero.controller.boost_amount*100,hero.controller.brake_amount*100]
 		missile.position = missile_position(elapsed)
 		missile.look_at(missile_position(elapsed+0.1))
 		explosion_clock += delta
@@ -396,11 +406,8 @@ func _process(delta: float) -> void:
 		clouds.position.x = sin(elapsed*0.015)*50.0
 	for index in trails.size():
 		trails[index].set_process(animate and (hero.flying or index > 0))
-		if index < 2: trails[index].visible = flight_rate > 0.1 and (hero.flying or index > 0)
+		if index < 2: trails[index].visible = (hero if index == 0 else wingman).controller.velocity.length() > 1.5 and (hero.flying or index > 0)
 	if is_instance_valid(explosion): explosion.set_process(animate)
-	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		var motion := Vector3(Input.get_axis("left","right"),float(Input.is_physical_key_pressed(KEY_E))-float(Input.is_physical_key_pressed(KEY_Q)),Input.get_axis("forward","back"))
-		camera.position += camera.basis * motion * delta * (420.0 if Input.is_key_pressed(KEY_SHIFT) else 140.0)
 	var density: float = clouds.density_at(camera.global_position)
 	environment.fog_enabled = density > 0.001
 	environment.fog_density = density * (0.035 if storm else 0.025)
@@ -413,11 +420,14 @@ func _process(delta: float) -> void:
 	if is_instance_valid(volume_effect): _update_atmosphere(uv)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED else Input.MOUSE_MODE_CAPTURED)
-	if event is InputEventMouseMotion and Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
-		camera.rotation.y -= event.relative.x*0.002
-		camera.rotation.x = clampf(camera.rotation.x-event.relative.y*0.002,-1.5,1.5)
+	if event is InputEventMouseButton:
+		if event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]: camera_dragging = event.pressed
+		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+			camera_distance = clampf(camera_distance+(-0.3 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.3),1.8,9.5)
+			_update_camera(0.0)
+	if event is InputEventMouseMotion and camera_dragging: _orbit(event.relative)
+	if event is InputEventScreenTouch: camera_dragging = event.pressed
+	if event is InputEventScreenDrag and camera_dragging: _orbit(event.relative)
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
 			KEY_1: set_palette(false)
@@ -426,17 +436,19 @@ func _unhandled_input(event: InputEvent) -> void:
 				storm = not storm
 				set_palette(daylight_palette)
 			KEY_4: clouds.set_coverage(0.4 if clouds.coverage > 0.5 else 1.0)
-			KEY_5: set_afterburner_throttle(0.0)
-			KEY_6: set_afterburner_throttle(0.35)
-			KEY_7: set_afterburner_throttle(1.0)
 			KEY_G: set_walk_mode(hero.flying)
-			KEY_B:
-				for mech in [hero,wingman]:
-					mech.flight_pose = (mech.flight_pose+1)%AerialMech.FLIGHT_POSES.size()
-					mech.update_animation(0.0,afterburner_throttle)
 			KEY_P: animate = not animate
-			KEY_SPACE: trigger_explosion()
-			KEY_ESCAPE: Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			KEY_F: trigger_explosion()
+			KEY_R: reset_camera()
+			KEY_ESCAPE: camera_dragging = false
+
+func _orbit(relative: Vector2) -> void:
+	camera_yaw -= relative.x*0.007
+	camera_pitch = clampf(camera_pitch+relative.y*0.006,-0.65,1.25)
+	_update_camera(0.0)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT: camera_dragging = false
 
 func _make_post() -> void:
 	var layer := CanvasLayer.new()
@@ -454,9 +466,40 @@ func _make_hud() -> void:
 	hud = CanvasLayer.new()
 	hud.layer = 2
 	add_child(hud)
+	var panel := VBoxContainer.new()
+	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
+	hud.add_child(panel)
+	panel.offset_left = 20
+	panel.offset_right = -20
+	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "MECH RENDER STUDY\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nG Walk / fly · B Forward / strafe / brake · 5 Off · 6 Hover · 7 Flight\nRight click: fly camera · WASD / Q E · Shift: faster"
-	label.position = Vector2(24,22)
-	label.add_theme_color_override("font_color",Color(1,0.88,0.73))
-	label.add_theme_font_size_override("font_size",16)
-	hud.add_child(label)
+	label.text = "GUNDAM FLIGHT
+W/S or ↑/↓: forward / reverse · A/D or ←/→: yaw · Q/E: strafe
+Space: climb · C/Ctrl: descend · Shift: boost · X: airbrake
+Drag: orbit / aim gaze · Wheel: zoom · R: reset camera · P: pause
+1/2: palette · 3: storm · 4: cloud cover · F: explosion · G: walk preview"
+	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
+	label.add_theme_font_size_override("font_size",15)
+	panel.add_child(label)
+	var modes := HFlowContainer.new()
+	panel.add_child(modes)
+	var group := ButtonGroup.new()
+	var titles := ["Manual","Hover","Cruise","Boost","Brake cycle","Bank left","Bank right","Figure 8"]
+	for index in FlightController.MODES.size():
+		var button := Button.new()
+		button.text = titles[index]
+		button.toggle_mode = true
+		button.button_group = group
+		button.focus_mode = Control.FOCUS_NONE
+		button.button_pressed = index == 0
+		button.pressed.connect(set_flight_mode.bind(FlightController.MODES[index]))
+		modes.add_child(button)
+		mode_buttons.append(button)
+	var reset := Button.new()
+	reset.text = "Reset camera"
+	reset.focus_mode = Control.FOCUS_NONE
+	reset.pressed.connect(reset_camera)
+	modes.add_child(reset)
+	flight_stats = Label.new()
+	flight_stats.text = "Manual · 0 m/s"
+	panel.add_child(flight_stats)

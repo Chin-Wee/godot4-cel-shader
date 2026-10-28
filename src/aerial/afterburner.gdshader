@@ -9,6 +9,7 @@ uniform sampler2D flow_noise: repeat_enable, filter_linear;
 uniform float flow_phase = 0.0;
 instance uniform float phase_offset = 0.0;
 instance uniform float thrust_load = 1.0;
+instance uniform float engine_throttle = -1.0;
 uniform float throttle: hint_range(0.0, 1.0) = 1.0;
 uniform float twist = 1.2;
 uniform float flow_density = 0.08;
@@ -39,7 +40,8 @@ void vertex() {
 }
 
 void fragment() {
- if (throttle <= 0.001) { discard; }
+ float power = engine_throttle < 0.0 ? throttle : engine_throttle;
+ if (power <= 0.001) { discard; }
  float axial = clamp(plume_position.z,0.0,1.0);
  float angle = dot(plume_position.xy,plume_position.xy) > 0.000001 ? atan(plume_position.y,plume_position.x)/6.283185 : 0.0;
  vec2 uv = vec2(angle+axial*twist,axial*plume_length*flow_density-flow_phase+phase_offset);
@@ -57,6 +59,6 @@ void fragment() {
  color = mix(color,core_color.rgb,step(0.95,heat));
  color = mix(color,rim_color.rgb,step(0.7,fresnel_factor(NORMAL,VIEW,3.0)));
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
- float gain = (0.5+emission_strength*throttle*thrust_load)*mix(1.0,0.6,step(0.7,axial));
+ float gain = (0.5+emission_strength*power*thrust_load)*mix(1.0,0.6,step(0.7,axial));
  ALBEDO = mix(color*gain,aerial_haze_tint(CAMERA_POSITION_WORLD),haze);
 }
