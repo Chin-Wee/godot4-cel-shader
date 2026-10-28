@@ -15,9 +15,9 @@ godot --path demo res://aerial/aerial_demo.tscn
 - **1 / 2:** sunset / daylight palette.
 - **3:** storm lighting and camera rain when inside cloud.
 - **4:** change cloud cover; hidden banks stop contributing visibility/weather.
-- **5 / 6 / 7:** afterburners off / low / full throttle. Low/off uses the supplied falling/hover loop; full uses the selected boost pose.
+- **5 / 6 / 7:** jets off for comparison / upright hover / accelerate into forward flight. The scene starts hovering at 35% throttle.
 - **G:** switch the hero between flying and a terrain-grounded walking preview.
-- **B:** cycle the supplied forward, left, right and backward boost poses and preview thrust vectoring.
+- **B:** preview forward, left, right and braking maneuvers with body lean and thrust vectoring.
 - **Space:** trigger a graphic explosion.
 - **P:** freeze mechs, trails, cloud drift and effects for comparison.
 - **Right click:** toggle the fly camera. WASD moves, Q/E descends/ascends, Shift moves faster.
@@ -41,15 +41,22 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   color conversion; aerial materials add the same distance haze, sky fill and Sun
   palette as the environment. Armor remains matte and desaturated, with visible
   muted green accents. No orange aircraft livery is applied to the model.
-- Godot's AnimationPlayer blends the supplied `Walk_Forward`, `Fall_Loop` and four
-  directional boost poses over the existing 0.6 seconds. Ordinary playback stays
-  at 70%. The boost assets each contain only one authored pose; runtime clones hold
-  these poses for blending rather than claiming they are animated flight cycles.
-  Ground travel derives from the original walk root distance before its removal.
-  Manual animation advancement shares the scene pause clock. The production
-  movement reference is [Armored Core VI's walking, hover and boost modes](https://www.bandainamcoent.com/news/armored-core-vi-fires-of-rubicon-available-now);
-  native animation crossfades and BoneAttachment3D cover this rendering showcase.
-  The original roster/controller and source asset remain unchanged.
+- Flight uses a relaxed `Airborne` stance cloned from the supplied `Idle Pose`,
+  with arms beside the body and extended legs. The authored boost and falling
+  clips remain available for preview, but no longer force the in-game suit into
+  a combat crouch. AnimationPlayer keeps the existing 0.6-second walk/flight
+  crossfade and 70% ordinary playback rate. Ground stride still derives from the
+  original walk root distance before displacement removal.
+  The movement reference is [Marvel's Iron Man VR](https://blog.playstation.com/archive/2019/07/18/how-marvels-iron-man-vr-nails-flying/):
+  upright hover, acceleration into travel and a controlled return to hover.
+  This scene adapts that posture/momentum presentation to its existing kinematic
+  demonstration route; it does not reproduce Camouflaj's force-based simulator.
+  A smoothed route clock slows to a complete stop at hover throttle. Suit lean
+  follows travel speed, with forward pitch up to 65 degrees and limited strafe
+  roll. Rotation occurs around the suit center to avoid shifting the camera
+  target. A slight vertical hover motion preserves the standing silhouette.
+  Hover hides the movement contrails; cruise restores them. The original roster,
+  source asset and gameplay controller remain unchanged.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -103,14 +110,16 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   and one per heel. There are no sole, shoulder, arm, thigh or cold-gas jets.
   All five use equal-size nozzle housings and cel flames. Native BoneAttachment3D
   follows each mount; a child pivot rotates both the nozzle housing and its plume.
-  Neutral axes all point rearward in body space. The pivots compensate for the
-  different animated bone bases, so feet do not default to downward thrust.
+  Neutral axes all point down in suit space, and therefore vertically downward
+  during upright hover. The pivots compensate for different animated bone bases.
+  As the suit leans forward, the same down-facing jets tilt rearward to accompany
+  acceleration. Backpack and calf exits sit clear of the lower armor; heel jets
+  exit from the underside of the heel.
   Each pivot accepts an independent yaw/pitch command through `set_thrust_vector`,
   bounded to 30 degrees per axis and smoothly blended on the scene clock.
-  **B** previews shared vector commands with the supplied directional boost poses.
-  This remains an Armored Core VI-inspired rendering showcase rather than a new
-  force/flight simulation. Only the backpack jet creates a long trail. Ground
-  mode hides hero exhaust and its trail; flight restores them. The same throttle,
+  **B** previews shared vector commands with the forward/strafe/brake maneuvers.
+  Only the backpack jet creates a long trail. Hover and ground mode hide movement
+  trails; cruise restores them. The same throttle,
   phase clock and small independent flame pulses drive both mechs. The production control
   reference is [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
@@ -191,7 +200,10 @@ recorded in `models/MechAsset/README.md`. No new external asset is needed.
 The model has no named thruster sockets. Native Torso, Shin and Feet attachments
 provide a single backpack, paired calf and paired heel mount without editing its
 skeleton. Calf and heel coordinates were selected after native close-up views
-and bone-local mesh inspection. Each identical housing has its own vectoring pivot. Missile, trail, explosion, terrain and cloud geometry remain procedural.
+and bone-local mesh inspection. Each identical housing has its own vectoring pivot. The downward-facing exits
+were calibrated against the backpack mesh and heel clearance after native
+close-up inspection. Missile, trail, explosion, terrain and cloud geometry remain
+procedural.
 
 ## Checks and comparison captures
 
@@ -244,10 +256,13 @@ smoke buoyancy, seed variation, deterministic seeking and bounded storage. Motio
 captures include the complete dissipation tail rather than cutting the smoke off
 at the end of a short preview; `--explosion-only` skips unchanged exhaust footage.
 Mech captures inspect all five native mount attachments during directional pose
-blends, commanded thrust directions, parallel neutral axes, individual nozzle
+blends, commanded thrust directions, downward neutral axes, individual nozzle
 close-ups, throttle states, a complete walk cycle and an exact frozen frame.
 Functional checks cover exact outlet count, equal sizing, independent vector
-commands, motor limits and smooth response.
+commands, motor limits and smooth response. The motion capture follows a full
+hover → acceleration/lean → braking/hover cycle. Functional checks reject hover
+translation, abrupt velocity changes, a missing cruise lean, contrails while
+hovering, failure to stop, or clocks continuing while paused.
 These are desktop observations, not a device benchmark. Keep the capture window
 visible on macOS. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

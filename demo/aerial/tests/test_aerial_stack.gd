@@ -15,6 +15,7 @@ func _run() -> void:
 	await _check_river_clearance(scene)
 	_check_afterburners(scene)
 	await _check_mechs(scene)
+	_check_hover_flight(scene)
 	var frozen_pose: Transform3D = scene.hero.transform
 	scene._update_hero_pose(0.0)
 	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live mech poses disagree")
@@ -194,7 +195,7 @@ func _check_mechs(scene: Node3D) -> void:
 		for index in 5: mech.set_thrust_vector(index,Vector2.ZERO)
 		mech.update_animation(2.0,1.0)
 		mech.update_exhaust(1.0,scene.afterburner_flow_phase)
-		for clip_name in [&"Walk",&"Fall"] + mech.FLIGHT_POSES:
+		for clip_name in [&"Walk",&"Fall",&"Airborne"] + mech.FLIGHT_POSES:
 			var clip: Animation = mech.actor.animation_player.get_animation(clip_name)
 			assert(clip.loop_mode == Animation.LOOP_LINEAR)
 			var track: int = mech.actor._find_position_track(clip,&"Root")
@@ -204,10 +205,10 @@ func _check_mechs(scene: Node3D) -> void:
 		for index in mech.FLIGHT_POSES.size():
 			mech.flight_pose = index
 			mech.update_animation(0.9,1.0)
-			assert(mech.actor.current_animation == mech.FLIGHT_POSES[index],"A supplied directional boost pose is unavailable")
+			assert(mech.actor.current_animation == &"Airborne","Flight reverted to a crouched combat pose")
 		mech.flight_pose = 0
 		mech.update_animation(0.9,0.35)
-		assert(mech.actor.current_animation == &"Fall","Hover did not use the supplied flying loop")
+		assert(mech.actor.current_animation == &"Airborne","Hover did not use the relaxed airborne stance")
 		mech.update_animation(0.9,1.0)
 		for material in mech.palette_materials:
 			assert(material.get_shader_parameter("highlight_mask") == 0.0,"Matte armor regained glossy highlights")
@@ -238,11 +239,47 @@ func _check_mechs(scene: Node3D) -> void:
 	scene._process(0.1)
 	assert(is_equal_approx(scene.hero.actor.animation_player.current_animation_position,frozen),"Paused scene still advances skeletal animation")
 	scene.elapsed = 0.0
+	scene.flight_time = 0.0
 	scene.set_walk_mode(false)
 	scene.hero.update_animation(0.9,1.0)
-	assert(scene.hero.actor.current_animation == &"Boost_Forward")
+	assert(scene.hero.actor.current_animation == &"Airborne")
 	assert(scene.camera.current,"Switching walk/flight lost camera ownership")
 	for flame in scene.hero.flames: assert(flame.visible,"Returning to flight did not restore the exhaust")
+
+func _check_hover_flight(scene: Node3D) -> void:
+	scene.hero.flight_pose = 0
+	scene.set_afterburner_throttle(0.35)
+	scene.flight_rate = 0.0
+	scene.flight_time = 0.0
+	scene._update_hero_pose(0.0)
+	var origin: Vector3 = scene.hero.position
+	scene.animate = true
+	for frame in 120: scene._process(1.0/60.0)
+	assert(scene.hero.position.is_equal_approx(origin) and scene.flight_time == 0.0,"Hover keeps translating like an aircraft")
+	assert(absf(scene.hero.actor.rotation.x) < 0.01,"Hover is not upright")
+	assert(not scene.trails[0].visible and not scene.trails[1].visible,"Hover emits aircraft contrails")
+	scene.set_afterburner_throttle(1.0)
+	scene._process(1.0/60.0)
+	assert(scene.flight_rate > 0.0 and scene.flight_rate < 0.1,"Flight velocity changes instantly")
+	for frame in 120: scene._process(1.0/60.0)
+	assert(scene.hero.position.distance_to(origin) > 40.0,"Increasing thrust did not accelerate the suit")
+	assert(scene.hero.actor.rotation.x < -0.9,"Forward flight does not lean into travel")
+	assert(scene.trails[0].visible,"Cruise did not restore its movement trail")
+	scene.set_afterburner_throttle(0.35)
+	for frame in 240: scene._process(1.0/60.0)
+	assert(scene.flight_rate == 0.0 and absf(scene.hero.actor.rotation.x) < 0.01,"Slowing down did not settle into upright hover")
+	var stopped: Vector3 = scene.hero.position
+	scene._process(0.5)
+	assert(scene.hero.position.is_equal_approx(stopped),"Hover drifts after braking")
+	scene.animate = false
+	var frozen: float = scene.flight_time
+	var posture: Transform3D = scene.hero.actor.transform
+	scene._process(0.2)
+	assert(scene.flight_time == frozen and scene.hero.actor.transform.is_equal_approx(posture),"Paused hover/flight keeps animating")
+	scene.elapsed = 0.0
+	scene.flight_time = 0.0
+	scene._update_hero_pose(0.0)
+	scene._update_wingman_pose(0.0)
 
 func _checks_timeout() -> void:
 	if not completed:

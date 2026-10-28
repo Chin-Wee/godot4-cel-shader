@@ -1,6 +1,6 @@
 extends Node3D
 
-# Armored Core VI is the production reference for walking/boost poses with body-mounted exhaust.
+# Marvel's Iron Man VR is the flight reference: upright hover, then body-led acceleration.
 # Reuse the roster actor's cloned animation library, root cleanup and matte color conversion.
 const Actor = preload("res://actors/mechs/mech_asset.tscn")
 const Geometry = preload("res://aerial/geometry.gd")
@@ -14,13 +14,16 @@ var vector_targets: Array[Vector2] = []
 var vector_pose := -1
 var skeleton: Skeleton3D
 const VECTOR_LIMIT := PI/6.0
+const NEUTRAL_EXHAUST := Basis(Vector3.RIGHT,Vector3.BACK,Vector3.DOWN)
+var flight_amount := 0.0
+var flight_clock := 0.0
 # One backpack, one per calf and one per heel. Dimensions are source-model units.
 const MOUNTS := [
- ["Backpack",&"Torso",Vector3(0,-0.3,-1.95)],
- ["CalfL",&"Shin.L",Vector3(0,1.937,-0.840)],
- ["CalfR",&"Shin.R",Vector3(0,1.937,-0.840)],
- ["HeelL",&"Feet.L",Vector3(0,-1.20,0.10)],
- ["HeelR",&"Feet.R",Vector3(0,-1.20,0.10)],
+ ["Backpack",&"Torso",Vector3(0,-3.16,-2.8)],
+ ["CalfL",&"Shin.L",Vector3(0,1.25,-1.70)],
+ ["CalfR",&"Shin.R",Vector3(0,1.25,-1.70)],
+ ["HeelL",&"Feet.L",Vector3(0,-0.90,-0.23)],
+ ["HeelR",&"Feet.R",Vector3(0,-0.90,-0.23)],
 ]
 var palette_materials: Array[ShaderMaterial] = []
 var flying := true
@@ -56,6 +59,12 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		clip.loop_mode = Animation.LOOP_LINEAR
 		var track: int = actor._find_position_track(clip, &"Root")
 		for key in clip.track_get_key_count(track): clip.track_set_key_value(track,key,rest)
+	# The source idle has relaxed arms and straight legs. Keep authored boost/fall
+	# clips for preview, but use this held stance for hover and streamlined flight.
+	var airborne := actor.animation_player.get_animation(&"Idle").duplicate(true) as Animation
+	airborne.length = 1.0
+	airborne.loop_mode = Animation.LOOP_LINEAR
+	actor.animation_player.get_animation_library(&"").add_animation(&"Airborne",airborne)
 	skeleton = actor.find_child("Skeleton3D",true,false)
 	var nozzle_material := surface.duplicate() as ShaderMaterial
 	nozzle_material.set_shader_parameter("body_color",Color(0.065,0.075,0.085))
@@ -90,35 +99,45 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		flame.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		flame.set_instance_shader_parameter("phase_offset",float(flames.size())*0.173)
 		flames.append(flame)
-	update_animation(1.0,1.0)
+	update_animation(1.0,0.35)
 
 func update_animation(delta: float, throttle: float) -> void:
-	var clip: StringName = FLIGHT_POSES[flight_pose] if flying and throttle > 0.5 else (&"Fall" if flying else &"Walk")
+	var clip: StringName = &"Airborne" if flying else &"Walk"
 	var command_pose := flight_pose if flying else -1
 	if vector_pose != command_pose:
 		vector_pose = command_pose
 		var command := Vector2.ZERO
 		if flying:
 			match flight_pose:
-				1: command = Vector2(0.28,0.04)
-				2: command = Vector2(-0.28,0.04)
-				3: command = Vector2(0.0,-0.22)
+				1: command = Vector2(0.22,0.0)
+				2: command = Vector2(-0.22,0.0)
+				3: command = Vector2(0.0,0.18)
 		for index in gimbals.size(): set_thrust_vector(index,command)
 	for index in gimbals.size():
 		vector_angles[index] = vector_angles[index].lerp(vector_targets[index],1.0-exp(-8.0*delta))
 	actor._play_animation(clip)
 	actor.animation_player.advance(delta)
+	flight_clock += delta
+	var pitch := deg_to_rad(20.0 if flight_pose == 3 else -65.0)*flight_amount
+	var roll := deg_to_rad(18.0)*flight_amount*(1.0 if flight_pose == 1 else (-1.0 if flight_pose == 2 else 0.0))
+	var response := 1.0-exp(-4.0*delta)
+	actor.rotation.x = lerpf(actor.rotation.x,pitch if flying else 0.0,response)
+	actor.rotation.z = lerpf(actor.rotation.z,roll if flying else 0.0,response)
+	if not flying: actor.rotation = Vector3.ZERO
+	# Rotate about the suit's center, so a forward lean does not move the camera target.
+	actor.position = -(actor.basis*Vector3(0,0.9,0))
+	if flying: actor.position.y += (sin(flight_clock*1.7)*0.012+sin(flight_clock*2.3+0.8)*0.006)*(1.0-flight_amount)
 
 func update_exhaust(throttle: float, phase: float) -> void:
-	var body_basis := (skeleton.global_basis.inverse()*global_basis).orthonormalized()
+	var body_basis := (skeleton.global_basis.inverse()*actor.global_basis).orthonormalized()
 	for index in flames.size():
 		var flame := flames[index]
 		# Bone orientations differ (notably Feet). Stabilize the neutral nozzle axes
-		# in body space, then apply each motor's yaw/pitch around that shared rear axis.
+		# in suit space, then apply each motor's yaw/pitch around the shared down axis.
 		var bone := skeleton.find_bone(sockets[index].bone_name)
 		var bone_basis := skeleton.get_bone_global_pose(bone).basis.orthonormalized()
 		var angles := vector_angles[index]
-		var desired := body_basis*Basis.from_euler(Vector3(angles.y,angles.x,0))
+		var desired := body_basis*NEUTRAL_EXHAUST*Basis.from_euler(Vector3(angles.y,angles.x,0))
 		gimbals[index].basis = bone_basis.inverse()*desired
 		flame.visible = flying and throttle > 0.001
 		var beat := (phase+float(flame.get_instance_shader_parameter("phase_offset")))*TAU

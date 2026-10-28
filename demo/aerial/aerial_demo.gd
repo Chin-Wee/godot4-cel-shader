@@ -30,12 +30,14 @@ var hud: CanvasLayer
 var trails: Array[MultiMeshInstance3D] = []
 var explosion: Node3D
 var explosion_clock := 0.0
-@export_range(0.0,1.0,0.01) var afterburner_throttle := 1.0
+@export_range(0.0,1.0,0.01) var afterburner_throttle := 0.35
 var afterburner_material: ShaderMaterial
 var afterburner_flow_phase := 0.0
 @export_range(0.0,3.0,0.05) var atmosphere_strength := 1.0
 @export_range(0.0,1.0,0.05) var atmosphere_shadow_strength := 1.0
 var walking_time := 0.0
+var flight_time := 0.0
+var flight_rate := 0.0
 var walk_ground: StaticBody3D
 var volume_effect
 
@@ -117,8 +119,7 @@ func _ready() -> void:
 	add_child(wingman)
 	wingman.build(body,afterburner_material)
 	palette_materials.append_array(wingman.palette_materials)
-	wingman.position = wingman_position(0.0)
-	wingman.look_at(wingman_position(0.1))
+	_update_wingman_pose(0.0)
 	camera = Camera3D.new()
 	camera.position = Vector3(140,610,540)
 	camera.fov = 65
@@ -139,6 +140,7 @@ func _ready() -> void:
 	_make_hud()
 	set_palette(false)
 	_update_afterburners()
+	for trail in trails.slice(0,2): trail.visible = false
 	volume_effect = load("res://aerial/atmosphere_volume.gd").new()
 	var compositor := Compositor.new()
 	compositor.compositor_effects = [volume_effect]
@@ -256,8 +258,15 @@ func _update_hero_pose(time: float) -> void:
 		hero.rotation = Vector3(0,-PI/2.0+angle,0)
 		return
 	hero.position = flight_position(time)
-	hero.look_at(flight_position(time+0.01))
-	hero.rotate_object_local(Vector3.FORWARD,-0.12+sin(time*0.3)*0.08)
+	var ahead := flight_position(time+0.01)
+	ahead.y = hero.position.y
+	hero.look_at(ahead)
+
+func _update_wingman_pose(time: float) -> void:
+	wingman.position = wingman_position(time)
+	var ahead := wingman_position(time+0.1)
+	ahead.y = wingman.position.y
+	wingman.look_at(ahead)
 
 func set_walk_mode(enabled: bool) -> void:
 	if enabled and not is_instance_valid(walk_ground):
@@ -270,12 +279,12 @@ func set_walk_mode(enabled: bool) -> void:
 		add_child(walk_ground)
 	hero.flying = not enabled
 	hero.update_animation(0.0,afterburner_throttle)
-	_update_hero_pose(elapsed)
+	_update_hero_pose(flight_time)
 	_update_afterburners()
 	# This remains a rendering showcase; the original roster keeps gameplay control.
 	camera.position = hero.position+Vector3(-130,65,180)
 	camera.look_at(hero.position+Vector3(0,10,-50))
-	for trail in trails.slice(0,1): trail.visible = not enabled
+	for trail in trails.slice(0,1): trail.visible = not enabled and flight_rate > 0.1
 
 func flight_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)
@@ -360,24 +369,30 @@ func _process(delta: float) -> void:
 	if animate:
 		elapsed += delta
 		if not hero.flying: walking_time += delta
+		var target_rate := clampf((afterburner_throttle-0.4)/0.6,0.0,1.0) if hero.flight_pose != 3 else 0.0
+		flight_rate = lerpf(flight_rate,target_rate,1.0-exp(-2.8*delta))
+		if absf(flight_rate-target_rate) < 0.001: flight_rate = target_rate
+		flight_time += delta*flight_rate
+		hero.flight_amount = flight_rate
+		wingman.flight_amount = flight_rate
 		hero.update_animation(delta,afterburner_throttle)
 		wingman.update_animation(delta,afterburner_throttle)
 		var old_position := hero.position
-		_update_hero_pose(elapsed)
+		_update_hero_pose(flight_time)
 		_update_afterburners(delta)
 		if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
 			camera.position += hero.position-old_position
 		missile.position = missile_position(elapsed)
 		missile.look_at(missile_position(elapsed+0.1))
-		wingman.position = wingman_position(elapsed)
-		wingman.look_at(wingman_position(elapsed+0.1))
-		wingman.rotate_object_local(Vector3.FORWARD,0.08)
+		_update_wingman_pose(flight_time)
 		explosion_clock += delta
 		if explosion_clock > 8.0:
 			explosion_clock = 0.0
 			trigger_explosion()
 		clouds.position.x = sin(elapsed*0.015)*50.0
-	for index in trails.size(): trails[index].set_process(animate and (hero.flying or index > 0))
+	for index in trails.size():
+		trails[index].set_process(animate and (hero.flying or index > 0))
+		if index < 2: trails[index].visible = flight_rate > 0.1 and (hero.flying or index > 0)
 	if is_instance_valid(explosion): explosion.set_process(animate)
 	if Input.get_mouse_mode() == Input.MOUSE_MODE_CAPTURED:
 		var motion := Vector3(Input.get_axis("left","right"),float(Input.is_physical_key_pressed(KEY_E))-float(Input.is_physical_key_pressed(KEY_Q)),Input.get_axis("forward","back"))
@@ -436,7 +451,7 @@ func _make_hud() -> void:
 	hud.layer = 2
 	add_child(hud)
 	var label := Label.new()
-	label.text = "MECH RENDER STUDY\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nG Walk / fly · B Pose / vector · 5 / 6 / 7 Exhaust off / low / full\nRight click: fly camera · WASD / Q E · Shift: faster"
+	label.text = "MECH RENDER STUDY\n1 Sunset   2 Daylight   3 Storm   4 Cloud cover   P Pause   Space Explosion\nG Walk / fly · B Forward / strafe / brake · 5 Off · 6 Hover · 7 Flight\nRight click: fly camera · WASD / Q E · Shift: faster"
 	label.position = Vector2(24,22)
 	label.add_theme_color_override("font_color",Color(1,0.88,0.73))
 	label.add_theme_font_size_override("font_size",16)
