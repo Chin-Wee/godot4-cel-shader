@@ -51,12 +51,19 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   upright hover, acceleration into travel and a controlled return to hover.
   This scene adapts that posture/momentum presentation to its existing kinematic
   demonstration route; it does not reproduce Camouflaj's force-based simulator.
-  A smoothed route clock slows to a complete stop at hover throttle. Suit lean
-  follows travel speed, with forward pitch up to 65 degrees and limited strafe
-  roll. Rotation occurs around the suit center to avoid shifting the camera
-  target. A slight vertical hover motion preserves the standing silhouette.
-  Hover hides the movement contrails; cruise restores them. The original roster,
-  source asset and gameplay controller remain unchanged.
+  A smoothed route clock slows to a complete stop at hover throttle. The supplied
+  procedural flight-rig prototype informs the animation layer: velocity,
+  acceleration and heading rate drive continuous hover/cruise/brake weights.
+  Exact critically damped springs retain velocity across target changes. Chest
+  response is 0.35 seconds, hips 0.50, and staggered leg joints 0.58–0.72; four
+  waist/chest joints distribute the difference instead of tilting the whole suit
+  rigidly. A faster, clamped neck response stabilizes gaze. Native
+  SkeletonModifier3D applies these offsets after AnimationPlayer, followed by
+  native TwoBoneIK3D for soft-reach, chest-local hand targets and elbow poles.
+  Arms remain relaxed balance limbs; they provide no propulsion. Intermediate
+  arm bends are reset before the virtual-bone IK solve. Spring influence fades
+  out for walking. All springs and modifiers use the scene clock, including pause.
+  The original roster, imported resources and gameplay controller remain unchanged.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -106,22 +113,26 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   simulation framework, so pause and deterministic seeking remain available.
   Live bursts choose a fresh seed; captures can pass a seed for reproducibility.
   Transient effects are freed without retaining palette references.
-- Each mech has exactly five thrusters: one centered backpack jet, one per calf,
-  and one per heel. There are no sole, shoulder, arm, thigh or cold-gas jets.
-  All five use equal-size nozzle housings and cel flames. Native BoneAttachment3D
-  follows each mount; a child pivot rotates both the nozzle housing and its plume.
-  Neutral axes all point down in suit space, and therefore vertically downward
-  during upright hover. The pivots compensate for different animated bone bases.
-  As the suit leans forward, the same down-facing jets tilt rearward to accompany
-  acceleration. Backpack and calf exits sit clear of the lower armor; heel jets
-  exit from the underside of the heel.
-  Each pivot accepts an independent yaw/pitch command through `set_thrust_vector`,
-  bounded to 30 degrees per axis and smoothly blended on the scene clock.
-  **B** previews shared vector commands with the forward/strafe/brake maneuvers.
-  Only the backpack jet creates a long trail. Hover and ground mode hide movement
-  trails; cruise restores them. The same throttle,
-  phase clock and small independent flame pulses drive both mechs. The production control
-  reference is [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
+- Each mech has six equal-size main boosters: two in the backpack's paired lower
+  barrel caps, one in each calf recess, and one in each heel inlay. Four smaller
+  cold-gas outlets occupy the shoulder and thigh recesses. There are no hand,
+  forearm or upper-arm boosters. Mount centers were projected onto source mesh
+  triangles; seated ball joints connect vectoring bells to the modeled ports.
+  Neutral main exhaust points down, with a 15-degree aft calf bias to clear the
+  lower armor lip. Every main bell has independent, smoothly blended yaw/pitch
+  bounded to 30 degrees per axis. Scale compensation preserves commanded world
+  directions under nonuniform actor scaling.
+  Gravity plus observed acceleration estimates visual load, normalized across
+  the six boosters, with lateral load shifts during turns. Per-instance load
+  changes flame length and brightness without copying materials. Opposed
+  shoulder/thigh gas pulses provide a control couple and respond to turning or
+  acceleration; they remain quiet in stationary hover. Their bells also vector.
+  This is animation/VFX load allocation, not a constrained rigid-body force
+  solver: the existing demonstration route still owns world movement. Final
+  modifier poses update the mounts before rendering, so exhaust stays attached
+  during spinal articulation and limb IK. One backpack outlet owns the long
+  demonstration trail; hover and ground mode hide movement contrails.
+- Cel exhaust follows [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
   tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
   identical; no bound source textures/materials were present. The existing
@@ -137,7 +148,7 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Small independent width/length pulses, tail sway and axial flutter change the
   silhouette while leaving the nozzle locked. A clamped displacement and expanded
   native AABB prevent movement from escaping the culling bounds. Separate instance
-  phase offsets vary the five engines without extra materials. The integrated flow
+  phase offsets vary the six main engines without extra materials. The integrated flow
   clock preserves phase across throttle changes, wraps seamlessly, and freezes
   with the scene. Bright cell bands are an artistic approximation, not simulated
   shock diamonds. Pressure regimes, blendshapes and exhaust heat refraction are
@@ -198,11 +209,10 @@ clips. The other four are colored compact robots and lack its directional boost
 poses. The existing GLB is chosen over its FBX source for the same import reasons
 recorded in `models/MechAsset/README.md`. No new external asset is needed.
 The model has no named thruster sockets. Native Torso, Shin and Feet attachments
-provide a single backpack, paired calf and paired heel mount without editing its
-skeleton. Calf and heel coordinates were selected after native close-up views
-and bone-local mesh inspection. Each identical housing has its own vectoring pivot. The downward-facing exits
-were calibrated against the backpack mesh and heel clearance after native
-close-up inspection. Missile, trail, explosion, terrain and cloud geometry remain
+provide paired backpack, calf and heel mounts plus shoulder/thigh control jets
+without editing the skeleton. All mount coordinates were inspected in native
+close-ups and measured against source triangles in bone-local space. The backpack
+uses the paired lower barrels, rather than an estimated point beneath the pack. Missile, trail, explosion, terrain and cloud geometry remain
 procedural.
 
 ## Checks and comparison captures
@@ -210,6 +220,7 @@ procedural.
 ```sh
 godot --path demo --script res://aerial/tests/capture_mech.gd --resolution 1440x810 --always-on-top -- /tmp/aerial-mech
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
+godot --headless --path demo --script res://aerial/tests/test_flight_pose.gd
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
 godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
 godot --headless --path demo --script res://aerial/tests/test_cloud_field.gd
@@ -255,11 +266,15 @@ explosion check covers independent lifetimes, drag deceleration, debris gravity,
 smoke buoyancy, seed variation, deterministic seeking and bounded storage. Motion
 captures include the complete dissipation tail rather than cutting the smoke off
 at the end of a short preview; `--explosion-only` skips unchanged exhaust footage.
-Mech captures inspect all five native mount attachments during directional pose
+Mech captures inspect all six main mount attachments during directional pose
 blends, commanded thrust directions, downward neutral axes, individual nozzle
 close-ups, throttle states, a complete walk cycle and an exact frozen frame.
-Functional checks cover exact outlet count, equal sizing, independent vector
-commands, motor limits and smooth response. The motion capture follows a full
+Cold-gas close-ups compare each outlet on/off to reject hidden plumes. Functional
+checks also measure every anchor against source triangles (within 0.02 source
+units), frame-rate-independent springs, native IK endpoint accuracy, normalized
+thrust shares, heading wrap, mass lag, walk pass-through and frozen redraws.
+Checks cover exact outlet count, equal main sizing, independent vector commands,
+motor limits and smooth response. The motion capture follows a full
 hover → acceleration/lean → braking/hover cycle. Functional checks reject hover
 translation, abrupt velocity changes, a missing cruise lean, contrails while
 hovering, failure to stop, or clocks continuing while paused.

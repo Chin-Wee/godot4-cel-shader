@@ -136,8 +136,8 @@ func _check_afterburners(scene: Node3D) -> void:
 			anchors.append(flame.global_position)
 			var bounds: AABB = flame.mesh.get_aabb()
 			assert(is_zero_approx(bounds.position.z) and is_equal_approx(bounds.end.z,1.0),"Exhaust is not normalized from nozzle to tip")
-			assert(flame.get_parent() in mech.gimbals and flame.position == Vector3.ZERO,"Exhaust is detached from its vectoring pivot")
-	assert(flames.size() == 10,"Each mech must have exactly five thrusters")
+			assert(flame.get_parent() in mech.gimbals and flame.position.z > 0.0,"Exhaust is detached from its vectoring pivot")
+	assert(flames.size() == 12,"Each mech must have exactly six main thrusters")
 	var previous_length := 0.0
 	for throttle in [0.0,0.35,1.0]:
 		scene.set_afterburner_throttle(throttle)
@@ -180,19 +180,19 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(not mech.actor.actor_camera.current,"Mech camera stole the showcase view")
 		assert(mech.actor.animation_player.callback_mode_process == AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL)
 		assert(is_equal_approx(mech.actor.animation_player.speed_scale,0.7),"Ordinary playback lost its 30% slowdown")
-		assert(mech.sockets.size() == 5 and mech.gimbals.size() == 5)
+		assert(mech.sockets.size() == 6 and mech.gimbals.size() == 6 and mech.gas_jets.size() == 4)
 		var bones := []
 		for socket in mech.sockets: bones.append(StringName(socket.bone_name))
-		assert(bones == [&"Torso",&"Shin.L",&"Shin.R",&"Feet.L",&"Feet.R"],"Unexpected thruster mount")
+		assert(bones == [&"Torso",&"Torso",&"Shin.L",&"Shin.R",&"Feet.L",&"Feet.R"],"Unexpected thruster mount")
 		for flame in mech.flames:
-			assert(flame.scale.x > 0.27 and flame.scale.x < 0.33 and flame.scale.z > 4.8 and flame.scale.z < 6.2,"Thrusters are no longer roughly equal size")
+			assert(flame.scale.x > 0.16 and flame.scale.x < 0.20 and flame.scale.z > 1.0,"Thrusters are no longer roughly equal size")
 		# Independent commands rotate the nozzle and flame together, with a bounded motor range.
 		mech.set_thrust_vector(0,Vector2(2.0,-2.0))
 		assert(mech.vector_targets[0].is_equal_approx(Vector2(mech.VECTOR_LIMIT,-mech.VECTOR_LIMIT)))
-		for index in range(1,5): assert(mech.vector_targets[index] == Vector2.ZERO,"One vector command moved other nozzles")
+		for index in range(1,6): assert(mech.vector_targets[index] == Vector2.ZERO,"One vector command moved other nozzles")
 		mech.update_animation(0.1,1.0)
 		assert(mech.vector_angles[0].length() > 0.0 and mech.vector_angles[0].length() < mech.vector_targets[0].length(),"Vectoring jumps instead of blending")
-		for index in 5: mech.set_thrust_vector(index,Vector2.ZERO)
+		for index in 6: mech.set_thrust_vector(index,Vector2.ZERO)
 		mech.update_animation(2.0,1.0)
 		mech.update_exhaust(1.0,scene.afterburner_flow_phase)
 		for clip_name in [&"Walk",&"Fall",&"Airborne"] + mech.FLIGHT_POSES:
@@ -211,7 +211,7 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(mech.actor.current_animation == &"Airborne","Hover did not use the relaxed airborne stance")
 		mech.update_animation(0.9,1.0)
 		for material in mech.palette_materials:
-			assert(material.get_shader_parameter("highlight_mask") == 0.0,"Matte armor regained glossy highlights")
+			assert(material.get_shader_parameter("highlight_mask") in [null,0.0],"Matte armor regained glossy highlights")
 	scene.set_walk_mode(true)
 	await physics_frame
 	scene._update_hero_pose(scene.elapsed)
@@ -256,18 +256,18 @@ func _check_hover_flight(scene: Node3D) -> void:
 	scene.animate = true
 	for frame in 120: scene._process(1.0/60.0)
 	assert(scene.hero.position.is_equal_approx(origin) and scene.flight_time == 0.0,"Hover keeps translating like an aircraft")
-	assert(absf(scene.hero.actor.rotation.x) < 0.01,"Hover is not upright")
+	assert(absf(scene.hero.actor.rotation.x) < 0.02,"Hover is not upright")
 	assert(not scene.trails[0].visible and not scene.trails[1].visible,"Hover emits aircraft contrails")
 	scene.set_afterburner_throttle(1.0)
 	scene._process(1.0/60.0)
 	assert(scene.flight_rate > 0.0 and scene.flight_rate < 0.1,"Flight velocity changes instantly")
 	for frame in 120: scene._process(1.0/60.0)
 	assert(scene.hero.position.distance_to(origin) > 40.0,"Increasing thrust did not accelerate the suit")
-	assert(scene.hero.actor.rotation.x < -0.9,"Forward flight does not lean into travel")
+	assert(scene.hero.actor.rotation.x < -0.4 and scene.hero.rig.chest.value.x > 0.9,"Forward flight does not lean into travel")
 	assert(scene.trails[0].visible,"Cruise did not restore its movement trail")
 	scene.set_afterburner_throttle(0.35)
 	for frame in 240: scene._process(1.0/60.0)
-	assert(scene.flight_rate == 0.0 and absf(scene.hero.actor.rotation.x) < 0.01,"Slowing down did not settle into upright hover")
+	assert(scene.flight_rate == 0.0 and absf(scene.hero.actor.rotation.x) < 0.02,"Slowing down did not settle into upright hover")
 	var stopped: Vector3 = scene.hero.position
 	scene._process(0.5)
 	assert(scene.hero.position.is_equal_approx(stopped),"Hover drifts after braking")

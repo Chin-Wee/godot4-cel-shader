@@ -8,6 +8,7 @@ render_mode unshaded, cull_back;
 uniform sampler2D flow_noise: repeat_enable, filter_linear;
 uniform float flow_phase = 0.0;
 instance uniform float phase_offset = 0.0;
+instance uniform float thrust_load = 1.0;
 uniform float throttle: hint_range(0.0, 1.0) = 1.0;
 uniform float twist = 1.2;
 uniform float flow_density = 0.08;
@@ -56,6 +57,6 @@ void fragment() {
  color = mix(color,core_color.rgb,step(0.95,heat));
  color = mix(color,rim_color.rgb,step(0.7,fresnel_factor(NORMAL,VIEW,3.0)));
  float haze = aerial_haze(CAMERA_POSITION_WORLD);
- float gain = (0.5+emission_strength*throttle)*mix(1.0,0.6,step(0.7,axial));
+ float gain = (0.5+emission_strength*throttle*thrust_load)*mix(1.0,0.6,step(0.7,axial));
  ALBEDO = mix(color*gain,aerial_haze_tint(CAMERA_POSITION_WORLD),haze);
 }

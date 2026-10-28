@@ -139,6 +139,9 @@ func _ready() -> void:
 	_make_post()
 	_make_hud()
 	set_palette(false)
+	for mech in [hero,wingman]:
+		mech.reset_motion()
+		mech.update_animation(0.0,afterburner_throttle)
 	_update_afterburners()
 	for trail in trails.slice(0,2): trail.visible = false
 	volume_effect = load("res://aerial/atmosphere_volume.gd").new()
@@ -278,8 +281,9 @@ func set_walk_mode(enabled: bool) -> void:
 		walk_ground.add_child(shape)
 		add_child(walk_ground)
 	hero.flying = not enabled
-	hero.update_animation(0.0,afterburner_throttle)
 	_update_hero_pose(flight_time)
+	hero.reset_motion()
+	hero.update_animation(0.0,afterburner_throttle)
 	_update_afterburners()
 	# This remains a rendering showcase; the original roster keeps gameplay control.
 	camera.position = hero.position+Vector3(-130,65,180)
@@ -375,16 +379,16 @@ func _process(delta: float) -> void:
 		flight_time += delta*flight_rate
 		hero.flight_amount = flight_rate
 		wingman.flight_amount = flight_rate
-		hero.update_animation(delta,afterburner_throttle)
-		wingman.update_animation(delta,afterburner_throttle)
 		var old_position := hero.position
 		_update_hero_pose(flight_time)
+		_update_wingman_pose(flight_time)
+		hero.update_animation(delta,afterburner_throttle)
+		wingman.update_animation(delta,afterburner_throttle)
 		_update_afterburners(delta)
 		if Input.get_mouse_mode() != Input.MOUSE_MODE_CAPTURED:
 			camera.position += hero.position-old_position
 		missile.position = missile_position(elapsed)
 		missile.look_at(missile_position(elapsed+0.1))
-		_update_wingman_pose(flight_time)
 		explosion_clock += delta
 		if explosion_clock > 8.0:
 			explosion_clock = 0.0
