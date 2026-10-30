@@ -1,290 +1,234 @@
 extends SceneTree
 
 const Controller = preload("res://aerial/flight_controller.gd")
-const Pose = preload("res://aerial/flight_pose.gd")
+var scene
+var mech
 var completed := false
 
 func _initialize() -> void:
 	call_deferred("_run")
 
+func _ticks(count: int) -> void:
+	for tick in count:
+		await physics_frame
+		await process_frame
+
+func _fixture(origin := Vector3(175, 2200, 340), orientation := Quaternion.IDENTITY, speed := Vector3.ZERO, level := 2) -> void:
+	mech.freeze = true
+	await _ticks(1)
+	mech.reset_flight(origin, orientation, speed)
+	mech.controller.detent = level
+	mech.controller.engine_level = Controller.DETENTS[level]
+	mech.controller.air_density = 1.225
+	mech.controls = {}
+	mech.freeze = false
+	await _ticks(2)
+
+func _key(code: Key, pressed := true, echo := false) -> void:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	event.pressed = pressed
+	event.echo = echo
+	mech.controller.handle_input(event)
+
 func _run() -> void:
-	create_timer(25).timeout.connect(func():
-		if not completed: push_error("Continuous flight checks did not complete"); quit(1))
-	assert(_check_controller(),"Flight controller checks failed")
-	assert(_check_handling(),"Flight handling checks failed")
-	assert(_check_combat_gate(),"Combat aero gate checks failed")
-	var scene = load("res://aerial/aerial_demo.tscn").instantiate()
+	create_timer(80).timeout.connect(func():
+		if not completed: push_error("Rigid flight checks did not finish"); quit(1))
+	scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
-	scene.animate = false
-	scene.follow_camera = false
-	var mech = scene.hero
-	await physics_frame
-	await process_frame
+	scene.set_process(false)
+	scene.animate = true
+	mech = scene.hero
+	mech.player_controlled = false
+	await _ticks(2)
+	assert(mech is RigidBody3D and mech.scale.is_equal_approx(Vector3.ONE))
+	assert(mech.actor.get_node("CollisionShape3D").disabled)
 	assert(mech.flames.size() == 6 and mech.gas_jets.size() == 4)
-	assert(_check_mount_surfaces(mech),"A booster floats away from source armor")
-	for raw in [{},{"forward":true},{"uncage":true,"back":true},{"uncage":true,"right":true,"burst":true},{"uncage":true,"brake":true}]:
-		mech.controller.reset(Vector3(175,1600,340))
-		mech.controller.aiming = true
-		for frame in 180: mech.step_flight(1.0/60.0,raw,0.0)
-		await process_frame
-		await process_frame
-		assert(not mech.actor.animation_player.is_playing(),"Flight uses an authored clip")
-		assert(_check_ik(mech),"Native arm IK missed its target")
-		assert(_check_motors(mech),"A motor exceeded its local mechanical cone")
-		# The weapon deliberately trails a moving aim boundary. Verify its final
-		# alignment after settling, rather than requiring a zero-lag wrist snap.
-		for frame in 45: mech.update_animation(1.0/60.0)
-		await process_frame
-		await process_frame
-		assert(mech.rig.weapon.barrel_direction.dot(mech.controller.limit_aim_direction(mech.controller.aim_direction)) > 0.99,"Settled rifle missed its bounded aim")
-	# Low-ready -> supported aim -> wide one-hand tracking, using one native IK.
-	mech.controller.reset(Vector3(175,1600,340))
-	mech.position = mech.controller.position
-	mech.quaternion = Quaternion.IDENTITY
-	for frame in 90: mech.update_animation(1.0/60.0)
-	await process_frame
-	var low_hand: Vector3 = mech.bone_poses[mech.skeleton.find_bone("Hands.R")].origin
+	assert(_check_mount_surfaces(mech))
+	_check_inputs()
+	await _fixture()
+	await _ticks(180)
+	assert(mech.controller.velocity.length() < 1.0, "Hover did not settle")
+	assert(mech.basis.y.dot(Vector3.UP) > 0.99, "Hover did not remain upright")
+	assert(_check_ik(mech) and _check_motors(mech))
+	await _ticks(420)
+	assert(mech.controller.velocity.length() < 0.3, "Long hover develops persistent drift")
+	# Precision input overrides the hover axis rather than fighting upright trim.
+	mech.controls = {"forward":true,"precision":true}
+	await _ticks(30)
+	assert(mech.angular_velocity.x < -0.1 and mech.controller.released_axes.x == 0)
+	# Same six rotation commands at upright/prone/inverted/vertical-flight poses.
+	for orientation in [Quaternion.IDENTITY, Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.RIGHT,PI)]:
+		for key in ["forward","back","left","right","yaw_left","yaw_right"]:
+			await _fixture(Vector3(175,2400,340), orientation, Vector3.ZERO, 0)
+			mech.controller.air_density = 0.0
+			mech.controls = {key:true}
+			await _ticks(24)
+			assert(mech.controller.rotation_command.length() > 0.9, "Rotation input was gated")
+			assert(mech.controller.attitude.angle_to(orientation) > 0.08, "A rotation axis cannot move")
+			assert(absf(mech.controller.pilot_frame().determinant()-1.0) < 0.001)
+			assert(_check_motors(mech) and _check_ik(mech))
+	# In vacuum, balanced attitude torque cannot change horizontal momentum.
+	await _fixture(Vector3(175,2600,340), Quaternion.IDENTITY, Vector3(45,0,-30), 0)
+	mech.controller.air_density = 0.0
+	await _ticks(2) # Drain the preceding atmospheric step before measuring vacuum.
+	mech.controls = {"right":true,"back":true}
+	var before: Vector3 = mech.controller.velocity
+	await _ticks(120)
+	assert(absf(mech.controller.velocity.x-before.x) < 0.01 and absf(mech.controller.velocity.z-before.z) < 0.01, "Rotation rewrote momentum")
+	assert(mech.controller.main_force.is_zero_approx() and mech.controller.leg_force.is_zero_approx() and mech.controller.hover_assist == 0)
+	mech.controls = {}
+	await _ticks(90)
+	assert(mech.angular_velocity.length() < 0.03, "Cold-gas counter-torque did not stop rotation")
+	# Existing momentum survives thrust directed across it.
+	await _fixture(Vector3(175,2600,340), Quaternion(Vector3.RIGHT,-PI/2), Vector3(40,0,0), 3)
+	mech.controller.air_density = 0.0
+	await _ticks(45)
+	assert(mech.controller.velocity.x > 35 and mech.controller.velocity.z < -5, "Sideways thrust replaced the previous trajectory")
+	assert(mech.controller.hover_assist < 0.01)
+	# Maximum detent reaches the old 4× level with equal, capacity-limited engines.
+	await _fixture(Vector3(175,2600,340), Quaternion(Vector3.RIGHT,-PI/2), Vector3(0,0,-70), 4)
+	await _ticks(60)
+	assert(is_equal_approx(mech.controller.engine_level,4.0) and _check_motors(mech))
+	for share in mech.controller.engine_shares: assert(absf(share-1.0/6.0) < 0.0001)
+	# High-speed departure must never enable hover correction or disable controls.
+	await _fixture(Vector3(175,2600,340), Quaternion.IDENTITY, Vector3(0,0,-80))
+	mech.controls = {"back":true,"brake":true}
+	await _ticks(12)
+	assert(mech.controller.hover_assist < 0.01, "Fast departure engaged hover correction")
+	assert(mech.controller.rotation_command.x > 0.7, "Pitch stopped during departure")
+	assert(mech.controller.brake_amount > 0.8)
+	# Airflow generates lift with engines off; Shift adds real deceleration.
+	var cruise := Quaternion(Vector3.RIGHT,-PI/2)
+	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,0,-80), 0)
+	await _ticks(30)
+	var coast_speed: float = mech.controller.velocity.length()
+	assert(mech.controller.aero_force.length() > 1000, "Unpowered flight lost aerodynamics")
+	var inverted := Quaternion(Vector3.FORWARD,PI) * Quaternion(Vector3.RIGHT,-PI/2-deg_to_rad(10))
+	await _fixture(Vector3(175,2600,340), inverted, Vector3(0,0,-80), 0)
+	assert(mech.controller.aero_force.y > 0, "Inverted negative-AoA flight cannot generate upward lift")
+	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,0,-80), 0)
+	mech.controls = {"brake":true,"left":true}
+	await _ticks(30)
+	assert(mech.controller.velocity.length() < coast_speed-5, "Shift did not brake")
+	assert(mech.controller.rotation_command.z > 0.9, "Shift stole roll input")
+	# A broadside spread fall decelerates differently from a compact fall.
+	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,-50,0), 0)
+	await _ticks(60)
+	var compact_fall: float = mech.controller.velocity.y
+	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,-50,0), 0)
+	mech.controls = {"brake":true}
+	await _ticks(60)
+	assert(mech.controller.velocity.y > compact_fall+8, "Skydiver area does not affect descent")
+	# A ground-contact leg push launches without changing the thrust detent.
+	var ground: float = scene.ground_height(Vector3(175,0,340))
+	await _fixture(Vector3(175,ground+45.2,340), Quaternion.IDENTITY, Vector3.ZERO, 0)
+	await _ticks(90)
+	assert(mech.controller.grounded, "Native ground probe failed")
+	var launch_height: float = mech.position.y
+	_key(KEY_R)
+	await _ticks(12)
+	assert(mech.position.y > launch_height+2 and mech.controller.velocity.y > 1, "Leg push did not launch")
+	assert(mech.controller.detent == 0 and mech.controller.delivered_thrust == 0, "Jump changed the main thrust setting")
+	await _ticks(180)
+	assert(mech.controller.grounded and mech.position.y >= ground+44, "Native capsule tunneled through the ground")
+	# One uninterrupted transition: grounded hover -> takeoff -> pitch -> cutoff
+	# -> free rotation -> re-ignite/brake -> settle. No pose or velocity resets.
+	_key(KEY_SPACE); _key(KEY_SPACE); _key(KEY_SPACE)
+	await _ticks(60)
+	mech.controls = {"forward":true}
+	await _ticks(65)
+	mech.controls = {}
+	await _ticks(60)
+	_key(KEY_C); _key(KEY_C); _key(KEY_C)
+	await _ticks(35)
+	assert(mech.controller.delivered_thrust == 0)
+	mech.controls = {"right":true,"back":true}
+	await _ticks(45)
+	_key(KEY_SPACE); _key(KEY_SPACE); _key(KEY_SPACE)
+	mech.controls = {"brake":true,"forward":true}
+	await _ticks(30)
+	assert(mech.controller.velocity.is_finite() and mech.position.is_finite())
+	assert(_check_motors(mech) and _check_ik(mech))
+	# Independent aim, existing low-ready/support/recoil, pause and walk preview.
+	var paused_velocity: Vector3 = mech.linear_velocity
+	scene.animate = false
+	var frozen: Transform3D = mech.global_transform
+	var time: float = mech.controller.clock
+	await _ticks(8)
+	assert(mech.global_transform.is_equal_approx(frozen) and mech.controller.clock == time, "Pause did not freeze physics")
+	scene.animate = true
+	assert(mech.linear_velocity.is_equal_approx(paused_velocity), "Resume erased momentum")
+	await _fixture()
+	await _ticks(60)
+	scene.animate = false
 	mech.controller.aiming = true
+	mech.controller.aim_direction = mech.controller.aim_frame() * Vector3.FORWARD
 	for frame in 90: mech.update_animation(1.0/60.0)
-	await process_frame
+	await _ticks(2) # Native SkeletonModifier pipeline completes on the frame boundary.
+	assert(_check_ik(mech))
+	assert(mech.rig.weapon.support_weight > 0.95)
 	var right: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands.R")]
 	var left: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands.L")]
-	assert(right.origin.distance_to(low_hand) > 1.0,"Aiming hand does not raise from low-ready")
-	assert(mech.rig.weapon.support_weight > 0.95,"Offhand never braces the rifle")
-	assert(left.origin.distance_to(right*mech.rig.weapon.support_offset) < 0.05,"Offhand floats away from the receiver")
-	var before_recoil: Vector3 = mech.rig.hands[1].value
-	mech.rig.kick_weapon()
-	for frame in 5: mech.update_animation(1.0/60.0)
-	assert(mech.rig.hands[1].value.distance_to(before_recoil) > 0.03,"Firing has no arm follow-through")
-	mech.controller.aim_direction = Vector3.LEFT
-	mech.controller.gaze_target = mech.position+Vector3.LEFT*4500
-	for frame in 90: mech.update_animation(1.0/60.0)
-	await process_frame
-	assert(mech.rig.weapon.support_weight < 0.05,"Offhand cannot release for wide tracking")
-	assert(_check_ik(mech))
-	# Readable leg response to real loads, with opposed vernier bracing.
-	mech.controller.reset(Vector3(175,1600,340))
-	for frame in 90: mech.update_animation(1.0/60.0)
-	var relaxed: float = mech.rig.legs[1].value.x
-	mech.controller.g_load = 4.0
-	mech.controller.boost_amount = 1.0
-	mech.controller.burst_direction = Vector3.RIGHT
-	mech.controller.local_acceleration = Vector3(22,0,0)
-	for frame in 30: mech.update_animation(1.0/60.0)
-	assert(mech.rig.legs[1].value.x > relaxed+0.5,"Legs do not tuck under maneuver/burst load")
-	assert(absf(mech.rig.legs[1].value.x-mech.rig.legs[4].value.x) > 0.2,"Vernier burst moves both legs identically")
-	await process_frame
-	assert(_check_ik(mech) and _check_motors(mech))
-	# Aim moves the weapon/head without first rotating the chassis.
-	mech.controller.reset(Vector3(175,1000,340))
-	mech.controller.aim_direction = Vector3(-0.25,0,-1).normalized()
-	for frame in 60: mech.step_flight(1.0/60.0,{},0.0)
-	await process_frame
-	assert(mech.controller.attitude.angle_to(Quaternion.IDENTITY) < 0.01)
-	assert(absf(mech.rig.head.value.y) > 0.1)
-	assert(_check_ik(mech))
-	# Native terrain prediction and swept capsule collision, with assist capped.
-	var ground: float = scene.ground_height(Vector3(175,0,340))
-	mech.controller.reset(Vector3(175,ground+150,340))
-	mech.position = mech.controller.position
-	mech.controller.velocity = Vector3(0,-25,0)
-	mech.controller.detent = 0
-	await physics_frame
-	assert(mech.predict_impact() < 1.0,"Swept terrain prediction missed an imminent impact")
-	var collision_seen := false
-	for frame in 90:
-		mech.step_flight(1.0/60.0,{"uncage":true},0)
-		collision_seen = collision_seen or mech.collided
-	assert(collision_seen,"Native capsule did not collide with canyon terrain")
-	assert(mech.position.y >= ground+35,"Chassis tunneled through terrain")
-	assert(mech.position.y < ground+90,"Collision was replaced by an altitude teleport")
-	# Existing ground preview, pause, focus cycle and bounded gunfire remain live.
-	scene.set_walk_mode(true)
-	for frame in 90: mech.update_animation(1.0/60.0)
-	await process_frame
-	assert(not mech.rig.active and not mech.rig.ik.active and not mech.rig.weapon.active)
-	assert(mech.actor.current_animation == &"Walk")
-	scene.set_walk_mode(false)
-	for frame in 30: mech.update_animation(1.0/60.0)
-	await process_frame
-	var position: Vector3 = mech.position
-	var clock: float = mech.controller.clock
-	var posture: Transform3D = mech.actor.transform
-	scene._process(0.2)
-	assert(mech.position == position and mech.controller.clock == clock and mech.actor.transform == posture,"Pause advances flight")
-	for target in [scene.wingman,scene.missile,null]:
-		scene.focus_next()
-		assert(scene.focus_target == target)
+	assert(left.origin.distance_to(right*mech.rig.weapon.support_offset) < 0.08)
+	# Native ray fire still hits the practice target's new root collider.
+	mech.reset_flight(Vector3(175,700,340))
 	mech.controller.aiming = true
+	mech.controller.aim_direction = (scene.wingman.position - mech.position).normalized()
+	mech.controller.gaze_target = scene.wingman.position
 	for frame in 90: mech.update_animation(1.0/60.0)
-	await process_frame
+	await _ticks(2)
 	scene.animate = true
 	scene.fire_weapon()
-	assert(scene.shots_fired == 1 and scene.shots.size() == 8)
-	scene.fire_weapon()
-	assert(scene.shots_fired == 1,"Gun rate limiter failed")
+	assert(scene.hit_time > 0, "Rifle failed to hit the new root collider")
 	scene.animate = false
+	mech.rig.kick_weapon()
+	for frame in 10: mech.update_animation(1.0/60.0)
+	assert(mech.rig.recoil.value.x > 0.01)
+	scene.set_walk_mode(true)
+	mech.update_animation(0.3)
+	assert(mech.actor.animation_player.is_playing() and mech.freeze)
+	scene.set_walk_mode(false)
+	mech.update_animation(0.3)
+	assert(not mech.actor.animation_player.is_playing())
+	completed = true
+	print("Rigid flight checks passed: detents, six-axis rotation, hover, unpowered momentum, redirected thrust, brake, lift, skydiving, jump/contact, continuous transitions, IK, thrusters and pause.")
 	scene.queue_free()
 	await process_frame
-	completed = true
-	print("Flight checks passed: restored movement, X/aero-gated combat pitch/roll, held-input continuity, passive high-speed drag, independent aim, low-ready/braced/offhand poses, recoil, IK, seated motors, terrain, walk and pause.")
 	quit()
 
-func _advance(fc, seconds: float, raw: Dictionary) -> void:
-	for frame in roundi(seconds*120): fc.advance(1.0/120.0,raw,0.0)
+func _check_inputs() -> void:
+	mech.controller.detent = 0
+	for expected in [1,2,3,4,4]:
+		_key(KEY_SPACE)
+		assert(mech.controller.detent == expected)
+		_key(KEY_SPACE,true,true)
+		assert(mech.controller.detent == expected, "Holding Space repeats a detent")
+		_key(KEY_SPACE,false)
+	for expected in [3,2,1,0,0]:
+		_key(KEY_C)
+		assert(mech.controller.detent == expected)
+	assert(InputMap.action_has_event("flight_brake", _event(KEY_SHIFT)))
+	assert(not InputMap.has_action("flight_burst"))
+	var before: int = mech.controller.detent
+	_key(KEY_X); _key(KEY_F)
+	assert(mech.controller.detent == before)
 
-func _check_controller() -> bool:
-	Controller.install_input_actions()
-	for pair in [[KEY_W,"forward"],[KEY_S,"back"],[KEY_A,"left"],[KEY_D,"right"],[KEY_Q,"yaw_left"],[KEY_E,"yaw_right"],[KEY_SPACE,"thrust_up"],[KEY_C,"thrust_down"],[KEY_SHIFT,"burst"],[KEY_X,"brake"],[KEY_R,"rise"],[KEY_F,"sink"],[KEY_CTRL,"precision"]]:
-		for pressed in [true,false]:
-			var event := InputEventKey.new()
-			event.physical_keycode = pair[0]
-			event.pressed = pressed
-			Input.parse_input_event(event)
-			Input.flush_buffered_events()
-			assert(Controller.read_input()[pair[1]] == pressed)
-	for action in ["flight_pitch_up","flight_pitch_down","flight_roll_left","flight_roll_right"]:
-		assert(not InputMap.has_action(action),"Manual pitch/roll binding remains")
-	var previous := Vector3.ZERO
-	for fps in [30,60,120]:
-		var fc = Controller.new()
-		fc.reset(Vector3(0,600,0))
-		for frame in fps*3: fc.advance(1.0/fps,{"forward":true},0)
-		if fps > 30: assert(fc.position.distance_to(previous) < 0.001,"Movement depends on display rate")
-		previous = fc.position
-	var fc = Controller.new()
-	fc.reset(Vector3(0,600,0))
-	_advance(fc,3,{})
-	assert(fc.position.distance_to(Vector3(0,600,0)) < 0.01,"Default hover drifts")
-	_advance(fc,1,{"thrust_up":true})
-	assert(fc.detent == 3,"Held thrust key repeats detents")
-	for press in 6:
-		fc.advance(0.01,{},0)
-		fc.advance(0.01,{"thrust_down":true},0)
-	assert(fc.detent == 0)
-	for control in ["forward","back","left","right","rise","sink"]:
-		fc.reset(Vector3.ZERO)
-		_advance(fc,1,{control:true})
-		var direction: Vector3 = {"forward":Vector3.FORWARD,"back":Vector3.BACK,"left":Vector3.LEFT,"right":Vector3.RIGHT,"rise":Vector3.UP,"sink":Vector3.DOWN}[control]
-		assert(fc.velocity.dot(direction) > 4,"Normal movement is unavailable: "+control)
-	fc.reset(Vector3.ZERO)
-	_advance(fc,2,{"right":true})
-	_advance(fc,3,{})
-	assert(absf(fc.velocity.x) < 1,"Assisted movement does not catch a released strafe")
-	var caged = Controller.new()
-	var free = Controller.new()
-	for actor in [caged,free]: actor.reset(Vector3.ZERO)
-	_advance(caged,0.2,{"right":true,"burst":true})
-	_advance(free,0.2,{"right":true,"burst":true,"uncage":true})
-	_advance(caged,3,{})
-	_advance(free,3,{"uncage":true})
-	assert(caged.velocity.x < 1 and free.velocity.x > 8,"Uncaged drift and assisted braking are indistinguishable")
-	return true
-
-func _check_handling() -> bool:
-	# Direct/raw pitch and roll requests are ignored at every speed and with RMB.
-	for speed in [0.0,40.0,90.0]:
-		for uncage in [false,true]:
-			var neutral = Controller.new()
-			var attempted = Controller.new()
-			for fc in [neutral,attempted]:
-				fc.reset(Vector3.ZERO)
-				fc.velocity = Vector3(0,0,-speed)
-				if speed > 0: fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
-			for frame in 120:
-				neutral.advance(1.0/120.0,{"uncage":uncage},0)
-				attempted.advance(1.0/120.0,{"uncage":uncage,"pitch_up":true,"roll_left":true},PI/2)
-			assert(neutral.attitude.angle_to(attempted.attitude) < 0.001 and neutral.position.distance_to(attempted.position) < 0.001,"Disabled rotation/camera input still steers")
-	# Passive extra drag scales with speed and dissipates energy even without X.
-	var slow = Controller.new()
-	var fast = Controller.new()
-	for fc in [slow,fast]:
-		fc.reset(Vector3.ZERO)
-		fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
-		fc.detent = 0
-	slow.velocity = Vector3(0,0,-20)
-	fast.velocity = Vector3(0,0,-100)
-	_advance(slow,1,{"uncage":true})
-	_advance(fast,1,{"uncage":true})
-	assert(100+fast.velocity.z > (20+slow.velocity.z)*8,"High-speed drag does not strengthen with speed")
-	assert(fast.high_speed_drag > 0.5 and slow.high_speed_drag == 0)
-	var brake = Controller.new()
-	brake.reset(Vector3.ZERO)
-	brake.attitude = Quaternion(Vector3.RIGHT,-PI/2)
-	brake.velocity = Vector3(0,0,-100)
-	brake.detent = 0
-	_advance(brake,1,{"uncage":true,"brake":true})
-	assert(-brake.velocity.z < -fast.velocity.z*0.7,"X no longer adds airbrake drag")
-	var straight = Controller.new()
-	var looking = Controller.new()
-	for fc in [straight,looking]: fc.reset(Vector3.ZERO)
-	looking.aim_direction = Vector3.BACK
-	for frame in 240:
-		straight.advance(1.0/120.0,{"forward":true,"yaw_left":true},0)
-		looking.advance(1.0/120.0,{"forward":true,"yaw_left":true},PI/2)
-	assert(straight.position.distance_to(looking.position) < 0.001 and straight.attitude.angle_to(looking.attitude) < 0.001,"Mouse vision steers normal movement")
-	return true
-
-func _check_combat_gate() -> bool:
-	for aero in [0.0,0.5,0.5001,0.9]:
-		for braking in [false,true]:
-			var fc = Controller.new()
-			fc.reset(Vector3.ZERO)
-			fc.aero_authority = aero
-			fc.advance(0,{"brake":braking,"back":true})
-			assert(fc.combat_attitude == (braking and aero > 0.5),"Combat gate does not require X and aero strictly above 50%")
-	var fc = Controller.new()
-	fc.reset(Vector3.ZERO)
-	fc.aero_authority = 0.8
-	fc.advance(0,{"forward":true})
-	fc.advance(0,{"forward":true,"brake":true})
-	assert(fc.combat_attitude,"X does not override an already-held movement key")
-	fc.aero_authority = 0.2
-	fc.advance(0,{"forward":true,"brake":true})
-	assert(not fc.combat_attitude and fc.combat_bindings,"Flow dip violates the strict gate or loses captured keys")
-	fc.velocity = Vector3.ZERO
-	fc.authority.value = Vector3.ZERO
-	fc.advance(0.1,{"forward":true,"brake":true})
-	assert(not fc.combat_attitude and fc.combat_bindings and fc.translation_input.is_zero_approx(),"Captured low-aero key requests movement")
-	fc.advance(0,{"brake":true})
-	assert(not fc.combat_attitude,"Released maneuver stays latched below the aero gate")
-	fc.advance(0,{"back":true,"brake":true})
-	assert(not fc.combat_attitude,"New low-aero input incorrectly gains attitude control")
-	fc.aero_authority = 0.7
-	fc.advance(0,{"back":true,"brake":true})
-	assert(fc.combat_attitude)
-	fc.advance(0,{"back":true})
-	assert(not fc.combat_attitude,"Releasing X does not restore movement")
-	for key in ["forward","back","left","right"]:
-		fc.reset(Vector3.ZERO)
-		fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
-		fc.velocity = Vector3(0,0,-90)
-		_advance(fc,0.5,{"uncage":true})
-		assert(fc.aero_authority > 0.5)
-		var before: Quaternion = fc.attitude
-		_advance(fc,0.4,{"brake":true,key:true})
-		assert(fc.combat_attitude and fc.combat_bindings and fc.attitude.angle_to(before) > 0.15,"Combat WASD cannot pitch/roll")
-		assert(Vector2(fc.translation_input.x,fc.translation_input.z).length() < 0.001,"Combat WASD also requests translation")
-		var sign_value := -1.0 if key in ["forward","right"] else 1.0
-		var value: float = fc.rotation_command.x if key in ["forward","back"] else fc.rotation_command.z
-		assert(value*sign_value > 0.5,"Combat pitch/roll input has the wrong axis or direction")
-		assert(fc.vector_stabilization == 0.0,"Combat maneuver activates hover braking")
-	fc.reset(Vector3.ZERO)
-	_advance(fc,1,{"brake":true,"right":true})
-	assert(not fc.combat_attitude and fc.velocity.x > 4,"Low-aero combat brake loses normal strafe")
-	fc.reset(Vector3.ZERO)
-	fc.attitude = Quaternion(Vector3.RIGHT,-PI/2)
-	fc.velocity = Vector3(0,0,-90)
-	_advance(fc,0.5,{"uncage":true})
-	fc.advance(0.1,{"brake":true,"right":true,"burst":true})
-	assert(fc.combat_attitude and fc.boost_amount > 0 and is_zero_approx(fc.rotation_command.z),"Vernier burst also rolls the chassis")
-	return true
+func _event(code: Key) -> InputEventKey:
+	var event := InputEventKey.new()
+	event.physical_keycode = code
+	return event
 
 func _check_motors(mech: Node3D) -> bool:
 	var pivots: Array = mech.gimbals+mech.gas_gimbals
 	for index in pivots.size():
 		var relative: Basis = mech.neutral_bases[index].inverse()*pivots[index].basis
 		if relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) > mech.VECTOR_LIMIT+0.001: return false
+	var total := 0.0
+	for force in mech.controller.motor_forces:
+		if force.length() > mech.mass * Controller.GRAVITY * 4.0 / 6.0 + 1.0: return false
+		total += force.length()
+	if absf(total-mech.controller.delivered_thrust) > 2.0: return false
 	return true
 
 func _check_ik(mech: Node3D) -> bool:

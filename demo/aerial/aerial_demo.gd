@@ -17,7 +17,10 @@ var missile: Node3D
 var palette_materials: Array[ShaderMaterial] = []
 var sky_material: ShaderMaterial
 var cloud_material: ShaderMaterial
-var animate := true
+var animate := true:
+	set(value):
+		animate = value
+		if is_instance_valid(hero): hero.simulation_enabled = value
 var elapsed := 0.0
 var storm := false
 var daylight_palette := false
@@ -125,14 +128,15 @@ func _ready() -> void:
 	afterburner_material.set_shader_parameter("flow_noise",texture)
 	hero = AerialMech.new()
 	hero.name = "HeroMech"
-	hero.scale = Vector3.ONE*50.0
+	hero.display_scale = 50.0
+	hero.player_controlled = true
 	add_child(hero)
 	hero.build(body,afterburner_material)
 	palette_materials.append_array(hero.palette_materials)
 	hero.position = Vector3(175,600,340)
 	wingman = AerialMech.new()
 	wingman.name = "WingmanMech"
-	wingman.scale = Vector3.ONE*35.0
+	wingman.display_scale = 35.0
 	add_child(wingman)
 	wingman.build(body,afterburner_material)
 	palette_materials.append_array(wingman.palette_materials)
@@ -157,9 +161,10 @@ func _ready() -> void:
 	_make_hud()
 	set_palette(false)
 	for mech in [hero,wingman]:
-		mech.controller.reset(mech.position,mech.rotation.y)
+		mech.controller.reset()
 		mech.update_animation(0.0)
-	wingman.actor.collision_layer = 4
+	wingman.collision_layer = 4
+	wingman.simulation_enabled = false
 	_make_weapon_preview()
 	_make_ground()
 	reset_camera()
@@ -276,7 +281,7 @@ func _vfx_material(colors: PackedColorArray, emission := 0.0) -> ShaderMaterial:
 	return material
 
 func _flight_throttle(mech: Node3D) -> float:
-	return clampf(mech.controller.DETENTS[mech.controller.detent]/4.0+mech.controller.recovery_request*0.35,0.0,1.0)
+	return clampf(mech.controller.engine_level / 4.0, 0.0, 1.0) if mech.simulation_enabled else 0.0
 
 func _make_ground() -> void:
 	walk_ground = StaticBody3D.new()
@@ -293,25 +298,25 @@ func ground_height(point: Vector3) -> float:
 	return float(hit.position.y) if not hit.is_empty() else 0.0
 
 func _update_walk_pose() -> void:
-	var angle: float = walking_time*hero.walk_speed*hero.scale.x/100.0
+	var angle: float = walking_time*hero.walk_speed*hero.display_scale/100.0
 	hero.position = Vector3(650.0+sin(angle)*100.0,0,120.0+cos(angle)*100.0)
-	hero.position.y = ground_height(hero.position)+0.9*hero.scale.y+0.1
+	hero.position.y = ground_height(hero.position)+0.9*hero.display_scale+0.1
 	hero.rotation = Vector3(0,-PI/2.0+angle,0)
 
 func set_walk_mode(enabled: bool) -> void:
 	hero.flying = not enabled
 	if enabled: _update_walk_pose()
-	hero.controller.reset(hero.position,hero.rotation.y)
+	hero.controller.reset()
 	hero.update_animation(0.0)
 	_update_afterburners()
 	reset_camera()
 	trails[0].visible = not enabled and hero.controller.velocity.length() > 1.5
 
 func reset_camera() -> void:
-	camera_yaw = hero.controller.heading_yaw
+	camera_yaw = atan2(-hero.global_basis.z.x, -hero.global_basis.z.z) + PI
 	camera_pitch = 0.08
 	camera_distance = 3.8
-	camera_target.value = hero.position+Vector3.UP*hero.scale.y*0.35
+	camera_target.value = hero.position+Vector3.UP*hero.display_scale*0.35
 	camera_target.velocity = Vector3.ZERO
 	camera_lag.value = Vector3.ZERO
 	camera_lag.velocity = Vector3.ZERO
@@ -319,15 +324,15 @@ func reset_camera() -> void:
 
 func _update_camera(delta: float) -> void:
 	if not follow_camera: return
-	var center: Vector3 = hero.position+Vector3.UP*hero.scale.y*0.35
-	var lag: Vector3 = (-hero.controller.acceleration*0.016*hero.scale.y).limit_length(0.45*hero.scale.y)
+	var center: Vector3 = hero.position+Vector3.UP*hero.display_scale*0.35
+	var lag: Vector3 = (-hero.controller.acceleration*0.016*hero.display_scale).limit_length(0.45*hero.display_scale)
 	var target: Vector3 = camera_target.step(center,delta,0.14)+camera_lag.step(lag,delta,0.35)
 	if is_instance_valid(focus_target):
 		var focus_direction := (focus_target.global_position-center).normalized()
 		camera_yaw = atan2(-focus_direction.x,-focus_direction.z)
 		camera_pitch = -asin(clampf(focus_direction.y,-1,1))
-	var offset := Vector3(sin(camera_yaw)*cos(camera_pitch),sin(camera_pitch),cos(camera_yaw)*cos(camera_pitch))*camera_distance*hero.scale.x
-	camera.position = target+offset+Basis(Vector3.UP,camera_yaw).x*hero.scale.x*0.4
+	var offset: Vector3 = Vector3(sin(camera_yaw)*cos(camera_pitch),sin(camera_pitch),cos(camera_yaw)*cos(camera_pitch))*camera_distance*hero.display_scale
+	camera.position = target+offset+Basis(Vector3.UP,camera_yaw).x*hero.display_scale*0.4
 	camera.look_at(focus_target.global_position if is_instance_valid(focus_target) else hero.position+aim_direction()*4500.0)
 
 func missile_position(time: float) -> Vector3:
@@ -398,12 +403,11 @@ func _process(delta: float) -> void:
 			hero.controller.aiming = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or is_instance_valid(focus_target) or Input.is_action_pressed("flight_brake")
 			hero.controller.aim_direction = aim_direction()
 			hero.controller.aim_point = focus_target.global_position if is_instance_valid(focus_target) else hero.position+hero.controller.aim_direction*4500.0
-			hero.step_flight(delta,FlightController.read_input(),camera_yaw)
+			hero.update_force_debug()
 		else:
 			walking_time += delta
 			_update_walk_pose()
 			hero.update_animation(delta)
-		wingman.step_flight(delta,{},0.0)
 		_update_weapon(delta)
 		_update_afterburners(delta)
 		_update_camera(delta)
@@ -442,12 +446,11 @@ func _update_flight_stats() -> void:
 	var fc = hero.controller
 	var warning := ""
 	if fc.aim_direction.dot(fc.weapon_aim) < cos(deg_to_rad(10)): warning += " · OUTSIDE FIRING ARC"
-	if fc.time_to_impact < 2.4: warning = " · TERRAIN %.1fs%s"%[fc.time_to_impact," — RECOVERY CAPPED" if fc.uncaged else " — PULL UP"]
-	flight_stats.text = "%s · THRUST %.1f× · %.0f m/s · AERO %.0f%% · %.1f G%s\nW/S: %s · A/D: %s · Focus: %s"%[
-		"COMBAT ATTITUDE" if fc.combat_attitude else ("COMBAT HOLD" if fc.combat_bindings else ("UNCAGED" if fc.uncaged else "ASSIST")),fc.DETENTS[fc.detent],fc.velocity.length(),fc.aero_authority*100,fc.g_load,warning,
-		"PITCH" if fc.combat_attitude else ("RELEASE KEY" if fc.combat_bindings else "FORWARD / BACK"),
-		"ROLL" if fc.combat_attitude else ("RELEASE KEY" if fc.combat_bindings else "STRAFE"),
-		str(focus_target.name) if is_instance_valid(focus_target) else "free aim"]
+	if fc.time_to_impact < 2.4: warning = " · TERRAIN %.1fs%s"%[fc.time_to_impact," — PULL UP"]
+	flight_stats.text = "THRUST %.1f× · ENGINE %.2f× · %.0f m/s · HOVER %.0f%% · AERO %.0f%% · %.1f G%s\nREQUEST %.0f kN · DELIVERED %.0f kN · RCS %.0f%%%s%s" % [
+		fc.DETENTS[fc.detent], fc.engine_level, fc.velocity.length(), fc.hover_assist * 100, fc.aero_authority * 100, fc.g_load, warning,
+		fc.requested_thrust / 1000, fc.delivered_thrust / 1000, fc.torque_fraction * 100,
+		" · TORQUE LIMIT" if fc.torque_saturated else "", " · GIMBAL LIMIT" if fc.motor_saturated else ""]
 	flight_stats.modulate = Color(1,0.4,0.25) if fc.time_to_impact < 2.4 else Color.WHITE
 	reticle.text = "×" if hit_time > 0.0 else "+"
 	reticle.modulate = Color(1,0.5,0.2) if hit_time > 0.0 else Color(0.8,0.95,1)
@@ -486,7 +489,7 @@ func fire_weapon() -> void:
 	var hit := get_world_3d().direct_space_state.intersect_ray(ray)
 	if not hit.is_empty():
 		finish = hit.position
-		if hit.collider == wingman.actor: hit_time = 0.12
+		if hit.collider == wingman: hit_time = 0.12
 	var shot: Dictionary = shots[shot_cursor]
 	shot_cursor = (shot_cursor+1)%shots.size()
 	shot.life = 0.07
@@ -499,6 +502,7 @@ func fire_weapon() -> void:
 	hero.rig.kick_weapon()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if animate and hero.flying: hero.controller.handle_input(event)
 	if event is InputEventMouseButton:
 		if event.pressed and event.button_index in [MOUSE_BUTTON_LEFT,MOUSE_BUTTON_RIGHT]: Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		if event.pressed and event.button_index == MOUSE_BUTTON_MIDDLE: focus_next()
@@ -518,6 +522,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_G: set_walk_mode(hero.flying)
 			KEY_P: animate = not animate
 			KEY_F8: trigger_explosion()
+			KEY_F9: hero.debug_forces = not hero.debug_forces; hero.update_force_debug()
 			KEY_HOME: reset_camera()
 			KEY_TAB: focus_next()
 			KEY_ESCAPE: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
@@ -556,7 +561,7 @@ func _make_hud() -> void:
 	panel.offset_right = -20
 	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "GUNDAM · CONTINUOUS FLIGHT\nW/S: forward / back · A/D: strafe · Q/E: yaw\nR/F: vertical thrust · Ctrl: precision · High-speed drag: automatic\nSpace / C: thrust detent · RMB: uncage · Shift+WASD: burst\nX: combat brake · X + aero >50%: WASD pitch / roll\nMouse: aim · LMB: fire · MMB / Tab: focus · Esc: release · Wheel: zoom\nHome: camera reset · P: pause · G: walk · 1/2: palette · 3/4: weather · F8: explosion"
+	label.text = "GUNDAM · PHYSICS FLIGHT\nW/S: pitch · A/D: bank / roll · Q/E: yaw · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: ground jump\nShift: brake / spread · Mouse: aim · RMB: brace · LMB: fire\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
 	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
 	label.add_theme_font_size_override("font_size",15)
 	panel.add_child(label)

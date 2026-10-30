@@ -1,6 +1,6 @@
-extends Node3D
+extends RigidBody3D
 
-# DCS / Elite Dangerous / AC VI behavior references; continuous body-lift flight.
+# DCS / Elite Dangerous behavior references; continuous body-lift flight.
 # Reuse the roster actor's cloned animation library, root cleanup and matte color conversion.
 const Actor = preload("res://actors/mechs/mech_asset.tscn")
 const Geometry = preload("res://aerial/geometry.gd")
@@ -17,10 +17,32 @@ var gas_jets: Array[MeshInstance3D] = []
 var gas_sockets: Array[BoneAttachment3D] = []
 var gas_gimbals: Array[Node3D] = []
 var bone_poses := {}
-var controller = FlightController.new()
+var controller: FlightController = FlightController.new()
 var motor_springs: Array = []
 var neutral_bases: Array[Basis] = []
-var motor_delta := 0.0
+var display_scale := 50.0
+var controls := {}
+var player_controlled := false
+var paused_linear_velocity := Vector3.ZERO
+var paused_angular_velocity := Vector3.ZERO
+var simulation_enabled := true:
+	set(value):
+		if value == simulation_enabled: return
+		simulation_enabled = value
+		if not value:
+			paused_linear_velocity = linear_velocity
+			paused_angular_velocity = angular_velocity
+			freeze = true
+			# Commit the displayed pose, including when a physics sync is pending.
+			PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, global_transform)
+		else:
+			freeze = not flying
+			linear_velocity = paused_linear_velocity
+			angular_velocity = paused_angular_velocity
+var debug_forces := false
+var force_lines: MeshInstance3D
+var hull: CollisionShape3D
+var leg_reachable := false
 var prediction_clock := 0.0
 var collided := false
 var exhaust_throttle := 0.35
@@ -43,16 +65,41 @@ const COLD_MOUNTS := [
  ["ThighR",&"Thigh.R",Vector3(0.47860,2.339,-0.187),Vector3(1,0,0)],
 ]
 var palette_materials: Array[ShaderMaterial] = []
-var flying := true
+var flying := true:
+	set(value):
+		flying = value
+		freeze = not simulation_enabled or not value
 var walk_speed := 0.0
 
 func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	actor = Actor.instantiate()
 	add_child(actor)
-	actor.position.y = -0.9
+	actor.scale = Vector3.ONE * display_scale
+	actor.position.y = -0.9 * display_scale
+	actor.collision_mask = 0
+	actor.get_node("CollisionShape3D").disabled = true
+	mass = 10000.0
+	gravity_scale = FlightController.GRAVITY * FlightController.WORLD_UNITS_PER_METER / float(ProjectSettings.get_setting("physics/3d/default_gravity", 9.8))
+	linear_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
+	angular_damp_mode = RigidBody3D.DAMP_MODE_REPLACE
+	linear_damp = 0.0
+	angular_damp = 0.0
+	continuous_cd = true
+	contact_monitor = true
+	max_contacts_reported = 8
+	can_sleep = false
+	collision_layer = 8
+	collision_mask = 6
+	hull = CollisionShape3D.new()
+	var capsule := CapsuleShape3D.new()
+	capsule.radius = 0.4 * display_scale
+	capsule.height = 1.8 * display_scale
+	hull.shape = capsule
+	add_child(hull)
+	controller.configure(self, display_scale)
 	actor.set_physics_process(false)
 	actor.collision_layer = 0
-	actor.collision_mask = 2
+	actor.collision_mask = 0
 	actor.get_node("CameraPivot").process_mode = Node.PROCESS_MODE_DISABLED
 	actor.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	actor.animation_player.speed_scale = actor.NON_JUMP_ANIMATION_RATE_SCALE
@@ -140,48 +187,77 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 			sockets.append(socket)
 			gimbals.append(gimbal)
 			flames.append(flame)
-	controller.model_scale = global_basis.get_scale().x
-	controller.reset(global_position,rotation.y)
+	controller.reset()
 	update_animation(0.0)
 
-func step_flight(delta: float, controls: Dictionary, camera_yaw: float) -> void:
-	prediction_clock -= delta
-	if prediction_clock <= 0.0:
+# Physics consumes one previous-tick pose for hardpoints. The new pose is then
+# advanced on this same fixed clock; rendering never runs the motor simulation.
+func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
+	if freeze or not simulation_enabled or not flying or sockets.is_empty(): return
+	if absf(state.inverse_inertia_tensor.determinant()) < 1e-30: return
+	var contact := _ground_probe(state)
+	var outlets := []
+	for index in 6:
+		var bone := skeleton.find_bone(sockets[index].bone_name)
+		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
+		outlets.append({"position":transform * MOUNTS[index][2] - global_position,
+			"basis":(transform.basis * neutral_bases[index]).orthonormalized()})
+	controller.step(state, FlightController.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable)
+	collided = state.get_contact_count() > 0
+	prediction_clock -= state.step
+	if prediction_clock <= 0:
 		controller.time_to_impact = predict_impact()
 		prediction_clock = 0.1
-	var origin := global_position
-	controller.advance(delta,controls,camera_yaw)
-	quaternion = controller.attitude
-	# Sweep the existing native capsule through the complete requested motion.
-	# ponytail: chassis capsule only; add limb shapes when limb impacts matter.
-	var parameters := PhysicsTestMotionParameters3D.new()
-	parameters.from = actor.global_transform
-	parameters.motion = controller.position-origin
-	parameters.margin = 0.2
-	var result := PhysicsTestMotionResult3D.new()
-	collided = PhysicsServer3D.body_test_motion(actor.get_rid(),parameters,result)
-	if collided:
-		controller.position = origin+result.get_travel()
-		var normal := result.get_collision_normal()
-		if controller.velocity.dot(normal) < 0.0: controller.velocity = controller.velocity.slide(normal)
-	global_position = controller.position
-	update_animation(delta)
+	_update_cold_gimbals(state.step)
+	update_animation(state.step)
+
+func _update_cold_gimbals(dt: float) -> void:
+	for index in 4:
+		var bone := skeleton.find_bone(gas_sockets[index].bone_name)
+		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
+		var neutral := (transform.basis * neutral_bases[index + 6]).orthonormalized()
+		var lever: Vector3 = transform * COLD_MOUNTS[index][2] - global_position
+		var force: Vector3 = controller.rcs_torque.cross(lever).normalized()
+		var desired: Vector3 = neutral.inverse() * -force
+		var angle := minf(acos(clampf(desired.z, -1, 1)), VECTOR_LIMIT) if not force.is_zero_approx() else 0.0
+		var axis := Vector3.BACK.cross(desired).normalized()
+		if axis.is_zero_approx(): axis = Vector3.RIGHT
+		motor_springs[index + 6].step(axis * angle, dt, 0.16)
+		motor_springs[index + 6].value = motor_springs[index + 6].value.limit_length(VECTOR_LIMIT)
+
+func _ground_probe(state: PhysicsDirectBodyState3D) -> Dictionary:
+	var reach := 0.9 * display_scale
+	var ray := PhysicsRayQueryParameters3D.create(global_position, global_position + Vector3.DOWN * (reach + 8.0), 2)
+	ray.exclude = [get_rid()]
+	var hit := state.get_space_state().intersect_ray(ray)
+	var suitable: bool = not hit.is_empty() and hit.normal.dot(Vector3.UP) > 0.65 and global_basis.y.dot(Vector3.UP) > 0.65
+	var distance: float = global_position.distance_to(hit.position) if suitable else INF
+	leg_reachable = suitable and distance <= reach + 8.0
+	return {"grounded":suitable and distance <= reach + 0.6, "reachable":leg_reachable}
+
+# Explicit fixture/preview reset only. Ordinary flight never writes these states.
+func reset_flight(origin: Vector3, orientation := Quaternion.IDENTITY, speed := Vector3.ZERO) -> void:
+	global_transform = Transform3D(Basis(orientation), origin)
+	linear_velocity = speed * FlightController.WORLD_UNITS_PER_METER
+	angular_velocity = Vector3.ZERO
+	controller.reset()
+	update_animation(0.0)
 
 func predict_impact() -> float:
 	if controller.velocity.length() < 0.5: return INF
-	var parameters := PhysicsTestMotionParameters3D.new()
-	parameters.from = actor.global_transform
-	parameters.margin = 0.5
-	var result := PhysicsTestMotionResult3D.new()
-	# Three native swept segments cover the curved, three-second flight path.
+	var query := PhysicsShapeQueryParameters3D.new()
+	query.shape = hull.shape
+	query.transform = global_transform
+	query.collision_mask = 2
+	query.exclude = [get_rid()]
 	var previous_point := Vector3.ZERO
 	for segment in 3:
-		var time := float(segment+1)
-		var point: Vector3 = (controller.velocity*time+controller.acceleration*time*time*0.5)*controller.distance_scale
-		parameters.motion = point-previous_point
-		if PhysicsServer3D.body_test_motion(actor.get_rid(),parameters,result):
-			return float(segment)+result.get_collision_safe_fraction()
-		parameters.from.origin += parameters.motion
+		var time := float(segment + 1)
+		var point: Vector3 = (controller.velocity * time + controller.acceleration * time * time * 0.5) * FlightController.WORLD_UNITS_PER_METER
+		query.motion = point - previous_point
+		var fractions := get_world_3d().direct_space_state.cast_motion(query)
+		if fractions[0] < 1.0: return float(segment) + fractions[0]
+		query.transform.origin += query.motion
 		previous_point = point
 	return INF
 
@@ -202,36 +278,40 @@ func update_animation(delta: float) -> void:
 	rig.ik.influence = mix
 	rig.weapon.influence = mix
 	actor.rotation = rig.root_angles*mix
-	actor.position = -(actor.basis*Vector3(0,0.9,0))+rig.com.value*mix
-	motor_delta += delta
+	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value*mix) * display_scale
 	skeleton.advance(delta)
 
 func _on_pose_modified() -> void:
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
-	var all_sockets := sockets+gas_sockets
-	for index in all_sockets.size():
-		var bone := skeleton.find_bone(all_sockets[index].bone_name)
-		var neutral_world: Basis = (skeleton.global_basis*bone_poses[bone].basis*neutral_bases[index]).orthonormalized()
-		var yaw_demand := clampf(controller.yaw_rate*0.45+controller.yaw_acceleration*0.08,-0.5,0.5)
-		var desired: Vector3 = -rig.force.normalized()
-		if index < flames.size():
-			var anchor: Vector3 = skeleton.global_transform*bone_poses[bone]*MOUNTS[index][2]
-			var lever := (anchor-global_position)/maxf(global_basis.get_scale().x,0.001)
-			# Tangential exhaust offsets form a yaw couple around the suit center.
-			desired = (desired+lever.cross(Vector3.UP)*yaw_demand).normalized()
-		if index >= flames.size():
-			var sx := 1.0 if (index-flames.size())%2 == 0 else -1.0
-			desired = global_basis.orthonormalized()*Vector3(-sx,clampf(-controller.local_acceleration.y*0.015,-0.3,0.3),clampf(-controller.local_acceleration.z*0.02-sx*yaw_demand*0.6,-0.45,0.45)).normalized()
-		var local_direction: Vector3 = neutral_world.inverse()*desired
-		var angle := minf(acos(clampf(local_direction.z,-1,1)),VECTOR_LIMIT)
-		var axis := Vector3.BACK.cross(local_direction).normalized()
-		if axis.is_zero_approx(): axis = Vector3.RIGHT
-		# The motor state is relative to the physical inlay. Never cancel bone
-		# rotation or force a world-down orientation outside its local cone.
-		motor_springs[index].step(axis*angle,motor_delta,0.16)
-		motor_springs[index].value = motor_springs[index].value.limit_length(VECTOR_LIMIT)
-	motor_delta = 0.0
+	for index in 6: motor_springs[index].value = controller.motor_angles[index]
 	_refresh_exhaust()
+
+func update_force_debug() -> void:
+	if not is_instance_valid(force_lines):
+		if not debug_forces: return
+		force_lines = MeshInstance3D.new()
+		force_lines.top_level = true
+		force_lines.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.vertex_color_use_as_albedo = true
+		force_lines.material_override = material
+		add_child(force_lines)
+	force_lines.visible = debug_forces
+	if not debug_forces: return
+	force_lines.global_position = global_position
+	var lines := ImmediateMesh.new()
+	lines.surface_begin(Mesh.PRIMITIVE_LINES)
+	var vectors := [controller.main_force / mass, controller.aero_force / mass, controller.rcs_torque / (mass * 2.0), Vector3.DOWN * FlightController.GRAVITY]
+	var colors := [Color.ORANGE, Color.CYAN, Color.MAGENTA, Color.WHITE]
+	for index in vectors.size():
+		var tip: Vector3 = vectors[index].limit_length(50.0) * 3.0
+		if tip.length() < 0.01: tip = Vector3.UP * 0.01
+		lines.surface_set_color(colors[index])
+		lines.surface_add_vertex(Vector3.ZERO)
+		lines.surface_add_vertex(tip)
+	lines.surface_end()
+	force_lines.mesh = lines
 
 func update_exhaust(throttle: float, phase: float) -> void:
 	exhaust_throttle = throttle
@@ -247,18 +327,15 @@ func _refresh_exhaust() -> void:
 	for index in flames.size():
 		var flame := flames[index]
 		flame.visible = flying and exhaust_throttle > 0.001
-		var load := clampf(rig.shares[index]*6.0*sqrt(rig.force.length()/9.81),0.6,1.5)
+		var load: float = controller.engine_shares[index] * 6.0
 		flame.set_instance_shader_parameter("thrust_load",load)
 		flame.set_instance_shader_parameter("engine_throttle",exhaust_throttle)
 		var beat := (exhaust_phase+float(flame.get_instance_shader_parameter("phase_offset")))*TAU
 		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,exhaust_throttle)*load*(1.0+sin(beat*4.0)*0.12))
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
-		var sx := 1.0 if index%2 == 0 else -1.0
-		var lever := 1.0 if index < 2 else -1.0
-		# Opposed shoulder/thigh pulses produce a control couple, freeing the hands.
-		var local_burst: Vector3 = global_basis.orthonormalized().inverse()*controller.burst_direction
-		var demand := clampf(maxf(0.0,-sx*lever*rig.turn.value.x)*0.8+absf(controller.local_acceleration.z)*0.015+controller.angular_velocity.length()*0.25+maxf(0.0,sx*local_burst.x)*controller.boost_amount,0.0,1.0)
+		# The bounded RCS torque is the actuator; outlets present its demand.
+		var demand := clampf(controller.torque_fraction, 0.0, 1.0)
 		var pulse := fposmod(rig.clock*6.0+index*0.27,1.0)
 		gas_jets[index].visible = flying and demand > 0.02 and pulse < demand
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)

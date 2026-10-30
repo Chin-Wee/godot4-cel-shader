@@ -12,36 +12,28 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **W/S:** forward/back movement. **A/D:** strafe left/right normally.
-- **Q/E:** yaw; response softens at flight speed. Arrow-key attitude bindings
-  remain disabled. Body streamlining remains automatic outside combat attitude.
-- **R/F:** vertical thrust up/down. **Ctrl held:** precision movement/yaw.
-- **Space / C:** increase/decrease thrust through 0, 0.5, 1, 2 and 4 × hover.
-  Each press changes one detent; holding the key does not repeat.
-- **RMB held:** uncage momentum and raise the weapon to combat-ready.
-  Angular damping stays active; WASD still translates outside the X/aero gate.
-- **Shift + WASD:** 0.2-second vernier burst, with a 0.5-second recharge.
-  Assisted flight catches the slide; uncaged flight keeps the momentum.
-- **X held:** combat brake. With aerodynamic authority **strictly above 50%**,
-  **W/S pitches down/up and A/D rolls left/right**. The HUD shows those bindings.
-  A flow dip disables attitude input immediately. Held keys stay captured and
-  neutral until release, so they cannot suddenly request translation. Releasing
-  all directional keys below the threshold restores movement. Releasing X restores
-  movement immediately. Shift+WASD remains a burst without also pitching/rolling.
-  Outside that gate, WASD keeps normal movement. X still spreads the limbs and
-  adds strong airbrake drag. Passive drag also
-  increases above 35 m/s and reaches full strength at 100 m/s without pressing X.
-- **Click:** capture mouse. **Mouse:** aim/look only; it never steers the chassis.
-- **LMB:** raise, brace and fire the rifle. **MMB / Tab:** focus target/free aim.
+- **W/S:** pitch forward/down and backward/up. **A/D:** bank/roll. **Q/E:** yaw.
+  Rotation remains available at every speed and main-thrust level.
+- **Space / C:** step through **0, 0.5, 1, 2, 4 × hover**. Each press changes one
+  detent; key repeat is ignored. Engines ramp toward the request.
+- **Shift held:** aerodynamic brake and spread posture; rotation remains available.
+- **R:** finite ground-contact leg jump, without changing the thrust detent.
+- **Ctrl held:** precision rotation. **Mouse:** aim/look only. **RMB:** brace.
+  **LMB:** fire. **MMB / Tab:** focus target/free aim. Click captures the mouse.
 - **Wheel:** zoom. **Home:** reset camera. **Esc:** release mouse. **P:** pause.
-- **G:** ground-walk preview. **1 / 2:** palette. **3 / 4:** weather. **F8:** explosion.
+- **F9:** diagnostics: orange propulsion, cyan aerodynamics, magenta RCS torque,
+  white gravity. Vectors use separate display scales, not common units.
+- **G:** isolated walk preview. **1 / 2:** palette. **3 / 4:** weather.
+  **F8:** explosion.
 
-Flight starts in stabilized 1× hover. WASD directly requests movement at low
-speed, including braking when released. As speed builds, the suit streamlines
-itself automatically. X plus the aero gate is the explicit attitude override.
-Higher-speed drag
-remains a physical force, so thrust can balance it rather than abruptly clamping
-speed. The camera, head and weapon remain independent of movement.
+Flight starts at nominal 1× hover. Low-speed, near-upright powered flight receives
+bounded upright/drift correction and 1× tilt compensation. Hold W and select 2×
+to pitch into forward flight. Thrust, lift, drag and gravity produce the path;
+there is no cruise mode or velocity replacement. C down to zero removes main
+propulsion after spool-down while cold-gas torque still controls attitude.
+Aerodynamics and gravity remain active. Shift presents more area to the airflow,
+including during an unpowered fall. The HUD reports selected/actual power,
+requested/delivered thrust, hover assistance, airflow and actuator saturation.
 
 The rifle rests low while moving normally. RMB, LMB, combat braking or target focus raises it
 into braced aim. The offhand cradles the measured receiver underside for central
@@ -64,43 +56,60 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   color conversion; aerial materials add the same distance haze, sky fill and Sun
   palette as the environment. Armor remains matte and desaturated, with visible
   muted green accents. No orange aircraft livery is applied to the model.
-- Flight tracks attitude (native Quaternion), world velocity and aim separately.
-  Behavioral production references are the
+- The native `RigidBody3D` owns position, attitude, linear/angular velocity,
+  gravity and collision response. The nested roster CharacterBody's collider and
+  physics are disabled. One unscaled body carries the scaled capsule and visual
+  model. Godot's fixed physics clock advances control and motors; rendering cannot
+  advance movement or gimbals. Native continuous collision detection handles fast
+  contact. Terrain prediction warns without adding force. Behavioral references:
   [DCS Su-27](https://www.digitalcombatsimulator.com/upload/iblock/ed7/Su-27%20DCS%20Flaming%20Cliffs%20Flight%20Manual%20EN.pdf)
-  aerodynamic envelope, [Elite Dangerous flight assist](https://d1wv0x2frmpnh.cloudfront.net/elite/website/assets/English-PlayersGuide_v2.00-Horizons.pdf)
-  for independent attitude/momentum, and [Armored Core VI quick boost](https://www.fromsoftware.jp/manual/armoredcore6/win/action.html).
-  These are behavior references, not claims about unpublished game internals.
-  The existing controller integrates thrust, lift, drag and gravity at up to 120 Hz.
-  Aerodynamic authority multiplies speed, attached-flow quality and useful lift
-  orientation. Lift falls away with AoA/sideslip; X increases real quadratic drag.
-  Low-speed FBW applies bounded target-velocity corrections and 1× vertical
-  support, following the existing vector-controller pattern. The X/aero gate
-  overrides WASD with DCS-style body-axis pitch/roll. Entry requires aero >0.5;
-  an overlapping held direction captures its binding through reduced airflow.
-  Below the threshold, rotation input is disabled and those keys remain neutral
-  until release; the existing attitude stays damped instead of auto-leveling.
-  Automatic attitude alignment and hover velocity correction stop during that
-  maneuver, while angular damping, physical X drag and ground recovery remain.
-  No velocity replacement occurs on entry/exit. Pilot yaw is tracked independently of
-  the automatic body-pitch target; no view or aim vector enters movement.
-  Assisted flight pitches the body toward a prone stance as forward speed builds.
-  Uncage removes path/velocity corrections while retaining yaw and angular damping.
-  Additional quadratic drag ramps over 35–100 m/s and remains separate from X.
-  Motion is integrated through forces; velocity is never replaced or rotated.
-- Native swept CharacterBody capsule queries replace the old altitude floor clamp.
-  Three swept segments predict the next three seconds of the current curved path.
-  HUD warning begins below 2.4 seconds; recovery ramps from 1.3 to 0.6 seconds.
-  Uncaged recovery is capped at 0.25 G; recaging permits a 4 G escape request.
-  Actual collision clips travel at the native safe fraction and slides velocity
-  along the surface. This is a chassis capsule, not per-limb collision. The
-  aerodynamic coefficients and finite FBW/vernier forces are tunable game
-  approximations, not measured Gundam flight data or a six-engine wrench solver.
+  for the aerodynamic envelope and
+  [Elite Dangerous](https://d1wv0x2frmpnh.cloudfront.net/elite/website/assets/English-PlayersGuide_v2.00-Horizons.pdf)
+  for independent attitude/momentum. No unpublished internals are assumed.
+- `flight_controller.gd` reads commands, measures motion/airflow, computes hover
+  assistance, aerodynamics, main propulsion, RCS torque and leg push, then applies
+  them through native physics. Forces are newtons; torque is newton metres. Ten
+  world units represent one metre: native forces multiply by 10, torque by 100,
+  velocities divide by 10, and native inertia divides by 100. Native gravity is
+  scaled consistently and never added twice.
+- Main forces use actual physics-tick gimbal directions and animated attachment
+  positions. Off-centre application generates the actual engine moment. Measured
+  equal shares caused forward drift because the calf ports cannot vector upright
+  within their 30-degree cones. Calibrated low-power shares are backpack 12.5%
+  each, calf 7.5% each, heel 30% each. Shares smoothly equalize over 1.5–4× output,
+  reaching one-sixth each at maximum power. Bounded hover gimbal trim removes
+  residual bias; it moves physical motors and cannot create extra force.
+- One damped angular-rate controller uses native shape-derived inertia and finite
+  cold-gas torque. Requested rates are 1.0/0.8/1.2 rad/s before precision scaling;
+  actuator limits correspond to 5 rad/s² per body axis. Main-engine moments consume
+  the same torque budget. Saturation is displayed instead of erased by a velocity
+  clamp. Cold gas is a lumped three-axis actuator: exact outlet allocation and fuel
+  are omitted. Fixed capsule inertia does not change with procedural limb motion.
+- Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
+  main power. It never depends on stall/attached-flow quality. Neutral pilot axes
+  allow upright restoration; held axes override it. Only nominal 1× receives
+  vertical thrust compensation, capped at 2×. Other detents retain their collective
+  intent. Requested zero disables hover trim; spool reaches exact zero and no
+  recovery/translation force is injected afterward. Cold-gas torque remains.
+- `pilot_frame()` isolates chest-forward hover/head-first flight coordinates. A
+  bank-independent pitch projection and vertical-flow contribution blend its
+  reference smoothly; bindings do not change and input is never disabled. Lift
+  uses a calibrated 80 m² reference area at hero scale, 1.225 kg/m³ air, angle of
+  attack and attached flow. Quadratic drag includes broadside area, induced drag,
+  passive high-speed drag and Shift spread. Engine-off gliding and falling use
+  these same equations; no velocity clamp supplies a terminal falling speed.
+- R applies a 0.16-second, 4 G contact-leg push only while suitable ground remains
+  within 0.8 m of leg reach. It never changes main power or writes velocity. Native
+  contact handles touchdown. This is one chassis capsule, not articulated limb
+  collision. Pause commits the displayed native pose and preserves velocities
+  for resume. G walking is an explicitly frozen preview, separate from normal
+  takeoff and landing.
 - The physical root attitude leads the pose. Airflow, local acceleration, angular
   rates/acceleration, AoA departure, drag command, G load, aim and requested thrust
   drive the existing procedural rig. Pelvis, torso and arms overlap with 30 ms
   response differences. Free limbs trail airflow; G load, angular acceleration
   and vertical thrust
-  compress/tuck the legs, opposed vernier demand braces them asymmetrically, and
+  compress/tuck the legs, opposed braking loads brace them asymmetrically, and
   ankles follow later than hips/knees. Departure and X open the limbs,
   and the rifle arm resists airflow more strongly. The head leads within its
   30° yaw / 20° pitch zone; shoulder/torso articulation handles wider aim.
@@ -187,9 +196,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   motor remains at its local limit even when the requested force is unreachable.
   Requested thrust/G load sets the six main engines' visible power. Per-instance
   power changes brightness and length without material copies. Shoulder/thigh
-  pulses respond to angular demand, acceleration and directional bursts. The
-  force integrator uses aggregate thrust/FBW budgets; local engine cones drive
-  the visual actuators, not an individual-engine force/torque optimizer. Final
+  pulses respond to bounded RCS torque. Main forces use actual motor directions;
+  the cold-gas control couple uses the lumped actuator described above. Final
   modifier poses update attachment readbacks and local motor targets before
   rendering. Trails record actual paths and stay hidden at rest or on foot.
 - Cel exhaust follows [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
@@ -326,21 +334,19 @@ explosion check covers independent lifetimes, drag deceleration, debris gravity,
 smoke buoyancy, seed variation, deterministic seeking and bounded storage. Motion
 captures include the complete dissipation tail rather than cutting the smoke off
 at the end of a short preview; `--explosion-only` skips unchanged exhaust footage.
-Mech captures inspect all six main mount attachments during directional pose
-poses, local thrust cones, articulation, individual nozzle
-close-ups, throttle states, a complete walk cycle and an exact frozen frame.
-Cold-gas close-ups compare each outlet on/off to reject hidden plumes. Functional
-checks cover normal movement and braking, 30/60/120 Hz agreement, detent edges,
-the exact X/aero threshold, combat pitch/roll axes, held-input continuity,
-restored low-aero movement, X release, high-speed passive
-and X drag, camera-independent movement, native terrain prediction/collision,
-source-triangle thruster seating, native IK, local motor cones, low-ready/raised
-arm travel, exact offhand contact, wide release, recoil, rifle hits, walk and pause.
-Motion captures show forward/side movement, bursts and braking, followed by an
-isolated low-ready → braced aim → recoil → wide release → regrip sequence.
-`arm-metrics.json` records the measured support weight and contact error.
-`capture_mech.gd -- /tmp/combat --combat-only` runs a short native X/WASD replay;
-`combat-telemetry.json` records aero, binding state, rotation commands and velocity.
+`test_flight_pose.gd` steps actual native physics: held-key detents, six rotation
+commands in upright/prone/inverted poses, settled hover, vacuum momentum while
+rotating, transverse thrust, fast departure, unpowered lift, Shift braking,
+skydiver drag, ground jump/contact, uninterrupted takeoff/cutoff/reorientation/
+re-ignition, capsule collision, source-triangle thruster seating, gimbal limits,
+native IK, braced weapon contact, recoil, pause and retained walking. Fixtures
+alone may reset transforms/velocities; ordinary flight never does.
+
+`capture_mech.gd` runs a 108-frame uninterrupted native-input replay. Space/C
+selects power and cutoff, WASD/QE rotates, Shift brakes, then power is restored.
+`telemetry.json` records force/torque, power, hover/airflow, brake and saturation.
+`forces.png` displays F9 diagnostics. The host stays minimized; frames come from
+an offscreen native viewport at 1280×800.
 These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 1280×800 resolution
 with its host window minimized. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

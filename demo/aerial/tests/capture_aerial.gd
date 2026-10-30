@@ -97,12 +97,12 @@ func _capture() -> void:
 	scene._update_afterburners(0.4)
 	await _save_frame(output.path_join("afterburner-flow.png"))
 	assert(Image.load_from_file(output.path_join("afterburner-full.png")).get_data() != Image.load_from_file(output.path_join("afterburner-flow.png")).get_data(),"Exhaust flow did not animate on the GPU")
-	var aircraft_scale: Vector3 = scene.hero.scale
-	scene.hero.scale *= Vector3(1.4,0.75,1.6)
+	var aircraft_scale: Vector3 = scene.hero.actor.scale
+	scene.hero.actor.scale *= Vector3(1.4,0.75,1.6)
 	scene.camera.position = nozzle.global_position+aircraft_basis*Vector3(-33,9,15)
 	scene.camera.look_at(nozzle.global_position+aircraft_basis*Vector3(0,0,12),aircraft_basis.y)
 	await _save_frame(output.path_join("afterburner-stretched.png"))
-	scene.hero.scale = aircraft_scale
+	scene.hero.actor.scale = aircraft_scale
 	scene.afterburner_flow_phase = 0.0
 	scene._update_afterburners()
 	scene.camera.transform = initial_camera

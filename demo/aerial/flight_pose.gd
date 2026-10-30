@@ -1,7 +1,7 @@
 extends SkeletonModifier3D
 
 # Airflow-driven overlapping motion, using native SkeletonModifier3D/TwoBoneIK3D.
-# Flight behavior references: DCS Su-27, Elite Dangerous and Armored Core VI.
+# Flight behavior references: DCS Su-27 and Elite Dangerous.
 class Spring:
 	var value := Vector3.ZERO
 	var velocity := Vector3.ZERO
@@ -160,17 +160,15 @@ func update(delta: float, controller) -> void:
 	head.step(Vector3(clampf(pitch-torso_aim.x,-1.2,1.2),clampf(yaw-torso_aim.y,-deg_to_rad(30),deg_to_rad(30)),-chest.value.z*0.6),delta,0.10)
 	var load := clampf((controller.g_load-1.0)/3.0,0,1.2)
 	var kick := clampf(alpha.length()*0.08,0,1)
-	var burst: Vector3 = Basis(controller.attitude).inverse()*controller.burst_direction*controller.boost_amount
-	var demand: Vector3 = controller.translation_input
 	var side_load := clampf(acceleration.x/22.0,-1,1)
-	var compression := clampf(load*0.75+kick*0.35+controller.boost_amount*0.65+absf(demand.y)*0.25,0,1.3)
+	var compression := clampf(load*0.75+kick*0.35+clampf(-acceleration.z/30.0,0,1)*0.25,0,1.3)
 	var trail_pitch := atan2(flow.z,maxf(0.35,-flow.y))
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
-		var tau := (0.14 if controller.boost_amount > 0.1 else 0.24)+side*0.035
-		var brace := clampf(sx*(side_load+burst.x*0.8)+omega.z*0.25,-1,1)
+		var tau := 0.24+side*0.035
+		var brace := clampf(sx*(side_load)+omega.z*0.25,-1,1)
 		var hover_sway := sin(clock*1.7+side*2.1)*0.045*(1.0-cruise)
-		# Load-driven tuck, opposed burst kicks and slower ankle follow-through.
+		# Load-driven tuck, opposed braking loads and slower ankle follow-through.
 		# The weapon remains stabilized while the free limbs absorb the maneuver.
 		var thigh := Vector3(-0.25*(1.0-cruise)-0.65*spread-compression*0.32+trail_pitch*0.38+brace*0.22+hover_sway,-flow.x*0.22+omega.y*0.12,sx*(0.12+0.32*spread+compression*0.10)-flow.x*0.28-side_load*0.12)
 		var knee := 0.42*(1.0-cruise)+0.12*cruise+0.85*compression+0.65*spread+brace*0.28-hover_sway
