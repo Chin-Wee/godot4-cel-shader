@@ -3,7 +3,7 @@
   "sources": [
     "demo/aerial/README.md"
   ],
-  "source_revision": "a17fb15d5b1efc944c0bb7d81791e170cec33640",
+  "source_revision": "d37b6e436ce3ba5247693609b06caf3e7496929f",
   "code_graph_updated": true,
   "backend": "opencode-go",
   "reason": "The configured provider rejected the semantic extraction with MissingSessionID. Re-run with a supported OpenCode session adapter. Source remains authoritative."
