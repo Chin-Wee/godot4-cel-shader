@@ -42,6 +42,7 @@ func _event(code: Key, pressed: bool) -> void:
 
 func _save(path: String) -> void:
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	RenderingServer.force_sync()
 	RenderingServer.force_draw(false) # Offscreen capture needs no window presentation.
 	var frame := viewport.get_texture().get_image()
 	assert(not frame.is_empty() and frame.get_size() == viewport.size)
@@ -225,7 +226,9 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			replay_label.text = "%s · %.1f s · %s" % [name.to_upper(), float(tick)/HZ, " + ".join(names) if not names.is_empty() else "NO KEYS"]
 			scene.camera.position = mech.position+Vector3(165,55,115)
 			scene.camera.look_at(mech.position)
-			_save(output.path_join("%s-%04d.png"%[name,tick/4]))
+			scene.camera.force_update_transform()
+			# Finish queued camera/text updates before drawing, within this frame.
+			call_deferred("_save",output.path_join("%s-%04d.png"%[name,tick/4]))
 	_keys([])
 	report[name] = {"inputs":events,"samples":rows,"max_speed":max_speed,"max_jerk":max_jerk,"max_motion_residual":max_residual}
 	_expect(max_residual < 0.3,name+": velocity changed outside the applied force budget")
