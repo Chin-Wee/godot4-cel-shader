@@ -21,15 +21,20 @@ extends Resource
 @export var joint_max := PackedVector3Array([Vector3(0.65,0.5,0.65), Vector3(1.65,0,0), Vector3(0.5,0.2,0.2)])
 @export var leg_response := Vector3(0.28,0.32,0.36)
 @export var joint_speed := Vector3(2.1,2.4,2.6) # Radians/second.
-@export var body_response := 0.16
-@export var weapon_response := 0.12
-@export var receiver_point := Vector3(-2.4,5.661993,-0.832874)
-@export var muzzle_point := Vector3(-2.412204,-0.004719,0.436474)
-@export var hand_guard := Vector3(2.5,-1.7,0.8)
-@export var free_hand_spread := Vector3(4.2,-0.6,1.3)
-@export var rifle_low_ready := Vector3(-1.8,-2.1,0.7)
-@export var rifle_stream_ready := Vector3(-1.3,-1.6,0.5)
-@export var rifle_raised := Vector3(-0.4,0.1,-0.2)
+@export var body_frequency := 1.8
+@export var body_damping := 0.78
+# Both arms are free: source-frame hand targets mirrored about the torso.
+@export var arm_hover := Vector3(3.6,-2.4,0.6)
+@export var arm_stream := Vector3(2.8,-1.9,-0.2)
+@export var arm_brake := Vector3(5.4,-0.2,1.5)
+@export var arm_retro := Vector3(3.5,-0.6,2.7)
+@export var arm_coast := Vector3(3.8,-1.4,1.0)
+@export var arm_frequency := 1.35
+@export var arm_damping := 0.68
+@export var arm_speed := 12.0
+@export var hover_leg_motion := 0.07
+@export var hover_arm_motion := 0.65
+@export var maneuver_leg_motion := 0.22
 @export var leg_airflow_gain := 0.22
 # Measured minimum of both rigid foot meshes, in Feet.L/R bone space.
 @export var sole_offset := Vector3(0,0,-0.227218)

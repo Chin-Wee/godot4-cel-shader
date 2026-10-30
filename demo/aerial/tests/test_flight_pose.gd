@@ -150,7 +150,7 @@ func _run() -> void:
 	await _ticks(30)
 	assert(mech.controller.velocity.is_finite() and mech.position.is_finite())
 	assert(_check_motors(mech) and _check_ik(mech))
-	# Independent aim, existing low-ready/support/recoil, pause and walk preview.
+	# Free arms, independent camera look, pause and retained walk preview.
 	var paused_velocity: Vector3 = mech.linear_velocity
 	scene.animate = false
 	var frozen: Transform3D = mech.global_transform
@@ -162,29 +162,12 @@ func _run() -> void:
 	await _fixture()
 	await _ticks(60)
 	scene.animate = false
-	mech.controller.aiming = true
-	mech.controller.aim_direction = mech.controller.aim_frame() * Vector3.FORWARD
-	for frame in 90: mech.update_animation(1.0/60.0)
-	await _ticks(2) # Native SkeletonModifier pipeline completes on the frame boundary.
-	assert(_check_ik(mech))
-	assert(mech.rig.weapon.support_weight > 0.95)
-	var right: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands.R")]
-	var left: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands.L")]
-	assert(left.origin.distance_to(right*mech.rig.weapon.support_offset) < 0.08)
-	# Native ray fire still hits the practice target's new root collider.
-	mech.reset_flight(Vector3(175,700,340))
-	mech.controller.aiming = true
-	mech.controller.aim_direction = (scene.wingman.position - mech.position).normalized()
-	mech.controller.gaze_target = scene.wingman.position
 	for frame in 90: mech.update_animation(1.0/60.0)
 	await _ticks(2)
-	scene.animate = true
-	scene.fire_weapon()
-	assert(scene.hit_time > 0, "Rifle failed to hit the new root collider")
-	scene.animate = false
-	mech.rig.kick_weapon()
-	for frame in 10: mech.update_animation(1.0/60.0)
-	assert(mech.rig.weapon.recoil.value.x > 0.01)
+	assert(_check_ik(mech))
+	assert(not mech.skeleton.find_child("GUN",false,false).visible)
+	assert(not scene.has_method("fire_weapon"),"Gun aiming/firing still owns the flight arms")
+
 	scene.set_walk_mode(true)
 	mech.update_animation(0.3)
 	assert(mech.actor.animation_player.is_playing() and mech.freeze)
@@ -235,7 +218,7 @@ func _check_ik(mech: Node3D) -> bool:
 	for side in 2:
 		var suffix := ".L" if side == 0 else ".R"
 		var hand: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands"+suffix)]
-		var target: Vector3 = mech.rig.weapon.hand_targets[side].position
+		var target: Vector3 = mech.rig.arms.hand_targets[side].position
 		if not hand.origin.is_finite() or not hand.basis.is_finite() or hand.origin.distance_to(target) >= 0.05: return false
 	return true
 

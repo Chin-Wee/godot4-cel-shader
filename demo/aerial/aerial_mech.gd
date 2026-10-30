@@ -122,6 +122,10 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	actor.animation_player.stop()
 	actor.current_animation = &""
 	skeleton = actor.find_child("Skeleton3D",true,false)
+	# Flight animation pass: the supplied gun remains available in asset preview.
+	# Mesh inspection: both are weapon geometry weighted solely to Hands.R;
+	# Cube is the Torso-weighted backpack and must remain visible.
+	for name in ["GUN","Cube_001"]: skeleton.find_child(name,false,false).visible = false
 	rig = FlightPose.new()
 	rig.name = "SpringFlightPose"
 	skeleton.add_child(rig)

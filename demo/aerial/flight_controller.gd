@@ -79,11 +79,6 @@ var departure := 0.0
 var g_load := 1.0
 var clock := 0.0
 var time_to_impact := INF
-var aiming := false
-var aim_direction := Vector3.FORWARD
-var aim_point := Vector3(INF, INF, INF)
-var weapon_aim := Vector3.FORWARD
-var gaze_target := Vector3.ZERO
 var air_density := 1.225 # kg/m³; zero permits a vacuum invariant check.
 var wind := Vector3.ZERO # m/s, world axes.
 var air_velocity := Vector3.ZERO
@@ -160,8 +155,6 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	state.apply_central_force((aero_force + leg_force) * WORLD_UNITS_PER_METER)
 	state.apply_torque(rcs_torque * WORLD_UNITS_PER_METER * WORLD_UNITS_PER_METER)
 	required_force = (main_force + leg_force) / body.mass
-	gaze_target = aim_point if aim_point.is_finite() else position + aim_direction * 4500.0
-	weapon_aim = limit_aim_direction(aim_direction)
 
 func _measure_motion(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	var current_velocity := state.linear_velocity / WORLD_UNITS_PER_METER
@@ -302,18 +295,3 @@ func _calculate_jump(leg_reach: bool, dt: float) -> void:
 
 func pilot_frame() -> Basis:
 	return Basis(attitude) * Basis(Vector3.RIGHT, PI / 2.0 * control_blend)
-
-func aim_frame() -> Basis:
-	var frame := Basis(attitude)
-	var projection := Vector2(frame.y.y, frame.z.y)
-	var blend := control_blend if projection.length() < 0.15 else atan2(absf(projection.y), absf(projection.x)) / (PI / 2.0)
-	return frame * Basis(Vector3.RIGHT, PI / 2.0 * blend)
-
-func limit_aim_direction(direction: Vector3) -> Vector3:
-	return limit_aim_in_frame(direction, aim_frame())
-
-static func limit_aim_in_frame(direction: Vector3, frame: Basis) -> Vector3:
-	var local := frame.inverse() * direction
-	var yaw := clampf(atan2(-local.x, -local.z), -deg_to_rad(85), deg_to_rad(85))
-	var pitch := clampf(atan2(local.y, Vector2(local.x, local.z).length()), -deg_to_rad(70), deg_to_rad(70))
-	return (frame * Vector3(-sin(yaw) * cos(pitch), sin(pitch), -cos(yaw) * cos(pitch))).normalized()

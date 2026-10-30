@@ -50,12 +50,6 @@ var camera_target := Spring.new()
 var camera_lag := Spring.new()
 var focus_target: Node3D
 var focus_index := -1
-var fire_cooldown := 0.0
-var shots := []
-var shot_cursor := 0
-var reticle: Label
-var hit_time := 0.0
-var shots_fired := 0
 var flight_stats: Label
 var walk_ground: StaticBody3D
 var volume_effect
@@ -165,7 +159,6 @@ func _ready() -> void:
 		mech.update_animation(0.0)
 	wingman.collision_layer = 4
 	wingman.simulation_enabled = false
-	_make_weapon_preview()
 	_make_ground()
 	reset_camera()
 	_update_afterburners()
@@ -333,7 +326,7 @@ func _update_camera(delta: float) -> void:
 		camera_pitch = -asin(clampf(focus_direction.y,-1,1))
 	var offset: Vector3 = Vector3(sin(camera_yaw)*cos(camera_pitch),sin(camera_pitch),cos(camera_yaw)*cos(camera_pitch))*camera_distance*hero.display_scale
 	camera.position = target+offset+Basis(Vector3.UP,camera_yaw).x*hero.display_scale*0.4
-	camera.look_at(focus_target.global_position if is_instance_valid(focus_target) else hero.position+aim_direction()*4500.0)
+	camera.look_at(focus_target.global_position if is_instance_valid(focus_target) else hero.position+look_direction()*4500.0)
 
 func missile_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)+Vector3(-120.0+cos(time*0.6)*80.0,50.0+sin(time*0.6)*50.0,-200.0-sin(time*0.6)*100.0)
@@ -400,15 +393,11 @@ func _process(delta: float) -> void:
 	if animate:
 		elapsed += delta
 		if hero.flying:
-			hero.controller.aiming = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or is_instance_valid(focus_target) or Input.is_action_pressed("flight_brake")
-			hero.controller.aim_direction = aim_direction()
-			hero.controller.aim_point = focus_target.global_position if is_instance_valid(focus_target) else hero.position+hero.controller.aim_direction*4500.0
 			hero.update_force_debug()
 		else:
 			walking_time += delta
 			_update_walk_pose()
 			hero.update_animation(delta)
-		_update_weapon(delta)
 		_update_afterburners(delta)
 		_update_camera(delta)
 		_update_flight_stats()
@@ -434,7 +423,7 @@ func _process(delta: float) -> void:
 	post_material.set_shader_parameter("weather_time",elapsed)
 	if is_instance_valid(volume_effect): _update_atmosphere(uv)
 
-func aim_direction() -> Vector3:
+func look_direction() -> Vector3:
 	if is_instance_valid(focus_target): return (focus_target.global_position-hero.global_position).normalized()
 	return -Vector3(sin(camera_yaw)*cos(camera_pitch),sin(camera_pitch),cos(camera_yaw)*cos(camera_pitch))
 
@@ -445,7 +434,6 @@ func focus_next() -> void:
 func _update_flight_stats() -> void:
 	var fc = hero.controller
 	var warning := ""
-	if fc.aim_direction.dot(fc.weapon_aim) < cos(deg_to_rad(10)): warning += " · OUTSIDE FIRING ARC"
 	if fc.time_to_impact < 2.4: warning = " · TERRAIN %.1fs%s"%[fc.time_to_impact," — PULL UP"]
 	flight_stats.text = "THRUST %.1f× · ENGINE %.2f× · %.0f m/s · HOVER %.0f%% · AERO %.0f%% · %.1f G%s\nREQUEST %.0f kN · DELIVERED %.0f kN · RCS %.0f%%%s%s" % [
 		fc.DETENTS[fc.detent], fc.engine_level, fc.velocity.length(), fc.hover_assist * 100, fc.aero_authority * 100, fc.g_load, warning,
@@ -456,55 +444,6 @@ func _update_flight_stats() -> void:
 		var feet = hero.rig.contacts
 		flight_stats.text += "\nPOSE H %.0f / FLIGHT %.0f / SPREAD %.0f / COAST %.0f / LAND %.0f%%\nFEET %s/%s · PROBES %d · IMPACT %.2f" % [weights[0]*100,weights[1]*100,weights[2]*100,weights[3]*100,weights[4]*100,"PLANT" if feet.planted[0] else "FREE","PLANT" if feet.planted[1] else "FREE",feet.probe_count,feet.impact]
 	flight_stats.modulate = Color(1,0.4,0.25) if fc.time_to_impact < 2.4 else Color.WHITE
-	reticle.text = "×" if hit_time > 0.0 else "+"
-	reticle.modulate = Color(1,0.5,0.2) if hit_time > 0.0 else Color(0.8,0.95,1)
-
-func _make_weapon_preview() -> void:
-	var material := StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	material.albedo_color = Color(1,0.85,0.32)
-	material.emission_enabled = true
-	material.emission = Color(1,0.55,0.08)
-	var mesh := BoxMesh.new()
-	mesh.size = Vector3(1.2,1.2,1)
-	for index in 8:
-		var tracer := Geometry.add_mesh(self,mesh,material)
-		tracer.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		tracer.visible = false
-		shots.append({"mesh":tracer,"life":0.0})
-
-func _update_weapon(delta: float) -> void:
-	fire_cooldown = maxf(0,fire_cooldown-delta)
-	hit_time = maxf(0,hit_time-delta)
-	for shot in shots:
-		shot.life = maxf(0,shot.life-delta)
-		shot.mesh.visible = shot.life > 0
-	if hero.flying and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and fire_cooldown <= 0:
-		fire_weapon()
-
-func fire_weapon() -> void:
-	if not animate or fire_cooldown > 0: return
-	if hero.controller.aim_direction.dot(hero.controller.limit_aim_direction(hero.controller.aim_direction)) < cos(deg_to_rad(10)): return
-	var start: Vector3 = hero.rig.weapon.muzzle.origin
-	var direction: Vector3 = hero.rig.weapon.barrel_direction
-	if direction.dot(hero.controller.aim_direction) < cos(deg_to_rad(12)): return
-	var finish := start+direction*4500.0
-	var ray := PhysicsRayQueryParameters3D.create(start,finish,6)
-	var hit := get_world_3d().direct_space_state.intersect_ray(ray)
-	if not hit.is_empty():
-		finish = hit.position
-		if hit.collider == wingman: hit_time = 0.12
-	var shot: Dictionary = shots[shot_cursor]
-	shot_cursor = (shot_cursor+1)%shots.size()
-	shot.life = 0.07
-	shot.mesh.visible = true
-	shot.mesh.position = (start+finish)*0.5
-	shot.mesh.look_at(finish)
-	shot.mesh.scale = Vector3(1,1,start.distance_to(finish))
-	fire_cooldown = 0.16
-	shots_fired += 1
-	hero.rig.kick_weapon()
-
 func _unhandled_input(event: InputEvent) -> void:
 	if animate and hero.flying: hero.controller.handle_input(event)
 	if event is InputEventMouseButton:
@@ -565,7 +504,7 @@ func _make_hud() -> void:
 	panel.offset_right = -20
 	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "GUNDAM · PHYSICS FLIGHT\nW/S: pitch · A/D: bank / roll · Q/E: yaw · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: ground jump\nShift: brake / spread · Mouse: aim · RMB: brace · LMB: fire\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
+	label.text = "GUNDAM · PHYSICS FLIGHT\nW/S: pitch · A/D: bank / roll · Q/E: yaw · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: ground jump\nShift: brake / spread · Mouse: look · arms follow flight maneuvers\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
 	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
 	label.add_theme_font_size_override("font_size",15)
 	panel.add_child(label)
@@ -575,10 +514,3 @@ func _make_hud() -> void:
 	for text in [label,flight_stats]:
 		text.add_theme_constant_override("outline_size",3)
 		text.add_theme_color_override("font_outline_color",Color(0.03,0.04,0.06,0.85))
-
-	reticle = Label.new()
-	reticle.text = "+"
-	reticle.add_theme_font_size_override("font_size",28)
-	reticle.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	reticle.position -= Vector2(10,18)
-	hud.add_child(reticle)

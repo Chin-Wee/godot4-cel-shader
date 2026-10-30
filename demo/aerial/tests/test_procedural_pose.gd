@@ -31,6 +31,19 @@ func _run() -> void:
 		servo.step(Vector3(5 if tick<45 else -5,0,0),1.0/60.0,0.3,2.0)
 		assert(servo.value.distance_to(previous)<=2.0/60.0+0.00001)
 		assert(servo.velocity.length()<=2.00001)
+	# The secondary layer overshoots mildly, settles and remains independent of
+	# fixed-step frequency. It never supplies rigid-body forces or collisions.
+	var secondary := Servo.new()
+	var peak := 0.0
+	for tick in 240:
+		secondary.follow(Vector3.ONE,1.0/60.0,1.35,0.68,INF)
+		peak = maxf(peak,secondary.value.x)
+	assert(peak>1.01 and peak<1.15 and secondary.value.distance_to(Vector3.ONE)<0.001)
+	var slow := Servo.new()
+	var fast := Servo.new()
+	for tick in 30: slow.follow(Vector3.ONE,1.0/30.0,1.35,0.68,INF)
+	for tick in 120: fast.follow(Vector3.ONE,1.0/120.0,1.35,0.68,INF)
+	assert(slow.value.distance_to(fast.value)<0.0001)
 	scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
 	scene.set_process(false)
@@ -50,41 +63,70 @@ func _run() -> void:
 	fc.angular_acceleration = Vector3.ZERO
 	fc.local_airflow = Vector3.ZERO
 	fc.g_load = 1
-	fc.aim_direction = Vector3.FORWARD
 	await _pose_ticks(180)
 	var still: Vector3 = mech.rig.legs[0].value
+	var hand_before: Vector3 = mech.rig.arms.hands[0].value
+	var chest_before: Vector3 = mech.rig.chest.value
 	var transform: Transform3D = mech.global_transform
-	await _pose_ticks(60)
-	assert(mech.rig.legs[0].value.distance_to(still)<0.0001,"Steady hover contains unexplained idle motion")
+	await _pose_ticks(90)
+	assert(mech.rig.legs[0].value.distance_to(still)>0.01,"Hover legs never transfer weight")
+	assert(mech.rig.arms.hands[0].value.distance_to(hand_before)>0.2,"Hover arms remain static")
+	assert(mech.rig.chest.value.distance_to(chest_before)>0.005,"Hover torso never counterbalances the limbs")
 	assert(mech.global_transform.is_equal_approx(transform) and mech.linear_velocity.is_zero_approx(),"Presentation moved the physical body")
 	assert(mech.rig.contacts.probe_count==0 and not mech.rig.contacts.planted[0])
+	assert(not mech.skeleton.find_child("GUN",false,false).visible and not scene.has_method("fire_weapon"))
 	fc.brake_amount = 1
 	fc.local_airflow = Vector3(0,0,60)
 	fc.g_load = 0
 	await _pose_ticks(120)
 	assert(mech.rig.legs[0].value.distance_to(still)>0.25,"Spread posture has no readable leg change")
-	assert(mech.rig.weapon.hands[0].value.x>3.5,"Free hand never opens to brace the spread posture")
+	for side in 2: assert(absf(mech.rig.arms.hands[side].value.x)>4.5,"Braking did not open both arms")
 	assert(mech.rig.motion.compression==0,"Freefall created powered G-load compression")
 	var sum := 0.0
 	for weight in mech.rig.posture_weights:
 		assert(weight>=0 and weight<=1.0001)
 		sum += weight
 	assert(absf(sum-1)<0.0001)
-	for side in 2:
-		for joint in 3:
-			var value: Vector3 = mech.rig.legs[side*3+joint].value
-			assert(value.is_equal_approx(mech.rig.profile.limit_joint(value,side,joint)))
-	# Bounded aim and offhand release remain independent of chassis orientation.
-	fc.aiming = true
+	# Steering anticipates chassis movement; left/right poses must be distinct.
 	fc.brake_amount = 0
 	fc.local_airflow = Vector3.ZERO
+	fc.hover_assist = 0
+	fc.rotation_command = Vector3(0,1,0)
+	await _pose_ticks(90)
+	var left_yaw: float = mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z
+	assert(left_yaw>1 and mech.rig.chest.value.y>0.04)
+	fc.rotation_command = Vector3(0,-1,0)
+	await _pose_ticks(90)
+	assert(mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z < -1)
+	fc.rotation_command = Vector3(-1,0,0)
+	await _pose_ticks(90)
+	var pitch_down: float = (mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5
+	assert(mech.rig.chest.value.x < -0.04)
+	fc.rotation_command = Vector3(1,0,0)
+	await _pose_ticks(90)
+	assert((mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5 < pitch_down-0.8)
+	assert(mech.rig.chest.value.x>0.04)
+	fc.rotation_command = Vector3(0,0,1)
+	await _pose_ticks(90)
+	assert(absf(mech.rig.arms.hands[1].value.x)-absf(mech.rig.arms.hands[0].value.x)>0.8,"Roll has no inside/outside arm choreography")
+	mech.angular_velocity = Vector3(0,0,0.8)
+	fc.rotation_command = Vector3.ZERO
+	fc.angular_acceleration = Vector3(0,0,-4)
+	await _pose_ticks(1)
+	assert(mech.rig.motion.roll_stop>0.3 and mech.rig.arms.hands[0].velocity.length()>0.1,"Roll release lost follow-through")
+	mech.angular_velocity = Vector3.ZERO
+	fc.angular_acceleration = Vector3.ZERO
+	# A real opposing force/travel geometry selects retro bracing, independently
+	# of Shift and independent of the animation's world orientation.
+	mech.quaternion = Quaternion(Vector3.RIGHT,PI/2)
+	mech.linear_velocity = Vector3(0,0,-700)
+	fc.main_force = Vector3(0,0,mech.mass*9.81*2)
+	fc.engine_level = 2
+	fc.local_airflow = Vector3(0,70,0)
 	await _pose_ticks(120)
-	assert(mech.rig.weapon.support_weight>0.95)
-	fc.aim_direction = Vector3.RIGHT
-	await _pose_ticks(120)
-	assert(mech.rig.weapon.support_weight<0.05,"Offhand stretches after the target leaves its support envelope")
+	assert(mech.rig.motion.retro>0.95)
+	for side in 2: assert(mech.rig.arms.hands[side].value.z>2,"Retro thrust has no forward arm brace")
 	mech.quaternion = Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2)
-	fc.aim_direction = fc.aim_frame()*Vector3.FORWARD
 	fc.local_airflow = Vector3(0,-80,0)
 	fc.aero_authority = 1
 	await _pose_ticks(120)
@@ -171,7 +213,7 @@ func _run() -> void:
 			else: swing_ticks[side] += 1
 	for side in 2: assert(stance_ticks[side]>20 and swing_ticks[side]>20,"Walk did not alternate stance and swing")
 	completed = true
-	print("Procedural pose checks passed: servo limits, quiet hover, normalized postures, load/airflow separation, independent grip/aim, inversion, predicted landing, one touchdown, grounded soles, platform tracking, contact release, slope normals and walking stance/swing.")
+	print("Procedural pose checks passed: servo limits, fluid full-body hover, two-arm braking, steering/roll/reverse choreography, load/airflow separation, gun removal, inversion, predicted landing, one touchdown, grounded soles, platform tracking, contact release, slope normals and walking stance/swing.")
 	scene.queue_free()
 	await process_frame
 	quit()

@@ -18,8 +18,8 @@ godot --path demo res://aerial/aerial_demo.tscn
   detent; key repeat is ignored. Engines ramp toward the request.
 - **Shift held:** aerodynamic brake and spread posture; rotation remains available.
 - **R:** finite ground-contact leg jump, without changing the thrust detent.
-- **Ctrl held:** precision rotation. **Mouse:** aim/look only. **RMB:** brace.
-  **LMB:** fire. **MMB / Tab:** focus target/free aim. Click captures the mouse.
+- **Ctrl held:** precision rotation. **Mouse:** look only.
+  **MMB / Tab:** camera focus/free look. Click captures the mouse.
 - **Wheel:** zoom. **Home:** reset camera. **Esc:** release mouse. **P:** pause.
 - **F9:** diagnostics: orange propulsion, cyan aerodynamics, magenta RCS torque,
   white gravity. Vectors use separate display scales, not common units.
@@ -35,11 +35,12 @@ Aerodynamics and gravity remain active. Shift presents more area to the airflow,
 including during an unpowered fall. The HUD reports selected/actual power,
 requested/delivered thrust, hover assistance, airflow and actuator saturation.
 
-The rifle rests low while moving normally. RMB, LMB, combat braking or target focus raises it
-into braced aim. The offhand cradles the measured receiver underside for central
-aim, releases to a chest guard for wide tracking, then regrips on return. Shot
-recoil travels through the wrists/elbows. An out-of-arc aim cannot turn the chassis
-or fire backwards through it. Rifle fire remains a bounded hitscan/tracer preview.
+Gun aiming, firing and the crosshair are removed for this flight-animation pass.
+The runtime gun and its accessory mesh are hidden; source preview is retained.
+Inspection found `GUN` and `Cube_001` weighted solely to Hands.R; `Cube` is
+Torso-weighted backpack geometry and stays visible.
+Both arms now anticipate pitch/yaw, gather or extend through rolls, spread during
+braking and brace forward when delivered thrust opposes existing travel.
 The factory/roster project settings remain intact; the giant canyon display uses
 ten world units per motion meter.
 
@@ -116,32 +117,27 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   `flight_pose.gd` samples a read-only motion snapshot, blends five normalized
   posture anchors, and applies bounded servo/load responses. Hover, streamline,
   spread, coast and landing are weights, not flight-control modes. Posture changes
-  retain servo velocity. There is no perpetual hover sine wave. Relative airflow
-  direction and dynamic pressure are separate; freefall does not produce powered
-  G-load compression. Legs use 0.28/0.32/0.36-second responses and 2.1/2.4/2.6 rad/s
-  speed limits, with a small asymmetry in settling time. Saturated physical
-  vectoring reduces additional load/airflow articulation; actual nozzle cones and
-  force capacities still apply. The head leads within its
-  30° yaw / 20° pitch zone; shoulder/torso articulation handles wider aim.
-  Rifle aim is bounded to an 85° yaw / 70° pitch envelope. Gears 5's low-ready
-  and braced two-hand presentation is the visual reference, rather than a claim
-  about its implementation. The supplied `GunPose` is sampled once for finger
-  grip rotations and the left/right wrist relationship, then stopped. Those
-  grip poses blend through the existing procedural rig; no static flight clip plays.
-  Native TwoBoneIK3D solves both hands. The receiver underside was projected onto
-  the GUN source triangles at (-2.4, 5.661993, -0.832874) and transformed through
-  its actual skin bind. A predicted wrist basis gives the offhand the same contact
-  point used by the final weapon modifier, avoiding an extra IK pipeline.
-  The rifle keeps a stable up axis, a tucked aiming elbow and a distinct low-ready
-  stance. Offhand support fades for wide/unreachable aim and returns to a chest
-  guard. Fingers release/regrip; a damped shot impulse drives arm follow-through.
-  The camera stays gravity-upright and aiming never steers the chassis.
-  `weapon_pose.gd` owns target placement, native arm IK, wrist alignment and the
-  final muzzle. No flight/hover/stall clips play. Imported clips remain for
-  Animation dock preview and walking. Body/weapon influence fades for walking;
-  the separate foot-contact layer remains active.
-  This supplied model has no independently rigged binders, so no binder animation
-  is invented. Movement, motors, weapon clocks, pose and VFX pause together.
+  retain servo velocity. Active hover trim slowly transfers weight between the
+  legs and balances both arms, pelvis and chest on different phases. Opposed
+  thigh/knee offsets keep the lower-leg thrust axes nearly parallel. Relative
+  airflow direction and pressure remain separate; freefall does not produce
+  powered G-load compression. Legs retain bounded 0.28/0.32/0.36-second responses
+  and 2.1/2.4/2.6 rad/s limits. Pitch, yaw and roll intent lead the limbs before
+  angular motion catches up. Turn direction, actual roll rate, roll release,
+  angular acceleration and changing gravity orientation vary the poses.
+  Retro bracing is measured from the dot product of actual thrust and existing
+  velocity, not a new input mode. Saturated physical vectoring reduces additional
+  articulation; actual nozzle cones and force capacities still apply.
+  `arm_pose.gd` owns both free-hand targets and native arm IK. The supplied
+  `GunPose` is sampled only for finger-curl calibration, then stopped. Neither
+  hand follows a camera/weapon aim target. Inside/outside arms differ in a roll;
+  release counterbalances the remaining spin. Braking opens both arms; reverse
+  thrust gathers them forward. Exact underdamped responses provide bounded
+  follow-through (arms 1.35 Hz, damping ratio 0.68; chest 1.8 Hz, ratio 0.78).
+  No flight/hover/stall clips play. Imported clips remain for Animation dock
+  preview and walking. Body/arm influence fades for walking; foot contact remains
+  active. This model has no independently rigged binders. Movement, motors, pose
+  and VFX pause together.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -297,8 +293,8 @@ Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
 ## Procedural pose ownership and tuning
 
-The fixed-clock pipeline is body posture → weapon targets → arm IK → wrist/muzzle
-alignment → foot targets → leg IK → sole alignment → completed hardpoint cache.
+The fixed-clock pipeline is body posture → free-arm targets → arm IK → foot
+targets → leg IK → sole alignment → completed hardpoint cache.
 Godot's `SkeletonModifier3D` child order makes that sequence explicit. Physics
 consumes the last completed pose, not an interpolated camera/render pose.
 
@@ -306,10 +302,15 @@ consumes the last completed pose, not an interpolated camera/render pose.
 | --- | --- |
 | `aerial_mech.gd` | Native physics support, existing impact prediction, fixed-clock evaluation and physical hardpoint cache. |
 | `flight_pose.gd` | Read-only motion snapshot, normalized posture weights, bounded body/leg targets and load response. |
-| `weapon_pose.gd` | Low-ready/aim/guard targets, offhand release/regrip, recoil and native arm IK. |
+| `arm_pose.gd` | Both free arms, maneuver anticipation, braking/retro bracing, roll recovery, fingers and native arm IK. |
 | `contact_pose.gd` | Grounded/airborne support state, stance/swing, predicted preparation, one-shot impact, native leg IK and sole alignment. |
-| `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times and measured grip/sole offsets. |
-| `pose_servo.gd` | Existing critically damped response, extracted to avoid body/weapon/controller dependency cycles. Animation alone uses its optional finite speed limit. |
+| `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times, free-hand anchors and measured sole offsets. |
+| `pose_servo.gd` | Critical response shared with physics; an exact underdamped response adds animation follow-through. Animation alone uses finite speed limits. |
+
+Physical ragdolls were considered using Godot's `PhysicalBoneSimulator3D`.
+This pass keeps the existing capsule/force owner and uses bounded secondary limb
+motion instead: extra rigid bodies would need a separate articulated physics and
+thruster-control design. No physical ragdoll or limb collision is claimed.
 
 Contact prediction only prepares the legs. Physical supporting contact starts
 landing; 50 ms support-loss hysteresis suppresses chatter, and takeoff releases
@@ -385,11 +386,11 @@ commands in upright/prone/inverted poses, settled hover, vacuum momentum while
 rotating, transverse thrust, fast departure, unpowered lift, Shift braking,
 skydiver drag, ground jump/contact, uninterrupted takeoff/cutoff/reorientation/
 re-ignition, capsule collision, source-triangle thruster seating, gimbal limits,
-native IK, braced weapon contact, recoil, pause and retained walking. Fixtures
+native arm IK, free-hand motion, gun removal, pause and retained walking. Fixtures
 alone may reset transforms/velocities; ordinary flight never does.
 
 `capture_mech.gd` contains fixed native-key timelines for five flight behavior
-families, plus isolated landing and endurance fixtures:
+families, plus isolated landing, braking, retro-thrust, steering/roll and endurance fixtures:
 
 | Replay | Fixed input sequence and checks |
 | --- | --- |
@@ -398,6 +399,9 @@ families, plus isolated landing and endurance fixtures:
 | `coast` | Zero main thrust; pitch/roll/yaw and release while atmospheric forces account for every velocity change. |
 | `fall` | Unpowered descent, Shift spread/release/spread, then actual terrain contact. |
 | `landing` | Upright drop onto a visible flat platform, planted soles, R jump and exactly one touchdown per landing. |
+| `braking` | Main-off approach, Shift spread/release, two-arm opening, knee bracing and measured deceleration. |
+| `retro` | Powered engines opposing existing travel, forward arm brace, then acceleration along the new facing. |
+| `maneuvers` | Opposed roll commands, release/recovery and left/right yaw, with arm and knee asymmetry checks. |
 | `transitions` | One uninterrupted hover → powered jet → upright braking slide → cutoff/reorientation → re-ignition/jet recovery. |
 | `endurance` | 90 seconds at 4×; checks a stable terminal speed, released angular controls and a worst-pose drag energy ceiling. |
 
@@ -426,12 +430,12 @@ than desktop-wide held-key polling, so window focus cannot release a synthetic
 key midway through a maneuver. Gameplay input is unchanged. The native viewport
 is 960×600 and the replay host stays minimized. Offscreen redraws do not advance
 physics or present a window. Native input timelines therefore stay independent
-of capture stride and GPU speed. `report.json` accompanies the seven rendered clips;
+of capture stride and GPU speed. `report.json` accompanies the ten rendered clips;
 endurance records numeric telemetry without thousands of redundant screenshots.
 `--metrics-only` suppresses images when using a native renderer. Run at the
 project's existing 60 Hz physics rate; project settings are not modified.
 
-Measured 4× equilibrium is approximately 142 m/s in the reference straight-flight
+Measured 4× equilibrium is approximately 140 m/s in the reference straight-flight
 fixture. With 10,000 kg mass, 80 m² area and sea-level density, the minimum
 high-speed Cd gives a conservative any-orientation bound near 168 m/s under
 maximum thrust plus gravity. These are consequences of quadratic drag, not speed

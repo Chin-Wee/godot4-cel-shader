@@ -97,18 +97,21 @@ func _capture() -> void:
 	await _coast()
 	await _fall()
 	await _landing()
+	await _braking()
+	await _retro()
+	await _maneuvers()
 	await _transitions()
 	await _endurance()
 	_keys([])
 	scene.animate = false
-	for name in ["hover","fighter","inverted","coast","fall","landing","transitions","endurance"]:
+	for name in ["hover","fighter","inverted","coast","fall","landing","braking","retro","maneuvers","transitions","endurance"]:
 		_expect(report.has(name),"Replay did not complete: "+name)
 	report["failures"] = failures
 	report["physics_hz"] = HZ
 	report["inputs_sha256"] = FileAccess.get_sha256("res://aerial/tests/capture_mech.gd")
 	report["controller_sha256"] = FileAccess.get_sha256("res://aerial/flight_controller.gd")
 	report["pose_sha256"] = {}
-	for file in ["aerial_mech.gd","aerial_demo.gd","flight_pose.gd","weapon_pose.gd","contact_pose.gd","mech_rig_profile.gd","mech_rig_profile.tres","pose_servo.gd"]:
+	for file in ["aerial_mech.gd","aerial_demo.gd","flight_pose.gd","arm_pose.gd","contact_pose.gd","mech_rig_profile.gd","mech_rig_profile.tres","pose_servo.gd"]:
 		report.pose_sha256[file] = FileAccess.get_sha256("res://aerial/"+file)
 	var data := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 	data.store_string(JSON.stringify(report,"  "))
@@ -117,7 +120,7 @@ func _capture() -> void:
 	await process_frame
 	completed = true
 	if failures.is_empty():
-		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact, planted landing/jump, seamless transitions, full-thrust drag equilibrium.")
+		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact, planted landing/jump, full-body braking/retro/steering/roll recovery, seamless transitions, full-thrust drag equilibrium.")
 		quit()
 	else:
 		for failure in failures: push_error(failure)
@@ -188,6 +191,28 @@ func _landing() -> void:
 	_expect(rows[-1].plants==2 and rows[-1].touchdowns==2,"landing: drop/jump did not create exactly two supported touchdowns")
 	platform.queue_free()
 
+func _braking() -> void:
+	await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-80),0)
+	var rows: Array = await _play("braking",480,[[0,[]],[60,[KEY_SHIFT]],[240,[]]])
+	_expect(_at(rows,2.5).speed < _at(rows,1.0).speed-10,"braking: spread did not shed speed")
+	_expect(_peak(rows,"arm_span")>9.0,"braking: both arms never opened")
+	_expect(_peak(rows,"knee")>0.8,"braking: legs did not brace")
+
+func _retro() -> void:
+	await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,PI/2),Vector3(0,0,-70),3)
+	var rows: Array = await _play("retro",420,[[0,[]],[180,[KEY_SHIFT]],[240,[]]])
+	_expect(_peak(rows,"retro")>0.8,"retro: opposing engines never selected reverse bracing")
+	_expect(_peak(rows,"hand_forward")>2.0,"retro: neither arm caught the reverse-thrust load")
+	_expect(rows[-1].velocity[2]>0,"retro: physics never accelerated back along the facing direction")
+
+func _maneuvers() -> void:
+	await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-65),3)
+	var rows: Array = await _play("maneuvers",600,[[0,[KEY_D]],[110,[]],[180,[KEY_A]],[290,[]],
+		[360,[KEY_Q]],[390,[]],[450,[KEY_E]],[480,[]]])
+	_expect(_peak(rows,"arm_asymmetry")>0.7 and _minimum(rows,"arm_asymmetry") < -0.7,"maneuvers: opposing turns have no mirrored arm action")
+	_expect(_peak(rows,"roll_stop")>0.2,"maneuvers: roll release has no arrest/recovery phase")
+	_expect(_peak(rows,"knee_asymmetry")>0.06 or _minimum(rows,"knee_asymmetry") < -0.06,"maneuvers: legs never scissor in a turn")
+
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
 	var rows: Array = await _play("transitions",1380,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[214,[]],
@@ -253,7 +278,14 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
 				"contacts":int(mech.collided),"torque":fc.torque_fraction,
 				"pose_weights":Array(mech.rig.posture_weights),"plants":int(mech.rig.contacts.planted[0])+int(mech.rig.contacts.planted[1]),
-				"preparation":mech.rig.contacts.preparation,"impact":mech.rig.contacts.impact,"touchdowns":mech.rig.contacts.touchdown_count})
+				"preparation":mech.rig.contacts.preparation,"impact":mech.rig.contacts.impact,"touchdowns":mech.rig.contacts.touchdown_count,
+				"retro":mech.rig.motion.retro,"roll_stop":mech.rig.motion.roll_stop,
+				"arm_span":absf(mech.rig.arms.hands[0].value.x-mech.rig.arms.hands[1].value.x),
+				"arm_asymmetry":mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z,
+				"hand_forward":(mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5,
+				"knee":mech.rig.legs[1].value.x,"knee_asymmetry":mech.rig.legs[1].value.x-mech.rig.legs[4].value.x,
+				"chest":_array(mech.rig.chest.value),"hip_pose":_array(mech.rig.hips.value),
+				"left_hand":_array(mech.rig.arms.hands[0].value),"right_hand":_array(mech.rig.arms.hands[1].value) })
 		if capture_enabled and capture and tick%4 == 0:
 			var names := PackedStringArray()
 			for key in held: names.append(OS.get_keycode_string(key))
@@ -282,3 +314,8 @@ func _peak(rows: Array, key: String) -> float:
 
 func _array(v: Vector3) -> Array:
 	return [v.x,v.y,v.z]
+
+func _minimum(rows: Array, key: String) -> float:
+	var result := INF
+	for row in rows: result = minf(result,float(row[key]))
+	return result
