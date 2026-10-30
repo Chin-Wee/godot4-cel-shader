@@ -451,6 +451,10 @@ func _update_flight_stats() -> void:
 		fc.DETENTS[fc.detent], fc.engine_level, fc.velocity.length(), fc.hover_assist * 100, fc.aero_authority * 100, fc.g_load, warning,
 		fc.requested_thrust / 1000, fc.delivered_thrust / 1000, fc.torque_fraction * 100,
 		" · TORQUE LIMIT" if fc.torque_saturated else "", " · GIMBAL LIMIT" if fc.motor_saturated else ""]
+	if hero.debug_forces:
+		var weights: PackedFloat32Array = hero.rig.posture_weights
+		var feet = hero.rig.contacts
+		flight_stats.text += "\nPOSE H %.0f / FLIGHT %.0f / SPREAD %.0f / COAST %.0f / LAND %.0f%%\nFEET %s/%s · PROBES %d · IMPACT %.2f" % [weights[0]*100,weights[1]*100,weights[2]*100,weights[3]*100,weights[4]*100,"PLANT" if feet.planted[0] else "FREE","PLANT" if feet.planted[1] else "FREE",feet.probe_count,feet.impact]
 	flight_stats.modulate = Color(1,0.4,0.25) if fc.time_to_impact < 2.4 else Color.WHITE
 	reticle.text = "×" if hit_time > 0.0 else "+"
 	reticle.modulate = Color(1,0.5,0.2) if hit_time > 0.0 else Color(0.8,0.95,1)

@@ -184,7 +184,7 @@ func _run() -> void:
 	scene.animate = false
 	mech.rig.kick_weapon()
 	for frame in 10: mech.update_animation(1.0/60.0)
-	assert(mech.rig.recoil.value.x > 0.01)
+	assert(mech.rig.weapon.recoil.value.x > 0.01)
 	scene.set_walk_mode(true)
 	mech.update_animation(0.3)
 	assert(mech.actor.animation_player.is_playing() and mech.freeze)
@@ -235,7 +235,7 @@ func _check_ik(mech: Node3D) -> bool:
 	for side in 2:
 		var suffix := ".L" if side == 0 else ".R"
 		var hand: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands"+suffix)]
-		var target: Vector3 = mech.rig.hand_targets[side].position
+		var target: Vector3 = mech.rig.weapon.hand_targets[side].position
 		if not hand.origin.is_finite() or not hand.basis.is_finite() or hand.origin.distance_to(target) >= 0.05: return false
 	return true
 

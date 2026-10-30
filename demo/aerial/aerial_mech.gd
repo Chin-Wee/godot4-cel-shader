@@ -45,6 +45,7 @@ var hull: CollisionShape3D
 var leg_reachable := false
 var prediction_clock := 0.0
 var collided := false
+var native_support := false
 var exhaust_throttle := 0.35
 var exhaust_phase := 0.0
 const VECTOR_LIMIT := PI/6.0
@@ -124,9 +125,11 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	rig = FlightPose.new()
 	rig.name = "SpringFlightPose"
 	skeleton.add_child(rig)
-	rig.configure(actor.animation_player)
+	rig.configure(actor.animation_player,self)
+	# Seed the first physics tick; subsequent hardpoints come from the final modifier.
+	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
 	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-	rig.weapon.modification_processed.connect(_on_pose_modified)
+	rig.contacts.alignment.modification_processed.connect(_on_pose_modified)
 	var nozzle_material := surface.duplicate() as ShaderMaterial
 	nozzle_material.set_shader_parameter("body_color",Color(0.065,0.075,0.085))
 	palette_materials.append(nozzle_material)
@@ -204,6 +207,10 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 			"basis":(transform.basis * neutral_bases[index]).orthonormalized()})
 	controller.step(state, FlightController.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable)
 	collided = state.get_contact_count() > 0
+	native_support = false
+	for index in state.get_contact_count():
+		# Godot labels the body side "local", but returns this vector in world axes.
+		if state.get_contact_local_normal(index).dot(Vector3.UP)>0.65: native_support = true
 	prediction_clock -= state.step
 	if prediction_clock <= 0:
 		controller.time_to_impact = predict_impact()
@@ -241,6 +248,10 @@ func reset_flight(origin: Vector3, orientation := Quaternion.IDENTITY, speed := 
 	linear_velocity = speed * FlightController.WORLD_UNITS_PER_METER
 	angular_velocity = Vector3.ZERO
 	controller.reset()
+	rig.reset()
+	native_support = false
+	collided = false
+	prediction_clock = 0.0
 	update_animation(0.0)
 
 func predict_impact() -> float:
@@ -271,14 +282,9 @@ func update_animation(delta: float) -> void:
 	else:
 		actor._play_animation(&"Walk")
 		actor.animation_player.advance(delta)
-	rig.active = mix > 0.0001
-	rig.ik.active = rig.active
-	rig.weapon.active = rig.active
-	rig.influence = mix
-	rig.ik.influence = mix
-	rig.weapon.influence = mix
+	rig.set_weight(mix)
 	actor.rotation = rig.root_angles*mix
-	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value*mix) * display_scale
+	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value*mix+rig.contacts.pelvis.value) * display_scale
 	skeleton.advance(delta)
 
 func _on_pose_modified() -> void:

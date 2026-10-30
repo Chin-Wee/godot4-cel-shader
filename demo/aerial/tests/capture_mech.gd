@@ -96,14 +96,20 @@ func _capture() -> void:
 	await _fighter()
 	await _coast()
 	await _fall()
+	await _landing()
 	await _transitions()
 	await _endurance()
 	_keys([])
 	scene.animate = false
+	for name in ["hover","fighter","inverted","coast","fall","landing","transitions","endurance"]:
+		_expect(report.has(name),"Replay did not complete: "+name)
 	report["failures"] = failures
 	report["physics_hz"] = HZ
 	report["inputs_sha256"] = FileAccess.get_sha256("res://aerial/tests/capture_mech.gd")
 	report["controller_sha256"] = FileAccess.get_sha256("res://aerial/flight_controller.gd")
+	report["pose_sha256"] = {}
+	for file in ["aerial_mech.gd","aerial_demo.gd","flight_pose.gd","weapon_pose.gd","contact_pose.gd","mech_rig_profile.gd","mech_rig_profile.tres","pose_servo.gd"]:
+		report.pose_sha256[file] = FileAccess.get_sha256("res://aerial/"+file)
 	var data := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 	data.store_string(JSON.stringify(report,"  "))
 	data.close()
@@ -111,7 +117,7 @@ func _capture() -> void:
 	await process_frame
 	completed = true
 	if failures.is_empty():
-		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact, seamless transitions, full-thrust drag equilibrium.")
+		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact, planted landing/jump, seamless transitions, full-thrust drag equilibrium.")
 		quit()
 	else:
 		for failure in failures: push_error(failure)
@@ -155,6 +161,32 @@ func _fall() -> void:
 	_expect(_peak(rows,"contacts") > 0,"fall: native capsule never reached terrain")
 	_expect(_peak(rows,"engine") == 0,"fall: descent silently powered the boosters")
 	_expect(absf(_at(rows,6.0).velocity[1]) < absf(_at(rows,3.0).velocity[1]),"fall: spreading did not slow descent")
+
+func _landing() -> void:
+	# A flat, visible fixture isolates sole placement and contact events from
+	# the aerial scene's irregular terrain. It never supplies movement.
+	var platform := StaticBody3D.new()
+	platform.collision_layer = 2
+	platform.collision_mask = 8
+	platform.position = Vector3(175,3100,340)
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(300,20,300)
+	shape.shape = box
+	platform.add_child(shape)
+	var mesh := MeshInstance3D.new()
+	var surface := BoxMesh.new()
+	surface.size = box.size
+	mesh.mesh = surface
+	mesh.material_override = scene.get_node("Terrain").material_override
+	platform.add_child(mesh)
+	scene.add_child(platform)
+	await _fixture(Vector3(175,3270,340),Quaternion.IDENTITY,Vector3(0,-8,0),0)
+	var rows: Array = await _play("landing",480,[[0,[]],[240,[KEY_R]],[241,[]]])
+	_expect(_peak(rows,"preparation")>0.1,"landing: no leg preparation before touchdown")
+	_expect(_peak(rows,"impact")>0.1,"landing: actual contact produced no impact response")
+	_expect(rows[-1].plants==2 and rows[-1].touchdowns==2,"landing: drop/jump did not create exactly two supported touchdowns")
+	platform.queue_free()
 
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
@@ -213,13 +245,15 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 		_expect(fc.aero_force.dot(fc.air_velocity) <= 1.0,name+": aerodynamics added kinetic energy")
 		if tick%6 == 0:
 			var wing: Basis = mech.global_basis*Basis(Vector3.RIGHT,PI/2)
-			var lift: Vector3 = fc.aero_force.slide(fc.air_velocity.normalized())
+			var lift: Vector3 = fc.aero_force.slide(fc.air_velocity.normalized()) if fc.air_velocity.length_squared()>0.00001 else Vector3.ZERO
 			rows.append({"time":float(tick)/HZ,"speed":fc.velocity.length(),"height":mech.position.y/10.0,
 				"velocity":_array(fc.velocity),"command":_array(fc.rotation_command),"acceleration":_array(acceleration),"omega":fc.angular_velocity.length(),
 				"alpha":fc.angular_acceleration.length(),"engine":fc.engine_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
 				"upright":mech.global_basis.y.y,"forward":mech.global_basis.y.dot(Vector3.FORWARD),"inverted":-wing.y.y,
 				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
-				"contacts":int(mech.collided),"torque":fc.torque_fraction})
+				"contacts":int(mech.collided),"torque":fc.torque_fraction,
+				"pose_weights":Array(mech.rig.posture_weights),"plants":int(mech.rig.contacts.planted[0])+int(mech.rig.contacts.planted[1]),
+				"preparation":mech.rig.contacts.preparation,"impact":mech.rig.contacts.impact,"touchdowns":mech.rig.contacts.touchdown_count})
 		if capture_enabled and capture and tick%4 == 0:
 			var names := PackedStringArray()
 			for key in held: names.append(OS.get_keycode_string(key))

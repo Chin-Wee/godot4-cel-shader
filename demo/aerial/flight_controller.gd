@@ -2,7 +2,7 @@ extends RefCounted
 
 # Behavioral references: DCS Su-27 aerodynamic handling and Elite Dangerous
 # independent attitude/momentum. One native body owns motion; this supplies forces.
-const Spring = preload("res://aerial/flight_pose.gd").Spring
+const Spring = preload("res://aerial/pose_servo.gd")
 const DETENTS := [0.0, 0.5, 1.0, 2.0, 4.0]
 # Scene geometry is retained: 10 world units = 1 meter. Forces use N, torque N m.
 const WORLD_UNITS_PER_METER := 10.0
@@ -310,7 +310,9 @@ func aim_frame() -> Basis:
 	return frame * Basis(Vector3.RIGHT, PI / 2.0 * blend)
 
 func limit_aim_direction(direction: Vector3) -> Vector3:
-	var frame := aim_frame()
+	return limit_aim_in_frame(direction, aim_frame())
+
+static func limit_aim_in_frame(direction: Vector3, frame: Basis) -> Vector3:
 	var local := frame.inverse() * direction
 	var yaw := clampf(atan2(-local.x, -local.z), -deg_to_rad(85), deg_to_rad(85))
 	var pitch := clampf(atan2(local.y, Vector2(local.x, local.z).length()), -deg_to_rad(70), deg_to_rad(70))

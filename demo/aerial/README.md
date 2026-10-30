@@ -109,14 +109,19 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   collision. Pause commits the displayed native pose and preserves velocities
   for resume. G walking is an explicitly frozen preview, separate from normal
   takeoff and landing.
-- The physical root attitude leads the pose. Airflow, local acceleration, angular
-  rates/acceleration, AoA departure, drag command, G load, aim and requested thrust
-  drive the existing procedural rig. Pelvis, torso and arms overlap with 30 ms
-  response differences. Free limbs trail airflow; G load, angular acceleration
-  and vertical thrust
-  compress/tuck the legs, opposed braking loads brace them asymmetrically, and
-  ankles follow later than hips/knees. Departure and Shift open the limbs,
-  and the rifle arm resists airflow more strongly. The head leads within its
+- The physical root attitude leads the pose. The visual language combines
+  Hathaway's deliberate combat silhouettes, skydiver relative-wind responses and
+  Titanfall 2 pilot intent. The production architecture reference is
+  [Uncharted 4's animation/secondary-physics layering](https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4).
+  `flight_pose.gd` samples a read-only motion snapshot, blends five normalized
+  posture anchors, and applies bounded servo/load responses. Hover, streamline,
+  spread, coast and landing are weights, not flight-control modes. Posture changes
+  retain servo velocity. There is no perpetual hover sine wave. Relative airflow
+  direction and dynamic pressure are separate; freefall does not produce powered
+  G-load compression. Legs use 0.28/0.32/0.36-second responses and 2.1/2.4/2.6 rad/s
+  speed limits, with a small asymmetry in settling time. Saturated physical
+  vectoring reduces additional load/airflow articulation; actual nozzle cones and
+  force capacities still apply. The head leads within its
   30° yaw / 20° pitch zone; shoulder/torso articulation handles wider aim.
   Rifle aim is bounded to an 85° yaw / 70° pitch envelope. Gears 5's low-ready
   and braced two-hand presentation is the visual reference, rather than a claim
@@ -131,8 +136,10 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   stance. Offhand support fades for wide/unreachable aim and returns to a chest
   guard. Fingers release/regrip; a damped shot impulse drives arm follow-through.
   The camera stays gravity-upright and aiming never steers the chassis.
-  No flight/hover/stall clips play. Imported clips remain for Animation dock
-  preview and dynamic walking; native modifier influence fades out for walking.
+  `weapon_pose.gd` owns target placement, native arm IK, wrist alignment and the
+  final muzzle. No flight/hover/stall clips play. Imported clips remain for
+  Animation dock preview and walking. Body/weapon influence fades for walking;
+  the separate foot-contact layer remains active.
   This supplied model has no independently rigged binders, so no binder animation
   is invented. Movement, motors, weapon clocks, pose and VFX pause together.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
@@ -288,12 +295,46 @@ close-ups and measured against source triangles in bone-local space. The backpac
 uses the paired lower barrels, rather than an estimated point beneath the pack.
 Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
+## Procedural pose ownership and tuning
+
+The fixed-clock pipeline is body posture → weapon targets → arm IK → wrist/muzzle
+alignment → foot targets → leg IK → sole alignment → completed hardpoint cache.
+Godot's `SkeletonModifier3D` child order makes that sequence explicit. Physics
+consumes the last completed pose, not an interpolated camera/render pose.
+
+| File | Owns |
+| --- | --- |
+| `aerial_mech.gd` | Native physics support, existing impact prediction, fixed-clock evaluation and physical hardpoint cache. |
+| `flight_pose.gd` | Read-only motion snapshot, normalized posture weights, bounded body/leg targets and load response. |
+| `weapon_pose.gd` | Low-ready/aim/guard targets, offhand release/regrip, recoil and native arm IK. |
+| `contact_pose.gd` | Grounded/airborne support state, stance/swing, predicted preparation, one-shot impact, native leg IK and sole alignment. |
+| `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times and measured grip/sole offsets. |
+| `pose_servo.gd` | Existing critically damped response, extracted to avoid body/weapon/controller dependency cycles. Animation alone uses its optional finite speed limit. |
+
+Contact prediction only prepares the legs. Physical supporting contact starts
+landing; 50 ms support-loss hysteresis suppresses chatter, and takeoff releases
+plants immediately. Each foot stores a platform-local plant and retains its last
+world target if the platform disappears. Two short foot rays activate only near a
+plausible supported/descending surface. Unsupported or sideways flight cannot
+plant feet from a ray hit alone. The explicit frozen walk preview uses valid floor
+samples and the inspected Walk clip's alternating stance intervals.
+
+The sole offset `(0, 0, -0.227218)` was measured across both rigid foot/armor meshes.
+Foot IK bounds extension and knee flexion; sole tilt is capped at 0.5 radians.
+A bounded visual pelvis sink makes support reachable. These are visual contacts
+over the existing chassis capsule, not articulated suspension or hidden movement
+forces. There is no skeleton/root-motion write to physical world velocity.
+
+F9 also displays posture percentages, foot plants, probe count and impact strength.
+Use the rig profile to tune animation; flight-force tuning remains in the controller.
+
 ## Checks and comparison captures
 
 ```sh
 godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_mech.gd -- /tmp/aerial-mech
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
-godot --headless --path demo --script res://aerial/tests/test_flight_pose.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_flight_pose.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_procedural_pose.gd
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
 godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
 godot --headless --path demo --script res://aerial/tests/test_cloud_field.gd
@@ -347,7 +388,8 @@ re-ignition, capsule collision, source-triangle thruster seating, gimbal limits,
 native IK, braced weapon contact, recoil, pause and retained walking. Fixtures
 alone may reset transforms/velocities; ordinary flight never does.
 
-`capture_mech.gd` contains fixed native-key timelines for five behavior families:
+`capture_mech.gd` contains fixed native-key timelines for five flight behavior
+families, plus isolated landing and endurance fixtures:
 
 | Replay | Fixed input sequence and checks |
 | --- | --- |
@@ -355,6 +397,7 @@ alone may reset transforms/velocities; ordinary flight never does.
 | `fighter` / `inverted` | Powered bank rolls and pitch correction; separate inverted negative-AoA entry verifies upward lift. |
 | `coast` | Zero main thrust; pitch/roll/yaw and release while atmospheric forces account for every velocity change. |
 | `fall` | Unpowered descent, Shift spread/release/spread, then actual terrain contact. |
+| `landing` | Upright drop onto a visible flat platform, planted soles, R jump and exactly one touchdown per landing. |
 | `transitions` | One uninterrupted hover → powered jet → upright braking slide → cutoff/reorientation → re-ignition/jet recovery. |
 | `endurance` | 90 seconds at 4×; checks a stable terminal speed, released angular controls and a worst-pose drag energy ceiling. |
 
@@ -383,7 +426,7 @@ than desktop-wide held-key polling, so window focus cannot release a synthetic
 key midway through a maneuver. Gameplay input is unchanged. The native viewport
 is 960×600 and the replay host stays minimized. Offscreen redraws do not advance
 physics or present a window. Native input timelines therefore stay independent
-of capture stride and GPU speed. `report.json` accompanies the six rendered clips;
+of capture stride and GPU speed. `report.json` accompanies the seven rendered clips;
 endurance records numeric telemetry without thousands of redundant screenshots.
 `--metrics-only` suppresses images when using a native renderer. Run at the
 project's existing 60 Hz physics rate; project settings are not modified.
