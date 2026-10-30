@@ -291,7 +291,7 @@ Missile, trail, explosion, terrain and cloud geometry remain procedural.
 ## Checks and comparison captures
 
 ```sh
-godot --path demo --script res://aerial/tests/capture_mech.gd --resolution 1440x810 --always-on-top -- /tmp/aerial-mech
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_mech.gd -- /tmp/aerial-mech
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
 godot --headless --path demo --script res://aerial/tests/test_flight_pose.gd
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
@@ -395,10 +395,10 @@ maximum thrust plus gravity. These are consequences of quadratic drag, not speed
 clamps. Main-off momentum remains subject to actual gravity/lift/drag; the separate
 vacuum check still proves that attitude torque cannot rewrite linear momentum.
 
-These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 1280×800 resolution
+These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 960×600 resolution
 with its host window minimized. Captures explicitly request a native redraw so a frozen window
-does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode
-is rejected immediately for visual capture. Shader validation requires rendered
+does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mech runs
+record physics telemetry without producing images. Shader validation requires rendered
 frames, not the headless functional check alone. The separate soft-depth probe
 renders two intersecting spheres and checks that the enabled material fades at
 the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
