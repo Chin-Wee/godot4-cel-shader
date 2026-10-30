@@ -1,7 +1,7 @@
 extends SkeletonModifier3D
 
-# Uncharted 4's controlled secondary-motion layering: free arms anticipate
-# steering, catch braking loads and lag/recover from chassis rotation.
+# Uncharted 4's intent/secondary-motion layering, with skydiver body-flight
+# shapes and deliberate start-coast-stop shoulder/elbow strokes.
 const RigProfile = preload("res://aerial/mech_rig_profile.gd")
 const Servo = preload("res://aerial/pose_servo.gd")
 var profile: RigProfile
@@ -68,16 +68,19 @@ func update(delta: float, frame: Dictionary) -> void:
 		var sx := 1.0 if side==0 else -1.0
 		var base: Vector3 = profile.arm_hover.lerp(profile.arm_coast,frame.coast)
 		base = base.lerp(profile.arm_stream,frame.stream)
+		base = base.lerp(profile.arm_box,frame.box)
 		base = base.lerp(profile.arm_brake,frame.brake)
 		base = base.lerp(profile.arm_retro,frame.retro)
 		var hand := base*Vector3(sx,1,1)
-		var inside := maxf(sx*frame.roll,0.0)
-		var outside := maxf(-sx*frame.roll,0.0)
-		# Inside arm gathers; outside arm reaches. Release opens the opposite side
-		# to arrest remaining roll instead of instantly returning to neutral.
-		hand += Vector3(sx*(-1.2*inside+0.65*outside)+frame.yaw*0.65-frame.roll_stop*0.55,
-			inside*0.75-outside*0.25+frame.pitch*0.65,
-			sx*frame.yaw*0.90-frame.pitch*0.85+frame.brake_rate*0.15)
+		var steer: Vector3 = frame.steer
+		var inside := maxf(sx*steer.z,0.0)
+		var outside := maxf(-sx*steer.z,0.0)
+		# Deliberate body flight: roll gathers one arm and opens the other; yaw
+		# presses one shoulder/forearm into the air; pitch reaches or tucks both.
+		# Commanded strokes work before any airflow, load or rotation appears.
+		hand += Vector3(sx*(-1.1*inside+0.8*outside)+steer.y*0.35,
+			inside*0.8-outside*0.55+steer.x*1.25,
+			sx*steer.y*1.35+steer.x*0.65+sx*steer.z*0.65+frame.brake_rate*0.15)
 		hand += Vector3(0,sx*absf(frame.roll)*frame.up.z*0.45,sx*absf(frame.roll)*frame.up.x*0.55)
 		hand += frame.flow*frame.pressure*Vector3(0.20,0.15,0.35)
 		# Body -Z forward becomes source +Z forward. Arms trail changes in
@@ -87,19 +90,21 @@ func update(delta: float, frame: Dictionary) -> void:
 		var source_alpha: Vector3 = frame.alpha*Vector3(-1,1,-1)
 		var balance := -source_acceleration*profile.arm_balance_gain*clampf(frame.g_load,0,1)
 		balance -= source_alpha.cross(Vector3(sx*0.65,-0.4,0.2))*0.18
-		balance = balance.limit_length(1.4)
+		balance = balance.limit_length(0.75)
 		hand += balance+Vector3(sx*absf(balance.x)*0.3,absf(balance.x)*0.5+absf(balance.z)*0.2,0)
 		hand += Vector3(sx*frame.trim.x,frame.trim.y*(0.65+side*0.25),frame.trim.z*sx)*profile.hover_arm_motion*frame.hover
 		# Comfortable hand workspace prevents load response crossing the chest.
 		hand.x = sx*clampf(sx*hand.x,2.6,5.2)
-		hand.y = clampf(hand.y,-3.2,0.5)
+		hand.y = clampf(hand.y,-3.2,4.0)
 		hand.z = clampf(hand.z,-0.8,3.5)
 		hands[side].follow(hand,delta,profile.arm_frequency+side*0.08,profile.arm_damping,profile.arm_speed)
-		# Elbows stay behind the wrists and near the ribs. Only loaded actions
-		# widen them; steering cannot flip the elbow plane around the arm.
+		# Relaxed elbows stay near the ribs. Body flight widens them into a box,
+		# while steering presses the same calibrated hinge without a plane flip.
 		var pole := profile.arm_elbow_pole*Vector3(sx,1,1)
+		pole = pole.lerp(profile.arm_box_pole*Vector3(sx,1,1),frame.box)
 		pole += Vector3(sx*(frame.brake*0.8+outside*0.3),inside*0.2,frame.retro*0.5)
-		poles[side].step(pole+Vector3(frame.yaw*0.3,0,0),delta,0.20,10.0)
+		pole += Vector3(sx*(-inside*0.25+outside*0.55),steer.x*0.3,sx*steer.y*1.15+sx*steer.z*0.5)
+		poles[side].step(pole,delta,0.12,12.0)
 
 func _process_modification() -> void:
 	var sk := get_skeleton()

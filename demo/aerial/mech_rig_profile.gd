@@ -21,18 +21,20 @@ extends Resource
 @export var joint_max := PackedVector3Array([Vector3(0.65,0.5,0.65), Vector3(1.65,0,0), Vector3(0.5,0.2,0.2)])
 @export var leg_response := Vector3(0.28,0.32,0.36)
 @export var joint_speed := Vector3(2.1,2.4,2.6) # Radians/second.
-@export var body_frequency := 1.8
+@export var body_frequency := 2.5
 @export var body_damping := 0.78
 # Both arms are free: source-frame hand targets mirrored about the torso.
 @export var arm_hover := Vector3(3.05,-2.8,0.85)
 @export var arm_stream := Vector3(2.95,-2.65,0.35)
-@export var arm_brake := Vector3(4.5,-1.0,2.0)
+@export var arm_brake := Vector3(5.1,2.6,2.5)
 @export var arm_retro := Vector3(3.2,-1.1,2.8)
 @export var arm_coast := Vector3(3.2,-2.45,1.0)
+@export var arm_box := Vector3(4.7,3.0,1.8)
+@export var arm_box_pole := Vector3(5.7,1.1,-1.5)
 @export var arm_elbow_pole := Vector3(2.9,-0.4,-4.0)
-@export var arm_balance_gain := Vector3(0.085,0.025,0.085) # Source units per m/s².
-@export var arm_frequency := 1.35
-@export var arm_damping := 0.68
+@export var arm_balance_gain := Vector3(0.04,0.018,0.04) # Source units per m/s².
+@export var arm_frequency := 2.1
+@export var arm_damping := 0.82
 @export var arm_speed := 12.0
 @export var hover_leg_motion := 0.07
 @export var hover_arm_motion := 0.30

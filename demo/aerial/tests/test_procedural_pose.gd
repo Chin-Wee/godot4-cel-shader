@@ -105,19 +105,19 @@ func _run() -> void:
 	fc.local_acceleration = Vector3(14,0,0)
 	await _pose_ticks(60)
 	var lateral_catch: float = (mech.rig.arms.hands[0].value.x+mech.rig.arms.hands[1].value.x)*0.5
-	assert(lateral_catch>0.7,"Arms did not balance a change in lateral momentum")
+	assert(lateral_catch>0.4,"Arms did not balance a change in lateral momentum")
 	fc.local_acceleration = Vector3(-14,0,0)
 	await _pose_ticks(60)
-	assert((mech.rig.arms.hands[0].value.x+mech.rig.arms.hands[1].value.x)*0.5 < -0.7,"Balance catch did not reverse with acceleration")
+	assert((mech.rig.arms.hands[0].value.x+mech.rig.arms.hands[1].value.x)*0.5 < -0.4,"Balance catch did not reverse with acceleration")
 	fc.local_acceleration = Vector3(0,0,12)
 	await _pose_ticks(60)
 	var forward_catch: float = mech.rig.arms.hands[0].value.z
 	fc.local_acceleration = Vector3(0,0,-12)
 	await _pose_ticks(60)
-	assert(forward_catch-mech.rig.arms.hands[0].value.z>1.5,"Arms do not distinguish acceleration from deceleration")
+	assert(forward_catch-mech.rig.arms.hands[0].value.z>0.7,"Arms do not distinguish acceleration from deceleration")
 	fc.local_acceleration = Vector3.ZERO
 	await _pose_ticks(1)
-	assert(mech.rig.arms.hands[0].value.z<0.5,"Balance catch snapped away on release")
+	assert(mech.rig.arms.hands[0].value.z<0.7,"Balance catch snapped away on release")
 	await _pose_ticks(120)
 	assert(mech.rig.arms.hands[0].value.distance_to(mech.rig.profile.arm_coast)<0.01,"Arms never settled after momentum stopped changing")
 	fc.g_load = 0
@@ -139,11 +139,11 @@ func _run() -> void:
 	assert(mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z < -1)
 	fc.rotation_command = Vector3(-1,0,0)
 	await _pose_ticks(90)
-	var pitch_down: float = (mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5
+	var pitch_down: float = (mech.rig.arms.hands[0].value.y+mech.rig.arms.hands[1].value.y)*0.5
 	assert(mech.rig.chest.value.x < -0.04)
 	fc.rotation_command = Vector3(1,0,0)
 	await _pose_ticks(90)
-	assert((mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5 < pitch_down-0.8)
+	assert((mech.rig.arms.hands[0].value.y+mech.rig.arms.hands[1].value.y)*0.5 > pitch_down+1.5,"Pitch does not actively reach/tuck both arms")
 	assert(mech.rig.chest.value.x>0.04)
 	fc.rotation_command = Vector3(0,0,1)
 	await _pose_ticks(90)
@@ -155,6 +155,31 @@ func _run() -> void:
 	assert(mech.rig.motion.roll_stop>0.3 and mech.rig.arms.hands[0].velocity.length()>0.1,"Roll release lost follow-through")
 	mech.angular_velocity = Vector3.ZERO
 	fc.angular_acceleration = Vector3.ZERO
+	# With no motion or load response, the pilot must still initiate a visible
+	# shoulder stroke. Matching angular speed relaxes it; release counterstrokes.
+	fc.rotation_command = Vector3(0,1,0)
+	await _pose_ticks(24)
+	var start_stroke: float = mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z
+	assert(start_stroke>2 and mech.rig.chest.value.y>0.08,"Upper body waits for inertia instead of initiating the turn")
+	mech.angular_velocity = fc.pilot_frame()*Vector3(0,fc.MAX_RATE.y,0)
+	await _pose_ticks(30)
+	var coast_stroke: float = mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z
+	assert(coast_stroke>0.1 and coast_stroke<start_stroke*0.5,"Held turn never relaxes toward neutral")
+	fc.rotation_command = Vector3.ZERO
+	await _pose_ticks(18)
+	assert(mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z < -0.8 and mech.rig.chest.value.y<0,"Turn release does not actively counterstroke")
+	mech.angular_velocity = Vector3.ZERO
+	fc.local_airflow = Vector3(0,0,75)
+	await _pose_ticks(120)
+	assert(mech.rig.motion.box>0.9 and mech.rig.chest.value.x< -0.06,"Broadside freefall never establishes an arch")
+	for side in 2:
+		assert(mech.rig.arms.hands[side].value.y>2.5,"Freefall forearms do not rise toward head level")
+	fc.local_airflow = Vector3(0,-75,0)
+	fc.aero_authority = 1
+	await _pose_ticks(120)
+	assert(mech.rig.motion.box<0.01)
+	for side in 2: assert(mech.rig.arms.hands[side].value.y< -2.3,"Head-first tracking did not tuck the arms")
+	fc.aero_authority = 0
 	# A real opposing force/travel geometry selects retro bracing, independently
 	# of Shift and independent of the animation's world orientation.
 	mech.quaternion = Quaternion(Vector3.RIGHT,PI/2)
@@ -252,7 +277,7 @@ func _run() -> void:
 			else: swing_ticks[side] += 1
 	for side in 2: assert(stance_ticks[side]>20 and swing_ticks[side]>20,"Walk did not alternate stance and swing")
 	completed = true
-	print("Procedural pose checks passed: servo limits, natural elbow geometry, acceleration/deceleration balance and recovery, fluid full-body hover, two-arm braking, steering/roll/reverse choreography, load/airflow separation, gun removal, inversion, predicted landing, one touchdown, grounded soles, platform tracking, contact release, slope normals and walking stance/swing.")
+	print("Procedural pose checks passed: active start/coast/stop shoulder strokes before motion, freefall box/arch and tracking tuck, secondary balance/recovery, natural elbows, fluid hover, braking, steering/roll/retro, servo limits, inversion, landing prediction, one touchdown, grounded soles, platform tracking, contact release, slope normals and walking stance/swing.")
 	scene.queue_free()
 	await process_frame
 	quit()

@@ -100,11 +100,12 @@ func _capture() -> void:
 	await _braking()
 	await _retro()
 	await _maneuvers()
+	await _bodyflight()
 	await _transitions()
 	await _endurance()
 	_keys([])
 	scene.animate = false
-	for name in ["hover","fighter","inverted","coast","fall","landing","braking","retro","maneuvers","transitions","endurance"]:
+	for name in ["hover","fighter","inverted","coast","fall","landing","braking","retro","maneuvers","bodyflight","transitions","endurance"]:
 		_expect(report.has(name),"Replay did not complete: "+name)
 	report["failures"] = failures
 	report["physics_hz"] = HZ
@@ -120,7 +121,7 @@ func _capture() -> void:
 	await process_frame
 	completed = true
 	if failures.is_empty():
-		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact, planted landing/jump, full-body braking/retro/steering/roll recovery, seamless transitions, full-thrust drag equilibrium.")
+		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact and active body-flight, planted landing/jump, full-body braking/retro/steering/roll recovery, seamless transitions, full-thrust drag equilibrium.")
 		quit()
 	else:
 		for failure in failures: push_error(failure)
@@ -213,6 +214,14 @@ func _maneuvers() -> void:
 	_expect(_peak(rows,"roll_stop")>0.2,"maneuvers: roll release has no arrest/recovery phase")
 	_expect(_peak(rows,"knee_asymmetry")>0.06 or _minimum(rows,"knee_asymmetry") < -0.06,"maneuvers: legs never scissor in a turn")
 
+func _bodyflight() -> void:
+	await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,-50,0),0)
+	var rows: Array = await _play("bodyflight",540,[[0,[]],[60,[KEY_Q]],[88,[]],[165,[KEY_E]],[193,[]],
+		[270,[KEY_D]],[300,[]],[360,[KEY_S]],[390,[]],[435,[KEY_W]],[465,[]]])
+	_expect(_peak(rows,"engine")==0,"bodyflight: freefall silently powered the main engines")
+	_expect(_peak(rows,"box")>0.8 and _peak(rows,"hand_height")>2.0,"bodyflight: arms never establish a raised box position")
+	_expect(_peak(rows,"arm_asymmetry")>0.8 and _minimum(rows,"arm_asymmetry")< -0.8,"bodyflight: opposite turns lack active shoulder strokes")
+
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
 	var rows: Array = await _play("transitions",1380,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[214,[]],
@@ -280,9 +289,11 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"pose_weights":Array(mech.rig.posture_weights),"plants":int(mech.rig.contacts.planted[0])+int(mech.rig.contacts.planted[1]),
 				"preparation":mech.rig.contacts.preparation,"impact":mech.rig.contacts.impact,"touchdowns":mech.rig.contacts.touchdown_count,
 				"retro":mech.rig.motion.retro,"roll_stop":mech.rig.motion.roll_stop,
+				"box":mech.rig.motion.box,"steer":_array(mech.rig.motion.steer),
 				"arm_span":absf(mech.rig.arms.hands[0].value.x-mech.rig.arms.hands[1].value.x),
 				"arm_asymmetry":mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z,
 				"hand_forward":(mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5,
+				"hand_height":(mech.rig.arms.hands[0].value.y+mech.rig.arms.hands[1].value.y)*0.5,
 				"knee":mech.rig.legs[1].value.x,"knee_asymmetry":mech.rig.legs[1].value.x-mech.rig.legs[4].value.x,
 				"chest":_array(mech.rig.chest.value),"hip_pose":_array(mech.rig.hips.value),
 				"left_hand":_array(mech.rig.arms.hands[0].value),"right_hand":_array(mech.rig.arms.hands[1].value) })

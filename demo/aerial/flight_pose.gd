@@ -67,6 +67,9 @@ func update(delta: float, controller) -> void:
 	motion["hover"] = posture_weights[0]
 	motion["coast"] = posture_weights[3]
 	motion["brake"] = posture_weights[2]
+	# Broadside relative wind calls for an active box position; head-first
+	# airflow retains the compact tracking pose. No flight mode or input gate.
+	motion["box"] = smoothstep(0.04,0.35,motion.pressure)*smoothstep(0.25,0.75,absf(motion.flow.z))*(1.0-motion.stream)*(1.0-posture_weights[4])
 	motion.make_read_only()
 	_update_body(delta)
 	_update_legs(delta,controller)
@@ -81,7 +84,10 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var alpha: Vector3 = basis.inverse()*controller.angular_acceleration
 	var pilot_rates: Vector3 = pilot.inverse()*controller.angular_velocity
 	var intent: Vector3 = controller.rotation_command
-	var body_intent: Vector3 = basis.inverse()*pilot*intent
+	# USPA start-coast-stop: command/rate mismatch starts a stroke, sustained
+	# rotation relaxes it, releasing input creates an opposing arrest stroke.
+	# This is a visual intent signal, not another attitude controller.
+	var steer: Vector3 = ((intent-pilot_rates/controller.MAX_RATE)*1.25+intent*0.2).clamp(-Vector3.ONE,Vector3.ONE)
 	var load := clampf((controller.g_load-1.0)/3.0,0,1.2)
 	var acceleration: Vector3 = controller.local_acceleration
 	var compression := clampf(load*0.75+alpha.length()*0.028+clampf(-acceleration.z/30.0,0,1)*0.25+contacts.impact*0.4,0,1.3)
@@ -99,7 +105,8 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
 		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
-		"body_intent":body_intent,"up":basis.inverse()*Vector3.UP,"trim":trim,
+		"up":basis.inverse()*Vector3.UP,"trim":trim,
+		"steer":steer,"body_steer":basis.inverse()*pilot*steer,
 		"retro":retro,"brake_rate":brake_rate}
 
 func _choose_posture(controller) -> void:
@@ -114,18 +121,21 @@ func _update_body(delta: float) -> void:
 	var omega: Vector3 = motion.omega
 	var alpha: Vector3 = motion.alpha
 	var acceleration: Vector3 = motion.acceleration
-	var intent: Vector3 = motion.body_intent
+	var intent: Vector3 = motion.body_steer
 	var lag := Vector3(omega.x*0.11+alpha.x*0.01,omega.y*0.07,omega.z*0.11+alpha.z*0.01)
 	lag += Vector3(acceleration.z*0.004,-acceleration.x*0.002,-acceleration.x*0.005)
 	var brace := Vector3(motion.brake*0.12+motion.retro*0.16,0,motion.side_load*0.06)
-	var anticipation := intent*Vector3(0.075,0.09,0.11)
+	var anticipation := intent*Vector3(0.15,0.14,0.16)
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
 	hips.step((-anticipation*0.25+lag*0.35+hover).limit_length(0.09),delta,0.14,0.8)
 	root_angles = hips.value*Vector3(-1,1,1)
 	var displacement := Vector3(-acceleration.x*0.004,-clampf(motion.g_load-1,-1,3)*0.025,acceleration.z*0.004)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
 	com.step(displacement.limit_length(0.16),delta,0.16,1.0)
-	chest.follow((lag+anticipation+brace-hover*0.5).limit_length(0.24),delta,profile.body_frequency,profile.body_damping,2.0)
+	# Chest establishes the arch and leads the shoulder press. Load lag stays
+	# secondary so the upper body looks piloted rather than pulled by inertia.
+	var arch := Vector3(-0.09*motion.box,0,0)
+	chest.follow((lag*0.3+anticipation+brace*0.6+arch-hover*0.5).limit_length(0.24),delta,profile.body_frequency,profile.body_damping,2.0)
 	# Head leads the maneuver and counter-rolls slightly; mouse look never
 	# imposes a weapon-facing pose on the torso or either arm.
 	head.step(Vector3(intent.x*0.10,intent.y*0.18,-chest.value.z*0.55),delta,0.10,3.0)

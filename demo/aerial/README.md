@@ -301,8 +301,8 @@ consumes the last completed pose, not an interpolated camera/render pose.
 | File | Owns |
 | --- | --- |
 | `aerial_mech.gd` | Native physics support, existing impact prediction, fixed-clock evaluation and physical hardpoint cache. |
-| `flight_pose.gd` | Read-only motion snapshot, normalized posture weights, bounded body/leg targets and load response. |
-| `arm_pose.gd` | Both free arms, calibrated elbow hinges, acceleration-driven balance catches, maneuver anticipation, braking/retro bracing, roll recovery, fingers and native arm IK. |
+| `flight_pose.gd` | Read-only motion snapshot, continuous start/coast/stop intent, normalized posture weights, active chest/arch and bounded body/leg targets. |
+| `arm_pose.gd` | Active body-flight shoulder/elbow strokes, raised box and tracking shapes, secondary balance, braking/retro bracing, calibrated hinges, fingers and native arm IK. |
 | `contact_pose.gd` | Grounded/airborne support state, stance/swing, predicted preparation, one-shot impact, native leg IK and sole alignment. |
 | `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times, free-hand anchors and measured sole offsets. |
 | `pose_servo.gd` | Critical response shared with physics; an exact underdamped response adds animation follow-through. Animation alone uses finite speed limits. |
@@ -320,13 +320,26 @@ Native [TwoBoneIK3D](https://docs.godotengine.org/en/latest/classes/class_twobon
 still owns the solve. Its pole targets widen only during loaded actions.
 
 Following the existing Uncharted 4 secondary-motion layering reference, measured
-linear and angular acceleration drive a bounded arm balance response. The
-body-to-source conversion is explicit (-X, +Y, -Z). Both hands trail momentum
-changes, open during lateral catches, retain their spring velocity on release,
-and settle once acceleration ends. This reacts to acceleration, not travel speed;
-unloaded freefall gravity does not create a false catch. Braking and reverse thrust
-retain distinct poses. Comfortable hand bounds prevent the extra response crossing
-the chest; the rig profile exposes the balance gain and elbow calibration.
+pilot intent now leads chest and shoulder/elbow strokes. The visual reference is
+skydiver body flight: [USPA's start-coast-stop turn sequence](https://www.uspa.org/skydiveschool/d)
+and the [APF's neutral, turning and tracking shapes](https://www.apf.com.au/members/members/publications/misc-publications/basic-body-flight-for-b-rels-and-beyond).
+This adapts those visual cues to the mech's existing rotation controls; it does
+not claim limb-resolved aerodynamic forces.
+
+Command minus normalized angular rate supplies a continuous stroke signal.
+A turn begins with a shoulder/forearm press, relaxes as the chassis reaches the
+requested rate, and counterstrokes on release while rotation remains. Pitch
+reaches or tucks both arms; roll gathers one arm and opens the other. Chest and
+head lead that intent. Broadside airflow blends into a raised, bent-elbow box
+position with wrists near head level and a modest chest arch; head-first tracking returns to a compact pose.
+Hover retains the calibrated relaxed arms. There is no timer-driven gesture loop,
+new flight mode or additional movement controller.
+
+Measured linear/angular acceleration still adds smaller balance catches and
+spring recovery. The body-to-source conversion is explicit (-X, +Y, -Z).
+Unloaded freefall gravity does not create a false catch. Braking and reverse
+thrust retain distinct poses. Comfortable hand bounds prevent crossing the chest;
+the rig profile exposes anchors, response, balance gain and elbow calibration.
 
 Contact prediction only prepares the legs. Physical supporting contact starts
 landing; 50 ms support-loss hysteresis suppresses chatter, and takeoff releases
@@ -418,6 +431,7 @@ families, plus isolated landing, braking, retro-thrust, steering/roll and endura
 | `braking` | Main-off approach, Shift spread/release, two-arm opening, knee bracing and measured deceleration. |
 | `retro` | Powered engines opposing existing travel, forward arm brace, then acceleration along the new facing. |
 | `maneuvers` | Opposed roll commands, release/recovery and left/right yaw, with arm and knee asymmetry checks. |
+| `bodyflight` | Unpowered broadside freefall, opposing yaw presses, roll and pitch/release; checks raised box arms and asymmetric steering strokes. |
 | `transitions` | One uninterrupted hover → powered jet → upright braking slide → cutoff/reorientation → re-ignition/jet recovery. |
 | `endurance` | 90 seconds at 4×; checks a stable terminal speed, released angular controls and a worst-pose drag energy ceiling. |
 
