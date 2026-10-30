@@ -302,7 +302,7 @@ consumes the last completed pose, not an interpolated camera/render pose.
 | --- | --- |
 | `aerial_mech.gd` | Native physics support, existing impact prediction, fixed-clock evaluation and physical hardpoint cache. |
 | `flight_pose.gd` | Read-only motion snapshot, normalized posture weights, bounded body/leg targets and load response. |
-| `arm_pose.gd` | Both free arms, maneuver anticipation, braking/retro bracing, roll recovery, fingers and native arm IK. |
+| `arm_pose.gd` | Both free arms, calibrated elbow hinges, acceleration-driven balance catches, maneuver anticipation, braking/retro bracing, roll recovery, fingers and native arm IK. |
 | `contact_pose.gd` | Grounded/airborne support state, stance/swing, predicted preparation, one-shot impact, native leg IK and sole alignment. |
 | `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times, free-hand anchors and measured sole offsets. |
 | `pose_servo.gd` | Critical response shared with physics; an exact underdamped response adds animation follow-through. Animation alone uses finite speed limits. |
@@ -311,6 +311,22 @@ Physical ragdolls were considered using Godot's `PhysicalBoneSimulator3D`.
 This pass keeps the existing capsule/force owner and uses bounded secondary limb
 motion instead: extra rigid bodies would need a separate articulated physics and
 thruster-control design. No physical ragdoll or limb collision is claimed.
+
+Relaxed arms hang below the measured shoulders at source X ±2.699. Elbows stay
+near the ribs and behind the wrists, with a small forward forearm bend. The IK
+twist axis is measured from each imported rest hinge rather than assumed to be
+generic -Z; the previous lateral poles rolled the shoulder armor outward.
+Native [TwoBoneIK3D](https://docs.godotengine.org/en/latest/classes/class_twoboneik3d.html)
+still owns the solve. Its pole targets widen only during loaded actions.
+
+Following the existing Uncharted 4 secondary-motion layering reference, measured
+linear and angular acceleration drive a bounded arm balance response. The
+body-to-source conversion is explicit (-X, +Y, -Z). Both hands trail momentum
+changes, open during lateral catches, retain their spring velocity on release,
+and settle once acceleration ends. This reacts to acceleration, not travel speed;
+unloaded freefall gravity does not create a false catch. Braking and reverse thrust
+retain distinct poses. Comfortable hand bounds prevent the extra response crossing
+the chest; the rig profile exposes the balance gain and elbow calibration.
 
 Contact prediction only prepares the legs. Physical supporting contact starts
 landing; 50 ms support-loss hysteresis suppresses chatter, and takeoff releases

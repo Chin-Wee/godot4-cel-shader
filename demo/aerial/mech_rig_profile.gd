@@ -24,16 +24,18 @@ extends Resource
 @export var body_frequency := 1.8
 @export var body_damping := 0.78
 # Both arms are free: source-frame hand targets mirrored about the torso.
-@export var arm_hover := Vector3(3.6,-2.4,0.6)
-@export var arm_stream := Vector3(2.8,-1.9,-0.2)
-@export var arm_brake := Vector3(5.4,-0.2,1.5)
-@export var arm_retro := Vector3(3.5,-0.6,2.7)
-@export var arm_coast := Vector3(3.8,-1.4,1.0)
+@export var arm_hover := Vector3(3.05,-2.8,0.85)
+@export var arm_stream := Vector3(2.95,-2.65,0.35)
+@export var arm_brake := Vector3(4.5,-1.0,2.0)
+@export var arm_retro := Vector3(3.2,-1.1,2.8)
+@export var arm_coast := Vector3(3.2,-2.45,1.0)
+@export var arm_elbow_pole := Vector3(2.9,-0.4,-4.0)
+@export var arm_balance_gain := Vector3(0.085,0.025,0.085) # Source units per m/s².
 @export var arm_frequency := 1.35
 @export var arm_damping := 0.68
 @export var arm_speed := 12.0
 @export var hover_leg_motion := 0.07
-@export var hover_arm_motion := 0.65
+@export var hover_arm_motion := 0.30
 @export var maneuver_leg_motion := 0.22
 @export var leg_airflow_gain := 0.22
 # Measured minimum of both rigid foot meshes, in Feet.L/R bone space.

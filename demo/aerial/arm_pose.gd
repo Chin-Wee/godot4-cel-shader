@@ -41,14 +41,21 @@ func configure(player: AnimationPlayer, rig_profile: RigProfile) -> void:
 		ik.set_target_node(side,ik.get_path_to(hand_targets[side]))
 		ik.set_pole_node(side,ik.get_path_to(pole_targets[side]))
 		ik.set_pole_direction(side,SkeletonModifier3D.SECONDARY_DIRECTION_CUSTOM)
-		ik.set_pole_direction_vector(side,Vector3(0,0,-1))
+		# Preserve the imported elbow hinge/twist. A generic pole axis and lateral
+		# pole rolled the shoulder armor outward even with a lowered hand target.
+		var root := sk.get_bone_global_rest(ik.get_root_bone(side)).origin
+		var middle := sk.get_bone_global_rest(ik.get_middle_bone(side))
+		var end := sk.get_bone_global_rest(ik.get_end_bone(side)).origin
+		var bend := (middle.origin-root).slide((end-root).normalized())
+		bend = bend.slide((end-middle.origin).normalized()).normalized()
+		ik.set_pole_direction_vector(side,middle.basis.inverse()*bend)
 	reset()
 
 func reset() -> void:
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		hands[side].reset(profile.arm_hover*Vector3(sx,1,1))
-		poles[side].reset(Vector3(sx*5.0,-1.0,1.0))
+		poles[side].reset(profile.arm_elbow_pole*Vector3(sx,1,1))
 
 func set_weight(weight: float) -> void:
 	for modifier in [self,ik]:
@@ -72,11 +79,26 @@ func update(delta: float, frame: Dictionary) -> void:
 			inside*0.75-outside*0.25+frame.pitch*0.65,
 			sx*frame.yaw*0.90-frame.pitch*0.85+frame.brake_rate*0.15)
 		hand += Vector3(0,sx*absf(frame.roll)*frame.up.z*0.45,sx*absf(frame.roll)*frame.up.x*0.55)
-		hand += frame.flow*frame.pressure*Vector3(0.30,0.25,0.55)
-		hand += Vector3(-frame.acceleration.x*0.025,-frame.acceleration.y*0.012,-frame.acceleration.z*0.025).limit_length(0.8)
+		hand += frame.flow*frame.pressure*Vector3(0.20,0.15,0.35)
+		# Body -Z forward becomes source +Z forward. Arms trail changes in
+		# momentum, then the existing spring catches and recovers them. Freefall
+		# has no supported load to throw the arms up against gravity.
+		var source_acceleration: Vector3 = frame.acceleration*Vector3(-1,1,-1)
+		var source_alpha: Vector3 = frame.alpha*Vector3(-1,1,-1)
+		var balance := -source_acceleration*profile.arm_balance_gain*clampf(frame.g_load,0,1)
+		balance -= source_alpha.cross(Vector3(sx*0.65,-0.4,0.2))*0.18
+		balance = balance.limit_length(1.4)
+		hand += balance+Vector3(sx*absf(balance.x)*0.3,absf(balance.x)*0.5+absf(balance.z)*0.2,0)
 		hand += Vector3(sx*frame.trim.x,frame.trim.y*(0.65+side*0.25),frame.trim.z*sx)*profile.hover_arm_motion*frame.hover
+		# Comfortable hand workspace prevents load response crossing the chest.
+		hand.x = sx*clampf(sx*hand.x,2.6,5.2)
+		hand.y = clampf(hand.y,-3.2,0.5)
+		hand.z = clampf(hand.z,-0.8,3.5)
 		hands[side].follow(hand,delta,profile.arm_frequency+side*0.08,profile.arm_damping,profile.arm_speed)
-		var pole := Vector3(sx*(5.0+frame.brake),-1.0+inside*0.5,1.0+frame.retro*1.2)
+		# Elbows stay behind the wrists and near the ribs. Only loaded actions
+		# widen them; steering cannot flip the elbow plane around the arm.
+		var pole := profile.arm_elbow_pole*Vector3(sx,1,1)
+		pole += Vector3(sx*(frame.brake*0.8+outside*0.3),inside*0.2,frame.retro*0.5)
 		poles[side].step(pole+Vector3(frame.yaw*0.3,0,0),delta,0.20,10.0)
 
 func _process_modification() -> void:

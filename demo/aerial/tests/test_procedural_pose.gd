@@ -72,6 +72,15 @@ func _run() -> void:
 	assert(mech.rig.legs[0].value.distance_to(still)>0.01,"Hover legs never transfer weight")
 	assert(mech.rig.arms.hands[0].value.distance_to(hand_before)>0.2,"Hover arms remain static")
 	assert(mech.rig.chest.value.distance_to(chest_before)>0.005,"Hover torso never counterbalances the limbs")
+	# Check completed joint geometry, not just target numbers: relaxed elbows
+	# must hang near the ribs and behind the hands instead of turning out.
+	var torso_inverse: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
+	for side in 2:
+		var shoulder: Vector3 = torso_inverse*mech.bone_poses[mech.rig.arms.ik.get_root_bone(side)].origin
+		var elbow: Vector3 = torso_inverse*mech.bone_poses[mech.rig.arms.ik.get_middle_bone(side)].origin
+		var hand: Vector3 = torso_inverse*mech.bone_poses[mech.rig.arms.ik.get_end_bone(side)].origin
+		assert(absf(elbow.x-shoulder.x)<0.65 and elbow.z<shoulder.z-0.35,"Relaxed elbow flares outward")
+		assert(hand.y < -2.2 and hand.z>elbow.z+0.5,"Relaxed arm does not hang with a forward forearm")
 	assert(mech.global_transform.is_equal_approx(transform) and mech.linear_velocity.is_zero_approx(),"Presentation moved the physical body")
 	assert(mech.rig.contacts.probe_count==0 and not mech.rig.contacts.planted[0])
 	assert(not mech.skeleton.find_child("GUN",false,false).visible and not scene.has_method("fire_weapon"))
@@ -80,13 +89,43 @@ func _run() -> void:
 	fc.g_load = 0
 	await _pose_ticks(120)
 	assert(mech.rig.legs[0].value.distance_to(still)>0.25,"Spread posture has no readable leg change")
-	for side in 2: assert(absf(mech.rig.arms.hands[side].value.x)>4.5,"Braking did not open both arms")
+	for side in 2: assert(absf(mech.rig.arms.hands[side].value.x)>4.0,"Braking did not open both arms")
 	assert(mech.rig.motion.compression==0,"Freefall created powered G-load compression")
 	var sum := 0.0
 	for weight in mech.rig.posture_weights:
 		assert(weight>=0 and weight<=1.0001)
 		sum += weight
 	assert(absf(sum-1)<0.0001)
+	# No steering input: measured acceleration alone must produce a mirrored
+	# balance catch, persist briefly after release, then settle back to neutral.
+	fc.brake_amount = 0
+	fc.local_airflow = Vector3.ZERO
+	fc.hover_assist = 0
+	fc.g_load = 1
+	fc.local_acceleration = Vector3(14,0,0)
+	await _pose_ticks(60)
+	var lateral_catch: float = (mech.rig.arms.hands[0].value.x+mech.rig.arms.hands[1].value.x)*0.5
+	assert(lateral_catch>0.7,"Arms did not balance a change in lateral momentum")
+	fc.local_acceleration = Vector3(-14,0,0)
+	await _pose_ticks(60)
+	assert((mech.rig.arms.hands[0].value.x+mech.rig.arms.hands[1].value.x)*0.5 < -0.7,"Balance catch did not reverse with acceleration")
+	fc.local_acceleration = Vector3(0,0,12)
+	await _pose_ticks(60)
+	var forward_catch: float = mech.rig.arms.hands[0].value.z
+	fc.local_acceleration = Vector3(0,0,-12)
+	await _pose_ticks(60)
+	assert(forward_catch-mech.rig.arms.hands[0].value.z>1.5,"Arms do not distinguish acceleration from deceleration")
+	fc.local_acceleration = Vector3.ZERO
+	await _pose_ticks(1)
+	assert(mech.rig.arms.hands[0].value.z<0.5,"Balance catch snapped away on release")
+	await _pose_ticks(120)
+	assert(mech.rig.arms.hands[0].value.distance_to(mech.rig.profile.arm_coast)<0.01,"Arms never settled after momentum stopped changing")
+	fc.g_load = 0
+	fc.local_acceleration = Vector3.DOWN*9.81
+	await _pose_ticks(60)
+	assert(mech.rig.arms.hands[0].value.distance_to(mech.rig.profile.arm_coast)<0.01,"Freefall gravity created a false arm balance catch")
+	fc.g_load = 1
+	fc.local_acceleration = Vector3.ZERO
 	# Steering anticipates chassis movement; left/right poses must be distinct.
 	fc.brake_amount = 0
 	fc.local_airflow = Vector3.ZERO
@@ -213,7 +252,7 @@ func _run() -> void:
 			else: swing_ticks[side] += 1
 	for side in 2: assert(stance_ticks[side]>20 and swing_ticks[side]>20,"Walk did not alternate stance and swing")
 	completed = true
-	print("Procedural pose checks passed: servo limits, fluid full-body hover, two-arm braking, steering/roll/reverse choreography, load/airflow separation, gun removal, inversion, predicted landing, one touchdown, grounded soles, platform tracking, contact release, slope normals and walking stance/swing.")
+	print("Procedural pose checks passed: servo limits, natural elbow geometry, acceleration/deceleration balance and recovery, fluid full-body hover, two-arm braking, steering/roll/reverse choreography, load/airflow separation, gun removal, inversion, predicted landing, one touchdown, grounded soles, platform tracking, contact release, slope normals and walking stance/swing.")
 	scene.queue_free()
 	await process_frame
 	quit()

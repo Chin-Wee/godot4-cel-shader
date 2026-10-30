@@ -195,7 +195,7 @@ func _braking() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-80),0)
 	var rows: Array = await _play("braking",480,[[0,[]],[60,[KEY_SHIFT]],[240,[]]])
 	_expect(_at(rows,2.5).speed < _at(rows,1.0).speed-10,"braking: spread did not shed speed")
-	_expect(_peak(rows,"arm_span")>9.0,"braking: both arms never opened")
+	_expect(_peak(rows,"arm_span")>8.0,"braking: both arms never opened")
 	_expect(_peak(rows,"knee")>0.8,"braking: legs did not brace")
 
 func _retro() -> void:
