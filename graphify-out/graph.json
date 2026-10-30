@@ -1404,6 +1404,24 @@
       "source_location": "L257"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_asphantomcameranoise3d",
+      "label": ".AsPhantomCameraNoise3D()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 16,
+      "community_name": "PhantomCamera3DExtensions",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": ".asphantomcameranoise3d()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L54"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_getthirdpersonquaternion",
       "label": ".GetThirdPersonQuaternion()",
       "_callable": true,
@@ -1582,6 +1600,24 @@
       "norm_label": ".asphantomcamera2d()",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
       "source_location": "L30"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions_asphantomcameranoise2d",
+      "label": ".AsPhantomCameraNoise2D()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "Node2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": ".asphantomcameranoise2d()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L40"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions_asphantomcameranoiseemitter2d",
@@ -1794,42 +1830,6 @@
       "norm_label": ".new()",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
       "source_location": "L63"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions_asphantomcameranoise2d",
-      "label": ".AsPhantomCameraNoise2D()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "TransitionType",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": ".asphantomcameranoise2d()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L40"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_asphantomcameranoise3d",
-      "label": ".AsPhantomCameraNoise3D()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 3,
-      "community_name": "TransitionType",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": ".asphantomcameranoise3d()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L54"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween_phantomcamera_phantomcameratween_new",
@@ -2093,7 +2093,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L276"
+      "source_location": "L283"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2105,7 +2105,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L291"
+      "source_location": "L331"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2118,6 +2118,18 @@
       "norm_label": "implementation and reference",
       "source_file": "demo/aerial/README.md",
       "source_location": "L46"
+    },
+    {
+      "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
+      "label": "Procedural pose ownership and tuning",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "procedural pose ownership and tuning",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L298"
     },
     {
       "id": "demo_aerial_readme_run_and_controls",
@@ -2141,7 +2153,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L407"
+      "source_location": "L450"
     },
     {
       "id": "readme",
@@ -12043,7 +12055,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L276",
+      "source_location": "L283",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L298",
       "weight": 1.0
     },
     {
@@ -12054,7 +12077,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L291",
+      "source_location": "L331",
       "weight": 1.0
     },
     {
@@ -12065,7 +12088,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L407",
+      "source_location": "L450",
       "weight": 1.0
     },
     {
@@ -12842,5 +12865,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "3463a629ef4d28ee48cf8014ab2cc17e78d1d43f"
+  "built_at_commit": "a17fb15d5b1efc944c0bb7d81791e170cec33640"
 }
