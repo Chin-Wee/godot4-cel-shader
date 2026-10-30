@@ -97,7 +97,7 @@ func _run() -> void:
 	await _ticks(12)
 	assert(mech.controller.hover_assist < 0.01, "Fast departure engaged hover correction")
 	assert(mech.controller.rotation_command.x > 0.7, "Pitch stopped during departure")
-	assert(mech.controller.brake_amount > 0.8)
+	assert(mech.controller.brake_amount > 0.3 and mech.controller.brake_amount < 0.7, "Brake spread should build gradually")
 	# Airflow generates lift with engines off; Shift adds real deceleration.
 	var cruise := Quaternion(Vector3.RIGHT,-PI/2)
 	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,0,-80), 0)
@@ -141,7 +141,7 @@ func _run() -> void:
 	mech.controls = {}
 	await _ticks(60)
 	_key(KEY_C); _key(KEY_C); _key(KEY_C)
-	await _ticks(35)
+	await _ticks(45) # 2× -> 0 takes 2/3 s at the calibrated spool rate.
 	assert(mech.controller.delivered_thrust == 0)
 	mech.controls = {"right":true,"back":true}
 	await _ticks(45)

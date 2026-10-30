@@ -78,7 +78,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   within their 30-degree cones. Calibrated low-power shares are backpack 12.5%
   each, calf 7.5% each, heel 30% each. Shares smoothly equalize over 1.5–4× output,
   reaching one-sixth each at maximum power. Bounded hover gimbal trim removes
-  residual bias; it moves physical motors and cannot create extra force.
+  residual bias; it moves physical motors and cannot create extra force. Port-cant
+  feed-forward is body-relative so yaw cannot leave stale world trim fighting the
+  motors. Velocity feedback is 3.2/s and residual integral trim is 1.0/s².
 - One damped angular-rate controller uses native shape-derived inertia and finite
   cold-gas torque. Requested rates are 1.0/0.8/1.2 rad/s before precision scaling;
   actuator limits correspond to 5 rad/s² per body axis. Main-engine moments consume
@@ -98,8 +100,11 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   attack and attached flow. Quadratic drag includes broadside area, induced drag,
   passive high-speed drag and Shift spread. Engine-off gliding and falling use
   these same equations; no velocity clamp supplies a terminal falling speed.
-- R applies a 0.16-second, 4 G contact-leg push only while suitable ground remains
-  within 0.8 m of leg reach. It never changes main power or writes velocity. Native
+  Named feel parameters retain positive base Cd 0.075 plus 0.28 high-speed Cd.
+  Engines spool at 3 hover multiples/s. Shift spread uses a 0.28 s critically
+  damped response and 1.8 added Cd for a forgiving braking slide.
+- R applies a 0.22-second sinusoidal contact-leg push with a 4 G peak only while
+  suitable ground remains within 0.8 m of leg reach. It never changes main power or writes velocity. Native
   contact handles touchdown. This is one chassis capsule, not articulated limb
   collision. Pause commits the displayed native pose and preserves velocities
   for resume. G walking is an explicitly frozen preview, separate from normal
@@ -110,7 +115,7 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   response differences. Free limbs trail airflow; G load, angular acceleration
   and vertical thrust
   compress/tuck the legs, opposed braking loads brace them asymmetrically, and
-  ankles follow later than hips/knees. Departure and X open the limbs,
+  ankles follow later than hips/knees. Departure and Shift open the limbs,
   and the rifle arm resists airflow more strongly. The head leads within its
   30° yaw / 20° pitch zone; shoulder/torso articulation handles wider aim.
   Rifle aim is bounded to an 85° yaw / 70° pitch envelope. Gears 5's low-ready
@@ -342,11 +347,54 @@ re-ignition, capsule collision, source-triangle thruster seating, gimbal limits,
 native IK, braced weapon contact, recoil, pause and retained walking. Fixtures
 alone may reset transforms/velocities; ordinary flight never does.
 
-`capture_mech.gd` runs a 108-frame uninterrupted native-input replay. Space/C
-selects power and cutoff, WASD/QE rotates, Shift brakes, then power is restored.
-`telemetry.json` records force/torque, power, hover/airflow, brake and saturation.
-`forces.png` displays F9 diagnostics. The host stays minimized; frames come from
-an offscreen native viewport at 1280×800.
+`capture_mech.gd` contains fixed native-key timelines for five behavior families:
+
+| Replay | Fixed input sequence and checks |
+| --- | --- |
+| `hover` | R leg push, two Space presses to 1×, short pitch/roll/yaw inputs, then neutral gyro/drift settling. |
+| `fighter` / `inverted` | Powered bank rolls and pitch correction; separate inverted negative-AoA entry verifies upward lift. |
+| `coast` | Zero main thrust; pitch/roll/yaw and release while atmospheric forces account for every velocity change. |
+| `fall` | Unpowered descent, Shift spread/release/spread, then actual terrain contact. |
+| `transitions` | One uninterrupted hover → powered jet → upright braking slide → cutoff/reorientation → re-ignition/jet recovery. |
+| `endurance` | 90 seconds at 4×; checks a stable terminal speed, released angular controls and a worst-pose drag energy ceiling. |
+
+Fixtures set initial conditions once per replay. Timed inputs never rewrite
+position, attitude or velocity. Each native physics tick checks finite state,
+non-positive aerodynamic work and the applied-force momentum budget. Regressions
+also limit jump/brake acceleration jerk and residual hover drift. Contact impulses are
+excluded from flight smoothness limits. All reports include input timelines,
+controller/driver hashes, sampled numeric telemetry, peaks and failures.
+
+For fast automated checks and JSON telemetry:
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/capture_mech.gd -- /tmp/flight-replays
+```
+
+For native offscreen captures of those same inputs at 15 fps:
+
+```sh
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_mech.gd -- /tmp/flight-replays-native
+```
+
+The replay owns its held-key snapshot and sends native key events through the
+same game input handler. It uses the actor's existing replay-control field rather
+than desktop-wide held-key polling, so window focus cannot release a synthetic
+key midway through a maneuver. Gameplay input is unchanged. The native viewport
+is 960×600 and the replay host stays minimized. Offscreen redraws do not advance
+physics or present a window. Native input timelines therefore stay independent
+of capture stride and GPU speed. `report.json` accompanies the six rendered clips;
+endurance records numeric telemetry without thousands of redundant screenshots.
+`--metrics-only` suppresses images when using a native renderer. Run at the
+project's existing 60 Hz physics rate; project settings are not modified.
+
+Measured 4× equilibrium is approximately 142 m/s in the reference straight-flight
+fixture. With 10,000 kg mass, 80 m² area and sea-level density, the minimum
+high-speed Cd gives a conservative any-orientation bound near 168 m/s under
+maximum thrust plus gravity. These are consequences of quadratic drag, not speed
+clamps. Main-off momentum remains subject to actual gravity/lift/drag; the separate
+vacuum check still proves that attitude torque cannot rewrite linear momentum.
+
 These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 1280×800 resolution
 with its host window minimized. Captures explicitly request a native redraw so a frozen window
 does not wait indefinitely for an automatic frame; a watchdog bounds failures. Headless mode

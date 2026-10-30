@@ -12,6 +12,20 @@ const VECTOR_LIMIT := PI / 6.0
 const MAX_RATE := Vector3(1.0, 0.8, 1.2)
 const RATE_GAIN := 6.0
 const MAX_ANGULAR_ACCELERATION := 5.0
+# Feel parameters. Time in seconds, speed in m/s, accelerations in multiples of g.
+const INPUT_RESPONSE := 0.14
+const BRAKE_RESPONSE := 0.28
+const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
+const HOVER_DRIFT_GAIN := 3.2
+const HOVER_TRIM_GAIN := 1.0
+const HOVER_CANT_BIAS := 0.25
+const JUMP_PUSH_TIME := 0.22
+const JUMP_PEAK_G := 4.0
+# Cd stays positive in every pose. High-speed drag supplies a finite energy bound.
+const AERO_AREA_M2 := 80.0
+const BASE_DRAG_CD := 0.075
+const HIGH_SPEED_DRAG_CD := 0.28
+const BRAKE_DRAG_CD := 1.8
 const ACTION_KEYS := {
 	"flight_forward": KEY_W, "flight_back": KEY_S,
 	"flight_left": KEY_A, "flight_right": KEY_D,
@@ -120,7 +134,7 @@ func reset() -> void:
 	jump_requested = false
 	jump_remaining = 0.0
 	brake_amount = 0.0
-	hover_gimbal_trim = Basis(attitude).z * GRAVITY * 0.25
+	hover_gimbal_trim = Vector3.ZERO
 	control_blend = 0.0
 	clock = 0.0
 	sampled = false
@@ -169,8 +183,8 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 		float(raw.get("yaw_left", false)) - float(raw.get("yaw_right", false)),
 		float(raw.get("left", false)) - float(raw.get("right", false)))
 	released_axes = Vector3(1.0 - absf(request.x), 0, 1.0 - absf(request.z))
-	rotation_command = command.step(request * precision, dt, 0.14)
-	brake_amount = clampf(brake.step(Vector3(float(raw.get("brake", false)), 0, 0), dt, 0.12).x, 0, 1)
+	rotation_command = command.step(request * precision, dt, INPUT_RESPONSE)
+	brake_amount = clampf(brake.step(Vector3(float(raw.get("brake", false)), 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
 
 func _measure_airflow(frame: Basis, dt: float) -> void:
 	var speed := air_velocity.length()
@@ -198,26 +212,29 @@ func _calculate_aerodynamics(frame: Basis) -> void:
 	var direction := air_velocity.normalized()
 	var wing := frame * Basis(Vector3.RIGHT, PI / 2.0)
 	# ponytail: one calibrated lifting area/polar; use measured data if supplied.
-	var area := 80.0 * pow(model_scale / 50.0, 2)
+	var area := AERO_AREA_M2 * pow(model_scale / 50.0, 2)
 	var pressure_area := 0.5 * air_density * speed * speed * area
 	var lift_coefficient := clampf(angle_of_attack * 3.2 + 0.32, -1.1, 1.1) * attached_flow
 	var lift := wing.y.slide(direction).normalized() * pressure_area * lift_coefficient if speed > 0.1 else Vector3.ZERO
 	var broadside := absf(direction.dot(frame.z))
-	var drag_coefficient := 0.075 + 0.28 * smoothstep(35, 100, speed) + 0.75 * broadside * broadside + 0.15 * lift_coefficient * lift_coefficient + 3.2 * brake_amount
+	var drag_coefficient := BASE_DRAG_CD + HIGH_SPEED_DRAG_CD * smoothstep(35, 100, speed) + 0.75 * broadside * broadside + 0.15 * lift_coefficient * lift_coefficient + BRAKE_DRAG_CD * brake_amount
 	aero_force = lift - direction * pressure_area * drag_coefficient
 
 func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 	var neutral := minf(released_axes.x, released_axes.z)
 	var motion := air_velocity + wind
 	var horizontal := Vector3(motion.x, 0, motion.z)
-	var correction := (-horizontal * 1.3).limit_length(GRAVITY * 0.45) * hover_assist * neutral
+	var correction := (-horizontal * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.45) * hover_assist * neutral
 	# Bounded integral trim removes steady bias from the canted physical ports.
 	# It only moves gimbals; it cannot add translational force or exceed a cone.
 	if hover_assist > 0.01 and neutral > 0.9:
-		hover_gimbal_trim = (hover_gimbal_trim - horizontal * dt * 1.8 * hover_assist).limit_length(GRAVITY * 1.5)
+		hover_gimbal_trim = (hover_gimbal_trim - horizontal * dt * HOVER_TRIM_GAIN * hover_assist).limit_length(GRAVITY * 1.5)
 	else:
 		hover_gimbal_trim *= exp(-dt / 0.4)
-	var desired := (frame.y * GRAVITY + correction + hover_gimbal_trim * hover_assist).normalized()
+	# Port cant is body-relative feed-forward, so yaw cannot leave stale world
+	# trim fighting the motors. Integral trim only learns the remaining error.
+	var cant_bias := frame.z * GRAVITY * HOVER_CANT_BIAS
+	var desired := (frame.y * GRAVITY + correction + (cant_bias + hover_gimbal_trim) * hover_assist).normalized()
 	var vertical_fraction := 0.0
 	motor_saturated = false
 	for index in 6:
@@ -238,7 +255,7 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		var compensated := clampf(support / (body.mass * GRAVITY * vertical_fraction), 0, 2)
 		target = lerpf(target, compensated, hover_assist)
 	requested_thrust = target * body.mass * GRAVITY
-	engine_level = move_toward(engine_level, target, dt * 4.0)
+	engine_level = move_toward(engine_level, target, dt * ENGINE_SPOOL_RATE)
 	delivered_thrust = engine_level * body.mass * GRAVITY
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
@@ -274,12 +291,13 @@ func _calculate_attitude_torque(state: PhysicsDirectBodyState3D) -> void:
 
 func _calculate_jump(leg_reach: bool, dt: float) -> void:
 	if jump_requested:
-		if grounded and jump_remaining <= 0: jump_remaining = 0.16
+		if grounded and jump_remaining <= 0: jump_remaining = JUMP_PUSH_TIME
 		jump_requested = false
 	leg_force = Vector3.ZERO
 	if jump_remaining > 0 and leg_reach:
 		# Finite stance extension, permitted only while the ground is in leg reach.
-		leg_force = Vector3.UP * body.mass * GRAVITY * 4.0
+		var extension := 1.0 - jump_remaining / JUMP_PUSH_TIME
+		leg_force = Vector3.UP * body.mass * GRAVITY * JUMP_PEAK_G * sin(PI * extension)
 	jump_remaining = maxf(0, jump_remaining - dt)
 
 func pilot_frame() -> Basis:

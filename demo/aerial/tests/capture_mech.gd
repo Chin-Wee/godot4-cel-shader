@@ -1,9 +1,18 @@
 extends SceneTree
 
+# Fixed-input behavioral replays: DCS Su-27 flight and Elite Dangerous momentum.
+# This is a test driver, never a gameplay movement/pose controller.
+const Controller = preload("res://aerial/flight_controller.gd")
+const HZ := 60
 var completed := false
 var viewport: SubViewport
 var scene
 var held := []
+var output := "/tmp/flight-scenarios"
+var capture_enabled := false
+var failures := []
+var report := {}
+var replay_label: Label
 
 func _initialize() -> void:
 	call_deferred("_capture")
@@ -19,117 +28,220 @@ func _keys(keys: Array) -> void:
 	for code in keys:
 		if not code in held: _event(code, true)
 	held = keys.duplicate()
-	Input.flush_buffered_events()
+	# Reuse the actor's existing replay-input path. OS focus/key releases must
+	# never change a hardcoded timeline while the user works in another app.
+	scene.hero.controls = {}
+	for action in Controller.ACTION_KEYS:
+		scene.hero.controls[action.trim_prefix("flight_")] = keys.has(Controller.ACTION_KEYS[action])
 
 func _event(code: Key, pressed: bool) -> void:
 	var event := InputEventKey.new()
 	event.physical_keycode = code
 	event.pressed = pressed
-	# SubViewport has no container: route native events into its input pipeline.
-	Input.parse_input_event(event)
-	viewport.push_input(event)
+	scene._unhandled_input(event) # Same native InputEvent/InputMap handler as play.
 
 func _save(path: String) -> void:
-	await process_frame
-	RenderingServer.force_draw()
+	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+	RenderingServer.force_draw(false) # Offscreen capture needs no window presentation.
 	var frame := viewport.get_texture().get_image()
 	assert(not frame.is_empty() and frame.get_size() == viewport.size)
 	assert(frame.save_png(path) == OK)
 
+func _fixture(origin: Vector3, orientation: Quaternion, speed: Vector3, level: int) -> void:
+	_keys([])
+	scene.animate = true
+	scene.hero.freeze = true
+	await _ticks(1)
+	scene.hero.reset_flight(origin, orientation, speed)
+	scene.hero.controller.detent = level
+	scene.hero.controller.engine_level = Controller.DETENTS[level]
+	scene.hero.freeze = false
+	await _ticks(3)
+
 func _capture() -> void:
 	create_timer(240).timeout.connect(func():
-		if not completed: push_error("Native rigid flight replay did not finish"); quit(1))
-	assert(DisplayServer.get_name() != "headless", "Use the native renderer for visual validation")
-	var arguments := OS.get_cmdline_user_args()
-	var output: String = arguments[0] if not arguments.is_empty() else "/tmp/rigid-flight-visual"
+		if not completed: push_error("Flight scenario replays did not finish"); quit(1))
+	assert(Engine.physics_ticks_per_second == HZ, "Run these fixed inputs at 60 physics ticks/s")
+	var args := OS.get_cmdline_user_args()
+	if not args.is_empty(): output = args[0]
+	capture_enabled = DisplayServer.get_name() != "headless" and not "--metrics-only" in args
 	assert(output.is_absolute_path() and DirAccess.make_dir_recursive_absolute(output) == OK)
 	viewport = SubViewport.new()
-	viewport.size = Vector2i(1280,800)
+	viewport.size = Vector2i(960,600)
 	viewport.own_world_3d = true
 	viewport.msaa_3d = root.msaa_3d
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	# Physics keeps ticking. Render only requested captures, independent of the GPU.
+	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	root.add_child(viewport)
 	scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	viewport.add_child(scene)
-	root.title = "Godot rigid flight validation"
-	root.mode = Window.MODE_MINIMIZED
+	scene.set_process(false)
+	scene.set_process_unhandled_input(false)
+	scene.hero.player_controlled = false
 	scene.follow_camera = false
-	scene.animate = false
-	scene.hero.reset_flight(Vector3(175,1600,340))
-	scene.animate = true
-	await _ticks(60)
-	var records := []
-	var saw_brake := false
-	var saw_zero := false
-	var saw_rotation := false
-	# This replay is uninterrupted. Every control arrives through native events.
-	for frame in 108:
-		match frame:
-			0: _keys([])
-			8: _keys([KEY_SPACE,KEY_W])
-			9: _keys([KEY_W])
-			28: _keys([])
-			38: _keys([KEY_C])
-			39: _keys([])
-			40: _keys([KEY_C])
-			41: _keys([])
-			42: _keys([KEY_C])
-			43: _keys([KEY_D,KEY_E])
-			62: _keys([KEY_SHIFT,KEY_D,KEY_S])
-			76: _keys([])
-			80: _keys([KEY_SPACE])
-			81: _keys([])
-			82: _keys([KEY_SPACE])
-			83: _keys([])
-			84: _keys([KEY_SPACE,KEY_W])
-			85: _keys([KEY_W])
-			100: _keys([])
-		await _ticks(3)
-		var mech = scene.hero
-		var fc = mech.controller
-		var expected := {8:2.0,38:1.0,40:0.5,42:0.0,80:0.5,82:1.0,84:2.0}
-		if expected.has(frame): assert(fc.DETENTS[fc.detent] == expected[frame], "Native key press changed more than one detent")
-		scene.camera.position = mech.position + Vector3(165,55,115)
-		scene.camera.look_at(mech.position)
-		scene._update_flight_stats()
-		await _save(output.path_join("flight-%03d.png" % frame))
-		assert(mech.scale.is_equal_approx(Vector3.ONE), "Physics root was scaled")
-		assert(mech.position.is_finite() and fc.velocity.is_finite())
-		assert(not mech.actor.animation_player.is_playing())
-		_check_mounts(mech)
-		saw_brake = saw_brake or fc.brake_amount > 0.9
-		saw_zero = saw_zero or (frame > 45 and fc.delivered_thrust == 0)
-		saw_rotation = saw_rotation or (frame > 45 and frame < 60 and fc.rotation_command.length() > 0.9)
-		records.append({"frame":frame,"detent":fc.DETENTS[fc.detent],"engine":fc.engine_level,
-			"hover":fc.hover_assist,"aero":fc.aero_authority,"velocity":str(fc.velocity),
-			"rotation":str(fc.rotation_command),"main_force":str(fc.main_force),
-			"aero_force":str(fc.aero_force),"rcs_torque":str(fc.rcs_torque),
-			"brake":fc.brake_amount,"torque_saturated":fc.torque_saturated})
-	assert(saw_brake and saw_zero and saw_rotation, "Replay missed braking, main cutoff or free rotation")
+	scene.clouds.set_coverage(0.4)
+	if DisplayServer.get_name() != "headless":
+		root.title = "Godot flight scenario validation"
+		root.mode = Window.MODE_MINIMIZED
+	if capture_enabled:
+		replay_label = Label.new()
+		replay_label.position = Vector2(20,555)
+		replay_label.add_theme_font_size_override("font_size",18)
+		replay_label.add_theme_constant_override("outline_size",4)
+		replay_label.add_theme_color_override("font_outline_color",Color.BLACK)
+		scene.hud.add_child(replay_label)
+	await _ticks(2)
+	await _hover()
+	await _fighter()
+	await _coast()
+	await _fall()
+	await _transitions()
+	await _endurance()
 	_keys([])
-	scene.hero.debug_forces = true
-	scene.hero.update_force_debug()
-	await _save(output.path_join("forces.png"))
 	scene.animate = false
-	var frozen: Transform3D = scene.hero.global_transform
-	await _ticks(6)
-	assert(scene.hero.global_transform.is_equal_approx(frozen), "Native replay did not pause")
-	var data := FileAccess.open(output.path_join("telemetry.json"),FileAccess.WRITE)
-	data.store_string(JSON.stringify(records,"  "))
+	report["failures"] = failures
+	report["physics_hz"] = HZ
+	report["inputs_sha256"] = FileAccess.get_sha256("res://aerial/tests/capture_mech.gd")
+	report["controller_sha256"] = FileAccess.get_sha256("res://aerial/flight_controller.gd")
+	var data := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
+	data.store_string(JSON.stringify(report,"  "))
 	data.close()
-	# Supplied poses remain in the Animation dock; authored flight stays stopped.
-	assert(scene.hero.actor.animation_player.has_animation(&"GunPose"))
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Native rigid flight checks passed: real Space/C detents, Shift braking, continuous six-axis flight, main cutoff, free rotation, gimbal limits, mounted boosters, force diagnostics and pause.")
-	quit()
+	if failures.is_empty():
+		print("Flight scenario replays passed: jump/hover, banked and inverted lift, unpowered attitude/momentum, skydiver contact, seamless transitions, full-thrust drag equilibrium.")
+		quit()
+	else:
+		for failure in failures: push_error(failure)
+		quit(1)
 
-func _check_mounts(mech) -> void:
-	for index in 10:
-		var pivot: Node3D = (mech.gimbals + mech.gas_gimbals)[index]
-		var socket: BoneAttachment3D = (mech.sockets + mech.gas_sockets)[index]
-		var relative: Basis = mech.neutral_bases[index].inverse() * pivot.basis
-		assert(relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) <= mech.VECTOR_LIMIT + 0.001)
-		var bone: int = mech.skeleton.find_bone(socket.bone_name)
-		assert(socket.global_transform.is_equal_approx(mech.skeleton.global_transform * mech.bone_poses[bone]), "Booster left its animated inlay")
+func _hover() -> void:
+	var ground: float = scene.ground_height(Vector3(175,0,340))
+	await _fixture(Vector3(175,ground+45.2,340),Quaternion.IDENTITY,Vector3.ZERO,0)
+	var rows: Array = await _play("hover",600,[[0,[KEY_R]],[1,[]],[2,[KEY_SPACE]],[3,[]],[4,[KEY_SPACE]],[5,[]],
+		[120,[KEY_W]],[150,[]],[240,[KEY_D,KEY_CTRL]],[270,[]],[330,[KEY_Q]],[360,[]]])
+	_expect(_peak(rows,"leg") > 0,"hover: R never produced a contact-leg push")
+	_expect(_peak(rows,"height") > (ground+48.0)/10.0,"hover: jump never cleared the ground")
+	_expect(report.hover.max_jerk < 700,"hover: jump or catch force arrived too abruptly")
+	_expect(rows[-1].speed < 0.5 and rows[-1].upright > 0.99,"hover: neutral flight failed to settle upright")
+
+func _fighter() -> void:
+	await _fixture(Vector3(175,6000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-70),3)
+	var rows: Array = await _play("fighter",720,[[0,[]],[60,[KEY_D]],[217,[]],[280,[KEY_W]],[298,[]],[390,[KEY_D]],[547,[]]])
+	_expect(_peak(rows,"engine") >= 1.99,"fighter: powered flight did not maintain thrust")
+	_expect(_peak(rows,"inverted") > 0.9,"fighter: fixed roll did not reach inverted flight")
+	_expect(_peak(rows,"aero") > 0.8,"fighter: never established useful airflow")
+	# An inverted negative-AoA entry must produce upward lift, still using physics.
+	var inverted := Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2-deg_to_rad(10))
+	await _fixture(Vector3(175,6000,340),inverted,Vector3(0,0,-80),3)
+	rows = await _play("inverted",180,[[0,[]]])
+	_expect(rows[0].lift_up > 0,"fighter: inverted negative-AoA flight produced no upward lift")
+
+func _coast() -> void:
+	await _fixture(Vector3(175,6000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(35,0,-70),0)
+	var rows: Array = await _play("coast",360,[[0,[KEY_S]],[60,[KEY_S,KEY_D]],[120,[]],[210,[KEY_Q]],[240,[]]])
+	_expect(_peak(rows,"engine") == 0 and _peak(rows,"hover") == 0,"coast: unpowered flight received main/hover assistance")
+	_expect(_peak(rows,"angle") > 1.0,"coast: freely rotating chassis did not turn")
+	_expect(rows[-1].velocity[0] > 0 and rows[-1].velocity[2] < 0,"coast: reorientation reversed existing travel")
+	_expect(rows[-1].omega < 0.05,"coast: released angular input never settled")
+
+func _fall() -> void:
+	var ground: float = scene.ground_height(Vector3(175,0,340))
+	await _fixture(Vector3(175,ground+5000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,-20,0),0)
+	var rows: Array = await _play("fall",1320,[[0,[]],[180,[KEY_SHIFT]],[420,[]],[600,[KEY_SHIFT]]])
+	_expect(report.fall.max_jerk < 80,"fall: spread force arrived too abruptly")
+	_expect(_peak(rows,"contacts") > 0,"fall: native capsule never reached terrain")
+	_expect(_peak(rows,"engine") == 0,"fall: descent silently powered the boosters")
+	_expect(absf(_at(rows,6.0).velocity[1]) < absf(_at(rows,3.0).velocity[1]),"fall: spreading did not slow descent")
+
+func _transitions() -> void:
+	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
+	var rows: Array = await _play("transitions",1380,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[214,[]],
+		[480,[KEY_C,KEY_S]],[481,[KEY_S]],[500,[KEY_S,KEY_SHIFT]],[530,[KEY_S]],[574,[]],
+		[694,[KEY_C]],[695,[]],[696,[KEY_C]],[697,[]],[700,[KEY_S]],[790,[]],[850,[KEY_W]],[940,[]],
+		[970,[KEY_SPACE]],[971,[]],[972,[KEY_SPACE]],[973,[]],[974,[KEY_SPACE,KEY_W]],[975,[KEY_W]],[1068,[]]])
+	_expect(report.transitions.max_jerk < 250,"transitions: brake or thrust handoff arrived too abruptly")
+	_expect(_at(rows,7.0).forward > 0.9 and _at(rows,7.0).speed > 35,"transitions: hover-to-jet did not establish forward flight")
+	_expect(_at(rows,10.5).upright > 0.9,"transitions: combat slide never became upright")
+	_expect(_at(rows,10.0).speed > 10,"transitions: upright rotation erased the slide")
+	_expect(_at(rows,13.5).engine == 0,"transitions: C cutoff did not reach zero")
+	_expect(rows[-1].engine > 1.9 and rows[-1].forward > 0.85 and rows[-1].speed > 35,"transitions: re-ignition never recovered forward flight")
+
+func _endurance() -> void:
+	await _fixture(Vector3(175,200000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-70),4)
+	var rows: Array = await _play("endurance",5400,[[0,[]]],false)
+	var early: Dictionary = _at(rows,70.0)
+	var late: Dictionary = _at(rows,89.0)
+	# Even the least-drag orientation must dissipate more power than maximum
+	# thrust plus gravity can supply above this speed. This is not a speed clamp.
+	var drag_scale: float = 0.5 * scene.hero.controller.air_density * Controller.AERO_AREA_M2 * (Controller.BASE_DRAG_CD + Controller.HIGH_SPEED_DRAG_CD)
+	var bound := sqrt(5.0 * scene.hero.mass * Controller.GRAVITY / drag_scale)
+	report.endurance["physical_speed_bound"] = bound
+	_expect(_peak(rows,"speed") < minf(175,bound*1.03),"endurance: full thrust exceeded the physical drag ceiling")
+	_expect(absf(late.speed-early.speed) < 2.0,"endurance: speed never converged under sustained full thrust")
+	_expect(late.omega < 0.1,"endurance: uncommanded full-power rotation did not settle")
+
+func _play(name: String, count: int, events: Array, capture := true) -> Array:
+	var mech = scene.hero
+	var fc = mech.controller
+	var rows := []
+	var event_index := 0
+	var max_speed := 0.0
+	var max_jerk := 0.0
+	var max_residual := 0.0
+	var last_acceleration := Vector3.ZERO
+	var initial: Quaternion = mech.quaternion
+	for tick in count:
+		if event_index < events.size() and tick == events[event_index][0]:
+			_keys(events[event_index][1])
+			event_index += 1
+		var before: Vector3 = fc.velocity
+		var force: Vector3 = fc.main_force+fc.aero_force+fc.leg_force
+		await _ticks(1)
+		scene._process(1.0/HZ)
+		var acceleration: Vector3 = fc.acceleration
+		var jerk: float = (acceleration-last_acceleration).length()*HZ
+		last_acceleration = acceleration
+		var residual: float = (fc.velocity-before-(force/mech.mass+Vector3.DOWN*Controller.GRAVITY)/HZ).length()
+		if tick > 2 and not mech.collided:
+			max_jerk = maxf(max_jerk,jerk)
+			max_residual = maxf(max_residual,residual)
+		max_speed = maxf(max_speed,fc.velocity.length())
+		_expect(fc.velocity.is_finite() and mech.position.is_finite(),name+": non-finite physics state")
+		_expect(fc.aero_force.dot(fc.air_velocity) <= 1.0,name+": aerodynamics added kinetic energy")
+		if tick%6 == 0:
+			var wing: Basis = mech.global_basis*Basis(Vector3.RIGHT,PI/2)
+			var lift: Vector3 = fc.aero_force.slide(fc.air_velocity.normalized())
+			rows.append({"time":float(tick)/HZ,"speed":fc.velocity.length(),"height":mech.position.y/10.0,
+				"velocity":_array(fc.velocity),"command":_array(fc.rotation_command),"acceleration":_array(acceleration),"omega":fc.angular_velocity.length(),
+				"alpha":fc.angular_acceleration.length(),"engine":fc.engine_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
+				"upright":mech.global_basis.y.y,"forward":mech.global_basis.y.dot(Vector3.FORWARD),"inverted":-wing.y.y,
+				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
+				"contacts":int(mech.collided),"torque":fc.torque_fraction})
+		if capture_enabled and capture and tick%4 == 0:
+			var names := PackedStringArray()
+			for key in held: names.append(OS.get_keycode_string(key))
+			replay_label.text = "%s · %.1f s · %s" % [name.to_upper(), float(tick)/HZ, " + ".join(names) if not names.is_empty() else "NO KEYS"]
+			scene.camera.position = mech.position+Vector3(165,55,115)
+			scene.camera.look_at(mech.position)
+			_save(output.path_join("%s-%04d.png"%[name,tick/4]))
+	_keys([])
+	report[name] = {"inputs":events,"samples":rows,"max_speed":max_speed,"max_jerk":max_jerk,"max_motion_residual":max_residual}
+	_expect(max_residual < 0.3,name+": velocity changed outside the applied force budget")
+	print("SCENARIO ",name," max_speed=",snappedf(max_speed,0.01)," final_speed=",snappedf(rows[-1].speed,0.01)," jerk=",snappedf(max_jerk,0.1)," residual=",snappedf(max_residual,0.001))
+	return rows
+
+func _expect(ok: bool, message: String) -> void:
+	if not ok and not message in failures: failures.append(message)
+
+func _at(rows: Array, time: float) -> Dictionary:
+	return rows[mini(int(time*10),rows.size()-1)]
+
+func _peak(rows: Array, key: String) -> float:
+	var peak := -INF
+	for row in rows: peak = maxf(peak,float(row[key]))
+	return peak
+
+func _array(v: Vector3) -> Array:
+	return [v.x,v.y,v.z]
