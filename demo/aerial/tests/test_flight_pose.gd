@@ -50,7 +50,7 @@ func _run() -> void:
 	await _ticks(180)
 	assert(mech.controller.velocity.length() < 1.0, "Hover did not settle")
 	assert(mech.basis.y.dot(Vector3.UP) > 0.99, "Hover did not remain upright")
-	assert(_check_ik(mech) and _check_motors(mech))
+	assert(_check_limbs(mech) and _check_motors(mech))
 	await _ticks(420)
 	assert(mech.controller.velocity.length() < 0.3, "Long hover develops persistent drift")
 	# Precision input overrides the hover axis rather than fighting upright trim.
@@ -67,7 +67,7 @@ func _run() -> void:
 			assert(mech.controller.rotation_command.length() > 0.9, "Rotation input was gated")
 			assert(mech.controller.attitude.angle_to(orientation) > 0.08, "A rotation axis cannot move")
 			assert(absf(mech.controller.pilot_frame().determinant()-1.0) < 0.001)
-			assert(_check_motors(mech) and _check_ik(mech))
+			assert(_check_motors(mech) and _check_limbs(mech))
 	# In vacuum, balanced attitude torque cannot change horizontal momentum.
 	await _fixture(Vector3(175,2600,340), Quaternion.IDENTITY, Vector3(45,0,-30), 0)
 	mech.controller.air_density = 0.0
@@ -149,7 +149,7 @@ func _run() -> void:
 	mech.controls = {"brake":true,"forward":true}
 	await _ticks(30)
 	assert(mech.controller.velocity.is_finite() and mech.position.is_finite())
-	assert(_check_motors(mech) and _check_ik(mech))
+	assert(_check_motors(mech) and _check_limbs(mech))
 	# Free arms, independent camera look, pause and retained walk preview.
 	var paused_velocity: Vector3 = mech.linear_velocity
 	scene.animate = false
@@ -164,7 +164,7 @@ func _run() -> void:
 	scene.animate = false
 	for frame in 90: mech.update_animation(1.0/60.0)
 	await _ticks(2)
-	assert(_check_ik(mech))
+	assert(_check_limbs(mech))
 	assert(not mech.skeleton.find_child("GUN",false,false).visible)
 	assert(not scene.has_method("fire_weapon"),"Gun aiming/firing still owns the flight arms")
 
@@ -214,12 +214,13 @@ func _check_motors(mech: Node3D) -> bool:
 	if absf(total-mech.controller.delivered_thrust) > 2.0: return false
 	return true
 
-func _check_ik(mech: Node3D) -> bool:
+func _check_limbs(mech: Node3D) -> bool:
 	for side in 2:
 		var suffix := ".L" if side == 0 else ".R"
 		var hand: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Hands"+suffix)]
-		var target: Vector3 = mech.rig.arms.hand_targets[side].position
-		if not hand.origin.is_finite() or not hand.basis.is_finite() or hand.origin.distance_to(target) >= 0.05: return false
+		var shoulder: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Shoulder"+suffix)]
+		if not hand.origin.is_finite() or not hand.basis.is_finite(): return false
+		if hand.origin.distance_to(shoulder.origin)>5.5: return false
 	return true
 
 func _check_mount_surfaces(mech: Node3D) -> bool:

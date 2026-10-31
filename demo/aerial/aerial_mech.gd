@@ -133,7 +133,6 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	# Seed the first physics tick; subsequent hardpoints come from the final modifier.
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
 	skeleton.modifier_callback_mode_process = Skeleton3D.MODIFIER_CALLBACK_MODE_PROCESS_MANUAL
-	rig.contacts.alignment.modification_processed.connect(_on_pose_modified)
 	var nozzle_material := surface.duplicate() as ShaderMaterial
 	nozzle_material.set_shader_parameter("body_color",Color(0.065,0.075,0.085))
 	palette_materials.append(nozzle_material)
@@ -291,8 +290,11 @@ func update_animation(delta: float) -> void:
 	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value*mix+rig.contacts.pelvis.value) * display_scale
 	skeleton.advance(delta)
 
-func _on_pose_modified() -> void:
+func capture_pose() -> void:
+	# Called inside the final native modifier, while the completed pose exists.
+	# No chain of modifier-completion signals and no restored-rest pose reads.
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
+	rig.arms.sample_completed(skeleton,bone_poses)
 	for index in 6: motor_springs[index].value = controller.motor_angles[index]
 	_refresh_exhaust()
 

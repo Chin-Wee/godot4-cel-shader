@@ -28,31 +28,20 @@ extends Resource
 @export var joint_speed := Vector3(3.0,3.5,3.2) # Radians/second.
 @export var body_frequency := 2.5
 @export var body_damping := 0.78
-# Both arms are free: source-frame hand targets mirrored about the torso.
-@export var arm_hover := Vector3(3.15,-1.35,1.35)
-@export var arm_stream := Vector3(3.35,-2.55,-1.35)
-@export var arm_brake := Vector3(5.2,2.15,2.9)
-@export var arm_retro := Vector3(3.4,0.65,3.2)
-@export var arm_drive := Vector3(4.25,-1.65,-1.65)
-@export var arm_prepare := Vector3(3.05,-0.65,1.65)
+# Radians: aft swing, outward elevation, elbow flexion. No elbow-pole guesses.
+@export var arm_hover := Vector3(0.04,0.38,0.95)
+@export var arm_stream := Vector3(0.35,0.20,0.20)
+@export var arm_brake := Vector3(-0.15,1.35,1.10)
+@export var arm_retro := Vector3(-0.2,0.95,1.05)
+@export var arm_drive := Vector3(0.65,0.45,0.38)
+@export var arm_prepare := Vector3(-0.10,0.6,1.0)
 @export var effort_response := Vector3(0.07,0.13,0.20) # Prepare, reverse load, acceleration.
-@export var role_stagger := 0.12 # Coupled thigh/knee offset, radians.
-@export var arm_coast := Vector3(2.9,-0.3,1.85)
-@export var arm_land := Vector3(3.2,-0.4,2.1)
-@export var arm_box := Vector3(4.85,2.8,1.75)
-@export var arm_box_pole := Vector3(5.7,1.1,-1.5)
-@export var arm_elbow_pole := Vector3(2.9,-0.4,-4.0)
-@export var arm_balance_gain := Vector3(0.04,0.018,0.04) # Source units per m/s².
-@export var arm_frequency := 2.6
-@export var arm_damping := 0.72
-@export var arm_speed := 18.0
-# Pitch, yaw and roll stroke scale for each continuous behavior.
-@export var hover_stroke := Vector3(0.55,0.45,0.65)
-@export var fighter_stroke := Vector3(0.5,0.45,0.7)
-@export var coast_stroke := Vector3(0.75,1.0,1.0)
-@export var fall_stroke := Vector3.ONE
+@export var role_stagger := 0.24 # Coupled thigh/knee offset, radians.
+@export var arm_coast := Vector3(-0.10,0.6,0.95)
+@export var arm_land := Vector3(-0.15,0.55,0.95)
+@export var arm_box := Vector3(-0.05,1.95,1.40)
+@export var arm_speed := 3.5 # Radians per second.
 @export var hover_leg_motion := 0.04
-@export var hover_arm_motion := 0.30
 @export var maneuver_leg_motion := 0.22
 @export var leg_airflow_gain := 0.22
 # Measured minimum of both rigid foot meshes, in Feet.L/R bone space.

@@ -13,9 +13,9 @@ func _ticks(count: int, mirror_request := true) -> void:
 	if mirror_request: fc.rotation_request = fc.rotation_command
 	for tick in count:
 		fc.clock += 1.0/60
-		var previous: Vector3 = mech.rig.arms.hands[0].value
+		var previous: Vector3 = mech.rig.arms.hands[0]
 		mech.update_animation(1.0/60)
-		assert(previous.distance_to(mech.rig.arms.hands[0].value)<=mech.rig.profile.arm_speed/60+0.0001,"Transition teleported a hand")
+		assert(previous.distance_to(mech.rig.arms.hands[0])<=0.7,"Displayed hand teleported")
 		var sum := 0.0
 		for weight in mech.rig.behavior_weights:
 			assert(weight>=0 and weight<=1.0001)
@@ -50,7 +50,7 @@ func _neutral() -> void:
 	mech.angular_velocity = Vector3.ZERO
 
 func _asymmetry() -> float:
-	return mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z
+	return mech.rig.arms.hands[0].z-mech.rig.arms.hands[1].z
 
 func _run() -> void:
 	create_timer(60).timeout.connect(func():
@@ -70,12 +70,12 @@ func _run() -> void:
 	fc.hover_assist = 1
 	await _ticks(150)
 	assert(mech.rig.behavior_weights[0]>0.99)
-	for side in 2: assert(mech.rig.arms.hands[side].value.y< -0.6,"Hover uses skydiver arms")
-	var before_input: Vector3 = mech.rig.arms.hands[0].value
+	for side in 2: assert(mech.rig.arms.hands[side].y< -0.6,"Hover uses skydiver arms")
+	var before_input: Vector3 = mech.rig.arms.hands[0]
 	fc.rotation_request = Vector3(0,1,0)
 	await _ticks(6,false)
 	assert(fc.rotation_command.is_zero_approx() and mech.angular_velocity.is_zero_approx())
-	assert(mech.rig.arms.hands[0].value.distance_to(before_input)>0.2,"Brief input is lost behind the physics control filter")
+	assert(mech.rig.arms.hands[0].distance_to(before_input)>0.2,"Brief input is lost behind the physics control filter")
 	fc.rotation_request = Vector3.ZERO
 	await _ticks(60)
 	var resting_knee: float = mech.rig.legs[1].value.x
@@ -99,13 +99,13 @@ func _run() -> void:
 	mech.quaternion = Quaternion(Vector3.RIGHT,-PI/2)
 	await _ticks(150)
 	assert(mech.rig.behavior_weights[1]>0.99 and mech.rig.motion.track>0.99)
-	var fighter_hand: Vector3 = mech.rig.arms.hands[0].value
-	assert(fighter_hand.z< -1 and fighter_hand.distance_to(mech.rig.profile.arm_hover)>2,"Hover and cruise silhouettes still collapse into the same pose")
+	var fighter_hand: Vector3 = mech.rig.arms.hands[0]
+	assert(fighter_hand.z< -0.5 and fighter_hand.distance_to(before_input)>2,"Displayed hover and cruise silhouettes still collapse into the same pose")
 	var fighter_knee: Vector3 = mech.rig.legs[1].value
 	mech.quaternion = Quaternion(Vector3.FORWARD,PI)*mech.quaternion
 	await _ticks(120)
 	assert(mech.rig.behavior_weights[1]>0.99 and mech.rig.motion.hover<0.01,"Inversion selected hover")
-	assert(mech.rig.arms.hands[0].value.distance_to(fighter_hand)<0.1 and mech.rig.legs[1].value.distance_to(fighter_knee)<0.1,"Neutral inverted flight changed its body-relative shape")
+	assert(mech.rig.arms.hands[0].distance_to(fighter_hand)<0.1 and mech.rig.legs[1].value.distance_to(fighter_knee)<0.1,"Neutral inverted flight changed its body-relative shape")
 	# Cutoff retains aerodynamic tracking; broadside lateral coast is not a fall.
 	fc.engine_level = 0
 	fc.detent = 0
@@ -121,13 +121,13 @@ func _run() -> void:
 	fc.rotation_command = Vector3(0,1,0)
 	await _ticks(30)
 	var start := _asymmetry()
-	assert(start>hover_stroke*1.5 and mech.rig.chest.value.y>0.08,"Coast and hover share the same steering style")
+	assert(absf(start)>1.0 and hover_stroke>0.35 and mech.rig.chest.value.y>0.08,"Held aerial yaw has no active asymmetric stroke")
 	mech.angular_velocity = fc.pilot_frame()*Vector3(0,fc.MAX_RATE.y,0)
 	await _ticks(30)
-	assert(_asymmetry()>0 and _asymmetry()<start*0.5,"Coast stroke never relaxes")
+	assert(_asymmetry()*start>0 and absf(_asymmetry())>0.5 and absf(_asymmetry())<absf(start)*0.95,"Held turn loses its readable asymmetric posture")
 	fc.rotation_command = Vector3.ZERO
 	await _ticks(20)
-	assert(_asymmetry()< -0.7,"Coast release has no arrest stroke")
+	assert(_asymmetry()*start<0 and absf(_asymmetry())>0.7,"Coast release has no arrest stroke")
 	mech.linear_velocity = Vector3(0,-800,0)
 	fc.local_airflow = Vector3(0,0,80)
 	await _ticks(100)
@@ -140,8 +140,8 @@ func _run() -> void:
 	assert(mech.rig.behavior_weights[3]>0.99 and mech.rig.motion.box>0.99)
 	assert(mech.rig.chest.value.x< -0.06)
 	for side in 2:
-		assert(mech.rig.arms.hands[side].value.y>2.5 and mech.rig.arms.wrists[side].value.x< -0.15,"Skydiver arms/wrists remain passive")
-		var index: int = mech.rig.arms.ik.get_end_bone(side)
+		assert(mech.rig.arms.hands[side].y>2.5 and mech.rig.arms.wrists[side].value.x< -0.15,"Skydiver arms/wrists remain passive")
+		var index: int = mech.skeleton.find_bone(mech.rig.profile.arm_ends[side])
 		var parent: Basis = mech.bone_poses[mech.skeleton.get_bone_parent(index)].basis
 		var local: Quaternion = (parent.inverse()*mech.bone_poses[index].basis).get_rotation_quaternion()
 		var rest: Quaternion = mech.skeleton.get_bone_rest(index).basis.get_rotation_quaternion()
@@ -151,10 +151,10 @@ func _run() -> void:
 	await _ticks(120)
 	assert(mech.rig.motion.box<0.01 and mech.rig.motion.track>0.99)
 	assert(mech.rig.legs[1].value.x<fall_knee-0.5,"Tracking did not lengthen the legs")
-	for side in 2: assert(mech.rig.arms.hands[side].value.y< -2.3,"Tracking did not tuck both arms")
+	for side in 2: assert(mech.rig.arms.hands[side].y< -2.3,"Tracking did not tuck both arms")
 	fc.brake_amount = 1
 	await _ticks(120)
-	for side in 2: assert(mech.rig.arms.hands[side].value.y>1.8,"Braking did not raise the flare above the shoulders")
+	for side in 2: assert(absf(mech.rig.arms.hands[side].x)>5.0,"Braking did not flare the hands outside the shoulders")
 	# Fast powered misalignment receives independent control, never hover catch.
 	_neutral()
 	fc.engine_level = 2

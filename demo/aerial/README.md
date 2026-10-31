@@ -121,19 +121,19 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   legs and balances both arms, pelvis and chest on different phases. Opposed
   thigh/knee offsets keep the lower-leg thrust axes nearly parallel. Relative
   airflow direction and pressure remain separate; freefall does not produce
-  powered G-load compression. Legs retain bounded 0.28/0.32/0.36-second responses
-  and 2.1/2.4/2.6 rad/s limits. Pitch, yaw and roll intent lead the limbs before
+  powered G-load compression. Legs retain bounded response times
+  and joint speed limits in the rig profile. Pitch, yaw and roll intent lead the limbs before
   angular motion catches up. Turn direction, actual roll rate, roll release,
   angular acceleration and changing gravity orientation vary the poses.
   Retro bracing is measured from the dot product of actual thrust and existing
   velocity, not a new input mode. Saturated physical vectoring reduces additional
   articulation; actual nozzle cones and force capacities still apply.
-  `arm_pose.gd` owns both free-hand targets and native arm IK. The supplied
+  `arm_pose.gd` supplies direct shoulder/elbow/wrist joint poses to the full-body modifier. The supplied
   `GunPose` is sampled only for finger-curl calibration, then stopped. Neither
   hand follows a camera/weapon aim target. Inside/outside arms differ in a roll;
   release counterbalances the remaining spin. Braking opens both arms; reverse
-  thrust gathers them forward. Exact underdamped responses provide bounded
-  follow-through (arms 1.35 Hz, damping ratio 0.68; chest 1.8 Hz, ratio 0.78).
+  thrust gathers them forward. Bounded joint servos preserve continuity; the existing body spring provides
+  controlled secondary motion.
   No flight/hover/stall clips play. Imported clips remain for Animation dock
   preview and walking. Body/arm influence fades for walking; foot contact remains
   active. This model has no independently rigged binders. Movement, motors, pose
@@ -293,89 +293,68 @@ Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
 ## Procedural pose ownership and tuning
 
-The [flight animation contract](flight-animation-contract.md) defines the five
-required behaviors and visual acceptance. The fixed-clock pipeline is behavior
-and posture → deliberate body/arm targets → arm IK → wrist articulation → foot
-targets → leg IK → sole alignment → completed hardpoint cache.
-Godot's `SkeletonModifier3D` child order makes that sequence explicit. Physics
-consumes the last completed pose, not an interpolated camera/render pose.
+The [flight animation contract](flight-animation-contract.md) defines the required
+behaviors. The airborne rig uses one native modifier to write torso, arms,
+wrists, fingers and legs. Arms use direct joint poses; there is no airborne arm
+IK, elbow-pole solve, wrist post-pass or chain of completion signals.
+
+The production reference is [Overgrowth's procedural animation approach](https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach):
+a compact authored pose vocabulary with directional joint corrections. Bounded
+secondary motion retains the existing Uncharted 4 reference. These are adapted
+visual principles; no unpublished game implementation is assumed.
 
 | File | Owns |
 | --- | --- |
-| `aerial_mech.gd` | Native physics support, existing impact prediction, fixed-clock evaluation and physical hardpoint cache. |
-| `flight_pose.gd` | Read-only motion snapshot, continuous hover/fighter/coast/fall influences, force-driven launch/recovery, start/coast/stop intent, normalized leg posture weights, active spine and bounded leg targets. |
-| `arm_pose.gd` | Behavior-specific shoulder/elbow strokes, raised box and tracking shapes, landing guard, secondary balance, braking/retro bracing, calibrated hinges, fingers, native arm IK and a bounded post-IK wrist modifier. |
-| `contact_pose.gd` | Grounded/airborne support state, stance/swing, predicted preparation, one-shot impact, native leg IK and sole alignment. |
-| `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times, free-hand anchors and measured sole offsets. |
-| `pose_servo.gd` | Critical response shared with physics; an exact underdamped response adds animation follow-through. Animation alone uses finite speed limits. |
+| `flight_pose.gd` | Motion sampling, continuous behavior weights, load/flare/acceleration and one full-body pose application. |
+| `arm_pose.gd` | Plain joint-pose data and servos, independent left/right shoulder, elbow, wrist and finger motion; completed limb geometry for diagnostics. |
+| `contact_pose.gd` | Actual support, predicted preparation and platform-local stance plants; native foot IK operates only for support, then soles align and the completed pose is captured directly. |
+| `aerial_mech.gd` | The native physical body, fixed-clock evaluation, actual animated thruster mounts and completed bone cache. |
+| `mech_rig_profile.gd` | Bone names, joint-space pose extremes, limits and response speeds. Arm triples mean aft swing, outward elevation and elbow flexion in radians. |
+| `pose_servo.gd` | Existing bounded joint response and secondary body response. |
 
-Physical ragdolls were considered using Godot's `PhysicalBoneSimulator3D`.
-This pass keeps the existing capsule/force owner and uses bounded secondary limb
-motion instead: extra rigid bodies would need a separate articulated physics and
-thruster-control design. No physical ragdoll or limb collision is claimed.
+Four native modifiers remain: full-body pose/ground-target preparation, two
+support-only foot solvers, and final sole alignment/cache. In free flight only
+the full-body pass authors limb poses; the foot solvers are inactive. The
+full-body node keeps ground-target preparation running while its airborne pose
+weight fades out over the retained walking animation. No native influence-zero
+optimization can silently stop the walking target update.
 
-Relaxed arms hang below the measured shoulders at source X ±2.699. Elbows stay
-near the ribs and behind the wrists, with a small forward forearm bend. The IK
-twist axis is measured from each imported rest hinge rather than assumed to be
-generic -Z; the previous lateral poles rolled the shoulder armor outward.
-Native [TwoBoneIK3D](https://docs.godotengine.org/en/latest/classes/class_twoboneik3d.html)
-still owns the solve. Its pole targets widen only during loaded actions.
+Natural elbow clearance is authored directly. The upper arm opens away from the
+ribs and the elbow flexes forward; an IK pole cannot force it behind the torso.
+A held yaw/roll retains an asymmetric stroke as angular velocity develops.
+Directional leg corrections run after all freefall/base blends, so a box pose
+cannot overwrite the knee stagger. A small retained stance bias avoids perfectly
+mirrored idle limbs; hover trim stays restrained.
 
-Following the existing Uncharted 4 secondary-motion layering reference, measured
-pilot intent now leads chest and shoulder/elbow strokes. The visual reference is
-skydiver body flight: [USPA's start-coast-stop turn sequence](https://www.uspa.org/skydiveschool/d)
-and the [APF's neutral, turning and tracking shapes](https://www.apf.com.au/members/members/publications/misc-publications/basic-body-flight-for-b-rels-and-beyond).
-This adapts those visual cues to the mech's existing rotation controls; it does
-not claim limb-resolved aerodynamic forces.
+Broadside atmospheric falling raises bent forearms toward head level and folds
+the calves. Lengthwise airflow selects tracking. Falling still requires descent,
+airflow and low main output; cutoff alone cannot manufacture a skydiver pose, and
+vacuum descent cannot create aerodynamic body flight.
 
-Four normalized behavior weights distinguish upright support, powered useful
-airflow, independent coasting and atmospheric falling. Falling requires actual
-descent, a developing downward fraction of travel, relative wind and low main
-output. Engine cutoff alone cannot choose a spread pose; vacuum descent cannot
-choose atmospheric body flight. Powered misalignment retains independent control.
-Hover assistance supplies the upright influence, so a fast stall cannot select it.
+One shared flare value drives both hand opening and the leg squat. It responds
+to Shift and loaded rapid deceleration; the G-load gate prevents ballistic gravity
+from creating a false brace. Flare takes priority over reverse-thrust bracing.
+As deceleration ends and delivered thrust drives outgoing acceleration, arms
+sweep aft and knees lengthen toward cruise. Existing joint servos preserve
+continuity on cancellation or renewed input. There is no maneuver state machine
+or timer-driven gesture sequence: three smoothed effort values supply preparation,
+reverse load and acceleration. The reported effort name is derived telemetry.
 
-Command minus normalized angular rate supplies a continuous stroke signal.
-A turn begins with a shoulder/forearm press, relaxes as the chassis reaches the
-requested rate, and counterstrokes on release while rotation remains. Pitch
-reaches or tucks both arms; roll gathers one arm and opens the other. Chest and
-head lead that intent. Broadside airflow blends into a raised, bent-elbow box
-position with wrists near head level and a modest chest arch; head-first tracking returns to a compact pose.
-Each behavior scales that stroke differently: small gyro corrections in hover,
-compact bank/pitch work in fighter flight, gathering/arrest in independent
-rotation and larger elbow presses while skydiving. Hover retains calibrated
-relaxed arms. Quiet trim fades during deliberate strokes; actual attitude-thruster
-effort adds hover correction. There is no timer-driven gesture loop, new flight
-mode or additional movement controller.
+Physical support still owns plants. Two short rays prepare near-ground contact;
+prediction alone cannot plant feet. A platform-local plant follows moving ground
+and retains its last world position if the platform disappears. Native foot IK
+limits extension, and sole tilt is capped at 0.5 radians. These visual contacts
+operate over the same physical capsule; they add no suspension forces. Actual
+30-degree gimbals and seated backpack/calf/heel outlets still produce the forces.
+There are no hand boosters, weapon aiming, ragdoll bodies or velocity rewrites.
 
-Airflow-aligned unpowered travel can still use a tracking shape. Relative wind
-and fall exposure supply the box overlay; Shift supplies a separate flare at any
-thrust level. Real leg force starts the launch envelope, extends the legs through
-the push, then recovers toward support. It cannot invent a midair leg jump.
-Prediction prepares a forward landing guard; actual contact still owns plants.
-Wrist cupping follows box/flare and steering with bounded local angles, after IK
-so it cannot displace the solved hand. Requested engine spool anticipates retro
-bracing, which then follows delivered thrust opposing travel.
-
-Measured linear/angular acceleration still adds smaller balance catches and
-spring recovery. The body-to-source conversion is explicit (-X, +Y, -Z).
-Unloaded freefall gravity does not create a false catch. Braking and reverse
-thrust retain distinct poses. Comfortable hand bounds prevent crossing the chest;
-the rig profile exposes anchors, response, balance gain and elbow calibration.
-
-Contact prediction only prepares the legs. Physical supporting contact starts
-landing; 50 ms support-loss hysteresis suppresses chatter, and takeoff releases
-plants immediately. Each foot stores a platform-local plant and retains its last
-world target if the platform disappears. Two short foot rays activate only near a
-plausible supported/descending surface. Unsupported or sideways flight cannot
-plant feet from a ray hit alone. The explicit frozen walk preview uses valid floor
-samples and the inspected Walk clip's alternating stance intervals.
-
-The sole offset `(0, 0, -0.227218)` was measured across both rigid foot/armor meshes.
-Foot IK bounds extension and knee flexion; sole tilt is capped at 0.5 radians.
-A bounded visual pelvis sink makes support reachable. These are visual contacts
-over the existing chassis capsule, not articulated suspension or hidden movement
-forces. There is no skeleton/root-motion write to physical world velocity.
+`test_air_pose.gd` measures displayed shoulders, elbows, hands and knees from the
+completed skeleton, including held rotations and freefall. With a native renderer
+it captures every fixture in three views and rejects blank renders. The contact
+check covers landing, platforms, slopes and retained walking. Real input replays
+include `flare_exit`: high-speed braking into a squat/wide-hand flare, then a
+powered acceleration stroke and aerodynamic recovery in both review and gameplay
+cameras. See [pose design and capture commands](poses/POSE_DESIGN.md).
 
 F9 displays posture percentages, foot plants, probe count and impact strength.
 Behavior and launch channels are recorded in the replay reports.
@@ -439,7 +418,7 @@ commands in upright/prone/inverted poses, settled hover, vacuum momentum while
 rotating, transverse thrust, fast departure, unpowered lift, Shift braking,
 skydiver drag, ground jump/contact, uninterrupted takeoff/cutoff/reorientation/
 re-ignition, capsule collision, source-triangle thruster seating, gimbal limits,
-native arm IK, free-hand motion, gun removal, pause and retained walking. Fixtures
+completed arm geometry, free-hand motion, gun removal, pause and retained walking. Fixtures
 alone may reset transforms/velocities; ordinary flight never does.
 
 `capture_mech.gd` contains fixed native-key timelines for five flight behavior
@@ -513,7 +492,7 @@ silhouettes and timing separately from the physical gameplay replays below.
 Runtime maneuver effort adds directional reverse/acceleration bracing, retained
 left/right roles, independent hand expression and alignment-dependent cruise.
 `test_maneuver_intent.gd` checks the temporal response; `capture_maneuver_intent.gd`
-records reverse-through-zero, burst, interruption and turn sequences with real
+records reverse-through-zero, burst, interruption, turns, freefall and flare-to-flight with real
 physics in both cameras. The study clips remain authoring references.
 
 The contract-specific check covers normalized behavior weights, bounded transitions,

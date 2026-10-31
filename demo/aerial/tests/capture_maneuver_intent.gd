@@ -42,6 +42,15 @@ func _capture() -> void:
 			[210,[KEY_SPACE]],[211,[]],[212,[KEY_SPACE]],[213,[]],[214,[KEY_SPACE]],[215,[]],[270,[KEY_Q]],[300,[]]])
 		_expect(_at(rows,3).engine==0 and _at(rows,3).retro<0.1,"Canceled reverse effort remains latched")
 		await _maneuvers()
+		await _bodyflight()
+		await _fixture(Vector3(175,9000,340),Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-85),3)
+		rows = await _play("flare_exit",600,[[0,[]],[60,[KEY_SHIFT]],[180,[KEY_SPACE]],[181,[]]])
+		var braking: Dictionary = _at(rows,2.0)
+		var exiting: Dictionary = _at(rows,4.5)
+		_expect(braking.flare>0.8 and braking.arm_span>9 and braking.knee>0.8,"Air braking never produces a displayed squat and wide hand flare")
+		_expect(braking.leg_asymmetry_size>0.3,"Loaded flare leaves the legs mirrored")
+		_expect(exiting.drive>0.6 and exiting.hand_forward<braking.hand_forward-2,"Flare does not release into aft acceleration arms")
+		_expect(rows[-1].flare<0.1 and rows[-1].hand_forward<0,"Exit never becomes aerodynamic cruise")
 		report["failures"] = failures.duplicate()
 		report["camera"] = view
 		report["camera_setup"] = "side-biased body-relative review" if view=="body" else "normal independent-look gameplay camera"

@@ -30,30 +30,30 @@ func _run() -> void:
 	fc = mech.controller
 	_flight(Vector3(0,0,-70))
 	await _ticks(150)
-	var cruise_hand: Vector3 = mech.rig.arms.hands[0].value
+	var cruise_hand: Vector3 = mech.rig.arms.hands[0]
 	var cruise_knee: float = mech.rig.legs[1].value.x
 	fc.detent = 4
 	fc.requested_main_force = Vector3.FORWARD*mech.mass*fc.GRAVITY*4
 	await _ticks(6)
 	assert(mech.rig.motion.prepare>0.3,"Throttle intent has no preparation before delivery")
-	assert(mech.rig.arms.hands[0].value.distance_to(cruise_hand)>0.1)
+	assert(mech.rig.arms.hands[0].distance_to(cruise_hand)>0.1)
 	fc.engine_level = 4
 	fc.main_force = fc.requested_main_force
 	fc.local_acceleration = Vector3(0,25,0)
 	await _ticks(45)
 	assert(mech.rig.motion.drive>0.85)
 	assert(mech.rig.legs[1].value.x>cruise_knee+0.2,"Hard acceleration never compresses the legs")
-	assert(absf(mech.rig.arms.hands[0].value.x)>cruise_hand.x+0.5,"Hard acceleration never opens the aft arm stroke")
+	assert(absf(mech.rig.arms.hands[0].x)>cruise_hand.x+0.5,"Hard acceleration never opens the aft arm stroke")
 	assert(absf(_asymmetry())>0.15,"Aligned hard acceleration remains perfectly mirrored")
 	fc.local_acceleration = Vector3.ZERO
 	await _ticks(180)
 	assert(mech.rig.motion.drive<0.01,"Constant power retains a transient acceleration squat")
-	assert(mech.rig.arms.hands[0].value.distance_to(cruise_hand)<0.15)
+	assert(mech.rig.arms.hands[0].distance_to(cruise_hand)<0.15)
 	# Opposing burn: brace direction comes from actual thrust/travel geometry.
 	_flight(Vector3(0,0,70))
 	await _ticks(120)
 	assert(mech.rig.motion.retro>0.95 and mech.rig.legs[1].value.x>0.8)
-	assert(mech.rig.arms.hands[0].value.z>2.5)
+	assert(mech.rig.arms.hands[0].z>2.5)
 	assert(absf(_asymmetry())>0.4)
 	assert(absf(mech.rig.arms.finger_curl[0]-mech.rig.arms.finger_curl[1])>0.15,"Both hands perform the same brace")
 	# Only the opposed component disappears; total travel remains substantial.
@@ -62,7 +62,7 @@ func _run() -> void:
 	fc.local_acceleration = Vector3(0,20,0)
 	await _ticks(75)
 	assert(mech.rig.motion.retro<0.03 and fc.velocity.length()>20,"Release incorrectly waits for total speed to reach zero")
-	assert(mech.rig.motion.drive>0.8 and mech.rig.arms.hands[0].value.z<1,"Reverse brace never unwinds into outgoing acceleration")
+	assert(mech.rig.motion.drive>0.8 and mech.rig.arms.hands[0].z<1,"Reverse brace never unwinds into outgoing acceleration")
 	var lead: float = mech.rig.lead_side
 	for tick in 60:
 		mech.linear_velocity = Vector3(0.001 if tick%2 else -0.001,0,0)
@@ -75,18 +75,18 @@ func _run() -> void:
 	fc.local_acceleration = Vector3.ZERO
 	await _ticks(180)
 	assert(mech.rig.motion.drive<0.01 and mech.rig.motion.retro<0.01)
-	assert(mech.rig.effort_phase==mech.rig.EffortPhase.REST,"Canceled effort never settles")
+	assert(mech.rig.effort_phase==&"rest","Canceled effort never settles")
 	# Oblique geometry selects complementary roles even without steering input.
 	_flight(Vector3(35,0,-60))
 	await _ticks(150)
-	var left: Vector3 = mech.rig.arms.hands[0].value
-	var right: Vector3 = mech.rig.arms.hands[1].value
+	var left: Vector3 = mech.rig.arms.hands[0]
+	var right: Vector3 = mech.rig.arms.hands[1]
 	assert(mech.rig.motion.redirect>0.3 and mech.rig.motion.asymmetry>0.3)
 	_flight(Vector3(-35,0,-60))
 	await _ticks(150)
-	var mirrored_left: Vector3 = mech.rig.arms.hands[0].value*Vector3(-1,1,1)
+	var mirrored_left: Vector3 = mech.rig.arms.hands[0]*Vector3(-1,1,1)
 	assert(mirrored_left.distance_to(right)<0.05,"Mirrored slip has inconsistent limb roles")
-	assert((mech.rig.arms.hands[1].value*Vector3(-1,1,1)).distance_to(left)<0.05)
+	assert((mech.rig.arms.hands[1]*Vector3(-1,1,1)).distance_to(left)<0.05)
 	finished = true
 	print("Maneuver intent checks passed: anticipatory throttle, loaded acceleration, staggered reverse brace, independent hands, component-wise reversal, interruption, quiet zero-speed roles and mirrored oblique flight.")
 	scene.queue_free()

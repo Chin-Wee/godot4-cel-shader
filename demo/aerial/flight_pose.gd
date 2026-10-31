@@ -15,11 +15,12 @@ var com := Spring.new()
 var regimes := Spring.new()
 var launch := Spring.new()
 var legs: Array = []
-var arms: SkeletonModifier3D
-var contacts: SkeletonModifier3D
+var arms: RefCounted
+var contacts: RefCounted
 var bones := {}
 var clock := 0.0
 var root_angles := Vector3.ZERO
+var air_weight := 1.0
 # hover, streamlined, spread, coast, landing; normalized, never flight modes.
 var posture_weights := PackedFloat32Array([1,0,0,0,0])
 # Upright support, powered aerodynamic flight, independent coast, falling.
@@ -27,29 +28,22 @@ var posture_weights := PackedFloat32Array([1,0,0,0,0])
 var behavior_weights := PackedFloat32Array([1,0,0,0])
 var motion := {}
 var last_brake := 0.0
-enum EffortPhase { REST, PREPARE, LOAD, SUSTAIN, RELEASE }
-var effort_phase := EffortPhase.REST
-var effort_time := 0.0
+var effort_phase: StringName:
+	get: return &"brace" if effort.y>0.25 else (&"drive" if effort.z>0.25 else (&"prepare" if effort.x>0.25 else &"rest"))
 var effort := Vector3.ZERO # Prepare, opposing thrust, outgoing acceleration.
-var previous_output := 1.0
-var effort_sampled := false
 var lead_side := 1.0
 var lead_time := 0.0
 
 func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 	var sk := get_skeleton()
-	for bone in Array(profile.torso_bones)+Array(profile.thigh_bones)+Array(profile.knee_bones)+Array(profile.foot_bones)+["Neck","ShoulderJoint.L","ShoulderJoint.R"]:
+	for bone in Array(profile.torso_bones)+Array(profile.thigh_bones)+Array(profile.knee_bones)+Array(profile.foot_bones)+Array(profile.arm_roots)+Array(profile.arm_middles)+Array(profile.arm_ends)+["Neck"]:
 		var index := sk.find_bone(bone)
 		assert(index >= 0,"Missing procedural mech bone: "+str(bone))
 		bones[bone] = index
 	for joint in 6: legs.append(Spring.new())
 	arms = ArmPose.new()
-	arms.name = "ManeuverArmTargets"
-	sk.add_child(arms)
-	arms.configure(player,profile)
+	arms.configure(sk,player,profile)
 	contacts = ContactPose.new()
-	contacts.name = "FootTargets"
-	sk.add_child(contacts)
 	contacts.configure(mech,profile)
 	reset()
 
@@ -65,19 +59,16 @@ func reset() -> void:
 	arms.reset()
 	last_brake = 0.0
 	effort = Vector3.ZERO
-	effort_phase = EffortPhase.REST
-	effort_time = 0.0
-	effort_sampled = false
 	lead_side = 1.0
 	lead_time = 0.0
 	contacts.reset()
 
 func set_weight(weight: float) -> void:
-	active = weight > 0.0001
-	influence = weight
-	arms.set_weight(weight)
-	# Feet also operate over the retained ground-walk preview. Their final
-	# modifier always publishes the completed pose/hardpoints, even at zero IK.
+	air_weight = clampf(weight,0,1)
+	# Keep target preparation running over authored walking too. No native
+	# influence-zero optimization may silently disable the ground target pass.
+	active = true
+	influence = 1.0
 
 func update(delta: float, controller) -> void:
 	clock = controller.clock
@@ -108,11 +99,12 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	# USPA start-coast-stop: command/rate mismatch starts a stroke, sustained
 	# rotation relaxes it, releasing input creates an opposing arrest stroke.
 	# This is a visual intent signal, not another attitude controller.
-	var steer: Vector3 = ((intent-pilot_rates/controller.MAX_RATE)*1.25+intent*0.2).clamp(-Vector3.ONE,Vector3.ONE)
+	var steer: Vector3 = ((intent-pilot_rates/controller.MAX_RATE)*0.7+intent*0.65).clamp(-Vector3.ONE,Vector3.ONE)
 	var load := clampf((controller.g_load-1.0)/3.0,0,1.2)
 	var acceleration: Vector3 = controller.local_acceleration
 	var compression := clampf(load*0.75+alpha.length()*0.028+clampf(-acceleration.z/30.0,0,1)*0.25+contacts.impact*0.4,0,1.3)
 	var speed: float = controller.velocity.length()
+	var slowing: float = maxf(0,-(basis*acceleration).dot(controller.velocity.normalized()))
 	# Retro means delivered thrust opposing existing travel, not a throttle cut
 	# or a velocity rewrite. Gravity and aerodynamic braking stay independent.
 	var thrust_direction: Vector3 = controller.main_force.normalized() if controller.main_force.length_squared()>1 else basis.y
@@ -134,7 +126,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
 		"up":basis.inverse()*Vector3.UP,"trim":trim,"gyro":gyro,
 		"steer":steer,"body_steer":basis.inverse()*pilot*steer,
-		"retro":retro,"brake_rate":brake_rate}
+		"retro":retro,"brake_rate":brake_rate,"deceleration":smoothstep(2,12,slowing)*smoothstep(6,25,speed)*smoothstep(0.15,0.65,controller.g_load)}
 
 func _sample_effort(controller, delta: float) -> void:
 	# Overgrowth's authored directional corrections, with Uncharted 4's bounded
@@ -156,25 +148,9 @@ func _sample_effort(controller, delta: float) -> void:
 	var acceleration: Vector3 = basis*controller.local_acceleration
 	var acceleration_load := smoothstep(2,18,acceleration.dot(axis))*smoothstep(0.8,1.8,controller.engine_level)
 	var spool := clampf((output-controller.engine_level-0.08)/2.0,0,1)
-	var increased := effort_sampled and output>previous_output+0.2
-	previous_output = output
-	effort_sampled = true
-	effort_time += delta
-	var demand: float = maxf(opposition,maxf(spool,acceleration_load))
-	if increased:
-		effort_phase = EffortPhase.PREPARE
-		effort_time = 0.0
-	elif demand<0.04:
-		if effort.length()>0.03: effort_phase = EffortPhase.RELEASE
-		else: effort_phase = EffortPhase.REST
-	elif effort_phase!=EffortPhase.PREPARE or effort_time>0.14:
-		effort_phase = EffortPhase.LOAD if demand>maxf(effort.y,effort.z)+0.08 else EffortPhase.SUSTAIN
 	var prepare := spool
 	prepare = maxf(prepare,maxf(0,-request_axis.dot(travel)-opposition)*delivered*0.35)
-	if effort_phase==EffortPhase.PREPARE: prepare = maxf(prepare,0.45)
 	var drive := maxf(spool*0.85,acceleration_load)*(1.0-opposition)
-	if effort_phase!=EffortPhase.PREPARE and (opposition<effort.y-0.08 or drive<effort.z-0.12):
-		effort_phase = EffortPhase.RELEASE
 	var target := Vector3(prepare,opposition,drive)
 	# One bounded envelope for effort; final limb servos retain their velocities.
 	for channel in 3:
@@ -224,7 +200,8 @@ func _choose_posture(controller, delta: float) -> void:
 	motion["track"] = airload*maxf(motion.fighter,smoothstep(0.55,0.9,absf(motion.flow.y))*(motion.coast+motion.fall))
 	motion["box"] = motion.fall*smoothstep(0.25,0.75,absf(motion.flow.z))
 	motion["brake"] = controller.brake_amount*lerpf(0.2,1,airload)*(1.0-landing)
-	var spread: float = maxf(motion.brake,motion.box)
+	motion["flare"] = maxf(motion.brake,motion.deceleration)*(1.0-landing)
+	var spread: float = maxf(motion.flare,motion.box)
 	hover = motion.hover*(1.0-landing-spread)
 	var stream: float = motion.track*maxf(0,1.0-landing-spread-hover)
 	posture_weights = PackedFloat32Array([hover,stream,spread,maxf(0,1.0-landing-spread-hover-stream),landing])
@@ -271,7 +248,8 @@ func _update_legs(delta: float, controller) -> void:
 	var articulation := lerpf(1.0,0.35,clampf(controller.engine_level,0,1)*float(controller.motor_saturated))
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
-		var role: float = sx*motion.lead*motion.asymmetry*(1.0-motion.land)*(1.0-motion.hover)
+		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*0.45+motion.lead*motion.asymmetry*0.3)*(1.0-motion.land)
+		var stagger: float = profile.role_stagger*lerpf(articulation,1.0,motion.flare)
 		var brace := clampf(sx*motion.side_load+omega.z*0.25,-1,1)
 		var extras := [Vector3(flow.z*profile.leg_airflow_gain-compression*0.32+brace*0.22,-flow.x*0.22+omega.y*0.12,-flow.x*0.28-motion.side_load*0.12+sx*compression*0.10),
 			Vector3(0.85*compression+brace*0.28,0,0),Vector3(-compression*0.30-brace*0.15,-flow.x*0.12,0)]
@@ -289,14 +267,16 @@ func _update_legs(delta: float, controller) -> void:
 			# Preserve the calibrated support pose; knee/hip changes compensate
 			# each other rather than yawing a heavily loaded heel nozzle sideways.
 			target = target.lerp(working,(1.0-motion.land)*(1.0-motion.launch)*(1.0-motion.hover))
-			if joint==0: target.x -= role*profile.role_stagger*articulation
-			if joint==1: target.x += role*profile.role_stagger*articulation
 			# A skydiver arches through the hips with the calves folded up. The
 			# powered braking brace remains a separate pose for feasible nozzles.
 			var falling: Vector3 = profile.fall_pose[joint]*Vector3(1,1,sx)+extras[joint]*articulation
 			target = target.lerp(falling,motion.box*(1.0-motion.brake))
+			target = target.lerp(profile.spread_pose[joint]*Vector3(1,1,sx),motion.flare*(1.0-motion.land))
 			var extension: Vector3 = profile.launch_pose[joint]*Vector3(1,1,sx)
 			target = target.lerp(extension,motion.launch)
+			# Final directional correction survives every base-pose blend.
+			if joint==0: target.x -= role*stagger
+			if joint==1: target.x += role*stagger
 			if joint==0: target.x += hover_shift
 			if joint==1: target.x -= hover_shift
 			target = profile.limit_joint(target,side,joint)
@@ -305,6 +285,7 @@ func _update_legs(delta: float, controller) -> void:
 			servo.value = profile.limit_joint(servo.value,side,joint)
 
 func _rotate(bone: String, angles: Vector3) -> void:
+	angles *= air_weight
 	var sk := get_skeleton()
 	var index: int = bones[bone]
 	var rest := sk.get_bone_global_rest(index).basis.orthonormalized()
@@ -312,11 +293,13 @@ func _rotate(bone: String, angles: Vector3) -> void:
 	sk.set_bone_pose_rotation(index,(sk.get_bone_pose_rotation(index)*offset.get_rotation_quaternion()).normalized())
 
 func _process_modification() -> void:
-	var difference := chest.value-hips.value
-	for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
-	_rotate("Neck",head.value)
-	for side in 2:
-		_rotate(profile.thigh_bones[side],legs[side*3].value)
-		_rotate(profile.knee_bones[side],legs[side*3+1].value)
-		_rotate(profile.foot_bones[side],legs[side*3+2].value)
-		_rotate("ShoulderJoint.L" if side==0 else "ShoulderJoint.R",Vector3(0,arms.hands[side].value.z*0.025*(1 if side==0 else -1),0))
+	if air_weight>0.0001:
+		var difference := chest.value-hips.value
+		for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
+		_rotate("Neck",head.value)
+		for side in 2:
+			_rotate(profile.thigh_bones[side],legs[side*3].value)
+			_rotate(profile.knee_bones[side],legs[side*3+1].value)
+			_rotate(profile.foot_bones[side],legs[side*3+2].value)
+		arms.apply(get_skeleton(),_rotate,air_weight)
+	contacts.prepare_targets()

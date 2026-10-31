@@ -23,17 +23,21 @@ Status: implementation contract, 31 October 2026. Runtime evidence and commands 
 
 ## Recommended architecture
 
-Reuse the current flight_pose, arm_pose, contact_pose, rig profile and native
-SkeletonModifier3D/TwoBoneIK3D pipeline. Production architecture reference:
-Uncharted 4's deliberate animation with controlled physical secondary motion.
+Use one full-body SkeletonModifier3D for airborne joint poses. arm_pose is plain
+data consumed by that pass. Native foot IK is limited to ground support; no arm
+IK/pole/wrist post-processing chain is used. Production references: Overgrowth's
+authored procedural joint animation and Uncharted 4's controlled secondary motion.
 
 Use a small contact/action state machine only for real support, launch and landing
 phases. Airborne behavior uses continuous posture weights, not four exclusive
 animation states or manual modes. Propulsion/support/alignment select the base;
 relative wind, descent and brake intent supply aerodynamic shape; pilot request
 and measured angular rate supply deliberate start/coast/stop strokes. Smaller
-load/acceleration responses follow afterward. Finish with constrained IK and
-publish actual socket transforms. One physical body remains movement authority.
+load/acceleration responses follow afterward. Directional leg corrections must
+survive freefall blending. One shared loaded flare must produce a squat and
+outward hand spread before transitioning to aft acceleration arms and cruise.
+Capture the completed pose inside the final native pass, after optional ground
+foot correction. One physical body remains movement authority.
 
 Skydiver reference: USPA Category D start-coast-stop turns and APF Basic Body
 Flight. Apply those cues chiefly to air-loaded falling and aerodynamic maneuvers;
@@ -53,6 +57,7 @@ Active body preparation should read before acceleration/rate develops; passive
 lag must remain secondary. Numeric flight checks alone cannot establish pose quality.
 
 References:
+- https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach
 - https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4
 - https://www.uspa.org/skydiveschool/d
 - https://www.apf.com.au/members/members/publications/misc-publications/basic-body-flight-for-b-rels-and-beyond

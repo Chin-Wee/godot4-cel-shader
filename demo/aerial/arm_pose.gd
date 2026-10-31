@@ -1,180 +1,83 @@
-extends SkeletonModifier3D
+extends RefCounted
 
-# Uncharted 4's intent/secondary-motion layering, with skydiver body-flight
-# shapes and deliberate start-coast-stop shoulder/elbow strokes.
-const RigProfile = preload("res://aerial/mech_rig_profile.gd")
+# Overgrowth reference: authored joint poses with directional corrections.
+# Data for the single flight modifier, not another modifier/IK pass.
 const Servo = preload("res://aerial/pose_servo.gd")
-var profile: RigProfile
-var hands: Array = []
-var poles: Array = []
+var profile
+var upper: Array = []
+var elbows: Array = []
 var wrists: Array = []
-var hand_targets: Array[Marker3D] = []
-var pole_targets: Array[Marker3D] = []
 var finger_poses := {}
 var finger_curl := PackedFloat32Array([0.25,0.25])
-var ik: TwoBoneIK3D
-var palms: SkeletonModifier3D
+# Completed, displayed geometry in torso space; never unsolved hand targets.
+var hands := PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
+var shoulders := PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
+var elbow_positions := PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
 
-# Same post-IK modifier pattern as contact_pose.Alignment. Rotating the end
-# joint articulates the wrist without disturbing the solved hand position.
-class PalmPose extends SkeletonModifier3D:
-	var owner_pose
-	func _process_modification() -> void:
-		var sk := get_skeleton()
-		for side in 2:
-			var index: int = owner_pose.ik.get_end_bone(side)
-			var offset := Basis.from_euler(owner_pose.wrists[side].value).get_rotation_quaternion()
-			sk.set_bone_pose_rotation(index,(sk.get_bone_pose_rotation(index)*offset).normalized())
-
-func configure(player: AnimationPlayer, rig_profile: RigProfile) -> void:
+func configure(sk: Skeleton3D, player: AnimationPlayer, rig_profile) -> void:
 	profile = rig_profile
-	var sk := get_skeleton()
-	# Sample only the supplied finger articulation, not its aiming/body pose.
 	player.play(&"GunPose")
 	player.advance(0.0)
 	for index in sk.get_bone_count():
-		var bone := sk.get_bone_name(index)
-		if "Finger" in bone or "Thumb" in bone: finger_poses[index] = sk.get_bone_pose_rotation(index)
+		if "Finger" in sk.get_bone_name(index) or "Thumb" in sk.get_bone_name(index):
+			finger_poses[index] = sk.get_bone_pose_rotation(index)
 	player.stop()
 	sk.reset_bone_poses()
-	ik = TwoBoneIK3D.new()
-	ik.name = "FreeArmIK"
-	sk.add_child(ik)
-	ik.set_setting_count(2)
 	for side in 2:
-		hands.append(Servo.new())
-		poles.append(Servo.new())
+		upper.append(Servo.new())
+		elbows.append(Servo.new())
 		wrists.append(Servo.new())
-		for targets in [hand_targets,pole_targets]:
-			var marker := Marker3D.new()
-			add_child(marker)
-			targets.append(marker)
-		ik.set_root_bone_name(side,profile.arm_roots[side])
-		ik.set_middle_bone_name(side,profile.arm_middles[side])
-		ik.set_end_bone_name(side,profile.arm_ends[side])
-		ik.set_target_node(side,ik.get_path_to(hand_targets[side]))
-		ik.set_pole_node(side,ik.get_path_to(pole_targets[side]))
-		ik.set_pole_direction(side,SkeletonModifier3D.SECONDARY_DIRECTION_CUSTOM)
-		# Preserve the imported elbow hinge/twist. A generic pole axis and lateral
-		# pole rolled the shoulder armor outward even with a lowered hand target.
-		var root := sk.get_bone_global_rest(ik.get_root_bone(side)).origin
-		var middle := sk.get_bone_global_rest(ik.get_middle_bone(side))
-		var end := sk.get_bone_global_rest(ik.get_end_bone(side)).origin
-		var bend := (middle.origin-root).slide((end-root).normalized())
-		bend = bend.slide((end-middle.origin).normalized()).normalized()
-		ik.set_pole_direction_vector(side,middle.basis.inverse()*bend)
-	palms = PalmPose.new()
-	palms.name = "FreeWristArticulation"
-	palms.owner_pose = self
-	sk.add_child(palms)
 	reset()
 
 func reset() -> void:
 	for side in 2:
-		var sx := 1.0 if side==0 else -1.0
-		hands[side].reset(profile.arm_hover*Vector3(sx,1,1))
-		poles[side].reset(profile.arm_elbow_pole*Vector3(sx,1,1))
+		upper[side].reset(Vector3(profile.arm_hover.x,0,(1 if side==0 else -1)*profile.arm_hover.y))
+		elbows[side].reset(Vector3(-profile.arm_hover.z,0,0))
 		wrists[side].reset()
 		finger_curl[side] = 0.25
 
-func set_weight(weight: float) -> void:
-	for modifier in [self,ik,palms]:
-		modifier.active = weight>0.0001
-		modifier.influence = weight
-
 func update(delta: float, frame: Dictionary) -> void:
-	# Resolve primary posture once. Opposing thrust owns its brace; steering
-	# distorts that brace instead of replacing it with another complete pose.
-	var available: float = 1.0-frame.land
-	var retro: float = frame.retro*available
-	available -= retro
-	var braking: float = frame.brake*available
-	available -= braking
-	var box: float = frame.box*available
-	available -= box
-	var drive: float = frame.get("drive",0.0)*available
-	available -= drive
-	# Unpowered tracking works along either end of the body. Powered cruise
-	# additionally requires heading, delivered thrust and travel to agree.
-	var settled: float = lerpf(1.0,frame.get("alignment",1.0),frame.get("powered",0.0))*(1.0-clampf(frame.get("redirect",0.0)*0.5+frame.steer.length()*0.2,0,0.8))
-	var track: float = frame.track*available*settled
-	available -= track
-	var neutral: Vector3 = profile.arm_hover*frame.hover+profile.arm_coast*(frame.fighter+frame.coast+frame.fall+frame.land)
-	var base: Vector3 = neutral*available+profile.arm_land*frame.land+profile.arm_retro*retro+profile.arm_brake*braking+profile.arm_box*box+profile.arm_drive*drive+profile.arm_stream*track
-	var prepare: float = frame.get("prepare",0.0)*(1.0-frame.land)*(1.0-frame.retro)
-	base = base.lerp(profile.arm_prepare,prepare*0.5)
+	var pose: Vector3 = profile.arm_hover*frame.hover+profile.arm_coast*(frame.coast+frame.fall+frame.land)+profile.arm_stream*frame.fighter
+	pose = pose.lerp(profile.arm_stream,frame.track)
+	pose = pose.lerp(profile.arm_box,frame.box)
+	pose = pose.lerp(profile.arm_drive,frame.get("drive",0.0))
+	pose = pose.lerp(profile.arm_prepare,frame.get("prepare",0.0)*0.35)
+	pose = pose.lerp(profile.arm_retro,frame.retro)
+	# One full-body flare wins over the reverse brace instead of being starved
+	# of blend weight. Steering is applied afterward, including during freefall.
+	pose = pose.lerp(profile.arm_brake,frame.get("flare",frame.brake))
+	pose = pose.lerp(profile.arm_land,frame.land)
+	var steer: Vector3 = frame.steer
+	var slip: Vector3 = frame.get("slip",Vector3.ZERO)
+	var flare: float = frame.get("flare",frame.brake)
+	var balance: Vector3 = frame.acceleration*Vector3(-1,1,-1)*clampf(frame.g_load,0,1)
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
-		var role: float = sx*frame.get("lead",1.0)*frame.get("asymmetry",0.0)*(1.0-frame.land)
-		finger_curl[side] = clampf(0.25-frame.box*0.15-frame.brake*0.10+frame.retro*(0.35+role*0.18)+drive*0.1+absf(frame.roll)*0.15,0.1,0.85)
-		var hand := base*Vector3(sx,1,1)
-		# The leading hand gathers while the other balances. Preparation opens a
-		# clearance arc before the hands sweep aft into the acceleration stroke.
-		hand += Vector3(sx*role*0.2,role*0.42,role*0.5)
-		hand += Vector3(sx*0.45,0.35,0.25)*prepare*(1.0-drive)
-		var slip: Vector3 = frame.get("slip",Vector3.ZERO)
-		hand += Vector3(slip.x*0.45,absf(slip.x)*0.2,sx*slip.x*0.4)*frame.pressure*(1.0-frame.hover)
-		var style: Vector3 = profile.hover_stroke*frame.hover+profile.fighter_stroke*frame.fighter+profile.coast_stroke*frame.coast+profile.fall_stroke*frame.fall
-		var steer: Vector3 = frame.steer*style
-		var inside := maxf(sx*steer.z,0.0)
-		var outside := maxf(-sx*steer.z,0.0)
-		# Deliberate body flight: roll gathers one arm and opens the other; yaw
-		# presses one shoulder/forearm into the air; pitch reaches or tucks both.
-		# Commanded strokes work before any airflow, load or rotation appears.
-		hand += Vector3(sx*(-1.1*inside+0.8*outside)+steer.y*0.35,
-			inside*1.1-outside*0.8+steer.x*1.25,
-			sx*steer.y*1.35+steer.x*0.65+sx*steer.z*0.85+frame.brake_rate*0.15)
-		hand += frame.flow*frame.pressure*Vector3(0.20,0.15,0.35)
-		var gather: float = frame.coast*minf(frame.steer.length(),1)
-		hand += Vector3(-sx*0.35,0.6,0.35)*gather
-		hand += Vector3(sx*frame.gyro.z*0.25,-frame.gyro.x*0.2,sx*frame.gyro.y*0.35)*frame.hover
-		hand += Vector3(sx*0.25,0.45,0.3)*frame.launch
-		# Body -Z forward becomes source +Z forward. Arms trail changes in
-		# momentum, then the existing spring catches and recovers them. Freefall
-		# has no supported load to throw the arms up against gravity.
-		var source_acceleration: Vector3 = frame.acceleration*Vector3(-1,1,-1)
-		var source_alpha: Vector3 = frame.alpha*Vector3(-1,1,-1)
-		var balance := -source_acceleration*profile.arm_balance_gain*clampf(frame.g_load,0,1)
-		balance -= source_alpha.cross(Vector3(sx*0.65,-0.4,0.2))*0.18
-		balance = balance.limit_length(0.75)
-		hand += balance+Vector3(sx*absf(balance.x)*0.3,absf(balance.x)*0.5+absf(balance.z)*0.2,0)
-		hand += Vector3(sx*frame.trim.x,frame.trim.y*(0.65+side*0.25),frame.trim.z*sx)*profile.hover_arm_motion*frame.hover
-		# Comfortable hand workspace prevents load response crossing the chest.
-		hand.x = sx*clampf(sx*hand.x,1.8,5.8)
-		if absf(hand.x)<2.6: hand.z = maxf(hand.z,1.4) # Gather in front of the chest armor.
-		hand.y = clampf(hand.y,-3.2,4.0)
-		hand.z = clampf(hand.z,-1.8,3.8)
-		hands[side].follow(hand,delta,profile.arm_frequency+maxf(role,0)*0.3,profile.arm_damping,profile.arm_speed)
-		# Relaxed elbows stay near the ribs. Body flight widens them into a box,
-		# while steering presses the same calibrated hinge without a plane flip.
-		var pole := profile.arm_elbow_pole*Vector3(sx,1,1)
-		pole = pole.lerp(profile.arm_box_pole*Vector3(sx,1,1),frame.box)
-		pole += Vector3(sx*(frame.brake*0.8+outside*0.3),inside*0.2,frame.retro*0.5)
-		pole += Vector3(sx*(-inside*0.25+outside*0.55),steer.x*0.3,sx*steer.y*1.15+sx*steer.z*0.5)
-		pole += Vector3(sx*drive*0.35,role*0.2,prepare*0.45-drive*0.3)
-		poles[side].step(pole,delta,0.12,12.0)
-		var wrist := Vector3(-frame.box*0.20-frame.brake*0.12+steer.x*0.12,0,sx*(steer.y*0.18+steer.z*0.12))
-		wrist += Vector3(-frame.retro*role*0.08,role*0.12,drive*sx*0.08)
-		wrists[side].step(wrist.clamp(Vector3(-0.35,-0.2,-0.25),Vector3(0.35,0.2,0.25)),delta,0.14,2.0)
+		var bias: float = sx*frame.get("lead",1.0)*(0.06+frame.get("asymmetry",0.0)*0.18)*(1-frame.land)
+		var swing: float = pose.x+sx*steer.y*0.48-steer.x*0.28+slip.x*sx*0.12
+		var spread: float = pose.y-sx*steer.z*0.36+bias
+		var flex: float = pose.z+sx*steer.y*0.34+sx*steer.z*0.24-bias
+		swing += clampf(balance.z*0.02,-0.2,0.2)+frame.trim.y*frame.hover*0.06
+		spread += clampf(-sx*balance.x*0.02,-0.22,0.22)+sx*frame.trim.x*frame.hover*0.07
+		flex += sx*frame.trim.z*frame.hover*0.06
+		upper[side].step(Vector3(clampf(swing,-0.8,1.1),steer.y*0.12,sx*clampf(spread,0.18,2.15)),delta,0.12,profile.arm_speed)
+		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.16,profile.arm_speed)
+		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18,0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.12,2.0)
+		var curl: float = clampf(0.25-flare*0.15-frame.box*0.10+frame.retro*(0.35+bias)+frame.get("drive",0.0)*0.1,0.05,0.85)
+		finger_curl[side] = move_toward(finger_curl[side],curl,delta*2.0)
 
-func _process_modification() -> void:
-	var sk := get_skeleton()
-	for suffix in [".L",".R"]:
-		for bone in ["UpperArm"+suffix+".001","LowerArm"+suffix]:
-			var index := sk.find_bone(bone)
-			sk.set_bone_pose_rotation(index,sk.get_bone_rest(index).basis.get_rotation_quaternion())
+func apply(sk: Skeleton3D, rotate: Callable, weight := 1.0) -> void:
+	for side in 2:
+		rotate.call(profile.arm_roots[side],upper[side].value)
+		rotate.call(profile.arm_middles[side],elbows[side].value)
+		rotate.call(profile.arm_ends[side],wrists[side].value)
 	for index in finger_poses:
 		var side := 1 if ".R" in sk.get_bone_name(index) else 0
-		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl[side]))
-	var torso := sk.get_bone_global_pose(sk.find_bone("Torso"))
+		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl[side]*weight))
+
+func sample_completed(sk: Skeleton3D, completed: Dictionary) -> void:
+	var torso: Transform3D = completed[sk.find_bone("Torso")].affine_inverse()
 	for side in 2:
-		var target: Vector3 = torso*hands[side].value
-		var shoulder := sk.get_bone_global_pose(ik.get_root_bone(side)).origin
-		var middle := sk.get_bone_global_pose(ik.get_middle_bone(side)).origin
-		var end := sk.get_bone_global_pose(ik.get_end_bone(side)).origin
-		var reach := (shoulder.distance_to(middle)+middle.distance_to(end))*0.985
-		var distance := shoulder.distance_to(target)
-		var cushion := reach*0.15
-		if distance>reach-cushion: distance = reach-cushion+cushion*(1.0-exp(-(distance-reach+cushion)/cushion))
-		hand_targets[side].position = shoulder+(target-shoulder).normalized()*distance
-		pole_targets[side].position = torso*poles[side].value
+		hands[side] = torso*completed[sk.find_bone(profile.arm_ends[side])].origin
+		shoulders[side] = torso*completed[sk.find_bone(profile.arm_roots[side])].origin
+		elbow_positions[side] = torso*completed[sk.find_bone(profile.arm_middles[side])].origin

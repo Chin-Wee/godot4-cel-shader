@@ -223,7 +223,8 @@ func _bodyflight() -> void:
 		[270,[KEY_D]],[300,[]],[360,[KEY_S]],[390,[]],[435,[KEY_W]],[465,[]]])
 	_expect(_peak(rows,"engine")==0,"bodyflight: freefall silently powered the main engines")
 	_expect(_peak(rows,"box")>0.8 and _peak(rows,"hand_height")>2.0,"bodyflight: arms never establish a raised box position")
-	_expect(_peak(rows,"arm_asymmetry")>0.8 and _minimum(rows,"arm_asymmetry")< -0.8,"bodyflight: opposite turns lack active shoulder strokes")
+	_expect(_peak(rows,"arm_asymmetry_size")>1.0,"bodyflight: hands remain mirrored through the turn")
+	_expect(_peak(rows,"leg_asymmetry_size")>0.5,"bodyflight: freefall blending erased the leg stagger")
 
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
@@ -281,6 +282,15 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 		_expect(fc.velocity.is_finite() and mech.position.is_finite(),name+": non-finite physics state")
 		_expect(fc.aero_force.dot(fc.air_velocity) <= 1.0,name+": aerodynamics added kinetic energy")
 		if tick%6 == 0:
+			var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
+			var knees := []
+			var flex := []
+			for side in 2:
+				var hip: Vector3 = mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.thigh_bones[side])].origin
+				var knee: Vector3 = mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[side])].origin
+				var foot: Vector3 = mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.foot_bones[side])].origin
+				knees.append(ti*knee)
+				flex.append((knee-hip).angle_to(foot-knee))
 			var wing: Basis = mech.global_basis*Basis(Vector3.RIGHT,PI/2)
 			var lift: Vector3 = fc.aero_force.slide(fc.air_velocity.normalized()) if fc.air_velocity.length_squared()>0.00001 else Vector3.ZERO
 			rows.append({"time":float(tick)/HZ,"speed":fc.velocity.length(),"height":mech.position.y/10.0,
@@ -292,6 +302,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"pose_weights":Array(mech.rig.posture_weights),"plants":int(mech.rig.contacts.planted[0])+int(mech.rig.contacts.planted[1]),
 				"preparation":mech.rig.contacts.preparation,"impact":mech.rig.contacts.impact,"touchdowns":mech.rig.contacts.touchdown_count,
 				"retro":mech.rig.motion.retro,"roll_stop":mech.rig.motion.roll_stop,
+				"flare":mech.rig.motion.flare,"left_elbow":_array(mech.rig.arms.elbow_positions[0]),"right_elbow":_array(mech.rig.arms.elbow_positions[1]),
 				"drive":mech.rig.motion.drive,"prepare_effort":mech.rig.motion.prepare,"redirect":mech.rig.motion.redirect,
 				"effort_phase":mech.rig.effort_phase,"lead_side":mech.rig.lead_side,"role_strength":mech.rig.motion.asymmetry,
 				"alignment":mech.rig.motion.alignment,"request_alignment":mech.rig.motion.request_alignment,"load_direction":_array(mech.rig.motion.load_direction),
@@ -301,13 +312,15 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"box":mech.rig.motion.box,"steer":_array(mech.rig.motion.steer),
 				"behavior_weights":Array(mech.rig.behavior_weights),"launch_pose":mech.rig.motion.launch,"track_pose":mech.rig.motion.track,
 				"left_wrist":_array(mech.rig.arms.wrists[0].value),"right_wrist":_array(mech.rig.arms.wrists[1].value),
-				"arm_span":absf(mech.rig.arms.hands[0].value.x-mech.rig.arms.hands[1].value.x),
-				"arm_asymmetry":mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z,
-				"hand_forward":(mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5,
-				"hand_height":(mech.rig.arms.hands[0].value.y+mech.rig.arms.hands[1].value.y)*0.5,
-				"knee":mech.rig.legs[1].value.x,"knee_asymmetry":mech.rig.legs[1].value.x-mech.rig.legs[4].value.x,
+				"arm_span":absf(mech.rig.arms.hands[0].x-mech.rig.arms.hands[1].x),
+				"arm_asymmetry":mech.rig.arms.hands[0].z-mech.rig.arms.hands[1].z,
+				"arm_asymmetry_size":mech.rig.arms.hands[0].distance_to(mech.rig.arms.hands[1]*Vector3(-1,1,1)),
+				"leg_asymmetry_size":knees[0].distance_to(knees[1]*Vector3(-1,1,1)),
+				"hand_forward":(mech.rig.arms.hands[0].z+mech.rig.arms.hands[1].z)*0.5,
+				"hand_height":(mech.rig.arms.hands[0].y+mech.rig.arms.hands[1].y)*0.5,
+				"knee":flex[0],"knee_asymmetry":flex[0]-flex[1],
 				"chest":_array(mech.rig.chest.value),"hip_pose":_array(mech.rig.hips.value),
-				"left_hand":_array(mech.rig.arms.hands[0].value),"right_hand":_array(mech.rig.arms.hands[1].value) })
+				"left_hand":_array(mech.rig.arms.hands[0]),"right_hand":_array(mech.rig.arms.hands[1]) })
 		if capture_enabled and capture and tick%4 == 0:
 			var names := PackedStringArray()
 			for key in held: names.append(OS.get_keycode_string(key))

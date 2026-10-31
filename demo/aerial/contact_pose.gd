@@ -1,4 +1,4 @@
-extends SkeletonModifier3D
+extends RefCounted
 
 # Uncharted 4's animation/contact layering, using Godot's native two-bone solve.
 # ponytail: visual feet over one physical capsule; articulated suspension would
@@ -8,6 +8,7 @@ const Servo = preload("res://aerial/pose_servo.gd")
 enum Support { AIRBORNE, GROUNDED }
 var profile: RigProfile
 var body: RigidBody3D
+var skeleton: Skeleton3D
 var state := Support.AIRBORNE
 var initialized := false
 var unsupported_time := 0.0
@@ -33,18 +34,24 @@ var alignment: SkeletonModifier3D
 
 class Alignment extends SkeletonModifier3D:
 	var owner_pose
-	func _process_modification() -> void: owner_pose.align_soles()
+	func _process_modification() -> void:
+		owner_pose.align_soles()
+		owner_pose.body.capture_pose()
 
 func configure(mech: RigidBody3D, rig_profile: RigProfile) -> void:
 	body = mech
 	profile = rig_profile
-	var sk := get_skeleton()
+	skeleton = mech.skeleton
+	var sk := skeleton
+	var markers := Node3D.new()
+	markers.name = "GroundContactTargets"
+	sk.add_child(markers)
 	for side in 2:
 		weights.append(Servo.new())
-		for markers in [targets,poles]:
+		for collection in [targets,poles]:
 			var marker := Marker3D.new()
-			add_child(marker)
-			markers.append(marker)
+			markers.add_child(marker)
+			collection.append(marker)
 		var solver := TwoBoneIK3D.new()
 		solver.name = "FootIK" + str(side)
 		sk.add_child(solver)
@@ -81,7 +88,7 @@ func reset() -> void:
 
 func update(delta: float, controller) -> void:
 	if delta <= 0: return
-	var sk := get_skeleton()
+	var sk := skeleton
 	var upright := body.global_basis.y.dot(Vector3.UP) > 0.65
 	var walking: bool = not body.flying
 	var lifting: bool = controller.leg_force.length() > 1 or controller.velocity.y > 0.6
@@ -120,6 +127,11 @@ func update(delta: float, controller) -> void:
 	for side in 2:
 		var stance: bool = not walking or fposmod(phase+side*0.5,1.0) < profile.walk_stance_fraction
 		var desired: bool = support and stance and not hits[side].is_empty()
+		if walking and desired and not planted[side]:
+			var foot: Transform3D = body.bone_poses[sk.find_bone(profile.foot_bones[side])]
+			var sole: Vector3 = sk.global_transform*(foot*profile.sole_offset)
+			# A ray under a raised swing foot is not a reachable stance plant.
+			desired = sole.distance_to(hits[side].position)<body.display_scale*0.08
 		if desired and not planted[side]: _plant(side,hits[side])
 		if not desired: planted[side] = false
 		weights[side].step(Vector3(float(desired),0,0),delta,0.055 if lifting else profile.foot_response)
@@ -156,10 +168,15 @@ func foot_basis(side: int) -> Basis:
 	if forward.is_zero_approx(): forward = Vector3.FORWARD.slide(normal).normalized()
 	return Basis(forward.cross(normal).normalized(),forward,normal)
 
-func _process_modification() -> void:
-	var sk := get_skeleton()
+func prepare_targets() -> void:
+	var sk := skeleton
 	for side in 2:
 		if not solvers[side].active: continue
+		# The imported Walk bends Shin as well as Knee. Native two-bone IK
+		# treats Knee→Feet as one virtual segment, so its intermediate Shin must
+		# return to rest during stance. Leave the authored swing pose untouched.
+		var shin := sk.find_bone("Shin.L" if side==0 else "Shin.R")
+		sk.set_bone_pose_rotation(shin,sk.get_bone_pose_rotation(shin).slerp(sk.get_bone_rest(shin).basis.get_rotation_quaternion(),weights[side].value.x))
 		var target: Vector3 = plant_position(side)+plant_normal(side)*0.04-foot_basis(side)*profile.sole_offset*sk.global_basis.get_scale().x
 		var local := sk.to_local(target)
 		var hip := sk.get_bone_global_pose(sk.find_bone(profile.thigh_bones[side])).origin
@@ -175,7 +192,7 @@ func _process_modification() -> void:
 		poles[side].position = hip+Vector3(0,-2,5)
 
 func align_soles() -> void:
-	var sk := get_skeleton()
+	var sk := skeleton
 	for side in 2:
 		var weight: float = weights[side].value.x
 		if weight < 0.001: continue

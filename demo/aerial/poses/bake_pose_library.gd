@@ -55,10 +55,11 @@ func _bake() -> void:
 		var frame := {"hover":0.0,"fighter":0.0,"coast":0.0,"fall":0.0,"land":0.0,"launch":0.0,
 			"box":0.0,"track":0.0,"brake":0.0,"retro":0.0,"compression":0.0,"g_load":1.0,
 			"side_load":0.0,"brake_rate":0.0,"roll_stop":0.0,"pressure":0.0,
-			"drive":0.0,"prepare":0.0,"lead":1.0,"asymmetry":0.0,"load_direction":Vector3.ZERO,
+			"drive":0.0,"prepare":0.0,"lead":1.0,"asymmetry":0.0,"load_direction":Vector3.ZERO,"flare":0.0,
 			"steer":Vector3.ZERO,"body_steer":Vector3.ZERO,"flow":Vector3.ZERO,"gyro":Vector3.ZERO,
 			"trim":Vector3.ZERO,"up":Vector3.UP,"omega":Vector3.ZERO,"alpha":Vector3.ZERO,"acceleration":Vector3.ZERO}
 		frame.merge(KEYS[name],true)
+		frame.flare = maxf(frame.flare,frame.brake)
 		frame["pitch"] = frame.steer.x
 		frame["yaw"] = frame.steer.y
 		frame["roll"] = frame.steer.z
