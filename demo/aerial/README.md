@@ -293,7 +293,9 @@ Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
 ## Procedural pose ownership and tuning
 
-The fixed-clock pipeline is body posture → free-arm targets → arm IK → foot
+The [flight animation contract](flight-animation-contract.md) defines the five
+required behaviors and visual acceptance. The fixed-clock pipeline is behavior
+and posture → deliberate body/arm targets → arm IK → wrist articulation → foot
 targets → leg IK → sole alignment → completed hardpoint cache.
 Godot's `SkeletonModifier3D` child order makes that sequence explicit. Physics
 consumes the last completed pose, not an interpolated camera/render pose.
@@ -301,8 +303,8 @@ consumes the last completed pose, not an interpolated camera/render pose.
 | File | Owns |
 | --- | --- |
 | `aerial_mech.gd` | Native physics support, existing impact prediction, fixed-clock evaluation and physical hardpoint cache. |
-| `flight_pose.gd` | Read-only motion snapshot, continuous start/coast/stop intent, normalized posture weights, active chest/arch and bounded body/leg targets. |
-| `arm_pose.gd` | Active body-flight shoulder/elbow strokes, raised box and tracking shapes, secondary balance, braking/retro bracing, calibrated hinges, fingers and native arm IK. |
+| `flight_pose.gd` | Read-only motion snapshot, continuous hover/fighter/coast/fall influences, force-driven launch/recovery, start/coast/stop intent, normalized leg posture weights, active spine and bounded leg targets. |
+| `arm_pose.gd` | Behavior-specific shoulder/elbow strokes, raised box and tracking shapes, landing guard, secondary balance, braking/retro bracing, calibrated hinges, fingers, native arm IK and a bounded post-IK wrist modifier. |
 | `contact_pose.gd` | Grounded/airborne support state, stance/swing, predicted preparation, one-shot impact, native leg IK and sole alignment. |
 | `mech_rig_profile.tres` / `.gd` | Inspectable rig calibration: bones, pose anchors, joint limits/speeds, response times, free-hand anchors and measured sole offsets. |
 | `pose_servo.gd` | Critical response shared with physics; an exact underdamped response adds animation follow-through. Animation alone uses finite speed limits. |
@@ -326,14 +328,34 @@ and the [APF's neutral, turning and tracking shapes](https://www.apf.com.au/memb
 This adapts those visual cues to the mech's existing rotation controls; it does
 not claim limb-resolved aerodynamic forces.
 
+Four normalized behavior weights distinguish upright support, powered useful
+airflow, independent coasting and atmospheric falling. Falling requires actual
+descent, a developing downward fraction of travel, relative wind and low main
+output. Engine cutoff alone cannot choose a spread pose; vacuum descent cannot
+choose atmospheric body flight. Powered misalignment retains independent control.
+Hover assistance supplies the upright influence, so a fast stall cannot select it.
+
 Command minus normalized angular rate supplies a continuous stroke signal.
 A turn begins with a shoulder/forearm press, relaxes as the chassis reaches the
 requested rate, and counterstrokes on release while rotation remains. Pitch
 reaches or tucks both arms; roll gathers one arm and opens the other. Chest and
 head lead that intent. Broadside airflow blends into a raised, bent-elbow box
 position with wrists near head level and a modest chest arch; head-first tracking returns to a compact pose.
-Hover retains the calibrated relaxed arms. There is no timer-driven gesture loop,
-new flight mode or additional movement controller.
+Each behavior scales that stroke differently: small gyro corrections in hover,
+compact bank/pitch work in fighter flight, gathering/arrest in independent
+rotation and larger elbow presses while skydiving. Hover retains calibrated
+relaxed arms. Quiet trim fades during deliberate strokes; actual attitude-thruster
+effort adds hover correction. There is no timer-driven gesture loop, new flight
+mode or additional movement controller.
+
+Airflow-aligned unpowered travel can still use a tracking shape. Relative wind
+and fall exposure supply the box overlay; Shift supplies a separate flare at any
+thrust level. Real leg force starts the launch envelope, extends the legs through
+the push, then recovers toward support. It cannot invent a midair leg jump.
+Prediction prepares a forward landing guard; actual contact still owns plants.
+Wrist cupping follows box/flare and steering with bounded local angles, after IK
+so it cannot displace the solved hand. Requested engine spool anticipates retro
+bracing, which then follows delivered thrust opposing travel.
 
 Measured linear/angular acceleration still adds smaller balance catches and
 spring recovery. The body-to-source conversion is explicit (-X, +Y, -Z).
@@ -355,7 +377,8 @@ A bounded visual pelvis sink makes support reachable. These are visual contacts
 over the existing chassis capsule, not articulated suspension or hidden movement
 forces. There is no skeleton/root-motion write to physical world velocity.
 
-F9 also displays posture percentages, foot plants, probe count and impact strength.
+F9 displays posture percentages, foot plants, probe count and impact strength.
+Behavior and launch channels are recorded in the replay reports.
 Use the rig profile to tune animation; flight-force tuning remains in the controller.
 
 ## Checks and comparison captures
@@ -365,6 +388,7 @@ godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tes
 godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_flight_pose.gd
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_procedural_pose.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_animation_contract.gd
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
 godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
 godot --headless --path demo --script res://aerial/tests/test_cloud_field.gd
@@ -480,6 +504,26 @@ frames, not the headless functional check alone. The separate soft-depth probe
 renders two intersecting spheres and checks that the enabled material fades at
 the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
 this path is verified on the current Mobile renderer.
+
+### Flight animation contract validation
+
+The contract-specific check covers normalized behavior weights, bounded transitions,
+force-driven launch and recovery, quiet hover versus independent steering,
+inverted fighter shape, thrust-cutoff continuity, start/coast/stop strokes,
+vacuum exclusion, completed wrist articulation, box/arch, tracking, flare and
+fast-stall exclusion. Existing flight/contact checks still validate the real body,
+nozzle geometry, momentum budget, landing and retained walking.
+
+Capture the five acceptance families in both close-up body-relative and the real
+independent-look chase camera:
+
+```sh
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_animation_contract.gd -- /tmp/animation-contract
+```
+
+Reports retain source hashes, inputs, behavior/posture weights, launch/track and
+wrist channels. The two camera passes use identical inputs and native physics;
+rendering never evaluates a separate pose. `--metrics-only` skips frame output.
 
 ## Visual review and remaining goal
 

@@ -12,6 +12,8 @@ var chest := Spring.new()
 var hips := Spring.new()
 var head := Spring.new()
 var com := Spring.new()
+var regimes := Spring.new()
+var launch := Spring.new()
 var legs: Array = []
 var arms: SkeletonModifier3D
 var contacts: SkeletonModifier3D
@@ -20,6 +22,9 @@ var clock := 0.0
 var root_angles := Vector3.ZERO
 # hover, streamlined, spread, coast, landing; normalized, never flight modes.
 var posture_weights := PackedFloat32Array([1,0,0,0,0])
+# Upright support, powered aerodynamic flight, independent coast, falling.
+# These are continuous influences, not movement modes or an attitude controller.
+var behavior_weights := PackedFloat32Array([1,0,0,0])
 var motion := {}
 var last_brake := 0.0
 
@@ -43,6 +48,9 @@ func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 func reset() -> void:
 	for spring in [chest,hips,head,com]: spring.reset()
 	blend.reset(Vector3(1,0,0))
+	regimes.reset(Vector3(1,0,0))
+	launch.reset()
+	behavior_weights = PackedFloat32Array([1,0,0,0])
 	root_angles = Vector3.ZERO
 	for side in 2:
 		for joint in 3: legs[side*3+joint].reset(profile.leg_target(PackedFloat32Array([1,0,0,0,0]),side,joint))
@@ -61,15 +69,11 @@ func update(delta: float, controller) -> void:
 	clock = controller.clock
 	contacts.update(delta,controller)
 	motion = _sample_motion(controller,delta)
-	_choose_posture(controller)
+	_choose_posture(controller,delta)
 	motion["spread"] = posture_weights[2]
 	motion["stream"] = posture_weights[1]
-	motion["hover"] = posture_weights[0]
-	motion["coast"] = posture_weights[3]
-	motion["brake"] = posture_weights[2]
-	# Broadside relative wind calls for an active box position; head-first
-	# airflow retains the compact tracking pose. No flight mode or input gate.
-	motion["box"] = smoothstep(0.04,0.35,motion.pressure)*smoothstep(0.25,0.75,absf(motion.flow.z))*(1.0-motion.stream)*(1.0-posture_weights[4])
+	motion["launch"] = launch.value.x
+	motion["land"] = contacts.preparation
 	motion.make_read_only()
 	_update_body(delta)
 	_update_legs(delta,controller)
@@ -94,28 +98,52 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var speed: float = controller.velocity.length()
 	# Retro means delivered thrust opposing existing travel, not a throttle cut
 	# or a velocity rewrite. Gravity and aerodynamic braking stay independent.
-	var retro: float = maxf(0,-controller.main_force.normalized().dot(controller.velocity.normalized()))*smoothstep(2,12,speed)*smoothstep(0.1,0.8,controller.engine_level)
+	var thrust_direction: Vector3 = controller.main_force.normalized() if controller.main_force.length_squared()>1 else basis.y
+	# Prepare while the requested engines spool, then follow their delivered force.
+	var next_output: float = move_toward(controller.engine_level,controller.DETENTS[controller.detent],controller.ENGINE_SPOOL_RATE*0.15)
+	var retro: float = maxf(0,-thrust_direction.dot(controller.velocity.normalized()))*smoothstep(2,12,speed)*smoothstep(0.1,0.8,maxf(controller.engine_level,next_output))
 	var brake_rate := clampf((controller.brake_amount-last_brake)/delta,-3,3) if delta>0 else 0.0
 	last_brake = controller.brake_amount
 	var roll_stop := clampf(pilot_rates.z/1.2-intent.z,-1,1)*(1.0-absf(intent.z))
 	# Active hover trim is a slow weight-transfer cycle. Opposed thigh/knee
 	# offsets keep the lower-leg thrust axes nearly parallel while arms balance.
 	var trim := Vector3(sin(clock*0.95)+0.25*sin(clock*1.83),sin(clock*0.73+1.4),sin(clock*0.84+0.8))
+	# Quiet trim cannot cancel a deliberate shoulder stroke or its arrest phase.
+	trim *= 1.0-minf(maxf(intent.length(),steer.length()),1)
+	var gyro: Vector3 = basis.inverse()*controller.rcs_torque.normalized()*clampf(controller.torque_fraction,0,1)
 	return {"flow":flow.normalized(),"pressure":pressure,"omega":omega,"alpha":alpha,
 		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
 		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
-		"up":basis.inverse()*Vector3.UP,"trim":trim,
+		"up":basis.inverse()*Vector3.UP,"trim":trim,"gyro":gyro,
 		"steer":steer,"body_steer":basis.inverse()*pilot*steer,
 		"retro":retro,"brake_rate":brake_rate}
 
-func _choose_posture(controller) -> void:
+func _choose_posture(controller, delta: float) -> void:
 	var landing: float = contacts.preparation
-	var spread: float = maxf(controller.brake_amount,controller.departure*motion.pressure*0.55)*(1.0-landing)
-	var remaining := 1.0-landing-spread
-	var stream: float = controller.aero_authority*clampf(controller.engine_level,0,1)*remaining
-	var hover: float = controller.hover_assist*(remaining-stream)
-	posture_weights = PackedFloat32Array([hover,stream,spread,remaining-stream-hover,landing])
+	var airload := smoothstep(0.04,0.35,motion.pressure)
+	var powered := smoothstep(0.1,0.95,controller.engine_level)
+	var hover: float = clampf(controller.hover_assist,0,1)
+	var fighter: float = controller.aero_authority*powered*(1.0-hover)
+	var downward: float = maxf(0,controller.velocity.dot(Vector3.DOWN))
+	# Engine cutoff cannot instantly become a skydiver pose. Descent and useful
+	# relative wind must develop; lateral coasting keeps its independent posture.
+	var descent := smoothstep(2,12,downward)*smoothstep(0.1,0.65,downward/maxf(controller.velocity.length(),1))
+	var falling := (1.0-hover-fighter)*(1.0-powered)*descent*airload
+	var weights := regimes.step(Vector3(hover,fighter,falling),delta,0.24).clamp(Vector3.ZERO,Vector3.ONE)
+	var total := weights.x+weights.y+weights.z
+	if total>1: weights /= total
+	behavior_weights = PackedFloat32Array([weights.x,weights.y,maxf(0,1-weights.x-weights.y-weights.z),weights.z])
+	for index in 4: motion[["hover","fighter","coast","fall"][index]] = behavior_weights[index]*(1.0-landing)
+	motion["track"] = airload*maxf(motion.fighter,smoothstep(0.55,0.9,absf(motion.flow.y))*(motion.coast+motion.fall))
+	motion["box"] = motion.fall*smoothstep(0.25,0.75,absf(motion.flow.z))
+	motion["brake"] = controller.brake_amount*lerpf(0.2,1,airload)*(1.0-landing)
+	var spread: float = maxf(motion.brake,motion.box)
+	hover = motion.hover*(1.0-landing-spread)
+	var stream: float = motion.track*maxf(0,1.0-landing-spread-hover)
+	posture_weights = PackedFloat32Array([hover,stream,spread,maxf(0,1.0-landing-spread-hover-stream),landing])
+	var pushing: bool = controller.leg_force.length()>1
+	launch.step(Vector3(float(pushing),0,0),delta,0.06 if pushing else 0.18)
 
 func _update_body(delta: float) -> void:
 	var omega: Vector3 = motion.omega
@@ -125,7 +153,8 @@ func _update_body(delta: float) -> void:
 	var lag := Vector3(omega.x*0.11+alpha.x*0.01,omega.y*0.07,omega.z*0.11+alpha.z*0.01)
 	lag += Vector3(acceleration.z*0.004,-acceleration.x*0.002,-acceleration.x*0.005)
 	var brace := Vector3(motion.brake*0.12+motion.retro*0.16,0,motion.side_load*0.06)
-	var anticipation := intent*Vector3(0.15,0.14,0.16)
+	var intent_gain: float = motion.hover*0.5+motion.fighter*0.75+motion.coast+motion.fall*0.9
+	var anticipation := intent*Vector3(0.15,0.14,0.16)*intent_gain
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
 	hips.step((-anticipation*0.25+lag*0.35+hover).limit_length(0.09),delta,0.14,0.8)
 	root_angles = hips.value*Vector3(-1,1,1)
@@ -134,7 +163,8 @@ func _update_body(delta: float) -> void:
 	com.step(displacement.limit_length(0.16),delta,0.16,1.0)
 	# Chest establishes the arch and leads the shoulder press. Load lag stays
 	# secondary so the upper body looks piloted rather than pulled by inertia.
-	var arch := Vector3(-0.09*motion.box,0,0)
+	var arch := Vector3(-0.09*motion.box+0.025*motion.track-motion.launch*0.035,0,0)
+	arch += motion.gyro*Vector3(0.018,0.012,0.018)*motion.hover
 	chest.follow((lag*0.3+anticipation+brace*0.6+arch-hover*0.5).limit_length(0.24),delta,profile.body_frequency,profile.body_damping,2.0)
 	# Head leads the maneuver and counter-rolls slightly; mouse look never
 	# imposes a weapon-facing pose on the torso or either arm.
@@ -143,8 +173,7 @@ func _update_body(delta: float) -> void:
 func _update_legs(delta: float, controller) -> void:
 	var flow: Vector3 = motion.flow*motion.pressure
 	var omega: Vector3 = motion.omega
-	var compression: float = motion.compression
-	var jump := clampf(controller.leg_force.length()/maxf(controller.body.mass*9.81*4,1),0,1)
+	var compression: float = motion.compression*(1.0-motion.launch)
 	# Preserve feasible calibrated anchors. When physical vectoring is already
 	# at its cone, reduce extra load/airflow articulation rather than bend jets.
 	var articulation := lerpf(1.0,0.35,clampf(controller.engine_level,0,1)*float(controller.motor_saturated))
@@ -152,19 +181,23 @@ func _update_legs(delta: float, controller) -> void:
 		var sx := 1.0 if side == 0 else -1.0
 		var brace := clampf(sx*motion.side_load+omega.z*0.25,-1,1)
 		var extras := [Vector3(flow.z*profile.leg_airflow_gain-compression*0.32+brace*0.22,-flow.x*0.22+omega.y*0.12,-flow.x*0.28-motion.side_load*0.12+sx*compression*0.10),
-			Vector3(0.85*compression+brace*0.28-jump*0.35,0,0),Vector3(-compression*0.30-brace*0.15,-flow.x*0.12,0)]
+			Vector3(0.85*compression+brace*0.28,0,0),Vector3(-compression*0.30-brace*0.15,-flow.x*0.12,0)]
 		var hover_shift: float = sx*motion.trim.x*profile.hover_leg_motion*motion.hover
-		var steer: float = sx*(motion.roll*0.18+motion.yaw*0.12)*profile.maneuver_leg_motion/0.22
+		var leg_intent: Vector3 = motion.steer
+		var leg_gain: float = motion.hover*0.4+motion.fighter*0.6+motion.coast+motion.fall
+		var steer: float = sx*(leg_intent.z*0.18+leg_intent.y*0.12)*profile.maneuver_leg_motion/0.22*leg_gain
 		extras[0] += Vector3(steer-motion.retro*(0.22+sx*0.10),motion.yaw*sx*0.06,0)
 		extras[1] += Vector3(-steer*0.65+motion.retro*(0.34-sx*0.10)+motion.brake_rate*0.04,0,0)
 		extras[2] += Vector3(-motion.retro*0.12,0,motion.roll_stop*0.06)
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
+			var extension: Vector3 = profile.launch_pose[joint]*Vector3(1,1,sx)
+			target = target.lerp(extension,motion.launch)
 			if joint==0: target.x += hover_shift
 			if joint==1: target.x -= hover_shift
 			target = profile.limit_joint(target,side,joint)
 			var servo = legs[side*3+joint]
-			servo.step(target,delta,profile.leg_response[joint]+side*0.025,profile.joint_speed[joint])
+			servo.step(target,delta,lerpf(profile.leg_response[joint]+side*0.025,0.08,motion.launch),profile.joint_speed[joint])
 			servo.value = profile.limit_joint(servo.value,side,joint)
 
 func _rotate(bone: String, angles: Vector3) -> void:

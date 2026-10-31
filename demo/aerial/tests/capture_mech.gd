@@ -59,9 +59,7 @@ func _fixture(origin: Vector3, orientation: Quaternion, speed: Vector3, level: i
 	scene.hero.freeze = false
 	await _ticks(3)
 
-func _capture() -> void:
-	create_timer(240).timeout.connect(func():
-		if not completed: push_error("Flight scenario replays did not finish"); quit(1))
+func _setup_capture() -> void:
 	assert(Engine.physics_ticks_per_second == HZ, "Run these fixed inputs at 60 physics ticks/s")
 	var args := OS.get_cmdline_user_args()
 	if not args.is_empty(): output = args[0]
@@ -92,6 +90,11 @@ func _capture() -> void:
 		replay_label.add_theme_color_override("font_outline_color",Color.BLACK)
 		scene.hud.add_child(replay_label)
 	await _ticks(2)
+
+func _capture() -> void:
+	create_timer(240).timeout.connect(func():
+		if not completed: push_error("Flight scenario replays did not finish"); quit(1))
+	await _setup_capture()
 	await _hover()
 	await _fighter()
 	await _coast()
@@ -290,6 +293,8 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"preparation":mech.rig.contacts.preparation,"impact":mech.rig.contacts.impact,"touchdowns":mech.rig.contacts.touchdown_count,
 				"retro":mech.rig.motion.retro,"roll_stop":mech.rig.motion.roll_stop,
 				"box":mech.rig.motion.box,"steer":_array(mech.rig.motion.steer),
+				"behavior_weights":Array(mech.rig.behavior_weights),"launch_pose":mech.rig.motion.launch,"track_pose":mech.rig.motion.track,
+				"left_wrist":_array(mech.rig.arms.wrists[0].value),"right_wrist":_array(mech.rig.arms.wrists[1].value),
 				"arm_span":absf(mech.rig.arms.hands[0].value.x-mech.rig.arms.hands[1].value.x),
 				"arm_asymmetry":mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z,
 				"hand_forward":(mech.rig.arms.hands[0].value.z+mech.rig.arms.hands[1].value.z)*0.5,
@@ -301,9 +306,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			var names := PackedStringArray()
 			for key in held: names.append(OS.get_keycode_string(key))
 			replay_label.text = "%s · %.1f s · %s" % [name.to_upper(), float(tick)/HZ, " + ".join(names) if not names.is_empty() else "NO KEYS"]
-			scene.camera.position = mech.position+Vector3(165,55,115)
-			scene.camera.look_at(mech.position)
-			scene.camera.force_update_transform()
+			_position_capture_camera()
 			# Finish queued camera/text updates before drawing, within this frame.
 			call_deferred("_save",output.path_join("%s-%04d.png"%[name,tick/4]))
 	_keys([])
@@ -311,6 +314,11 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 	_expect(max_residual < 0.3,name+": velocity changed outside the applied force budget")
 	print("SCENARIO ",name," max_speed=",snappedf(max_speed,0.01)," final_speed=",snappedf(rows[-1].speed,0.01)," jerk=",snappedf(max_jerk,0.1)," residual=",snappedf(max_residual,0.001))
 	return rows
+
+func _position_capture_camera() -> void:
+	scene.camera.position = scene.hero.position+Vector3(165,55,115)
+	scene.camera.look_at(scene.hero.position)
+	scene.camera.force_update_transform()
 
 func _expect(ok: bool, message: String) -> void:
 	if not ok and not message in failures: failures.append(message)

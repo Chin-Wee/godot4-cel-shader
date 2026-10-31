@@ -1,0 +1,58 @@
+# Mech flight animation contract
+
+Status: implementation contract, 31 October 2026. Runtime evidence and commands are documented in README.md.
+
+## Required behaviors
+
+1. Ground jump into upright, gyro-stabilized helicopter-like flight. Grounded
+   legs supply the push; powered low-speed support catches ascent. Animate pelvis,
+   chest, both arms and legs, with feasible heel/calf/backpack thrust alignment.
+2. Powered fighter-like flight in any orientation. The chassis provides lift;
+   streamlined posture follows useful airflow, not world-up. Bank, pitch and yaw
+   have deliberate full-body initiation, sustained effort and recovery.
+3. Main engines off: rotate freely while retaining existing travel. Cold-gas
+   attitude control supplies actual torque. Compact preparation and arrest poses
+   express the maneuver; neither pose nor orientation rewrites velocity. Gravity
+   and atmospheric forces remain active.
+4. Atmospheric falling: depict skydiver body flight. Relative wind, broadside
+   exposure, downward travel and braking progressively establish arch/box, track,
+   flare or recovery. Both shoulders/elbows, wrists, pelvis and legs participate.
+5. Transitions remain continuous. Thrust cutoff alone must not cause an instant
+   spread pose; a fast stall must not trigger upright hover posing/braking.
+   Preserve joint/spring velocities and actual body momentum across transitions.
+
+## Recommended architecture
+
+Reuse the current flight_pose, arm_pose, contact_pose, rig profile and native
+SkeletonModifier3D/TwoBoneIK3D pipeline. Production architecture reference:
+Uncharted 4's deliberate animation with controlled physical secondary motion.
+
+Use a small contact/action state machine only for real support, launch and landing
+phases. Airborne behavior uses continuous posture weights, not four exclusive
+animation states or manual modes. Propulsion/support/alignment select the base;
+relative wind, descent and brake intent supply aerodynamic shape; pilot request
+and measured angular rate supply deliberate start/coast/stop strokes. Smaller
+load/acceleration responses follow afterward. Finish with constrained IK and
+publish actual socket transforms. One physical body remains movement authority.
+
+Skydiver reference: USPA Category D start-coast-stop turns and APF Basic Body
+Flight. Apply those cues chiefly to air-loaded falling and aerodynamic maneuvers;
+do not apply one skydiver arm gesture equally to hover, fighter flight and coasting.
+
+Keep contact rays near plausible ground interaction. Feet plant only on real
+support. Preserve mechanical joint limits, nozzle seating and gimbal ranges.
+No hand boosters or weapon aiming. Reserve physical ragdoll for a separately
+scoped impact/incapacitation feature; normal piloting uses bounded secondary motion.
+
+## Visual acceptance
+
+Review jump/hover, banked/inverted powered flight, cutoff with independent
+rotation/travel, spread-versus-track falling, and an uninterrupted combined
+transition sequence. Review both close-up body-relative and normal chase views.
+Active body preparation should read before acceleration/rate develops; passive
+lag must remain secondary. Numeric flight checks alone cannot establish pose quality.
+
+References:
+- https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4
+- https://www.uspa.org/skydiveschool/d
+- https://www.apf.com.au/members/members/publications/misc-publications/basic-body-flight-for-b-rels-and-beyond

@@ -169,6 +169,9 @@ func _run() -> void:
 	await _pose_ticks(18)
 	assert(mech.rig.arms.hands[0].value.z-mech.rig.arms.hands[1].value.z < -0.8 and mech.rig.chest.value.y<0,"Turn release does not actively counterstroke")
 	mech.angular_velocity = Vector3.ZERO
+	mech.linear_velocity = Vector3(0,-750,0)
+	fc.engine_level = 0
+	fc.detent = 0
 	fc.local_airflow = Vector3(0,0,75)
 	await _pose_ticks(120)
 	assert(mech.rig.motion.box>0.9 and mech.rig.chest.value.x< -0.06,"Broadside freefall never establishes an arch")

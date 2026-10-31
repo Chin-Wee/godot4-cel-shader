@@ -17,6 +17,7 @@ extends Resource
 @export var spread_pose := PackedVector3Array([Vector3(-0.88,0,0.46), Vector3(1.07,0,0), Vector3(-0.24,0,0)])
 @export var coast_pose := PackedVector3Array([Vector3(-0.32,0,0.16), Vector3(0.58,0,0), Vector3(-0.06,0,0)])
 @export var landing_pose := PackedVector3Array([Vector3(-0.36,0,0.20), Vector3(0.68,0,0), Vector3(-0.10,0,0)])
+@export var launch_pose := PackedVector3Array([Vector3(-0.03,0,0.08),Vector3(0.05,0,0),Vector3.ZERO])
 @export var joint_min := PackedVector3Array([Vector3(-1.15,-0.5,-0.65), Vector3(0.05,0,0), Vector3(-0.65,-0.2,-0.2)])
 @export var joint_max := PackedVector3Array([Vector3(0.65,0.5,0.65), Vector3(1.65,0,0), Vector3(0.5,0.2,0.2)])
 @export var leg_response := Vector3(0.28,0.32,0.36)
@@ -29,6 +30,7 @@ extends Resource
 @export var arm_brake := Vector3(5.1,2.6,2.5)
 @export var arm_retro := Vector3(3.2,-1.1,2.8)
 @export var arm_coast := Vector3(3.2,-2.45,1.0)
+@export var arm_land := Vector3(3.3,-1.7,1.8)
 @export var arm_box := Vector3(4.7,3.0,1.8)
 @export var arm_box_pole := Vector3(5.7,1.1,-1.5)
 @export var arm_elbow_pole := Vector3(2.9,-0.4,-4.0)
@@ -36,6 +38,11 @@ extends Resource
 @export var arm_frequency := 2.1
 @export var arm_damping := 0.82
 @export var arm_speed := 12.0
+# Pitch, yaw and roll stroke scale for each continuous behavior.
+@export var hover_stroke := Vector3(0.35,0.3,0.4)
+@export var fighter_stroke := Vector3(0.5,0.45,0.7)
+@export var coast_stroke := Vector3(0.75,0.8,1.0)
+@export var fall_stroke := Vector3.ONE
 @export var hover_leg_motion := 0.07
 @export var hover_arm_motion := 0.30
 @export var maneuver_leg_motion := 0.22
