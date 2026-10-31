@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793416295.9976783,
-    "seen": 1793416609.031422,
-    "ast_hash": "77430e1b00c2a2f89056603f009c80f4",
+    "mtime": 1793426332.1098776,
+    "seen": 1793426389.074234,
+    "ast_hash": "ccf927a1df19840f63f0490a98aad7bb",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1395,6 +1395,12 @@
     "mtime": 1793416295.9985058,
     "seen": 1793416609.031425,
     "ast_hash": "b484860b24a922c717a2b70101457b38",
+    "semantic_hash": ""
+  },
+  "demo/aerial/poses/POSE_DESIGN.md": {
+    "mtime": 1793426332.1120746,
+    "seen": 1793426389.074238,
+    "ast_hash": "e2f0f3af8ea2cb2255b3d1b2ed88acd3",
     "semantic_hash": ""
   }
 }
