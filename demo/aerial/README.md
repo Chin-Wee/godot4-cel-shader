@@ -522,8 +522,12 @@ godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tes
 ```
 
 Reports retain source hashes, inputs, behavior/posture weights, launch/track and
-wrist channels. The two camera passes use identical inputs and native physics;
-rendering never evaluates a separate pose. `--metrics-only` skips frame output.
+wrist channels. The two camera passes use identical inputs and native physics. The chase pass
+sets one player-style orbit at each fixture, then uses the unchanged independent-look
+camera. Rendering never evaluates a separate pose. `--metrics-only` skips frame output.
+A head-first dive pitches into broadside falling and a flare. The uninterrupted
+transition visits all four behavior influences; its recovery continuation cuts
+thrust, retains aerodynamic coasting, then re-ignites without a fixture reset.
 
 ## Visual review and remaining goal
 
