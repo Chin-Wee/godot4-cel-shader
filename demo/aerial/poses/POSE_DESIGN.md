@@ -3,8 +3,9 @@
 The runtime uses one full-body pose writer. Production references are
 [Overgrowth](https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach)
 for compact authored joint poses with procedural corrections and
-[Uncharted 4](https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4)
-for controlled secondary motion. The [flight animation contract](../flight-animation-contract.md)
+[Titanfall's Titans](https://primagames.com/eguides/titanfall-eguide/behind-the-scenes/animation)
+for deliberate heavy articulation. These are adapted visual principles, not
+claims about unpublished game internals. The [flight animation contract](../flight-animation-contract.md)
 defines the movement and visual requirements.
 
 ## Ownership
@@ -13,7 +14,9 @@ defines the movement and visual requirements.
 and applies torso, arm, wrist, finger and leg joints in one native modifier.
 `arm_pose.gd` is plain joint data with bounded servos. It creates no modifiers,
 IK solvers, target nodes, elbow poles or completion callbacks. Its arm triples
-are radians: aft swing, outward elevation and elbow flexion.
+are radians: aft swing, outward elevation and elbow flexion. The separate box
+twist rotates the humerus about its own longitudinal axis after arm placement;
+skeleton-space yaw cannot substitute for this external rotation.
 
 Two native foot solvers remain for real support and the walking preview. Ground
 target preparation runs in the full-body pass even after the airborne weight
@@ -29,13 +32,17 @@ limits rather than stretching the skeleton.
 
 ## Motion language
 
-- Hover: upper arms clear the ribs, elbows bend forward and a small alternating
-  trim keeps the pose alive. An elbow pole cannot pull elbows behind the torso.
+- Hover: upper arms clear the ribs and elbows bend forward. Small corrections
+  follow real attitude-control effort; a stable chassis holds its pose instead
+  of swimming to a clock-driven cycle.
 - Held yaw/roll: hands and knees retain complementary positions after angular
   velocity reaches the requested rate. Release produces a counterstroke.
-- Freefall: broadside airflow raises open forearms toward head level and folds
-  calves. Directional leg corrections run after base/freefall blends so the box
-  pose cannot erase them. Lengthwise flow permits a tracking shape.
+- Freefall: use the [USPA neutral body position](https://www.uspa.org/uspa-news/foundations-of-flight-neutral-body-position):
+  hips press into the wind, elbows stay below and slightly ahead of the shoulders,
+  bent forearms place open hands near the head, and calves fold behind the body.
+  External shoulder rotation establishes the elbow hinge plane; simply raising
+  the upper arms produces the wrong silhouette. Directional corrections survive
+  base/freefall blends. Lengthwise flow permits a tracking shape.
 - Air braking: Shift or loaded rapid deceleration drives one shared flare value.
   Knees squat while hands spread outside the shoulders. Flare wins over reverse
   bracing, which previously consumed its blend weight. The G-load gate excludes
@@ -43,6 +50,13 @@ limits rather than stretching the skeleton.
 - Acceleration: as braking ends, the brace unwinds, hands sweep aft, and the
   knees lengthen toward aerodynamic cruise as acceleration settles. Existing
   servos preserve continuity through cancellation and re-ignition.
+
+Powered joints use the existing critically damped response with finite angular
+speed. Arms reach at up to 1.8 rad/s, with 0.30/0.34 s shoulder/elbow response;
+legs use 0.32/0.38/0.42 s response. The torso has no underdamped oscillator or
+repeated settling bounce. Inertial torso/arm offsets and leg load compression
+are restrained so purposeful brace/steer poses dominate passive motion. Head,
+chest and pelvis remain coordinated instead of whipping around independently.
 
 A retained lead side and a small stance bias keep the limbs from being exact
 mirror copies. Thrust, airflow and turn intent increase that asymmetry. Three

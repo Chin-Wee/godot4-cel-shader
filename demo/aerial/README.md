@@ -299,8 +299,8 @@ wrists, fingers and legs. Arms use direct joint poses; there is no airborne arm
 IK, elbow-pole solve, wrist post-pass or chain of completion signals.
 
 The production reference is [Overgrowth's procedural animation approach](https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach):
-a compact authored pose vocabulary with directional joint corrections. Bounded
-secondary motion retains the existing Uncharted 4 reference. These are adapted
+a compact authored pose vocabulary with directional joint corrections. Heavy
+powered articulation takes its visual reference from [Titanfall's Titans](https://primagames.com/eguides/titanfall-eguide/behind-the-scenes/animation). These are adapted
 visual principles; no unpublished game implementation is assumed.
 
 | File | Owns |
@@ -310,7 +310,7 @@ visual principles; no unpublished game implementation is assumed.
 | `contact_pose.gd` | Actual support, predicted preparation and platform-local stance plants; native foot IK operates only for support, then soles align and the completed pose is captured directly. |
 | `aerial_mech.gd` | The native physical body, fixed-clock evaluation, actual animated thruster mounts and completed bone cache. |
 | `mech_rig_profile.gd` | Bone names, joint-space pose extremes, limits and response speeds. Arm triples mean aft swing, outward elevation and elbow flexion in radians. |
-| `pose_servo.gd` | Existing bounded joint response and secondary body response. |
+| `pose_servo.gd` | Existing critically damped, speed-bounded response; no torso oscillator. |
 
 Four native modifiers remain: full-body pose/ground-target preparation, two
 support-only foot solvers, and final sole alignment/cache. In free flight only
@@ -324,12 +324,15 @@ ribs and the elbow flexes forward; an IK pole cannot force it behind the torso.
 A held yaw/roll retains an asymmetric stroke as angular velocity develops.
 Directional leg corrections run after all freefall/base blends, so a box pose
 cannot overwrite the knee stagger. A small retained stance bias avoids perfectly
-mirrored idle limbs; hover trim stays restrained.
+mirrored idle limbs; hover trim follows real control effort instead of a clock.
 
-Broadside atmospheric falling raises bent forearms toward head level and folds
-the calves. Lengthwise airflow selects tracking. Falling still requires descent,
+Broadside atmospheric falling holds elbows below/ahead of the shoulders, rotates
+the upper arms externally to bend forearms toward the head, and folds the calves.
+The pelvis leads the arch into the wind. Lengthwise airflow selects tracking. Falling still requires descent,
 airflow and low main output; cutoff alone cannot manufacture a skydiver pose, and
-vacuum descent cannot create aerodynamic body flight.
+vacuum descent cannot create aerodynamic body flight. Powered joints use slower
+bounded response and hold the result; inertial offsets stay small and the torso
+does not ring or sway after a command ends.
 
 One shared flare value drives both hand opening and the leg squat. It responds
 to Shift and loaded rapid deceleration; the G-load gate prevents ballistic gravity

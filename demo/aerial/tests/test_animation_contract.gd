@@ -73,7 +73,7 @@ func _run() -> void:
 	for side in 2: assert(mech.rig.arms.hands[side].y< -0.6,"Hover uses skydiver arms")
 	var before_input: Vector3 = mech.rig.arms.hands[0]
 	fc.rotation_request = Vector3(0,1,0)
-	await _ticks(6,false)
+	await _ticks(12,false) # Heavy powered shoulders prepare within 0.2 seconds.
 	assert(fc.rotation_command.is_zero_approx() and mech.angular_velocity.is_zero_approx())
 	assert(mech.rig.arms.hands[0].distance_to(before_input)>0.2,"Brief input is lost behind the physics control filter")
 	fc.rotation_request = Vector3.ZERO
@@ -126,7 +126,7 @@ func _run() -> void:
 	await _ticks(30)
 	assert(_asymmetry()*start>0 and absf(_asymmetry())>0.5 and absf(_asymmetry())<absf(start)*0.95,"Held turn loses its readable asymmetric posture")
 	fc.rotation_command = Vector3.ZERO
-	await _ticks(20)
+	await _ticks(36) # Powered shoulders decelerate into the opposing arrest stroke.
 	assert(_asymmetry()*start<0 and absf(_asymmetry())>0.7,"Coast release has no arrest stroke")
 	mech.linear_velocity = Vector3(0,-800,0)
 	fc.local_airflow = Vector3(0,0,80)

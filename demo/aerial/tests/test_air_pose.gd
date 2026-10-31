@@ -34,6 +34,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 		fc.g_load = 1
 		fc.main_force = Vector3.UP*mech.mass*9.81
 	if name.begins_with("fall"):
+		mech.quaternion = Quaternion(Vector3.RIGHT,-PI/2) # Actual belly-to-earth orientation.
 		mech.linear_velocity = Vector3.DOWN*600
 		fc.local_airflow = Vector3(0,0,60)
 	if name=="flare" or name=="drive" or name=="stream":
@@ -54,9 +55,10 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 		fc.clock += 1.0/60
 		mech.update_animation(1.0/60)
 		await process_frame
-	var result := {"hands":Array(mech.rig.arms.hands),"elbows":Array(mech.rig.arms.elbow_positions),"shoulders":Array(mech.rig.arms.shoulders),"knees":[]}
+	var result := {"hands":Array(mech.rig.arms.hands),"elbows":Array(mech.rig.arms.elbow_positions),"shoulders":Array(mech.rig.arms.shoulders),"knees":[],"feet":[]}
 	var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
 	for side in 2: result.knees.append(ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[side])].origin)
+	for side in 2: result.feet.append(ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.foot_bones[side])].origin)
 	result["flex"] = []
 	for side in 2:
 		var hip: Vector3 = mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.thigh_bones[side])].origin
@@ -126,8 +128,20 @@ func _run() -> void:
 	for side in 2:
 		assert(absf(hover.elbows[side].x)-absf(hover.shoulders[side].x)>0.45,"Elbow is tucked against the ribs")
 		assert(hover.elbows[side].z>hover.shoulders[side].z-0.45,"Elbow folds behind the torso")
+	for tick in 120:
+		mech.controller.clock += 1.0/60
+		mech.update_animation(1.0/60)
+		await process_frame
+		for side in 2: assert(mech.rig.arms.hands[side].distance_to(hover.hands[side])<0.01,"Stable hover swims without control effort")
 	var fall: Dictionary = await _pose("fall")
-	for side in 2: assert(fall.hands[side].y>2.0 and absf(fall.elbows[side].x)>4,"Freefall never opens its head-level box")
+	for side in 2:
+		var shoulder: Vector3 = fall.shoulders[side]
+		var elbow: Vector3 = fall.elbows[side]
+		var hand: Vector3 = fall.hands[side]
+		assert(elbow.y<shoulder.y-0.5 and elbow.z>shoulder.z,"Freefall upper arm is raised or swept behind the shoulders")
+		assert(hand.y>elbow.y+1.5 and hand.y<shoulder.y+1.8 and hand.z>1.5,"Freefall forearm does not bend toward the head and into the wind")
+		assert((elbow-shoulder).angle_to(hand-elbow)>1.0,"Freefall elbow is straight")
+		assert(fall.feet[side].z<fall.knees[side].z-2.0,"Freefall calves do not fold behind the body")
 	var flare: Dictionary = await _pose("flare")
 	for side in 2: assert(absf(flare.hands[side].x)>5 and flare.flex[side]>0.8,"Flare lacks displayed hand spread and squat")
 	assert(flare.knees[0].distance_to(flare.knees[1]*Vector3(-1,1,1))>0.3,"Flare squat has no visible knee stagger")

@@ -1,6 +1,6 @@
 # Mech flight animation contract
 
-Status: implementation contract, 31 October 2026. Runtime evidence and commands are documented in README.md.
+Status: implementation contract, 1 November 2026. Runtime evidence and commands are documented in README.md.
 
 ## Required behaviors
 
@@ -26,7 +26,7 @@ Status: implementation contract, 31 October 2026. Runtime evidence and commands 
 Use one full-body SkeletonModifier3D for airborne joint poses. arm_pose is plain
 data consumed by that pass. Native foot IK is limited to ground support; no arm
 IK/pole/wrist post-processing chain is used. Production references: Overgrowth's
-authored procedural joint animation and Uncharted 4's controlled secondary motion.
+authored procedural joint animation and Titanfall's deliberate heavy articulation.
 
 Use a small contact/action state machine only for real support, launch and landing
 phases. Airborne behavior uses continuous posture weights, not four exclusive
@@ -46,7 +46,11 @@ do not apply one skydiver arm gesture equally to hover, fighter flight and coast
 Keep contact rays near plausible ground interaction. Feet plant only on real
 support. Preserve mechanical joint limits, nozzle seating and gimbal ranges.
 No hand boosters or weapon aiming. Reserve physical ragdoll for a separately
-scoped impact/incapacitation feature; normal piloting uses bounded secondary motion.
+scoped impact/incapacitation feature; normal piloting uses critically damped,
+speed-bounded powered joints. Do not add idle swimming or torso spring ringing.
+In broadside freefall, elbows stay below/ahead of the shoulders and externally
+rotated upper arms fold forearms toward the head. Hands must not be raised by
+lifting nearly straight arms overhead.
 
 ## Visual acceptance
 
@@ -58,6 +62,7 @@ lag must remain secondary. Numeric flight checks alone cannot establish pose qua
 
 References:
 - https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach
-- https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4
+- https://primagames.com/eguides/titanfall-eguide/behind-the-scenes/animation
+- https://www.uspa.org/uspa-news/foundations-of-flight-neutral-body-position
 - https://www.uspa.org/skydiveschool/d
 - https://www.apf.com.au/members/members/publications/misc-publications/basic-body-flight-for-b-rels-and-beyond

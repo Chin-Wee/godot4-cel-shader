@@ -24,10 +24,8 @@ extends Resource
 @export var drive_pose := PackedVector3Array([Vector3(-0.32,0,0.13),Vector3(0.58,0,0),Vector3(-0.20,0,0)])
 @export var joint_min := PackedVector3Array([Vector3(-1.15,-0.5,-0.65), Vector3(0.05,0,0), Vector3(-0.65,-0.2,-0.2)])
 @export var joint_max := PackedVector3Array([Vector3(0.65,0.5,0.65), Vector3(1.65,0,0), Vector3(0.5,0.2,0.2)])
-@export var leg_response := Vector3(0.20,0.24,0.28)
-@export var joint_speed := Vector3(3.0,3.5,3.2) # Radians/second.
-@export var body_frequency := 2.5
-@export var body_damping := 0.78
+@export var leg_response := Vector3(0.32,0.38,0.42)
+@export var joint_speed := Vector3(1.6,1.8,1.5) # Radians/second.
 # Radians: aft swing, outward elevation, elbow flexion. No elbow-pole guesses.
 @export var arm_hover := Vector3(0.04,0.38,0.95)
 @export var arm_stream := Vector3(0.35,0.20,0.20)
@@ -39,8 +37,9 @@ extends Resource
 @export var role_stagger := 0.24 # Coupled thigh/knee offset, radians.
 @export var arm_coast := Vector3(-0.10,0.6,0.95)
 @export var arm_land := Vector3(-0.15,0.55,0.95)
-@export var arm_box := Vector3(-0.05,1.95,1.40)
-@export var arm_speed := 3.5 # Radians per second.
+@export var arm_box := Vector3(-0.35,1.05,1.40)
+@export var arm_box_twist := 0.55 # Humerus rotation; forearms rise, elbows stay below shoulders.
+@export var arm_speed := 1.8 # Radians per second; powered joints hold their targets.
 @export var hover_leg_motion := 0.04
 @export var maneuver_leg_motion := 0.22
 @export var leg_airflow_gain := 0.22

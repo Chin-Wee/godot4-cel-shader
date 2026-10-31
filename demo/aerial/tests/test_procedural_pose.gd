@@ -33,18 +33,18 @@ func _run() -> void:
 		servo.step(Vector3(5 if tick<45 else -5,0,0),1.0/60.0,0.3,2.0)
 		assert(servo.value.distance_to(previous)<=2.0/60.0+0.00001)
 		assert(servo.velocity.length()<=2.00001)
-	# The secondary layer overshoots mildly, settles and remains independent of
-	# fixed-step frequency. It never supplies rigid-body forces or collisions.
-	var secondary := Servo.new()
-	var peak := 0.0
+	# Powered joints reach and hold a fixed command without a spring overshoot.
+	var joint := Servo.new()
+	var last_joint := 0.0
 	for tick in 240:
-		secondary.follow(Vector3.ONE,1.0/60.0,1.35,0.68,INF)
-		peak = maxf(peak,secondary.value.x)
-	assert(peak>1.01 and peak<1.15 and secondary.value.distance_to(Vector3.ONE)<0.001)
+		joint.step(Vector3.ONE,1.0/60.0,0.30)
+		assert(joint.value.x>=last_joint and joint.value.x<=1.0,"Powered joint rings past a held command")
+		last_joint = joint.value.x
+	assert(joint.value.distance_to(Vector3.ONE)<0.001)
 	var slow := Servo.new()
 	var fast := Servo.new()
-	for tick in 30: slow.follow(Vector3.ONE,1.0/30.0,1.35,0.68,INF)
-	for tick in 120: fast.follow(Vector3.ONE,1.0/120.0,1.35,0.68,INF)
+	for tick in 30: slow.step(Vector3.ONE,1.0/30.0,0.30)
+	for tick in 120: fast.step(Vector3.ONE,1.0/120.0,0.30)
 	assert(slow.value.distance_to(fast.value)<0.0001)
 	scene = load("res://aerial/aerial_demo.tscn").instantiate()
 	root.add_child(scene)
@@ -150,7 +150,7 @@ func _run() -> void:
 
 	for side in 2: assert(stance_ticks[side]>20 and swing_ticks[side]>20,"Walk did not alternate stance and swing")
 	completed = true
-	print("Procedural pose checks passed: servo bounds, secondary response, landing preparation/impact, one touchdown, actual grounded soles, moving platforms, contact release, slope normals and retained walking.")
+	print("Procedural pose checks passed: servo bounds, no ringing, landing preparation/impact, one touchdown, actual grounded soles, moving platforms, contact release, slope normals and retained walking.")
 	scene.queue_free()
 	await process_frame
 	quit()

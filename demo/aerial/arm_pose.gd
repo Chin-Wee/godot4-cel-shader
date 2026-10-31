@@ -57,18 +57,26 @@ func update(delta: float, frame: Dictionary) -> void:
 		var swing: float = pose.x+sx*steer.y*0.48-steer.x*0.28+slip.x*sx*0.12
 		var spread: float = pose.y-sx*steer.z*0.36+bias
 		var flex: float = pose.z+sx*steer.y*0.34+sx*steer.z*0.24-bias
-		swing += clampf(balance.z*0.02,-0.2,0.2)+frame.trim.y*frame.hover*0.06
-		spread += clampf(-sx*balance.x*0.02,-0.22,0.22)+sx*frame.trim.x*frame.hover*0.07
+		swing += clampf(balance.z*0.006,-0.08,0.08)+frame.trim.y*frame.hover*0.06
+		spread += clampf(-sx*balance.x*0.006,-0.08,0.08)+sx*frame.trim.x*frame.hover*0.07
 		flex += sx*frame.trim.z*frame.hover*0.06
-		upper[side].step(Vector3(clampf(swing,-0.8,1.1),steer.y*0.12,sx*clampf(spread,0.18,2.15)),delta,0.12,profile.arm_speed)
-		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.16,profile.arm_speed)
-		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18,0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.12,2.0)
+		# External rotation bends the forearms toward the head. Raising the whole
+		# arm instead creates a straight scarecrow silhouette with forward hands.
+		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.box
+		upper[side].step(Vector3(clampf(swing,-0.8,1.1),twist,sx*clampf(spread,0.18,2.15)),delta,0.30,profile.arm_speed)
+		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.34,profile.arm_speed)
+		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18,0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.24,1.0)
 		var curl: float = clampf(0.25-flare*0.15-frame.box*0.10+frame.retro*(0.35+bias)+frame.get("drive",0.0)*0.1,0.05,0.85)
 		finger_curl[side] = move_toward(finger_curl[side],curl,delta*2.0)
 
 func apply(sk: Skeleton3D, rotate: Callable, weight := 1.0) -> void:
 	for side in 2:
-		rotate.call(profile.arm_roots[side],upper[side].value)
+		var angles: Vector3 = upper[side].value
+		rotate.call(profile.arm_roots[side],Vector3(angles.x,0,angles.z))
+		# Twist about the actual humerus, after positioning the upper arm. A
+		# skeleton-space yaw would move the elbow instead of changing its hinge.
+		var shoulder: int = sk.find_bone(profile.arm_roots[side])
+		sk.set_bone_pose_rotation(shoulder,(sk.get_bone_pose_rotation(shoulder)*Quaternion(Vector3.UP,angles.y*weight)).normalized())
 		rotate.call(profile.arm_middles[side],elbows[side].value)
 		rotate.call(profile.arm_ends[side],wrists[side].value)
 	for index in finger_poses:

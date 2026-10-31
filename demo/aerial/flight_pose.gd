@@ -1,7 +1,7 @@
 extends SkeletonModifier3D
 
-# Hathaway / skydiver silhouettes and Titanfall 2 pilot intent. Architecture:
-# Uncharted 4's authored intent + controlled secondary motion + contact layers.
+# Skydiver silhouettes with Titanfall's deliberate, heavy Titan articulation.
+# Retain Overgrowth's authored poses + directional corrections; no passive limbs.
 const RigProfile = preload("res://aerial/mech_rig_profile.gd")
 const Spring = preload("res://aerial/pose_servo.gd")
 const ArmPose = preload("res://aerial/arm_pose.gd")
@@ -18,7 +18,7 @@ var legs: Array = []
 var arms: RefCounted
 var contacts: RefCounted
 var bones := {}
-var clock := 0.0
+var clock := 0.0 # Shared exhaust clock; not a pose oscillator.
 var root_angles := Vector3.ZERO
 var air_weight := 1.0
 # hover, streamlined, spread, coast, landing; normalized, never flight modes.
@@ -114,12 +114,12 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var brake_rate := clampf((controller.brake_amount-last_brake)/delta,-3,3) if delta>0 else 0.0
 	last_brake = controller.brake_amount
 	var roll_stop := clampf(pilot_rates.z/1.2-intent.z,-1,1)*(1.0-absf(intent.z))
-	# Active hover trim is a slow weight-transfer cycle. Opposed thigh/knee
-	# offsets keep the lower-leg thrust axes nearly parallel while arms balance.
-	var trim := Vector3(sin(clock*0.95)+0.25*sin(clock*1.83),sin(clock*0.73+1.4),sin(clock*0.84+0.8))
+	# Powered joints hold a pose. Hover corrections follow actual attitude effort,
+	# never a perpetual clock-driven swim while the chassis is stable.
+	var gyro: Vector3 = basis.inverse()*controller.rcs_torque.normalized()*clampf(controller.torque_fraction,0,1)
+	var trim := gyro if gyro.length()>0.08 else Vector3.ZERO
 	# Quiet trim cannot cancel a deliberate shoulder stroke or its arrest phase.
 	trim *= 1.0-minf(maxf(intent.length(),steer.length()),1)
-	var gyro: Vector3 = basis.inverse()*controller.rcs_torque.normalized()*clampf(controller.torque_fraction,0,1)
 	return {"flow":flow.normalized(),"pressure":pressure,"omega":omega,"alpha":alpha,
 		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
@@ -129,8 +129,8 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 		"retro":retro,"brake_rate":brake_rate,"deceleration":smoothstep(2,12,slowing)*smoothstep(6,25,speed)*smoothstep(0.15,0.65,controller.g_load)}
 
 func _sample_effort(controller, delta: float) -> void:
-	# Overgrowth's authored directional corrections, with Uncharted 4's bounded
-	# secondary motion. This interprets the existing solver; it never applies force.
+	# Overgrowth's authored directional corrections. This interprets the existing
+	# solver; it never applies force or adds a passive body/limb simulation.
 	var basis := Basis(controller.attitude)
 	var output: float = controller.DETENTS[controller.detent]
 	var requested: Vector3 = controller.requested_main_force
@@ -213,8 +213,8 @@ func _update_body(delta: float) -> void:
 	var alpha: Vector3 = motion.alpha
 	var acceleration: Vector3 = motion.acceleration
 	var intent: Vector3 = motion.body_steer
-	var lag := Vector3(omega.x*0.11+alpha.x*0.01,omega.y*0.07,omega.z*0.11+alpha.z*0.01)
-	lag += Vector3(acceleration.z*0.004,-acceleration.x*0.002,-acceleration.x*0.005)
+	var lag := Vector3(omega.x*0.025+alpha.x*0.002,omega.y*0.015,omega.z*0.025+alpha.z*0.002)
+	lag += Vector3(acceleration.z*0.001,-acceleration.x*0.0005,-acceleration.x*0.001)
 	var brace := Vector3(motion.brake*0.12+motion.retro*0.16,0,motion.side_load*0.06)
 	brace += Vector3(motion.drive*0.07, motion.lead*motion.asymmetry*0.04,motion.load_direction.x*0.025)*(1.0-motion.hover)
 	var intent_gain: float = motion.hover*0.5+motion.fighter*0.75+motion.coast+motion.fall*0.9
@@ -222,27 +222,29 @@ func _update_body(delta: float) -> void:
 	var anticipation := intent*Vector3(0.22,0.24,0.28).lerp(Vector3(0.15,0.14,0.16),powered)*intent_gain
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
 	var supported := Vector3(-motion.land*0.035,0,0)
-	hips.step((-anticipation*lerpf(0.4,0.25,powered)+lag*0.35+hover+supported).limit_length(0.12),delta,lerpf(0.12,0.14,powered),1.2)
+	hips.step((-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(0.07),delta,0.30,0.5)
 	root_angles = hips.value*Vector3(-1,1,1)
-	var displacement := Vector3(-acceleration.x*0.004,-clampf(motion.g_load-1,-1,3)*0.025,acceleration.z*0.004)
+	var displacement := Vector3(-acceleration.x*0.001,-clampf(motion.g_load-1,0,3)*0.012,acceleration.z*0.001)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
 	displacement.z -= motion.land*0.02
 	displacement.y -= (motion.retro*0.055+motion.drive*0.025)*(1.0-motion.land)*(1.0-motion.hover)
-	com.step(displacement.limit_length(0.16),delta,0.16,1.0)
+	com.step(displacement.limit_length(0.08),delta,0.30,0.4)
 	# Chest establishes the arch and leads the shoulder press. Load lag stays
 	# secondary so the upper body looks piloted rather than pulled by inertia.
 	var arch := Vector3(-0.16*motion.box+0.04*motion.track-motion.launch*0.06,0,0)
 	arch.x += motion.land*(0.10+motion.compression*0.08)
 	arch += motion.gyro*Vector3(0.018,0.012,0.018)*motion.hover
-	chest.follow((lag*0.3+anticipation+brace*0.6+arch-hover*0.5).limit_length(lerpf(0.34,0.24,powered)),delta,profile.body_frequency,profile.body_damping,2.0)
+	# Critically damped powered articulation: commit, decelerate, hold. No spring
+	# overshoot through the torso after a command stops (Titanfall Titan reference).
+	chest.step((lag*0.2+anticipation+brace*0.6+arch-hover*0.5).limit_length(lerpf(0.30,0.22,powered)),delta,0.30,0.9)
 	# Head leads the maneuver and counter-rolls slightly; mouse look never
 	# imposes a weapon-facing pose on the torso or either arm.
-	head.step(Vector3(intent.x*0.14,intent.y*0.28,-chest.value.z*0.55),delta,0.08,3.0)
+	head.step(Vector3(intent.x*0.10,intent.y*0.20,-chest.value.z*0.2),delta,0.22,1.0)
 
 func _update_legs(delta: float, controller) -> void:
 	var flow: Vector3 = motion.flow*motion.pressure
 	var omega: Vector3 = motion.omega
-	var compression: float = motion.compression*(1.0-motion.launch)
+	var compression: float = motion.compression*0.35*(1.0-motion.launch)
 	# Preserve feasible calibrated anchors. When physical vectoring is already
 	# at its cone, reduce extra load/airflow articulation rather than bend jets.
 	var articulation := lerpf(1.0,0.35,clampf(controller.engine_level,0,1)*float(controller.motor_saturated))
