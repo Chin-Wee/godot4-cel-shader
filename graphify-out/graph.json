@@ -1404,24 +1404,6 @@
       "source_location": "L257"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_asphantomcameranoise3d",
-      "label": ".AsPhantomCameraNoise3D()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 16,
-      "community_name": "PhantomCamera3DExtensions",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": ".asphantomcameranoise3d()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L54"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_getthirdpersonquaternion",
       "label": ".GetThirdPersonQuaternion()",
       "_callable": true,
@@ -1600,24 +1582,6 @@
       "norm_label": ".asphantomcamera2d()",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
       "source_location": "L30"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions_asphantomcameranoise2d",
-      "label": ".AsPhantomCameraNoise2D()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "Node2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": ".asphantomcameranoise2d()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L40"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions_asphantomcameranoiseemitter2d",
@@ -1830,6 +1794,42 @@
       "norm_label": ".new()",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
       "source_location": "L63"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions_asphantomcameranoise2d",
+      "label": ".AsPhantomCameraNoise2D()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "TransitionType",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": ".asphantomcameranoise2d()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L40"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_asphantomcameranoise3d",
+      "label": ".AsPhantomCameraNoise3D()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 3,
+      "community_name": "TransitionType",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": ".asphantomcameranoise3d()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L54"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween_phantomcamera_phantomcameratween_new",
@@ -2060,6 +2060,66 @@
       "source_location": "L17"
     },
     {
+      "id": "demo_aerial_flight_animation_contract",
+      "label": "flight-animation-contract.md",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "flight-animation-contract.md",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "label": "Mech flight animation contract",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "mech flight animation contract",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_flight_animation_contract_recommended_architecture",
+      "label": "Recommended architecture",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "recommended architecture",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L24"
+    },
+    {
+      "id": "demo_aerial_flight_animation_contract_required_behaviors",
+      "label": "Required behaviors",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "required behaviors",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L5"
+    },
+    {
+      "id": "demo_aerial_flight_animation_contract_visual_acceptance",
+      "label": "Visual acceptance",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "visual acceptance",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L47"
+    },
+    {
       "id": "demo_aerial_readme",
       "label": "aerial/README.md",
       "_origin": "ast",
@@ -2105,7 +2165,19 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L361"
+      "source_location": "L384"
+    },
+    {
+      "id": "demo_aerial_readme_flight_animation_contract_validation",
+      "label": "Flight animation contract validation",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "flight animation contract validation",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L508"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2153,7 +2225,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L484"
+      "source_location": "L532"
     },
     {
       "id": "readme",
@@ -6064,22 +6136,6 @@
       "source_location": ""
     },
     {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "PhantomCameraHost",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -6270,6 +6326,22 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
+    },
+    {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "FollowLockAxis3D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -12037,6 +12109,50 @@
       "weight": 1.0
     },
     {
+      "source": "demo_aerial_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_recommended_architecture",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_visual_acceptance",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L47",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_required_behaviors",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L5",
+      "weight": 1.0
+    },
+    {
       "source": "demo_aerial_readme",
       "target": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
       "relation": "contains",
@@ -12077,7 +12193,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L361",
+      "source_location": "L384",
       "weight": 1.0
     },
     {
@@ -12099,7 +12215,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L484",
+      "source_location": "L532",
       "weight": 1.0
     },
     {
@@ -12111,6 +12227,17 @@
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
       "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_checks_and_comparison_captures",
+      "target": "demo_aerial_readme_flight_animation_contract_validation",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L508",
       "weight": 1.0
     },
     {
@@ -12829,6 +12956,17 @@
       "weight": 1.0
     },
     {
+      "source": "demo_aerial_readme",
+      "target": "demo_aerial_flight_animation_contract",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L296",
+      "weight": 1.0
+    },
+    {
       "source": "readme",
       "target": "demo_aerial_readme",
       "relation": "references",
@@ -12865,5 +13003,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c72e9c53176f5c7d1c8481dc3c3147581d680ccd"
+  "built_at_commit": "2194546921e3cadd9889182b38dee2ccb49f8c9d"
 }

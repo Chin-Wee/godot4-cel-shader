@@ -1,10 +1,11 @@
 {
   "status": "needs_semantic_refresh",
   "sources": [
-    "demo/aerial/README.md"
+    "demo/aerial/README.md",
+    "demo/aerial/flight-animation-contract.md"
   ],
-  "source_revision": "c72e9c53176f5c7d1c8481dc3c3147581d680ccd",
+  "source_revision": "2194546921e3cadd9889182b38dee2ccb49f8c9d",
   "code_graph_updated": true,
   "backend": "opencode-go",
-  "reason": "The configured provider rejected the semantic extraction with MissingSessionID. Re-run with a supported OpenCode session adapter. Source remains authoritative."
+  "reason": "Semantic extraction was previously rejected with MissingSessionID by the configured provider. This code/structural update does not retry that unsupported adapter. Re-run semantic extraction with a supported session adapter. Source remains authoritative."
 }
