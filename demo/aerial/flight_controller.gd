@@ -16,7 +16,7 @@ const MAX_ANGULAR_ACCELERATION := 5.0
 const INPUT_RESPONSE := 0.14
 const BRAKE_RESPONSE := 0.28
 const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
-const HOVER_DRIFT_GAIN := 3.2
+const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
 const HOVER_TRIM_GAIN := 1.0
 const HOVER_CANT_BIAS := 0.25
 const JUMP_PUSH_TIME := 0.22
@@ -47,6 +47,7 @@ var model_scale := 50.0
 var detent := 2
 var engine_level := 1.0
 var requested_thrust := 0.0
+var requested_main_force := Vector3.ZERO # Existing motor request, before spool/cone limits.
 var delivered_thrust := 0.0
 var main_force := Vector3.ZERO
 var main_torque := Vector3.ZERO
@@ -134,6 +135,7 @@ func reset() -> void:
 	control_blend = 0.0
 	clock = 0.0
 	rotation_request = Vector3.ZERO
+	requested_main_force = Vector3.ZERO
 	sampled = false
 	for spring in [command, brake, accel] + motor_springs:
 		spring.value = Vector3.ZERO
@@ -251,6 +253,7 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		var compensated := clampf(support / (body.mass * GRAVITY * vertical_fraction), 0, 2)
 		target = lerpf(target, compensated, hover_assist)
 	requested_thrust = target * body.mass * GRAVITY
+	requested_main_force = desired * requested_thrust
 	engine_level = move_toward(engine_level, target, dt * ENGINE_SPOOL_RATE)
 	delivered_thrust = engine_level * body.mass * GRAVITY
 	main_force = Vector3.ZERO

@@ -510,6 +510,11 @@ this path is verified on the current Mobile renderer.
 The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 19 full-body
 key poses and six editable motion studies. Run `pose_studio.tscn` to inspect the
 silhouettes and timing separately from the physical gameplay replays below.
+Runtime maneuver effort adds directional reverse/acceleration bracing, retained
+left/right roles, independent hand expression and alignment-dependent cruise.
+`test_maneuver_intent.gd` checks the temporal response; `capture_maneuver_intent.gd`
+records reverse-through-zero, burst, interruption and turn sequences with real
+physics in both cameras. The study clips remain authoring references.
 
 The contract-specific check covers normalized behavior weights, bounded transitions,
 force-driven launch and recovery, quiet hover versus independent steering,

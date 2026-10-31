@@ -11,7 +11,7 @@ var wrists: Array = []
 var hand_targets: Array[Marker3D] = []
 var pole_targets: Array[Marker3D] = []
 var finger_poses := {}
-var finger_curl := 0.35
+var finger_curl := PackedFloat32Array([0.25,0.25])
 var ik: TwoBoneIK3D
 var palms: SkeletonModifier3D
 
@@ -75,6 +75,7 @@ func reset() -> void:
 		hands[side].reset(profile.arm_hover*Vector3(sx,1,1))
 		poles[side].reset(profile.arm_elbow_pole*Vector3(sx,1,1))
 		wrists[side].reset()
+		finger_curl[side] = 0.25
 
 func set_weight(weight: float) -> void:
 	for modifier in [self,ik,palms]:
@@ -82,16 +83,37 @@ func set_weight(weight: float) -> void:
 		modifier.influence = weight
 
 func update(delta: float, frame: Dictionary) -> void:
-	finger_curl = clampf(0.25-frame.box*0.15-frame.brake*0.10+frame.retro*0.45+absf(frame.roll)*0.15,0.1,0.85)
+	# Resolve primary posture once. Opposing thrust owns its brace; steering
+	# distorts that brace instead of replacing it with another complete pose.
+	var available: float = 1.0-frame.land
+	var retro: float = frame.retro*available
+	available -= retro
+	var braking: float = frame.brake*available
+	available -= braking
+	var box: float = frame.box*available
+	available -= box
+	var drive: float = frame.get("drive",0.0)*available
+	available -= drive
+	# Unpowered tracking works along either end of the body. Powered cruise
+	# additionally requires heading, delivered thrust and travel to agree.
+	var settled: float = lerpf(1.0,frame.get("alignment",1.0),frame.get("powered",0.0))*(1.0-clampf(frame.get("redirect",0.0)*0.5+frame.steer.length()*0.2,0,0.8))
+	var track: float = frame.track*available*settled
+	available -= track
+	var neutral: Vector3 = profile.arm_hover*frame.hover+profile.arm_coast*(frame.fighter+frame.coast+frame.fall+frame.land)
+	var base: Vector3 = neutral*available+profile.arm_land*frame.land+profile.arm_retro*retro+profile.arm_brake*braking+profile.arm_box*box+profile.arm_drive*drive+profile.arm_stream*track
+	var prepare: float = frame.get("prepare",0.0)*(1.0-frame.land)*(1.0-frame.retro)
+	base = base.lerp(profile.arm_prepare,prepare*0.5)
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
-		var base: Vector3 = profile.arm_hover*frame.hover+profile.arm_stream*frame.fighter+profile.arm_coast*(frame.coast+frame.fall+frame.land)
-		base = base.lerp(profile.arm_stream,frame.track)
-		base = base.lerp(profile.arm_box,frame.box)
-		base = base.lerp(profile.arm_brake,frame.brake)
-		base = base.lerp(profile.arm_retro,frame.retro)
-		base = base.lerp(profile.arm_land,frame.land)
+		var role: float = sx*frame.get("lead",1.0)*frame.get("asymmetry",0.0)*(1.0-frame.land)
+		finger_curl[side] = clampf(0.25-frame.box*0.15-frame.brake*0.10+frame.retro*(0.35+role*0.18)+drive*0.1+absf(frame.roll)*0.15,0.1,0.85)
 		var hand := base*Vector3(sx,1,1)
+		# The leading hand gathers while the other balances. Preparation opens a
+		# clearance arc before the hands sweep aft into the acceleration stroke.
+		hand += Vector3(sx*role*0.2,role*0.42,role*0.5)
+		hand += Vector3(sx*0.45,0.35,0.25)*prepare*(1.0-drive)
+		var slip: Vector3 = frame.get("slip",Vector3.ZERO)
+		hand += Vector3(slip.x*0.45,absf(slip.x)*0.2,sx*slip.x*0.4)*frame.pressure*(1.0-frame.hover)
 		var style: Vector3 = profile.hover_stroke*frame.hover+profile.fighter_stroke*frame.fighter+profile.coast_stroke*frame.coast+profile.fall_stroke*frame.fall
 		var steer: Vector3 = frame.steer*style
 		var inside := maxf(sx*steer.z,0.0)
@@ -102,7 +124,6 @@ func update(delta: float, frame: Dictionary) -> void:
 		hand += Vector3(sx*(-1.1*inside+0.8*outside)+steer.y*0.35,
 			inside*1.1-outside*0.8+steer.x*1.25,
 			sx*steer.y*1.35+steer.x*0.65+sx*steer.z*0.85+frame.brake_rate*0.15)
-		hand += Vector3(0,sx*absf(frame.roll)*frame.up.z*0.45,sx*absf(frame.roll)*frame.up.x*0.55)
 		hand += frame.flow*frame.pressure*Vector3(0.20,0.15,0.35)
 		var gather: float = frame.coast*minf(frame.steer.length(),1)
 		hand += Vector3(-sx*0.35,0.6,0.35)*gather
@@ -123,15 +144,17 @@ func update(delta: float, frame: Dictionary) -> void:
 		if absf(hand.x)<2.6: hand.z = maxf(hand.z,1.4) # Gather in front of the chest armor.
 		hand.y = clampf(hand.y,-3.2,4.0)
 		hand.z = clampf(hand.z,-1.8,3.8)
-		hands[side].follow(hand,delta,profile.arm_frequency+side*0.08,profile.arm_damping,profile.arm_speed)
+		hands[side].follow(hand,delta,profile.arm_frequency+maxf(role,0)*0.3,profile.arm_damping,profile.arm_speed)
 		# Relaxed elbows stay near the ribs. Body flight widens them into a box,
 		# while steering presses the same calibrated hinge without a plane flip.
 		var pole := profile.arm_elbow_pole*Vector3(sx,1,1)
 		pole = pole.lerp(profile.arm_box_pole*Vector3(sx,1,1),frame.box)
 		pole += Vector3(sx*(frame.brake*0.8+outside*0.3),inside*0.2,frame.retro*0.5)
 		pole += Vector3(sx*(-inside*0.25+outside*0.55),steer.x*0.3,sx*steer.y*1.15+sx*steer.z*0.5)
+		pole += Vector3(sx*drive*0.35,role*0.2,prepare*0.45-drive*0.3)
 		poles[side].step(pole,delta,0.12,12.0)
 		var wrist := Vector3(-frame.box*0.20-frame.brake*0.12+steer.x*0.12,0,sx*(steer.y*0.18+steer.z*0.12))
+		wrist += Vector3(-frame.retro*role*0.08,role*0.12,drive*sx*0.08)
 		wrists[side].step(wrist.clamp(Vector3(-0.35,-0.2,-0.25),Vector3(0.35,0.2,0.25)),delta,0.14,2.0)
 
 func _process_modification() -> void:
@@ -141,7 +164,8 @@ func _process_modification() -> void:
 			var index := sk.find_bone(bone)
 			sk.set_bone_pose_rotation(index,sk.get_bone_rest(index).basis.get_rotation_quaternion())
 	for index in finger_poses:
-		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl))
+		var side := 1 if ".R" in sk.get_bone_name(index) else 0
+		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl[side]))
 	var torso := sk.get_bone_global_pose(sk.find_bone("Torso"))
 	for side in 2:
 		var target: Vector3 = torso*hands[side].value

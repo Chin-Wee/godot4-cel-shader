@@ -19,6 +19,9 @@ extends Resource
 @export var coast_pose := PackedVector3Array([Vector3(-0.32,0,0.16), Vector3(0.58,0,0), Vector3(-0.06,0,0)])
 @export var landing_pose := PackedVector3Array([Vector3(-0.36,0,0.20), Vector3(0.68,0,0), Vector3(-0.10,0,0)])
 @export var launch_pose := PackedVector3Array([Vector3(-0.03,0,0.08),Vector3(0.05,0,0),Vector3.ZERO])
+# Coupled flexion keeps the calf/heel axes close to the main thrust line.
+@export var retro_pose := PackedVector3Array([Vector3(-0.62,0,0.20),Vector3(1.02,0,0),Vector3(-0.35,0,0)])
+@export var drive_pose := PackedVector3Array([Vector3(-0.32,0,0.13),Vector3(0.58,0,0),Vector3(-0.20,0,0)])
 @export var joint_min := PackedVector3Array([Vector3(-1.15,-0.5,-0.65), Vector3(0.05,0,0), Vector3(-0.65,-0.2,-0.2)])
 @export var joint_max := PackedVector3Array([Vector3(0.65,0.5,0.65), Vector3(1.65,0,0), Vector3(0.5,0.2,0.2)])
 @export var leg_response := Vector3(0.20,0.24,0.28)
@@ -30,6 +33,10 @@ extends Resource
 @export var arm_stream := Vector3(3.35,-2.55,-1.35)
 @export var arm_brake := Vector3(5.2,2.15,2.9)
 @export var arm_retro := Vector3(3.4,0.65,3.2)
+@export var arm_drive := Vector3(4.25,-1.65,-1.65)
+@export var arm_prepare := Vector3(3.05,-0.65,1.65)
+@export var effort_response := Vector3(0.07,0.13,0.20) # Prepare, reverse load, acceleration.
+@export var role_stagger := 0.12 # Coupled thigh/knee offset, radians.
 @export var arm_coast := Vector3(2.9,-0.3,1.85)
 @export var arm_land := Vector3(3.2,-0.4,2.1)
 @export var arm_box := Vector3(4.85,2.8,1.75)

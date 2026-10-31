@@ -23,6 +23,62 @@ still defines movement authority and the five required behaviors.
 
 ## Motion and response
 
+### Directional maneuver effort
+
+Gameplay now composes directional corrections rather than cycling the study
+clips. The production references are Overgrowth's compact authored poses with
+procedural adaptation and Uncharted 4's controlled secondary motion:
+
+- https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach
+- https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4
+
+`flight_controller.gd` publishes its existing requested main-force vector before
+spool/cone limits, alongside delivered propulsion, velocity, aerodynamic force
+and angular intent. This is telemetry; animation does not calculate or apply a
+second set of movement forces. `flight_pose.gd` interprets these in body space.
+
+One small effort history distinguishes prepare, load, sustain and release.
+Rising throttle prepares the hands during spool-up. Opposing thrust establishes
+a coupled hip/knee/ankle squat and forward arm brace. The brace releases as the
+opposed travel component disappears, even if lateral travel remains. Outgoing
+acceleration opens an aft arm stroke and retains a shallower knee compression.
+As acceleration settles, the mech lengthens toward cruise despite continued high
+engine output. Canceling or redirecting input retargets the existing moving pose;
+there are no queued clips, fixed-duration commitments or velocity writes.
+
+Signed transverse thrust, load and turn intent choose a lead side. A short
+deadband/hysteresis retains it through zero speed and exactly opposing vectors.
+The two hands, elbow paths, wrists, fingers and knees take complementary roles.
+Oblique airflow adds directional deformation. Powered symmetric tracking grows
+with heading/thrust/travel alignment; unpowered tracking remains possible along
+either end of the body. Quiet hover keeps its calibrated leg support and small
+trim. Fixed world-up roll offsets were removed from the arm targets because they
+could oppose the commanded stroke during inversion.
+
+The primary arm posture has an explicit remaining-weight budget: landing,
+reverse load, aerodynamic braking/box, acceleration, tracking, then neutral.
+Steering and secondary balance correct that posture. Preparation supplies an
+outward clearance arc before the aft stroke. Existing calibrated elbow poles,
+soft reach, joint/hand limits and actual 30-degree gimbals remain authoritative.
+Coupled leg flexion preserves the calf/heel thrust line; saturated motors reduce
+extra articulation. Hover drift damping is 3.6 (previously 3.2) to settle the
+moving-port transient within the same bounded force allowance.
+
+Validate the temporal response and record actual input-driven motion:
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_maneuver_intent.gd
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_maneuver_intent.gd -- /tmp/maneuver-intent
+```
+
+The capture covers an oblique reverse through zero, a 2-to-4-times-hover burst,
+cancel/re-ignition, and opposing turns in body and chase cameras. Reports include
+effort phase, lead side, force vectors, alignment, independent fingers, gimbal
+angles and actuator demand. Reverse/burst checks require the real attitude
+actuators to stay within capacity and the actual gimbals within their cones.
+
+### Authored study timing
+
 The six native motion studies cover launch, forward flight/banks, braking/reverse
 thrust, coast/arrest, skydiving and landing. Each includes preparation, action and
 settling rather than interpolating between two held poses. At interior keys the
