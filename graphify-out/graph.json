@@ -140,6 +140,45 @@
       "source_location": "L5"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_methodname",
+      "label": "MethodName",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "is_nested_type": true,
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "methodname",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L74"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d",
+      "label": "PhantomCameraNoise2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "phantomcameranoise2d",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L5"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_methodname",
       "label": "MethodName",
       "_callable": true,
@@ -223,7 +262,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -335,43 +374,23 @@
       "source_location": "L477"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_methodname",
-      "label": "MethodName",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
+      "label": "FollowLockAxis2D",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 24,
-      "community_name": "PhantomCameraNoise2D",
+      "community_name": "FollowLockAxis2D",
       "file_type": "code",
       "metadata": {
-        "is_nested_type": true,
-        "namespace": "PhantomCamera.Noise",
+        "namespace": "PhantomCamera",
         "scope_chain": [
-          "s17"
+          "s106"
         ]
       },
-      "norm_label": "methodname",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L74"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d",
-      "label": "PhantomCameraNoise2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "phantomcameranoise2d",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L5"
+      "norm_label": "followlockaxis2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L20"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween_phantomcamera_easetype",
@@ -916,25 +935,6 @@
       "source_location": "L11"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
-      "label": "FollowLockAxis2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followlockaxis2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L20"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d",
       "label": "FollowMode2D",
       "_callable": true,
@@ -1186,6 +1186,38 @@
       "norm_label": ".toggle()",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
       "source_location": "L54"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_new",
+      "label": ".New()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "SetScript",
+            "receiver_type": "Resource",
+            "lang": "csharp",
+            "line": "L67"
+          },
+          {
+            "callee": "Load",
+            "receiver_type": "GD",
+            "lang": "csharp",
+            "line": "L67"
+          }
+        ]
+      },
+      "norm_label": ".new()",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L63"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_emit",
@@ -1535,7 +1567,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1553,7 +1585,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1571,7 +1603,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1589,7 +1621,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1607,7 +1639,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1625,7 +1657,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1798,38 +1830,6 @@
       "norm_label": ".emitnoise()",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
       "source_location": "L343"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_new",
-      "label": ".New()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "SetScript",
-            "receiver_type": "Resource",
-            "lang": "csharp",
-            "line": "L67"
-          },
-          {
-            "callee": "Load",
-            "receiver_type": "GD",
-            "lang": "csharp",
-            "line": "L67"
-          }
-        ]
-      },
-      "norm_label": ".new()",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L63"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween_phantomcamera_phantomcameratween_new",
@@ -2132,6 +2132,30 @@
       "source_location": "L1"
     },
     {
+      "id": "demo_aerial_poses_pose_design_authored_study_timing",
+      "label": "Authored study timing",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "authored study timing",
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L80"
+    },
+    {
+      "id": "demo_aerial_poses_pose_design_directional_maneuver_effort",
+      "label": "Directional maneuver effort",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "directional maneuver effort",
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L26"
+    },
+    {
       "id": "demo_aerial_poses_pose_design_flight_pose_design",
       "label": "Flight pose design",
       "_origin": "ast",
@@ -2177,7 +2201,7 @@
       "node_kind": "heading",
       "norm_label": "native pose studio",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L45"
+      "source_location": "L101"
     },
     {
       "id": "demo_aerial_readme",
@@ -2285,7 +2309,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L536"
+      "source_location": "L541"
     },
     {
       "id": "readme",
@@ -3501,6 +3525,33 @@
       "source_location": "L22"
     },
     {
+      "id": "csharp_namespace:c24975ad28b7b1df",
+      "label": "PhantomCamera.Noise",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera.Noise"
+      },
+      "norm_label": "phantomcamera.noise",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
+      "source_location": "L3",
+      "type": "namespace"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
+      "label": "PhantomCameraNoiseEmitter2D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoiseemitter2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d_cs_godotobject",
       "label": "GodotObject",
       "_origin": "ast",
@@ -3634,6 +3685,225 @@
       "norm_label": "noiseemitterlayer",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
       "source_location": "L39"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d",
+      "label": "PhantomCameraNoiseEmitter3D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoiseemitter3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d",
+      "label": "PhantomCameraNoise2D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoise2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_gdscript",
+      "label": "GDScript",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "gdscript",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_resource",
+      "label": "Resource",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "resource",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_stringname",
+      "label": "StringName",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "stringname",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_amplitude",
+      "label": "Amplitude",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "amplitude",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L9"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_frequency",
+      "label": "Frequency",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "frequency",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L15"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_noiseseed",
+      "label": "NoiseSeed",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "noiseseed",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L27"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_positionalmultiplierx",
+      "label": "PositionalMultiplierX",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "positionalmultiplierx",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L51"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_positionalmultipliery",
+      "label": "PositionalMultiplierY",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "positionalmultipliery",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L57"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_positionalnoise",
+      "label": "PositionalNoise",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "positionalnoise",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L39"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_randomizenoiseseed",
+      "label": "RandomizeNoiseSeed",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "randomizenoiseseed",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L21"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_rotationalmultiplier",
+      "label": "RotationalMultiplier",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "rotationalmultiplier",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L45"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_rotationalnoise",
+      "label": "RotationalNoise",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "rotationalnoise",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L33"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d",
+      "label": "PhantomCameraNoise3D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoise3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
+      "source_location": "L1"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_godotobject",
@@ -3944,11 +4214,22 @@
       "source_location": ""
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d",
+      "label": "PhantomCamera2D.cs",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "PhantomCamera2D.cs",
+      "file_type": "code",
+      "norm_label": "phantomcamera2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_node2d",
       "label": "Node2D",
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4615,190 +4896,72 @@
       "source_location": ""
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_gdscript",
-      "label": "GDScript",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
+      "label": "None",
       "_origin": "ast",
       "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "norm_label": "gdscript",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_resource",
-      "label": "Resource",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "norm_label": "resource",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_stringname",
-      "label": "StringName",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "norm_label": "stringname",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_amplitude",
-      "label": "Amplitude",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
+      "community_name": "FollowLockAxis2D",
       "file_type": "code",
       "metadata": {
-        "namespace": "PhantomCamera.Noise",
+        "namespace": "PhantomCamera",
         "scope_chain": [
-          "s17"
+          "s106"
         ]
       },
-      "norm_label": "amplitude",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L9"
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L22"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_frequency",
-      "label": "Frequency",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
+      "label": "X",
       "_origin": "ast",
       "community": 24,
-      "community_name": "PhantomCameraNoise2D",
+      "community_name": "FollowLockAxis2D",
       "file_type": "code",
       "metadata": {
-        "namespace": "PhantomCamera.Noise",
+        "namespace": "PhantomCamera",
         "scope_chain": [
-          "s17"
+          "s106"
         ]
       },
-      "norm_label": "frequency",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L15"
+      "norm_label": "x",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L23"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_noiseseed",
-      "label": "NoiseSeed",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
+      "label": "Xy",
       "_origin": "ast",
       "community": 24,
-      "community_name": "PhantomCameraNoise2D",
+      "community_name": "FollowLockAxis2D",
       "file_type": "code",
       "metadata": {
-        "namespace": "PhantomCamera.Noise",
+        "namespace": "PhantomCamera",
         "scope_chain": [
-          "s17"
+          "s106"
         ]
       },
-      "norm_label": "noiseseed",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L27"
+      "norm_label": "xy",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L25"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_positionalmultiplierx",
-      "label": "PositionalMultiplierX",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
+      "label": "Y",
       "_origin": "ast",
       "community": 24,
-      "community_name": "PhantomCameraNoise2D",
+      "community_name": "FollowLockAxis2D",
       "file_type": "code",
       "metadata": {
-        "namespace": "PhantomCamera.Noise",
+        "namespace": "PhantomCamera",
         "scope_chain": [
-          "s17"
+          "s106"
         ]
       },
-      "norm_label": "positionalmultiplierx",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L51"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_positionalmultipliery",
-      "label": "PositionalMultiplierY",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "positionalmultipliery",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L57"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_positionalnoise",
-      "label": "PositionalNoise",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "positionalnoise",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L39"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_randomizenoiseseed",
-      "label": "RandomizeNoiseSeed",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "randomizenoiseseed",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L21"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_rotationalmultiplier",
-      "label": "RotationalMultiplier",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "rotationalmultiplier",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L45"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_phantomcamera_noise_phantomcameranoise2d_rotationalnoise",
-      "label": "RotationalNoise",
-      "_origin": "ast",
-      "community": 24,
-      "community_name": "PhantomCameraNoise2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "rotationalnoise",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L33"
+      "norm_label": "y",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L24"
     },
     {
       "id": "demo_models_foliage_notice",
@@ -6738,101 +6901,6 @@
       "source_location": "L15"
     },
     {
-      "id": "csharp_namespace:c24975ad28b7b1df",
-      "label": "PhantomCamera.Noise",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera.Noise"
-      },
-      "norm_label": "phantomcamera.noise",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
-      "source_location": "L3",
-      "type": "namespace"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d",
-      "label": "PhantomCamera2D.cs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcamera2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
-      "label": "None",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L22"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
-      "label": "X",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "x",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L23"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
-      "label": "Xy",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "xy",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L25"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
-      "label": "Y",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "y",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L24"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_framed",
       "label": "Framed",
       "_origin": "ast",
@@ -6933,50 +7001,6 @@
       "norm_label": "simple",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
       "source_location": "L14"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
-      "label": "PhantomCameraNoiseEmitter2D.cs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoiseemitter2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d",
-      "label": "PhantomCameraNoiseEmitter3D.cs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoiseemitter3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d",
-      "label": "PhantomCameraNoise2D.cs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoise2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d",
-      "label": "PhantomCameraNoise3D.cs",
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoise3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
-      "source_location": "L1"
     }
   ],
   "links": [
@@ -12225,6 +12249,17 @@
     },
     {
       "source": "demo_aerial_poses_pose_design_flight_pose_design",
+      "target": "demo_aerial_poses_pose_design_native_pose_studio",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L101",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design_flight_pose_design",
       "target": "demo_aerial_poses_pose_design_motion_and_response",
       "relation": "contains",
       "_origin": "ast",
@@ -12236,17 +12271,6 @@
     },
     {
       "source": "demo_aerial_poses_pose_design_flight_pose_design",
-      "target": "demo_aerial_poses_pose_design_native_pose_studio",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L45",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_poses_pose_design_flight_pose_design",
       "target": "demo_aerial_poses_pose_design_key_poses",
       "relation": "contains",
       "_origin": "ast",
@@ -12254,6 +12278,28 @@
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
       "source_location": "L9",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design_motion_and_response",
+      "target": "demo_aerial_poses_pose_design_directional_maneuver_effort",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design_motion_and_response",
+      "target": "demo_aerial_poses_pose_design_authored_study_timing",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L80",
       "weight": 1.0
     },
     {
@@ -12319,7 +12365,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L536",
+      "source_location": "L541",
       "weight": 1.0
     },
     {
@@ -13129,5 +13175,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "c625386b3854c766c2a3881b2fcdb854dd1f2a21"
+  "built_at_commit": "0b63f85ceac8a23971040cf05208417a868f7e85"
 }

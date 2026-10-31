@@ -16,14 +16,14 @@
   "14": "Grass direction: Breath of the Wild",
   "15": "LimitTargetQueryResult",
   "16": "PhantomCamera3DExtensions",
-  "17": "Node2D",
+  "17": "PhantomCamera2D.cs",
   "18": "Node3D",
   "19": "StringName",
   "20": ".GetLimit",
   "21": "StringName",
   "22": ".EmitNoise",
   "23": ".EmitNoise",
-  "24": "PhantomCameraNoise2D",
+  "24": "FollowLockAxis2D",
   "25": "NOTICE.md",
   "26": "MechAsset"
 }
