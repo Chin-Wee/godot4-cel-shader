@@ -507,6 +507,10 @@ this path is verified on the current Mobile renderer.
 
 ### Flight animation contract validation
 
+The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 19 full-body
+key poses and six editable motion studies. Run `pose_studio.tscn` to inspect the
+silhouettes and timing separately from the physical gameplay replays below.
+
 The contract-specific check covers normalized behavior weights, bounded transitions,
 force-driven launch and recovery, quiet hover versus independent steering,
 inverted fighter shape, thrust-cutoff continuity, start/coast/stop strokes,

@@ -13,6 +13,8 @@ func _ticks(count: int) -> void:
 		await process_frame
 
 func _pose_ticks(count: int) -> void:
+	# This frozen fixture specifies pilot requests through rotation_command.
+	mech.controller.rotation_request = mech.controller.rotation_command
 	for tick in count:
 		mech.controller.clock += 1.0/60.0
 		mech.update_animation(1.0/60.0)
@@ -80,7 +82,7 @@ func _run() -> void:
 		var elbow: Vector3 = torso_inverse*mech.bone_poses[mech.rig.arms.ik.get_middle_bone(side)].origin
 		var hand: Vector3 = torso_inverse*mech.bone_poses[mech.rig.arms.ik.get_end_bone(side)].origin
 		assert(absf(elbow.x-shoulder.x)<0.65 and elbow.z<shoulder.z-0.35,"Relaxed elbow flares outward")
-		assert(hand.y < -2.2 and hand.z>elbow.z+0.5,"Relaxed arm does not hang with a forward forearm")
+		assert(hand.y < -0.6 and hand.z>elbow.z+0.5,"Hover forearm does not clear the elbow and armor")
 	assert(mech.global_transform.is_equal_approx(transform) and mech.linear_velocity.is_zero_approx(),"Presentation moved the physical body")
 	assert(mech.rig.contacts.probe_count==0 and not mech.rig.contacts.planted[0])
 	assert(not mech.skeleton.find_child("GUN",false,false).visible and not scene.has_method("fire_weapon"))
@@ -117,7 +119,7 @@ func _run() -> void:
 	assert(forward_catch-mech.rig.arms.hands[0].value.z>0.7,"Arms do not distinguish acceleration from deceleration")
 	fc.local_acceleration = Vector3.ZERO
 	await _pose_ticks(1)
-	assert(mech.rig.arms.hands[0].value.z<0.7,"Balance catch snapped away on release")
+	assert(mech.rig.arms.hands[0].value.z<mech.rig.profile.arm_coast.z-0.25,"Balance catch snapped away on release")
 	await _pose_ticks(120)
 	assert(mech.rig.arms.hands[0].value.distance_to(mech.rig.profile.arm_coast)<0.01,"Arms never settled after momentum stopped changing")
 	fc.g_load = 0

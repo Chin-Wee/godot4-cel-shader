@@ -87,7 +87,9 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var omega: Vector3 = basis.inverse()*controller.angular_velocity
 	var alpha: Vector3 = basis.inverse()*controller.angular_acceleration
 	var pilot_rates: Vector3 = pilot.inverse()*controller.angular_velocity
-	var intent: Vector3 = controller.rotation_command
+	# Pose preparation reads the original request. Physics keeps its existing
+	# command filter; filtering that result again erased brief animation accents.
+	var intent: Vector3 = controller.rotation_request
 	# USPA start-coast-stop: command/rate mismatch starts a stroke, sustained
 	# rotation relaxes it, releasing input creates an opposing arrest stroke.
 	# This is a visual intent signal, not another attitude controller.
@@ -154,21 +156,25 @@ func _update_body(delta: float) -> void:
 	lag += Vector3(acceleration.z*0.004,-acceleration.x*0.002,-acceleration.x*0.005)
 	var brace := Vector3(motion.brake*0.12+motion.retro*0.16,0,motion.side_load*0.06)
 	var intent_gain: float = motion.hover*0.5+motion.fighter*0.75+motion.coast+motion.fall*0.9
-	var anticipation := intent*Vector3(0.15,0.14,0.16)*intent_gain
+	var powered: float = motion.hover+motion.fighter
+	var anticipation := intent*Vector3(0.22,0.24,0.28).lerp(Vector3(0.15,0.14,0.16),powered)*intent_gain
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
-	hips.step((-anticipation*0.25+lag*0.35+hover).limit_length(0.09),delta,0.14,0.8)
+	var supported := Vector3(-motion.land*0.035,0,0)
+	hips.step((-anticipation*lerpf(0.4,0.25,powered)+lag*0.35+hover+supported).limit_length(0.12),delta,lerpf(0.12,0.14,powered),1.2)
 	root_angles = hips.value*Vector3(-1,1,1)
 	var displacement := Vector3(-acceleration.x*0.004,-clampf(motion.g_load-1,-1,3)*0.025,acceleration.z*0.004)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
+	displacement.z -= motion.land*0.02
 	com.step(displacement.limit_length(0.16),delta,0.16,1.0)
 	# Chest establishes the arch and leads the shoulder press. Load lag stays
 	# secondary so the upper body looks piloted rather than pulled by inertia.
-	var arch := Vector3(-0.09*motion.box+0.025*motion.track-motion.launch*0.035,0,0)
+	var arch := Vector3(-0.16*motion.box+0.04*motion.track-motion.launch*0.06,0,0)
+	arch.x += motion.land*(0.10+motion.compression*0.08)
 	arch += motion.gyro*Vector3(0.018,0.012,0.018)*motion.hover
-	chest.follow((lag*0.3+anticipation+brace*0.6+arch-hover*0.5).limit_length(0.24),delta,profile.body_frequency,profile.body_damping,2.0)
+	chest.follow((lag*0.3+anticipation+brace*0.6+arch-hover*0.5).limit_length(lerpf(0.34,0.24,powered)),delta,profile.body_frequency,profile.body_damping,2.0)
 	# Head leads the maneuver and counter-rolls slightly; mouse look never
 	# imposes a weapon-facing pose on the torso or either arm.
-	head.step(Vector3(intent.x*0.10,intent.y*0.18,-chest.value.z*0.55),delta,0.10,3.0)
+	head.step(Vector3(intent.x*0.14,intent.y*0.28,-chest.value.z*0.55),delta,0.08,3.0)
 
 func _update_legs(delta: float, controller) -> void:
 	var flow: Vector3 = motion.flow*motion.pressure
@@ -191,6 +197,10 @@ func _update_legs(delta: float, controller) -> void:
 		extras[2] += Vector3(-motion.retro*0.12,0,motion.roll_stop*0.06)
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
+			# A skydiver arches through the hips with the calves folded up. The
+			# powered braking brace remains a separate pose for feasible nozzles.
+			var falling: Vector3 = profile.fall_pose[joint]*Vector3(1,1,sx)+extras[joint]*articulation
+			target = target.lerp(falling,motion.box*(1.0-motion.brake))
 			var extension: Vector3 = profile.launch_pose[joint]*Vector3(1,1,sx)
 			target = target.lerp(extension,motion.launch)
 			if joint==0: target.x += hover_shift

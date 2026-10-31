@@ -82,7 +82,7 @@ func set_weight(weight: float) -> void:
 		modifier.influence = weight
 
 func update(delta: float, frame: Dictionary) -> void:
-	finger_curl = clampf(0.30+frame.brake*0.25+frame.retro*0.35+absf(frame.roll)*0.15,0.2,0.85)
+	finger_curl = clampf(0.25-frame.box*0.15-frame.brake*0.10+frame.retro*0.45+absf(frame.roll)*0.15,0.1,0.85)
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		var base: Vector3 = profile.arm_hover*frame.hover+profile.arm_stream*frame.fighter+profile.arm_coast*(frame.coast+frame.fall+frame.land)
@@ -100,8 +100,8 @@ func update(delta: float, frame: Dictionary) -> void:
 		# presses one shoulder/forearm into the air; pitch reaches or tucks both.
 		# Commanded strokes work before any airflow, load or rotation appears.
 		hand += Vector3(sx*(-1.1*inside+0.8*outside)+steer.y*0.35,
-			inside*0.8-outside*0.55+steer.x*1.25,
-			sx*steer.y*1.35+steer.x*0.65+sx*steer.z*0.65+frame.brake_rate*0.15)
+			inside*1.1-outside*0.8+steer.x*1.25,
+			sx*steer.y*1.35+steer.x*0.65+sx*steer.z*0.85+frame.brake_rate*0.15)
 		hand += Vector3(0,sx*absf(frame.roll)*frame.up.z*0.45,sx*absf(frame.roll)*frame.up.x*0.55)
 		hand += frame.flow*frame.pressure*Vector3(0.20,0.15,0.35)
 		var gather: float = frame.coast*minf(frame.steer.length(),1)
@@ -119,9 +119,10 @@ func update(delta: float, frame: Dictionary) -> void:
 		hand += balance+Vector3(sx*absf(balance.x)*0.3,absf(balance.x)*0.5+absf(balance.z)*0.2,0)
 		hand += Vector3(sx*frame.trim.x,frame.trim.y*(0.65+side*0.25),frame.trim.z*sx)*profile.hover_arm_motion*frame.hover
 		# Comfortable hand workspace prevents load response crossing the chest.
-		hand.x = sx*clampf(sx*hand.x,2.6,5.2)
+		hand.x = sx*clampf(sx*hand.x,1.8,5.8)
+		if absf(hand.x)<2.6: hand.z = maxf(hand.z,1.4) # Gather in front of the chest armor.
 		hand.y = clampf(hand.y,-3.2,4.0)
-		hand.z = clampf(hand.z,-0.8,3.5)
+		hand.z = clampf(hand.z,-1.8,3.8)
 		hands[side].follow(hand,delta,profile.arm_frequency+side*0.08,profile.arm_damping,profile.arm_speed)
 		# Relaxed elbows stay near the ribs. Body flight widens them into a box,
 		# while steering presses the same calibrated hinge without a plane flip.

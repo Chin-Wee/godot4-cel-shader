@@ -63,6 +63,7 @@ var hover_assist := 0.0
 var hover_gimbal_trim := Vector3.ZERO
 var brake_amount := 0.0
 var rotation_command := Vector3.ZERO
+var rotation_request := Vector3.ZERO # Animation intent before control smoothing.
 var released_axes := Vector3(1, 0, 1)
 var control_blend := 0.0
 var acceleration := Vector3.ZERO
@@ -132,6 +133,7 @@ func reset() -> void:
 	hover_gimbal_trim = Vector3.ZERO
 	control_blend = 0.0
 	clock = 0.0
+	rotation_request = Vector3.ZERO
 	sampled = false
 	for spring in [command, brake, accel] + motor_springs:
 		spring.value = Vector3.ZERO
@@ -176,7 +178,8 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 		float(raw.get("yaw_left", false)) - float(raw.get("yaw_right", false)),
 		float(raw.get("left", false)) - float(raw.get("right", false)))
 	released_axes = Vector3(1.0 - absf(request.x), 0, 1.0 - absf(request.z))
-	rotation_command = command.step(request * precision, dt, INPUT_RESPONSE)
+	rotation_request = request * precision
+	rotation_command = command.step(rotation_request, dt, INPUT_RESPONSE)
 	brake_amount = clampf(brake.step(Vector3(float(raw.get("brake", false)), 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
 
 func _measure_airflow(frame: Basis, dt: float) -> void:

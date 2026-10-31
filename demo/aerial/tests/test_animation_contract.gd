@@ -9,7 +9,8 @@ var finished := false
 
 func _initialize() -> void: call_deferred("_run")
 
-func _ticks(count: int) -> void:
+func _ticks(count: int, mirror_request := true) -> void:
+	if mirror_request: fc.rotation_request = fc.rotation_command
 	for tick in count:
 		fc.clock += 1.0/60
 		var previous: Vector3 = mech.rig.arms.hands[0].value
@@ -36,6 +37,7 @@ func _neutral() -> void:
 	fc.local_acceleration = Vector3.ZERO
 	fc.angular_acceleration = Vector3.ZERO
 	fc.rotation_command = Vector3.ZERO
+	fc.rotation_request = Vector3.ZERO
 	fc.rcs_torque = Vector3.ZERO
 	fc.torque_fraction = 0
 	fc.local_airflow = Vector3.ZERO
@@ -68,7 +70,14 @@ func _run() -> void:
 	fc.hover_assist = 1
 	await _ticks(150)
 	assert(mech.rig.behavior_weights[0]>0.99)
-	for side in 2: assert(mech.rig.arms.hands[side].value.y< -2,"Hover uses skydiver arms")
+	for side in 2: assert(mech.rig.arms.hands[side].value.y< -0.6,"Hover uses skydiver arms")
+	var before_input: Vector3 = mech.rig.arms.hands[0].value
+	fc.rotation_request = Vector3(0,1,0)
+	await _ticks(6,false)
+	assert(fc.rotation_command.is_zero_approx() and mech.angular_velocity.is_zero_approx())
+	assert(mech.rig.arms.hands[0].value.distance_to(before_input)>0.2,"Brief input is lost behind the physics control filter")
+	fc.rotation_request = Vector3.ZERO
+	await _ticks(60)
 	var resting_knee: float = mech.rig.legs[1].value.x
 	fc.leg_force = Vector3.UP*mech.mass*9.81*4
 	await _ticks(14)
@@ -91,6 +100,7 @@ func _run() -> void:
 	await _ticks(150)
 	assert(mech.rig.behavior_weights[1]>0.99 and mech.rig.motion.track>0.99)
 	var fighter_hand: Vector3 = mech.rig.arms.hands[0].value
+	assert(fighter_hand.z< -1 and fighter_hand.distance_to(mech.rig.profile.arm_hover)>2,"Hover and cruise silhouettes still collapse into the same pose")
 	var fighter_knee: Vector3 = mech.rig.legs[1].value
 	mech.quaternion = Quaternion(Vector3.FORWARD,PI)*mech.quaternion
 	await _ticks(120)
@@ -144,7 +154,7 @@ func _run() -> void:
 	for side in 2: assert(mech.rig.arms.hands[side].value.y< -2.3,"Tracking did not tuck both arms")
 	fc.brake_amount = 1
 	await _ticks(120)
-	for side in 2: assert(mech.rig.arms.hands[side].value.y>2,"Braking did not flare both arms")
+	for side in 2: assert(mech.rig.arms.hands[side].value.y>1.8,"Braking did not raise the flare above the shoulders")
 	# Fast powered misalignment receives independent control, never hover catch.
 	_neutral()
 	fc.engine_level = 2
