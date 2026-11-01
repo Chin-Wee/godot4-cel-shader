@@ -1,9 +1,9 @@
 # Graph Report - godot4-cel-shader  (2026-11-01)
 
 ## Corpus Check
-- 20 files · ~2,112,704 words
+- 20 files · ~2,113,071 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1029 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- Unclassified: 1030 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
 - 427 nodes · 498 edges · 27 communities (21 shown, 6 thin omitted)
@@ -11,7 +11,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `2fa4a8da`
+- Built from commit: `799d5673`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 

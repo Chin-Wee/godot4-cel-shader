@@ -2093,7 +2093,7 @@
       "node_kind": "heading",
       "norm_label": "recommended architecture",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L31"
+      "source_location": "L38"
     },
     {
       "id": "demo_aerial_flight_animation_contract_required_behaviors",
@@ -2117,7 +2117,7 @@
       "node_kind": "heading",
       "norm_label": "visual acceptance",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L62"
+      "source_location": "L69"
     },
     {
       "id": "demo_aerial_poses_pose_design",
@@ -2177,7 +2177,7 @@
       "node_kind": "heading",
       "norm_label": "verification and authoring",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L75"
+      "source_location": "L99"
     },
     {
       "id": "demo_aerial_readme",
@@ -2213,7 +2213,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L304"
+      "source_location": "L319"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2225,7 +2225,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L391"
+      "source_location": "L406"
     },
     {
       "id": "demo_aerial_readme_flight_animation_contract_validation",
@@ -2237,7 +2237,7 @@
       "node_kind": "heading",
       "norm_label": "flight animation contract validation",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L517"
+      "source_location": "L537"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2249,7 +2249,7 @@
       "node_kind": "heading",
       "norm_label": "implementation and reference",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L54"
+      "source_location": "L61"
     },
     {
       "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
@@ -2261,7 +2261,7 @@
       "node_kind": "heading",
       "norm_label": "procedural pose ownership and tuning",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L319"
+      "source_location": "L334"
     },
     {
       "id": "demo_aerial_readme_run_and_controls",
@@ -2285,7 +2285,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L550"
+      "source_location": "L570"
     },
     {
       "id": "readme",
@@ -12187,7 +12187,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L31",
+      "source_location": "L38",
       "weight": 1.0
     },
     {
@@ -12209,7 +12209,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L62",
+      "source_location": "L69",
       "weight": 1.0
     },
     {
@@ -12253,7 +12253,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L75",
+      "source_location": "L99",
       "weight": 1.0
     },
     {
@@ -12275,7 +12275,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L304",
+      "source_location": "L319",
       "weight": 1.0
     },
     {
@@ -12286,7 +12286,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L319",
+      "source_location": "L334",
       "weight": 1.0
     },
     {
@@ -12297,18 +12297,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L391",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
-      "target": "demo_aerial_readme_implementation_and_reference",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L54",
+      "source_location": "L406",
       "weight": 1.0
     },
     {
@@ -12319,7 +12308,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L550",
+      "source_location": "L570",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_implementation_and_reference",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L61",
       "weight": 1.0
     },
     {
@@ -12341,7 +12341,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L517",
+      "source_location": "L537",
       "weight": 1.0
     },
     {
@@ -13078,7 +13078,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L321",
+      "source_location": "L336",
       "weight": 1.0
     },
     {
@@ -13089,7 +13089,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L385",
+      "source_location": "L400",
       "weight": 1.0
     },
     {
@@ -13129,5 +13129,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "e47f09392d45648180071298eaab4ef107076d7b"
+  "built_at_commit": "696ef0345e9764de96db2934757c24dba56a8ccf"
 }
