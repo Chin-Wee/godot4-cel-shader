@@ -228,15 +228,17 @@ func _bodyflight() -> void:
 
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
-	var rows: Array = await _play("transitions",1380,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[214,[]],
-		[480,[KEY_C,KEY_S]],[481,[KEY_S]],[500,[KEY_S,KEY_SHIFT]],[530,[KEY_S]],[574,[]],
-		[694,[KEY_C]],[695,[]],[696,[KEY_C]],[697,[]],[700,[KEY_S]],[790,[]],[850,[KEY_W]],[940,[]],
-		[970,[KEY_SPACE]],[971,[]],[972,[KEY_SPACE]],[973,[]],[974,[KEY_SPACE,KEY_W]],[975,[KEY_W]],[1068,[]]])
+	# The hover entry now spends three seconds translating before tilt ramps in.
+	# Brake while pulling upright; align the unpowered fall before re-ignition.
+	var rows: Array = await _play("transitions",1800,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[462,[]],
+		[660,[KEY_C,KEY_S,KEY_SHIFT]],[661,[KEY_S,KEY_SHIFT]],[771,[]],
+		[870,[KEY_C]],[871,[]],[872,[KEY_C]],[873,[]],[900,[KEY_S]],[984,[]],[1020,[KEY_W]],[1272,[]],
+		[1320,[KEY_SPACE]],[1321,[]],[1322,[KEY_SPACE]],[1323,[]],[1324,[KEY_SPACE]],[1325,[]],[1368,[KEY_S]],[1524,[]]])
 	_expect(report.transitions.max_jerk < 250,"transitions: brake or thrust handoff arrived too abruptly")
-	_expect(_at(rows,7.0).forward > 0.9 and _at(rows,7.0).speed > 35,"transitions: hover-to-jet did not establish forward flight")
-	_expect(_at(rows,10.5).upright > 0.9,"transitions: combat slide never became upright")
-	_expect(_at(rows,10.0).speed > 10,"transitions: upright rotation erased the slide")
-	_expect(_at(rows,13.5).engine == 0,"transitions: C cutoff did not reach zero")
+	_expect(_at(rows,9.0).forward > 0.9 and _at(rows,9.0).speed > 35,"transitions: hover-to-jet did not establish forward flight")
+	_expect(_at(rows,13.5).upright > 0.9,"transitions: combat slide never became upright")
+	_expect(_at(rows,13.0).speed > 10,"transitions: upright rotation erased the slide")
+	_expect(_at(rows,15.5).engine == 0,"transitions: C cutoff did not reach zero")
 	_expect(rows[-1].engine > 1.9 and rows[-1].forward > 0.85 and rows[-1].speed > 35,"transitions: re-ignition never recovered forward flight")
 
 func _endurance() -> void:
@@ -296,6 +298,8 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			rows.append({"time":float(tick)/HZ,"speed":fc.velocity.length(),"height":mech.position.y/10.0,
 				"velocity":_array(fc.velocity),"command":_array(fc.rotation_command),"acceleration":_array(acceleration),"omega":fc.angular_velocity.length(),
 				"alpha":fc.angular_acceleration.length(),"engine":fc.engine_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
+				"aoa":fc.angle_of_attack,"slip":fc.sideslip,"attached_flow":fc.attached_flow,"flight_protection":fc.flight_protection,
+				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
 				"upright":mech.global_basis.y.y,"forward":mech.global_basis.y.dot(Vector3.FORWARD),"inverted":-wing.y.y,
 				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
 				"contacts":int(mech.collided),"torque":fc.torque_fraction,

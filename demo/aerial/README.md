@@ -12,13 +12,16 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **W/S:** pitch forward/down and backward/up. **A/D:** bank/roll. **Q/E:** yaw.
-  Rotation remains available at every speed and main-thrust level.
+- **Upright powered hover, WASD:** directional thrust for the first three seconds
+  of each press. Continue holding to ramp into pitch/bank over 1.25 seconds.
+  Release or reverse direction to restart that interval. Diagonals are normalized.
+- **Forward flight / unpowered, W/S:** pitch down/pull up. **A/D:** bank/roll.
+  **Q/E:** yaw immediately. The mouse remains independent of steering.
 - **Space / C:** step through **0, 0.5, 1, 2, 4 × hover**. Each press changes one
   detent; key repeat is ignored. Engines ramp toward the request.
 - **Shift held:** aerodynamic brake and spread posture; rotation remains available.
 - **R:** finite ground-contact leg jump, without changing the thrust detent.
-- **Ctrl held:** precision rotation. **Mouse:** look only.
+- **Ctrl held:** precision translation/rotation. **Mouse:** look only.
   **MMB / Tab:** camera focus/free look. Click captures the mouse.
 - **Wheel:** zoom. **Home:** reset camera. **Esc:** release mouse. **P:** pause.
 - **F9:** diagnostics: orange propulsion, cyan aerodynamics, magenta RCS torque,
@@ -27,8 +30,12 @@ godot --path demo res://aerial/aerial_demo.tscn
   **F8:** explosion.
 
 Flight starts at nominal 1× hover. Low-speed, near-upright powered flight receives
-bounded upright/drift correction and 1× tilt compensation. Hold W and select 2×
-to pitch into forward flight. Thrust, lift, drag and gravity produce the path;
+bounded upright/drift correction and 1× tilt compensation. Hold W and select 2×:
+the first three seconds push forward upright, then continued holding pitches
+into forward flight. Powered aligned flight softens pitch near 30 degrees of
+airflow misalignment instead of outrunning the curving trajectory. Shift braking
+permits an intentional combat departure; large misalignment and engine cutoff
+retain independent attitude and travel. Thrust, lift, drag and gravity produce the path;
 there is no cruise mode or velocity replacement. C down to zero removes main
 propulsion after spool-down while cold-gas torque still controls attitude.
 Aerodynamics and gravity remain active. Shift presents more area to the airflow,
@@ -76,12 +83,15 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Main forces use actual physics-tick gimbal directions and animated attachment
   positions. Off-centre application generates the actual engine moment. Measured
   equal shares caused forward drift because the calf ports cannot vector upright
-  within their 30-degree cones. Calibrated low-power shares are backpack 12.5%
-  each, calf 7.5% each, heel 30% each. Shares smoothly equalize over 1.5–4× output,
-  reaching one-sixth each at maximum power. Bounded hover gimbal trim removes
+  within their 30-degree cones. Low-power shares are 40% per steerable heel and
+  5% per remaining motor. Each heel's share falls as it reaches the common engine
+  capacity; the remainder is shared by the other four. All six reach one-sixth
+  at maximum power. This permits backward hover force without demanding that the
+  canted barrels point outside their cones. Bounded hover gimbal trim removes
   residual bias; it moves physical motors and cannot create extra force. Port-cant
   feed-forward is body-relative so yaw cannot leave stale world trim fighting the
-  motors. Velocity feedback is 3.2/s and residual integral trim is 1.0/s².
+  motors. Velocity feedback is 3.6/s; residual integral trim learns only during
+  quiet hover below 1.5 m/s, preventing windup against an intentional slide.
 - One damped angular-rate controller uses native shape-derived inertia and finite
   cold-gas torque. Requested rates are 1.0/0.8/1.2 rad/s before precision scaling;
   actuator limits correspond to 5 rad/s² per body axis. Main-engine moments consume
@@ -90,15 +100,25 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   are omitted. Fixed capsule inertia does not change with procedural limb motion.
 - Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
   main power. It never depends on stall/attached-flow quality. Neutral pilot axes
-  allow upright restoration; held axes override it. Only nominal 1× receives
+  allow upright restoration. A press beginning in powered hover keeps its first
+  three seconds of directional thrust even if climb airspeed then increases.
+  Per-axis hold times reset on release/reversal; afterward the same input ramps
+  from translation into rotation. Unpowered presses rotate immediately. Only nominal 1× receives
   vertical thrust compensation, capped at 2×. Other detents retain their collective
   intent. Requested zero disables hover trim; spool reaches exact zero and no
   recovery/translation force is injected afterward. Cold-gas torque remains.
 - `pilot_frame()` isolates chest-forward hover/head-first flight coordinates. A
   bank-independent pitch projection and vertical-flow contribution blend its
-  reference smoothly; bindings do not change and input is never disabled. Lift
+  reference smoothly. The flight W/S pitch axis remains consistent through bank
+  and inversion. A small DCS Su-27-inspired pitch envelope uses the measured angle
+  of attack, the force-derived trajectory turn rate and 0.2 seconds of prediction
+  to keep sustained powered pulls near ±30 degrees. It fades over 35–60 degrees
+  of total misalignment and with Shift braking, so it cannot pull a deliberate
+  upright combat slide back toward its velocity. No attitude or velocity is assigned.
+  Lift
   uses a calibrated 80 m² reference area at hero scale, 1.225 kg/m³ air, angle of
-  attack and attached flow. Quadratic drag includes broadside area, induced drag,
+  attack and attached flow; pitch attachment stays full through 30 degrees and
+  fades toward a stall at 65 degrees. Quadratic drag includes broadside area, induced drag,
   passive high-speed drag and Shift spread. Engine-off gliding and falling use
   these same equations; no velocity clamp supplies a terminal falling speed.
   Named feel parameters retain positive base Cd 0.075 plus 0.28 high-speed Cd.
@@ -112,13 +132,18 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   takeoff and landing.
 - The physical root attitude leads the pose. The visual language combines
   Hathaway's deliberate combat silhouettes, skydiver relative-wind responses and
-  Titanfall 2 pilot intent. The production architecture reference is
-  [Uncharted 4's animation/secondary-physics layering](https://www.gdcvault.com/play/1024087/Physics-Animation-in-Uncharted-4).
+  Titanfall's mechanical weight. Directional slides, backward bracing and rotating
+  foot/hand counterbalance take their visual reference from
+  [Armored Core VI's official movement footage](https://www.youtube.com/watch?v=64ChiBxhk4U&t=150s).
+  The existing architecture remains
+  [Overgrowth's authored poses with procedural corrections](https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach).
   `flight_pose.gd` samples a read-only motion snapshot, blends five normalized
   posture anchors, and applies bounded servo/load responses. Hover, streamline,
   spread, coast and landing are weights, not flight-control modes. Posture changes
-  retain servo velocity. Active hover trim slowly transfers weight between the
-  legs and balances both arms, pelvis and chest on different phases. Opposed
+  retain servo velocity. Hover posing reads planned physical acceleration,
+  including the braking push after release. The torso leans slightly over a
+  leading/trailing leg pair; hands trail forward thrust and catch backward force.
+  Inside/outside hands and knees exchange roles during sideways slides. Opposed
   thigh/knee offsets keep the lower-leg thrust axes nearly parallel. Relative
   airflow direction and pressure remain separate; freefall does not produce
   powered G-load compression. Legs retain bounded response times
@@ -132,8 +157,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   `GunPose` is sampled only for finger-curl calibration, then stopped. Neither
   hand follows a camera/weapon aim target. Inside/outside arms differ in a roll;
   release counterbalances the remaining spin. Braking opens both arms; reverse
-  thrust gathers them forward. Bounded joint servos preserve continuity; the existing body spring provides
-  controlled secondary motion.
+  thrust gathers them forward. Bounded critically damped joint servos preserve
+  continuity without idle swimming or a torso oscillator.
   No flight/hover/stall clips play. Imported clips remain for Animation dock
   preview and walking. Body/arm influence fades for walking; foot contact remains
   active. This model has no independently rigged binders. Movement, motors, pose
@@ -371,6 +396,8 @@ godot --headless --path demo --script res://aerial/tests/test_aerial_stack.gd
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_flight_pose.gd
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_procedural_pose.gd
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_animation_contract.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_flight_controls.gd -- /tmp/flight-controls
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/test_flight_controls.gd -- /tmp/flight-controls-native
 godot --headless --path demo --script res://aerial/tests/test_surface_lighting.gd
 godot --headless --path demo --script res://aerial/tests/test_volume_state.gd
 godot --headless --path demo --script res://aerial/tests/test_cloud_field.gd

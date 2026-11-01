@@ -504,7 +504,7 @@ func _make_hud() -> void:
 	panel.offset_right = -20
 	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "GUNDAM · PHYSICS FLIGHT\nW/S: pitch · A/D: bank / roll · Q/E: yaw · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: ground jump\nShift: brake / spread · Mouse: look · arms follow flight maneuvers\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
+	label.text = "GUNDAM · PHYSICS FLIGHT\nHover WASD: move · hold past 3s to tilt · Q/E: yaw\nFlight W/S: pitch · A/D: bank / roll · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: ground jump\nShift: brake / spread · Mouse: look\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
 	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
 	label.add_theme_font_size_override("font_size",15)
 	panel.add_child(label)

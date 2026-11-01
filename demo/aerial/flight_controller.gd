@@ -1,13 +1,13 @@
 extends RefCounted
 
-# Behavioral references: DCS Su-27 aerodynamic handling and Elite Dangerous
+# Behavioral references: DCS Su-27 envelope protection and Elite Dangerous
 # independent attitude/momentum. One native body owns motion; this supplies forces.
 const Spring = preload("res://aerial/pose_servo.gd")
 const DETENTS := [0.0, 0.5, 1.0, 2.0, 4.0]
 # Scene geometry is retained: 10 world units = 1 meter. Forces use N, torque N m.
 const WORLD_UNITS_PER_METER := 10.0
 const GRAVITY := 9.81
-const TRIM_SHARES := [0.125, 0.125, 0.075, 0.075, 0.30, 0.30]
+const TRIM_SHARES := [0.05, 0.05, 0.05, 0.05, 0.40, 0.40]
 const VECTOR_LIMIT := PI / 6.0
 const MAX_RATE := Vector3(1.0, 0.8, 1.2)
 const RATE_GAIN := 6.0
@@ -18,7 +18,12 @@ const BRAKE_RESPONSE := 0.28
 const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
 const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
 const HOVER_TRIM_GAIN := 1.0
-const HOVER_CANT_BIAS := 0.25
+const HOVER_CANT_BIAS := 0.15
+const HOVER_TRANSLATE_TIME := 3.0
+const HOVER_TILT_RAMP := 1.25
+const HOVER_TRANSLATE_G := 0.35
+const FLIGHT_PITCH_LIMIT := PI / 6.0
+const FLIGHT_PITCH_GAIN := 3.0
 const JUMP_PUSH_TIME := 0.22
 const JUMP_PEAK_G := 4.0
 # Cd stays positive in every pose. High-speed drag supplies a finite energy bound.
@@ -65,6 +70,14 @@ var hover_gimbal_trim := Vector3.ZERO
 var brake_amount := 0.0
 var rotation_command := Vector3.ZERO
 var rotation_request := Vector3.ZERO # Animation intent before control smoothing.
+var hover_translation := Vector3.ZERO # Heading-local force request, not velocity.
+var hover_actuation := Vector3.ZERO # Planned heading-local acceleration for posing.
+var hover_hold := Vector2.ZERO # Pitch/roll hold duration; a reversal starts fresh.
+var hover_press_axes := Vector2.ZERO # This press began in powered upright hover.
+var last_direction := Vector2.ZERO
+var translation := Spring.new()
+var flight_protection := 0.0
+var requested_rates := Vector3.ZERO # World angular-rate request after protection.
 var released_axes := Vector3(1, 0, 1)
 var control_blend := 0.0
 var acceleration := Vector3.ZERO
@@ -84,7 +97,7 @@ var time_to_impact := INF
 var air_density := 1.225 # kg/m³; zero permits a vacuum invariant check.
 var wind := Vector3.ZERO # m/s, world axes.
 var air_velocity := Vector3.ZERO
-var engine_shares := PackedFloat32Array([0.125,0.125,0.075,0.075,0.30,0.30])
+var engine_shares := PackedFloat32Array(TRIM_SHARES)
 var motor_angles: Array[Vector3] = []
 var motor_forces: Array[Vector3] = []
 var motor_springs: Array = []
@@ -135,9 +148,16 @@ func reset() -> void:
 	control_blend = 0.0
 	clock = 0.0
 	rotation_request = Vector3.ZERO
+	hover_translation = Vector3.ZERO
+	hover_actuation = Vector3.ZERO
+	hover_hold = Vector2.ZERO
+	hover_press_axes = Vector2.ZERO
+	last_direction = Vector2.ZERO
+	flight_protection = 0.0
+	requested_rates = Vector3.ZERO
 	requested_main_force = Vector3.ZERO
 	sampled = false
-	for spring in [command, brake, accel] + motor_springs:
+	for spring in [command, brake, accel, translation] + motor_springs:
 		spring.value = Vector3.ZERO
 		spring.velocity = Vector3.ZERO
 
@@ -146,10 +166,10 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	clock += dt
 	grounded = on_ground
 	_measure_motion(state, dt)
-	_read_commands(controls, dt)
 	_measure_airflow(state.transform.basis.orthonormalized(), dt)
 	var frame := state.transform.basis.orthonormalized()
 	_calculate_hover(frame)
+	_read_commands(controls, dt)
 	_calculate_aerodynamics(frame)
 	_calculate_main_thrusters(outlets, frame, dt)
 	_calculate_attitude_torque(state)
@@ -179,8 +199,22 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	var request := Vector3(float(raw.get("back", false)) - float(raw.get("forward", false)),
 		float(raw.get("yaw_left", false)) - float(raw.get("yaw_right", false)),
 		float(raw.get("left", false)) - float(raw.get("right", false)))
-	released_axes = Vector3(1.0 - absf(request.x), 0, 1.0 - absf(request.z))
-	rotation_request = request * precision
+	var direction := Vector2(request.x,request.z)
+	var tilt := Vector2.ONE
+	for axis in 2:
+		if direction[axis]==0 or direction[axis]!=last_direction[axis]:
+			hover_hold[axis] = 0.0
+			hover_press_axes[axis] = float(direction[axis]!=0 and hover_assist>0.5)
+		if detent==0: hover_press_axes[axis] = 0.0
+		if direction[axis]!=0: hover_hold[axis] += dt
+		# Keep the promised interval even if powered ascent increases airspeed.
+		# A new airborne press still rotates immediately; cutoff cancels the latch.
+		tilt[axis] = 1.0-hover_press_axes[axis]*(1.0-smoothstep(HOVER_TRANSLATE_TIME,HOVER_TRANSLATE_TIME+HOVER_TILT_RAMP,hover_hold[axis]))
+	last_direction = direction
+	var planar := Vector3(-request.z*(1.0-tilt.y),0,request.x*(1.0-tilt.x)).limit_length(1.0)*precision
+	hover_translation = translation.step(planar,dt,INPUT_RESPONSE)
+	rotation_request = request*Vector3(tilt.x,1,tilt.y)*precision
+	released_axes = Vector3(1.0-absf(rotation_request.x),0,1.0-absf(rotation_request.z))
 	rotation_command = command.step(rotation_request, dt, INPUT_RESPONSE)
 	brake_amount = clampf(brake.step(Vector3(float(raw.get("brake", false)), 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
 
@@ -190,7 +224,7 @@ func _measure_airflow(frame: Basis, dt: float) -> void:
 	var local := flight_frame.inverse() * air_velocity
 	angle_of_attack = atan2(-local.y, -local.z) if speed > 0.1 else 0.0
 	sideslip = atan2(local.x, maxf(0.01, absf(local.z))) if speed > 0.1 else 0.0
-	attached_flow = (1.0 - smoothstep(deg_to_rad(15), deg_to_rad(55), absf(angle_of_attack))) * (1.0 - smoothstep(0.3, 1.2, absf(sideslip)))
+	attached_flow = (1.0 - smoothstep(FLIGHT_PITCH_LIMIT, deg_to_rad(65), absf(angle_of_attack))) * (1.0 - smoothstep(0.3, 1.2, absf(sideslip)))
 	aero_authority = smoothstep(20, 70, speed) * attached_flow
 	departure = smoothstep(20, 60, speed) * (1.0 - attached_flow)
 	# One explicit coordinate conversion: chest-forward hover to head-first flight.
@@ -222,11 +256,21 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 	var neutral := minf(released_axes.x, released_axes.z)
 	var motion := air_velocity + wind
 	var horizontal := Vector3(motion.x, 0, motion.z)
-	var correction := (-horizontal * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.45) * hover_assist * neutral
+	var back := frame.z.slide(Vector3.UP).normalized()
+	var right := Vector3.UP.cross(back).normalized()
+	var move := right*hover_translation.x+back*hover_translation.z
+	# Do not brake or integrate trim against a commanded translation. Neutral
+	# directions still catch drift, and release smoothly restores the full catch.
+	var drift := horizontal-horizontal.project(move)*minf(move.length(),1.0) if not move.is_zero_approx() else horizontal
+	var correction := (-drift * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.45) * hover_assist * neutral
+	correction += move*GRAVITY*HOVER_TRANSLATE_G
+	# The pose prepares the actual push, including the opposite force on release.
+	# Animated ankles can then point real heel thrust into the braking direction.
+	hover_actuation = (frame.inverse()*correction/(GRAVITY*HOVER_TRANSLATE_G)).limit_length(1.0)
 	# Bounded integral trim removes steady bias from the canted physical ports.
 	# It only moves gimbals; it cannot add translational force or exceed a cone.
-	if hover_assist > 0.01 and neutral > 0.9:
-		hover_gimbal_trim = (hover_gimbal_trim - horizontal * dt * HOVER_TRIM_GAIN * hover_assist).limit_length(GRAVITY * 1.5)
+	if hover_assist > 0.01 and neutral > 0.9 and move.length()<0.05 and horizontal.length()<1.5:
+		hover_gimbal_trim = (hover_gimbal_trim - drift * dt * HOVER_TRIM_GAIN * hover_assist).limit_length(GRAVITY * 1.5)
 	else:
 		hover_gimbal_trim *= exp(-dt / 0.4)
 	# Port cant is body-relative feed-forward, so yaw cannot leave stale world
@@ -259,9 +303,10 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
 	for index in 6:
-		# Measured canted ports need heel-biased trim. Equalize at maximum power
-		# so all six same-size engines reach their common capacity.
-		engine_shares[index] = lerpf(TRIM_SHARES[index], 1.0 / 6.0, smoothstep(1.5, 4.0, engine_level))
+		# Steerable heels carry hover. Redistribute as each reaches its common
+		# capacity; all six equalize at 4x. Canted barrels cannot oppose every slide.
+		var heel_share := minf(TRIM_SHARES[4],(4.0/6.0)/maxf(engine_level,0.01))
+		engine_shares[index] = heel_share if index>=4 else (1.0-2.0*heel_share)/4.0
 		motor_forces[index] *= delivered_thrust * engine_shares[index]
 		main_force += motor_forces[index]
 		# Application positions are world-oriented offsets from the body origin.
@@ -271,10 +316,23 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 func _calculate_attitude_torque(state: PhysicsDirectBodyState3D) -> void:
 	var frame := state.transform.basis.orthonormalized()
 	var pilot := frame * Basis(Vector3.RIGHT, PI / 2.0 * control_blend)
-	var rates := pilot * (rotation_command * MAX_RATE)
+	var local_rates := rotation_command*MAX_RATE
+	# DCS-style soft AoA protection: pitch with the trajectory instead of rotating
+	# the chassis far faster than lift/thrust can bend it. No attitude/velocity snap.
+	# Brake or engine cutoff releases the protection for deliberate combat stalls.
+	var alignment := frame.y.dot(air_velocity.normalized())
+	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.2,0.9,engine_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
+	if flight_protection>0.0001:
+		var net_acceleration := (main_force+aero_force)/body.mass+Vector3.DOWN*GRAVITY
+		var path_rate := air_velocity.cross(net_acceleration).dot(pilot.x)/maxf(air_velocity.length_squared(),1.0)
+		var predicted := angle_of_attack+(state.angular_velocity.dot(pilot.x)-path_rate)*0.20
+		var protected_pitch := clampf(local_rates.x,path_rate+(-FLIGHT_PITCH_LIMIT-predicted)*FLIGHT_PITCH_GAIN,path_rate+(FLIGHT_PITCH_LIMIT-predicted)*FLIGHT_PITCH_GAIN)
+		local_rates.x = lerpf(local_rates.x,protected_pitch,flight_protection)
+	var rates := pilot*local_rates
 	var upright := pilot.inverse() * frame.y.cross(Vector3.UP) * 2.5 * hover_assist
 	upright *= released_axes
 	rates += pilot * upright
+	requested_rates = rates
 	var local_accel := frame.inverse() * (rates - state.angular_velocity) * RATE_GAIN
 	# Native inertia uses world units²; controller torque is explicitly N m.
 	var inertia := frame.inverse() * state.inverse_inertia_tensor.inverse() * frame

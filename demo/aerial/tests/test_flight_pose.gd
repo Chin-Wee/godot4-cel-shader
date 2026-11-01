@@ -53,10 +53,13 @@ func _run() -> void:
 	assert(_check_limbs(mech) and _check_motors(mech))
 	await _ticks(420)
 	assert(mech.controller.velocity.length() < 0.3, "Long hover develops persistent drift")
-	# Precision input overrides the hover axis rather than fighting upright trim.
+	# A new hover press translates first, including precision input. Its same
+	# held direction gradually starts tilt after the three-second interval.
 	mech.controls = {"forward":true,"precision":true}
 	await _ticks(30)
-	assert(mech.angular_velocity.x < -0.1 and mech.controller.released_axes.x == 0)
+	assert(absf(mech.angular_velocity.x)<0.02 and mech.controller.hover_translation.z< -0.3)
+	await _ticks(180)
+	assert(mech.angular_velocity.x< -0.02 and mech.controller.released_axes.x<1)
 	# Same six rotation commands at upright/prone/inverted/vertical-flight poses.
 	for orientation in [Quaternion.IDENTITY, Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.RIGHT,PI)]:
 		for key in ["forward","back","left","right","yaw_left","yaw_right"]:

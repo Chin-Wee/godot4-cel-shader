@@ -35,6 +35,14 @@ limits rather than stretching the skeleton.
 - Hover: upper arms clear the ribs and elbows bend forward. Small corrections
   follow real attitude-control effort; a stable chassis holds its pose instead
   of swimming to a clock-driven cycle.
+- Directional hover slides use [Armored Core VI](https://www.youtube.com/watch?v=64ChiBxhk4U&t=150s)
+  as the visual reference: a modest committed torso lean, leading/trailing knees,
+  different inside/outside arm roles, and ankle preparation for the actual push.
+  Hands trail forward thrust and catch backward force. The planned acceleration
+  includes the braking push on release, so posture follows physical intention
+  instead of continuing to lean into the old travel. Yaw offsets both hips and
+  retains an asymmetric knee/hand counterbalance. This adds corrections to the
+  same full-body writer; it adds no animation mode or post-processing pass.
 - Held yaw/roll: hands and knees retain complementary positions after angular
   velocity reaches the requested rate. Release produces a counterstroke.
 - Freefall: use the [USPA neutral body position](https://www.uspa.org/uspa-news/foundations-of-flight-neutral-body-position):

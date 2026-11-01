@@ -7,9 +7,16 @@ Status: implementation contract, 1 November 2026. Runtime evidence and commands 
 1. Ground jump into upright, gyro-stabilized helicopter-like flight. Grounded
    legs supply the push; powered low-speed support catches ascent. Animate pelvis,
    chest, both arms and legs, with feasible heel/calf/backpack thrust alignment.
+   In powered hover, the first three seconds of each WASD press supply directional
+   thrust with the chassis upright; continued holding gradually introduces tilt.
+   Forward/backward/sideways slides and yaw use Armored Core VI as a visual
+   reference, including complementary hand and leading/trailing leg roles.
 2. Powered fighter-like flight in any orientation. The chassis provides lift;
    streamlined posture follows useful airflow, not world-up. Bank, pitch and yaw
    have deliberate full-body initiation, sustained effort and recovery.
+   W pitches down and S pulls up through bank/inversion. Powered aligned pulls
+   receive soft ±30-degree airflow pitch protection. Shift permits an intentional
+   departure; large misalignment cannot trigger forced trajectory alignment.
 3. Main engines off: rotate freely while retaining existing travel. Cold-gas
    attitude control supplies actual torque. Compact preparation and arrest poses
    express the maneuver; neither pose nor orientation rewrites velocity. Gravity

@@ -121,6 +121,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	# Quiet trim cannot cancel a deliberate shoulder stroke or its arrest phase.
 	trim *= 1.0-minf(maxf(intent.length(),steer.length()),1)
 	return {"flow":flow.normalized(),"pressure":pressure,"omega":omega,"alpha":alpha,
+		"translate":controller.hover_actuation*Vector3(-1,1,-1),
 		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
 		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
@@ -220,6 +221,10 @@ func _update_body(delta: float) -> void:
 	var intent_gain: float = motion.hover*0.5+motion.fighter*0.75+motion.coast+motion.fall*0.9
 	var powered: float = motion.hover+motion.fighter
 	var anticipation := intent*Vector3(0.22,0.24,0.28).lerp(Vector3(0.15,0.14,0.16),powered)*intent_gain
+	# Armored Core VI slide language: a small committed lean over staggered legs,
+	# while the physical hover chassis stays upright and the hands balance it.
+	var move: Vector3 = motion.get("translate",Vector3.ZERO)
+	anticipation += Vector3(move.z*0.10,0,move.x*0.12)
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
 	var supported := Vector3(-motion.land*0.035,0,0)
 	hips.step((-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(0.07),delta,0.30,0.5)
@@ -248,9 +253,10 @@ func _update_legs(delta: float, controller) -> void:
 	# Preserve feasible calibrated anchors. When physical vectoring is already
 	# at its cone, reduce extra load/airflow articulation rather than bend jets.
 	var articulation := lerpf(1.0,0.35,clampf(controller.engine_level,0,1)*float(controller.motor_saturated))
+	var move: Vector3 = motion.get("translate",Vector3.ZERO)
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
-		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*0.45+motion.lead*motion.asymmetry*0.3)*(1.0-motion.land)
+		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*(0.45+motion.hover*0.20)+motion.lead*motion.asymmetry*0.3+move.x*0.55)*(1.0-motion.land)
 		var stagger: float = profile.role_stagger*lerpf(articulation,1.0,motion.flare)
 		var brace := clampf(sx*motion.side_load+omega.z*0.25,-1,1)
 		var extras := [Vector3(flow.z*profile.leg_airflow_gain-compression*0.32+brace*0.22,-flow.x*0.22+omega.y*0.12,-flow.x*0.28-motion.side_load*0.12+sx*compression*0.10),
@@ -259,9 +265,11 @@ func _update_legs(delta: float, controller) -> void:
 		var leg_intent: Vector3 = motion.steer
 		var leg_gain: float = motion.hover*0.4+motion.fighter*0.6+motion.coast+motion.fall
 		var steer: float = sx*(leg_intent.z*0.18+leg_intent.y*0.12)*profile.maneuver_leg_motion/0.22*leg_gain
-		extras[0] += Vector3(steer,motion.yaw*sx*0.06,0)
+		extras[0] += Vector3(steer+move.z*0.14,motion.yaw*(sx*0.06+motion.hover*0.10),move.x*0.10)
+		extras[1].x -= move.z*0.14 # Keep the loaded lower-leg nozzle axis coupled.
 		extras[1] += Vector3(-steer*0.65+motion.brake_rate*0.04,0,0)
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
+		extras[2].x += move.z*0.18 # Ankle points the physical heel thrust into the slide.
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
 			var working: Vector3 = target.lerp(profile.drive_pose[joint]*Vector3(1,1,sx),motion.drive)
