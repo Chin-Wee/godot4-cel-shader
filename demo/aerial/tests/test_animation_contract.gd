@@ -38,6 +38,8 @@ func _neutral() -> void:
 	fc.angular_acceleration = Vector3.ZERO
 	fc.rotation_command = Vector3.ZERO
 	fc.rotation_request = Vector3.ZERO
+	fc.translation_request = Vector3.ZERO
+	fc.hover_actuation = Vector3.ZERO
 	fc.rcs_torque = Vector3.ZERO
 	fc.torque_fraction = 0
 	fc.local_airflow = Vector3.ZERO

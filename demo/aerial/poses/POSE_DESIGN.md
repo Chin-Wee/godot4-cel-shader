@@ -43,12 +43,24 @@ limits rather than stretching the skeleton.
   instead of continuing to lean into the old travel. Yaw offsets both hips and
   retains an asymmetric knee/hand counterbalance. This adds corrections to the
   same full-body writer; it adds no animation mode or post-processing pass.
+  The controller exposes the unfiltered translation request before its force
+  smoothing. This starts upper-body preparation without waiting for velocity or
+  acceleration. One leg gathers with an additional 0.50 rad of coupled hip/knee
+  flexion; the opposite leg extends by 0.18 rad. Lateral intent selects the raised
+  knee; longitudinal movement retains the preceding lead side. Diagonals use
+  the lateral component and a normalized strength. Existing joint servos carry
+  their velocities through reversals rather than snapping or restarting a clip.
+  On release, the actual hover braking request drives the opposing catch. With
+  neither input nor braking effort, the pose settles into quiet support.
 - Full-power stream uses paired hip/knee tuck to move the actual leg outlets
   toward the mass centre. Directional hover replaces this tuck; reverse pushes
   sweep the calves forward with ankle counter-rotation. The rig profile exposes
   both offsets. This preserves the existing nozzle cones and cold-gas capacity.
 - Held yaw/roll: hands and knees retain complementary positions after angular
-  velocity reaches the requested rate. Release produces a counterstroke.
+  velocity reaches the requested rate. Bank adds a stronger inside-leg gather;
+  yaw uses a smaller twisting stagger with opposing hands. Release produces a
+  counterstroke. Powered pitch adds symmetric compression for a pull-up and
+  extension for a push-over, over the direction-dependent bank/yaw corrections.
 - Freefall: use the [USPA neutral body position](https://www.uspa.org/uspa-news/foundations-of-flight-neutral-body-position):
   hips press into the wind, elbows stay below and slightly ahead of the shoulders,
   bent forearms place open hands near the head, and calves fold behind the body.
@@ -61,7 +73,9 @@ limits rather than stretching the skeleton.
   ballistic gravity from the deceleration response.
 - Acceleration: as braking ends, the brace unwinds, hands sweep aft, and the
   knees lengthen toward aerodynamic cruise as acceleration settles. Existing
-  servos preserve continuity through cancellation and re-ignition.
+  servos preserve continuity through cancellation and re-ignition. Throttle
+  preparation has a stronger shoulder contribution before output finishes
+  spooling. Side slip, turn direction and the retained lead side vary the brace.
 
 Powered joints use the existing critically damped response with finite angular
 speed. Arms reach at up to 1.8 rad/s, with 0.30/0.34 s shoulder/elbow response;
@@ -75,6 +89,12 @@ mirror copies. Thrust, airflow and turn intent increase that asymmetry. Three
 smoothed effort values supply preparation, reverse load and acceleration; there
 is no maneuver state machine or timer-driven gesture sequence. Movement, real
 animated thruster mounts, 30-degree gimbals and force limits remain physical.
+Coupled flexion is clamped against both the hip and knee limits before either
+target is applied. Independently clipping a hip would otherwise leave the knee
+rotating a loaded calf nozzle. At 4x output, the extra gathering stroke retains
+45% strength to leave attitude-control reserve. Launch and landing suppress the
+hover gesture so real ground support retains priority. `slide_knees`,
+`slide_lean` and `slide_response` in the rig profile calibrate the silhouette.
 
 ## Verification and authoring
 

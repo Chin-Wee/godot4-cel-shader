@@ -300,6 +300,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"alpha":fc.angular_acceleration.length(),"engine":fc.engine_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
 				"aoa":fc.angle_of_attack,"slip":fc.sideslip,"attached_flow":fc.attached_flow,"flight_protection":fc.flight_protection,
 				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
+				"move_intent":_array(mech.rig.motion.move_intent),"reach":_array(mech.rig.motion.reach),"gather":[mech.rig.motion.gather.x,mech.rig.motion.gather.y],
 				"pitch_rate":fc.angular_velocity.dot(fc.pilot_frame().x),
 				"upright":mech.global_basis.y.y,"forward":mech.global_basis.y.dot(Vector3.FORWARD),"inverted":-wing.y.y,
 				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
@@ -324,6 +325,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"hand_forward":(mech.rig.arms.hands[0].z+mech.rig.arms.hands[1].z)*0.5,
 				"hand_height":(mech.rig.arms.hands[0].y+mech.rig.arms.hands[1].y)*0.5,
 				"knee":flex[0],"knee_asymmetry":flex[0]-flex[1],
+				"knee_height_difference":knees[0].y-knees[1].y,
 				"chest":_array(mech.rig.chest.value),"hip_pose":_array(mech.rig.hips.value),
 				"left_hand":_array(mech.rig.arms.hands[0]),"right_hand":_array(mech.rig.arms.hands[1]) })
 		if capture_enabled and capture and tick%4 == 0:

@@ -9,8 +9,26 @@ func _position_capture_camera() -> void:
 	scene.camera.force_update_transform()
 
 # Actual input, native physics, completed sockets and both existing cameras.
+func _directional_hover() -> void:
+	for entry in [["left",KEY_A,1.0],["right",KEY_D,-1.0],["forward",KEY_W,1.0],["back",KEY_S,1.0]]:
+		await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
+		var rows: Array = await _play("slide_"+entry[0],240,[[0,[entry[1]]],[120,[]]])
+		var committed: Dictionary = _at(rows,1.0)
+		_expect(committed.knee_asymmetry*entry[2]>0.35,"Hover slide has no distinct gathering and extended leg: "+entry[0])
+		_expect(committed.knee_height_difference*entry[2]>0.25,"Hover slide does not lift the actual leading knee: "+entry[0])
+		_expect(_minimum(rows,"upright")>0.995,"Hover pose tilts the physical chassis")
+		_expect(_peak(rows,"torque")<1,"Hover pose exceeds the attitude actuator budget")
+	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
+	var rows: Array = await _play("slide_reversal",420,[[0,[KEY_A]],[90,[KEY_D]],[180,[KEY_W]],[270,[KEY_S]],[360,[]]])
+	_expect(_at(rows,1).knee_asymmetry>0.35 and _at(rows,2.5).knee_asymmetry< -0.35,"Reversal does not exchange gathering and thrust legs")
+	_expect(_peak(rows,"torque")<1 and _minimum(rows,"upright")>0.995,"Reversal pose destabilizes hover")
+	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
+	rows = await _play("diagonal_slide",240,[[0,[KEY_W,KEY_A]],[90,[KEY_W,KEY_D]],[180,[]]])
+	_expect(_at(rows,1).knee_asymmetry>0.35 and _at(rows,2.5).knee_asymmetry< -0.35,"Diagonal slide chooses the wrong leading leg")
+	_expect(_peak(rows,"torque")<1,"Diagonal gesture exceeds the attitude actuator budget")
+
 func _capture() -> void:
-	create_timer(180).timeout.connect(func():
+	create_timer(240).timeout.connect(func():
 		if not completed: push_error("Maneuver capture did not finish"); quit(1))
 	await _setup_capture()
 	var destination := output
@@ -24,6 +42,7 @@ func _capture() -> void:
 		assert(DirAccess.make_dir_recursive_absolute(output)==OK)
 		scene.follow_camera = view=="chase"
 		report = {}
+		await _directional_hover()
 		await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,PI/2),Vector3(12,0,-55),0)
 		var rows: Array = await _play("reverse",600,[[0,[]],[30,[KEY_SPACE]],[31,[]],[32,[KEY_SPACE]],[33,[]],[34,[KEY_SPACE]],[35,[]]])
 		_expect(_peak(rows,"retro")>0.8 and _peak(rows,"knee")>0.8,"Reverse never establishes its loaded squat")
@@ -68,7 +87,7 @@ func _capture() -> void:
 	await process_frame
 	completed = true
 	if failures.is_empty():
-		print("Maneuver captures passed: oblique reverse through zero, hard acceleration, cancellation/re-ignition and opposing turns in body and chase cameras.")
+		print("Maneuver captures passed: proactive four-way hover, role reversal, diagonals, oblique reverse through zero, hard acceleration, cancellation/re-ignition and opposing turns in body and chase cameras.")
 		quit()
 	else:
 		for failure in failures: push_error(failure)

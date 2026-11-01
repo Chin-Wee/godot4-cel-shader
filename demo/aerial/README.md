@@ -48,6 +48,13 @@ Inspection found `GUN` and `Cube_001` weighted solely to Hands.R; `Cube` is
 Torso-weighted backpack geometry and stays visible.
 Both arms now anticipate pitch/yaw, gather or extend through rolls, spread during
 braking and brace forward when delivered thrust opposes existing travel.
+Hover departures visibly gather one knee and lengthen the opposite leg. The
+torso and arms prepare from unfiltered pilot intention; release follows actual
+braking effort. Lateral/diagonal input selects the gathering leg, while forward
+and backward movement retain a lead side. Reversals exchange roles through the
+same bounded joint servos. Yaw twists, bank gathers the inside leg, pull-up
+compresses the legs, and push-over lengthens them. Ground support and full-power
+thruster feasibility retain priority over extra articulation.
 The factory/roster project settings remain intact; the giant canyon display uses
 ten world units per motion meter.
 

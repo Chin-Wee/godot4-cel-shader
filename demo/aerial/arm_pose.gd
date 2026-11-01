@@ -41,7 +41,7 @@ func update(delta: float, frame: Dictionary) -> void:
 	pose = pose.lerp(profile.arm_stream,frame.track)
 	pose = pose.lerp(profile.arm_box,frame.box)
 	pose = pose.lerp(profile.arm_drive,frame.get("drive",0.0))
-	pose = pose.lerp(profile.arm_prepare,frame.get("prepare",0.0)*0.35)
+	pose = pose.lerp(profile.arm_prepare,frame.get("prepare",0.0)*0.70)
 	pose = pose.lerp(profile.arm_retro,frame.retro)
 	# One full-body flare wins over the reverse brace instead of being starved
 	# of blend weight. Steering is applied afterward, including during freefall.
@@ -51,7 +51,7 @@ func update(delta: float, frame: Dictionary) -> void:
 	var slip: Vector3 = frame.get("slip",Vector3.ZERO)
 	var flare: float = frame.get("flare",frame.brake)
 	var balance: Vector3 = frame.acceleration*Vector3(-1,1,-1)*clampf(frame.g_load,0,1)
-	var move: Vector3 = frame.get("translate",Vector3.ZERO)
+	var move: Vector3 = frame.get("reach",Vector3.ZERO)
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		var bias: float = sx*frame.get("lead",1.0)*(0.06+frame.get("asymmetry",0.0)*0.18)*(1-frame.land)
@@ -60,9 +60,9 @@ func update(delta: float, frame: Dictionary) -> void:
 		var flex: float = pose.z+sx*steer.y*0.34+sx*steer.z*0.24-bias
 		# AC VI-style directional slides: arms trail forward thrust, catch reverse
 		# thrust and take different inside/outside roles during lateral movement.
-		swing += move.z*0.24+sx*move.x*0.14
-		spread += absf(move.z)*0.10+sx*move.x*0.16
-		flex += absf(move.z)*0.12+sx*move.x*0.16
+		swing += move.z*0.42+sx*move.x*0.26
+		spread += absf(move.z)*0.14+sx*move.x*0.26
+		flex += absf(move.z)*0.22+sx*move.x*0.22
 		swing += clampf(balance.z*0.006,-0.08,0.08)+frame.trim.y*frame.hover*0.06
 		spread += clampf(-sx*balance.x*0.006,-0.08,0.08)+sx*frame.trim.x*frame.hover*0.07
 		flex += sx*frame.trim.z*frame.hover*0.06

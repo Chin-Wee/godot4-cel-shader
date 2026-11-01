@@ -72,6 +72,7 @@ var brake_amount := 0.0
 var rotation_command := Vector3.ZERO
 var rotation_request := Vector3.ZERO # Animation intent before control smoothing.
 var hover_translation := Vector3.ZERO # Heading-local force request, not velocity.
+var translation_request := Vector3.ZERO # Unfiltered intent for pose preparation.
 var hover_actuation := Vector3.ZERO # Planned heading-local acceleration for posing.
 var hover_hold := Vector2.ZERO # Pitch/roll hold duration; a reversal starts fresh.
 var hover_press_axes := Vector2.ZERO # This press began in powered upright hover.
@@ -150,6 +151,7 @@ func reset() -> void:
 	clock = 0.0
 	rotation_request = Vector3.ZERO
 	hover_translation = Vector3.ZERO
+	translation_request = Vector3.ZERO
 	hover_actuation = Vector3.ZERO
 	hover_hold = Vector2.ZERO
 	hover_press_axes = Vector2.ZERO
@@ -213,6 +215,7 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 		tilt[axis] = 1.0-hover_press_axes[axis]*(1.0-smoothstep(HOVER_TRANSLATE_TIME,HOVER_TRANSLATE_TIME+HOVER_TILT_RAMP,hover_hold[axis]))
 	last_direction = direction
 	var planar := Vector3(-request.z*(1.0-tilt.y),0,request.x*(1.0-tilt.x)).limit_length(1.0)*precision
+	translation_request = planar
 	hover_translation = translation.step(planar,dt,INPUT_RESPONSE)
 	rotation_request = request*Vector3(tilt.x,1,tilt.y)*precision
 	released_axes = Vector3(1.0-absf(rotation_request.x),0,1.0-absf(rotation_request.z))

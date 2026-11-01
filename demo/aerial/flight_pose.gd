@@ -80,6 +80,7 @@ func update(delta: float, controller) -> void:
 	motion["stream"] = posture_weights[1]
 	motion["launch"] = launch.value.x
 	motion["land"] = contacts.preparation
+	_prepare_directional_pose(controller)
 	motion.make_read_only()
 	_update_body(delta)
 	_update_legs(delta,controller)
@@ -122,6 +123,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	trim *= 1.0-minf(maxf(intent.length(),steer.length()),1)
 	return {"flow":flow.normalized(),"pressure":pressure,"omega":omega,"alpha":alpha,
 		"translate":controller.hover_actuation*Vector3(-1,1,-1),
+		"move_intent":controller.translation_request*Vector3(-1,1,-1),
 		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
 		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
@@ -160,7 +162,7 @@ func _sample_effort(controller, delta: float) -> void:
 		effort[channel] = lerpf(effort[channel],target[channel],decay)
 	var local_across := basis.inverse()*across
 	var local_travel := basis.inverse()*travel
-	var lateral: float = local_across.x*0.8+specific.x*0.25+motion.steer.z*0.7+motion.steer.y*0.45
+	var lateral: float = motion.move_intent.x*1.5-local_across.x*0.8-specific.x*0.25+motion.steer.z*0.7+motion.steer.y*0.45
 	if absf(lateral)>0.25 and lateral*lead_side<0:
 		lead_time += delta
 		if lead_time>0.12:
@@ -173,6 +175,7 @@ func _sample_effort(controller, delta: float) -> void:
 	var directional := maxf(local_across.length(),maxf(motion.body_steer.length()*0.55,slip.length()*motion.pressure*0.4))
 	var role := clampf(maxf(directional,maxf(effort.y*0.65,effort.z*0.5)),0,1)
 	role *= 1.0-controller.hover_assist*0.75
+	role = maxf(role,motion.move_intent.length())
 	# No fixed clock wobble during a committed maneuver. The retained lead side
 	# supplies continuity through zero speed and exactly opposing vector geometry.
 	motion.merge({"prepare":effort.x,"retro":effort.y,"drive":effort.z,
@@ -209,6 +212,26 @@ func _choose_posture(controller, delta: float) -> void:
 	var pushing: bool = controller.leg_force.length()>1
 	launch.step(Vector3(float(pushing),0,0),delta,0.06 if pushing else 0.18)
 
+func _prepare_directional_pose(controller) -> void:
+	# AC VI reference: choose a gathering leg and a longer thrust leg from
+	# intended movement, before acceleration develops. Release follows the real
+	# braking request; a throttle cut alone cannot manufacture a catch gesture.
+	var reach: Vector3 = motion.move_intent if not motion.move_intent.is_zero_approx() else motion.translate
+	reach = reach.limit_length(1.0)*(1.0-motion.land)*(1.0-motion.launch)
+	var strength := smoothstep(0.10,0.85,reach.length())
+	var side: float = signf(reach.x) if absf(reach.x)>0.1 else lead_side
+	# A loaded engine magnifies moving-hardpoint moments. Preserve a readable
+	# stagger while reserving the existing finite cold-gas pitch authority.
+	var loaded_scale: float = lerpf(1.0,0.45,smoothstep(2,4,controller.engine_level))
+	var knees := Vector2(profile.slide_knees.x,profile.slide_knees.y) if side>0 else Vector2(profile.slide_knees.y,profile.slide_knees.x)
+	knees *= strength
+	# Bank gathers the inside leg strongly; yaw uses a smaller twisting stagger.
+	# Command/rate mismatch also produces the opposite stroke when rotation stops.
+	var turn: float = (motion.steer.z*0.9+motion.steer.y*0.4)*profile.role_stagger*(1.0-motion.land)*(1.0-motion.launch)
+	knees += Vector2(turn,-turn)
+	motion["reach"] = reach
+	motion["gather"] = knees*loaded_scale
+
 func _update_body(delta: float) -> void:
 	var omega: Vector3 = motion.omega
 	var alpha: Vector3 = motion.alpha
@@ -223,8 +246,8 @@ func _update_body(delta: float) -> void:
 	var anticipation := intent*Vector3(0.22,0.24,0.28).lerp(Vector3(0.15,0.14,0.16),powered)*intent_gain
 	# Armored Core VI slide language: a small committed lean over staggered legs,
 	# while the physical hover chassis stays upright and the hands balance it.
-	var move: Vector3 = motion.get("translate",Vector3.ZERO)
-	anticipation += Vector3(move.z*0.10,0,move.x*0.12)
+	var move: Vector3 = motion.reach
+	anticipation += Vector3(move.z*profile.slide_lean.x,0,move.x*profile.slide_lean.y)
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
 	var supported := Vector3(-motion.land*0.035,0,0)
 	hips.step((-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(0.07),delta,0.30,0.5)
@@ -278,6 +301,7 @@ func _update_legs(delta: float, controller) -> void:
 		extras[1] += Vector3(-steer*0.65+motion.brake_rate*0.04,0,0)
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
 		extras[2].x += move.z*0.18 # Ankle points the physical heel thrust into the slide.
+		var targets: Array[Vector3] = []
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
 			var working: Vector3 = target.lerp(profile.drive_pose[joint]*Vector3(1,1,sx),motion.drive)
@@ -292,18 +316,22 @@ func _update_legs(delta: float, controller) -> void:
 			target = target.lerp(profile.spread_pose[joint]*Vector3(1,1,sx),motion.flare*(1.0-motion.land))
 			var extension: Vector3 = profile.launch_pose[joint]*Vector3(1,1,sx)
 			target = target.lerp(extension,motion.launch)
-			# Final directional correction survives every base-pose blend.
-			if joint==0: target.x -= role*stagger
-			if joint==1: target.x += role*stagger
-			if joint==0: target.x -= thrust_tuck
-			if joint==1: target.x += thrust_tuck
 			if joint==0: target.x += reverse_slide
 			if joint==2: target.x -= reverse_slide
-			if joint==0: target.x += hover_shift
-			if joint==1: target.x -= hover_shift
-			target = profile.limit_joint(target,side,joint)
+			targets.append(profile.limit_joint(target,side,joint))
+		# Clamp coupled flexion against BOTH joints before applying it. Clipping
+		# only the hip while bending the knee would rotate a loaded calf nozzle.
+		var gather: float = motion.gather[side]+motion.pitch*motion.fighter*0.12*(1.0-motion.land)*(1.0-motion.launch)
+		var flexion: float = role*stagger+thrust_tuck+gather-hover_shift
+		var lower: float = maxf(targets[0].x-profile.joint_max[0].x,profile.joint_min[1].x-targets[1].x)
+		var upper: float = minf(targets[0].x-profile.joint_min[0].x,profile.joint_max[1].x-targets[1].x)
+		flexion = clampf(flexion,lower,upper)
+		targets[0].x -= flexion
+		targets[1].x += flexion
+		for joint in 3:
 			var servo = legs[side*3+joint]
-			servo.step(target,delta,lerpf(profile.leg_response[joint]+motion.hover*side*0.025+maxf(-role,0)*0.05,0.08,motion.launch),profile.joint_speed[joint])
+			var response: float = profile.slide_response if motion.move_intent.length()>0.1 else profile.leg_response[joint]
+			servo.step(targets[joint],delta,lerpf(response+motion.hover*side*0.025+maxf(-role,0)*0.05,0.08,motion.launch),profile.joint_speed[joint])
 			servo.value = profile.limit_joint(servo.value,side,joint)
 
 func _rotate(bone: String, angles: Vector3) -> void:

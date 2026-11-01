@@ -11,6 +11,10 @@ Status: implementation contract, 1 November 2026. Runtime evidence and commands 
    thrust with the chassis upright; continued holding gradually introduces tilt.
    Forward/backward/sideways slides and yaw use Armored Core VI as a visual
    reference, including complementary hand and leading/trailing leg roles.
+   Directional intention starts body preparation before acceleration. One knee
+   visibly gathers while the opposite leg stays longer; diagonal movement and
+   reversal exchange these roles smoothly. Release follows actual braking effort,
+   while an unloaded release returns to quiet hover without a fabricated catch.
 2. Powered fighter-like flight in any orientation. The chassis provides lift;
    streamlined posture follows useful airflow, not world-up. Bank, pitch and yaw
    have deliberate full-body initiation, sustained effort and recovery.

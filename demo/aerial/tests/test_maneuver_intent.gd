@@ -16,6 +16,40 @@ func _flight(speed: Vector3, output := 2.0) -> void:
 	fc.local_airflow = mech.basis.inverse()*-speed
 	fc.local_acceleration = Vector3.ZERO
 
+func _hover_departures() -> void:
+	# No delivered lateral force, velocity or acceleration: the pose must lead
+	# motion from the real controller's unfiltered directional request alone.
+	for direction in [Vector3.LEFT,Vector3.RIGHT,Vector3.FORWARD,Vector3.BACK]:
+		_neutral()
+		mech.rig.reset()
+		fc.engine_level = 1
+		fc.detent = 2
+		fc.hover_assist = 1
+		await _ticks(120)
+		var hands: Vector3 = mech.rig.arms.hands[0]
+		fc.translation_request = direction
+		await _ticks(9)
+		assert(fc.velocity.is_zero_approx() and fc.local_acceleration.is_zero_approx())
+		assert(mech.rig.chest.value.length()>0.025 and mech.rig.arms.hands[0].distance_to(hands)>0.08,"Hover input has no early whole-body preparation")
+		await _ticks(36)
+		var torso: int = mech.skeleton.find_bone("Torso")
+		var lean: Vector3 = mech.skeleton.global_basis.orthonormalized()*mech.bone_poses[torso].basis.orthonormalized()*mech.skeleton.get_bone_global_rest(torso).basis.orthonormalized().inverse()*Vector3.UP
+		assert(lean.dot(direction)>0.10,"Torso leans away from the intended movement")
+		var leading := 1 if direction==Vector3.RIGHT else 0
+		var trailing := 1-leading
+		assert(mech.rig.legs[leading*3+1].value.x-mech.rig.legs[trailing*3+1].value.x>0.45,"Hover departure lacks a gathering and extended leg")
+		var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
+		var first: Vector3 = ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[leading])].origin
+		var second: Vector3 = ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[trailing])].origin
+		assert(first.y>second.y+0.35,"Gather gesture changes angles without lifting the displayed knee")
+		var previous: Vector3 = mech.rig.legs[1].value
+		fc.translation_request = -direction
+		await _ticks(1)
+		assert(previous.distance_to(mech.rig.legs[1].value)<0.04,"Reversal snaps the knee roles")
+		fc.translation_request = Vector3.ZERO
+		await _ticks(180)
+		assert(mech.rig.motion.reach.is_zero_approx() and mech.rig.motion.gather.is_zero_approx(),"Unloaded release invents a braking catch")
+
 func _run() -> void:
 	create_timer(60).timeout.connect(func():
 		if not finished: push_error("Maneuver intent check did not finish"); quit(1))
@@ -28,6 +62,7 @@ func _run() -> void:
 	mech.freeze = true
 	mech.reset_flight(Vector3(175,5000,340))
 	fc = mech.controller
+	await _hover_departures()
 	_flight(Vector3(0,0,-70))
 	await _ticks(150)
 	var cruise_hand: Vector3 = mech.rig.arms.hands[0]
@@ -88,7 +123,7 @@ func _run() -> void:
 	assert(mirrored_left.distance_to(right)<0.05,"Mirrored slip has inconsistent limb roles")
 	assert((mech.rig.arms.hands[1]*Vector3(-1,1,1)).distance_to(left)<0.05)
 	finished = true
-	print("Maneuver intent checks passed: anticipatory throttle, loaded acceleration, staggered reverse brace, independent hands, component-wise reversal, interruption, quiet zero-speed roles and mirrored oblique flight.")
+	print("Maneuver intent checks passed: proactive four-way hover knee/arm/torso preparation, bounded reversal/release, anticipatory throttle, loaded acceleration, staggered reverse brace, independent hands, component-wise reversal, interruption, quiet zero-speed roles and mirrored oblique flight.")
 	scene.queue_free()
 	await process_frame
 	quit()
