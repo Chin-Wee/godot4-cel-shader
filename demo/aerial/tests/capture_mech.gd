@@ -300,6 +300,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"alpha":fc.angular_acceleration.length(),"engine":fc.engine_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
 				"aoa":fc.angle_of_attack,"slip":fc.sideslip,"attached_flow":fc.attached_flow,"flight_protection":fc.flight_protection,
 				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
+				"pitch_rate":fc.angular_velocity.dot(fc.pilot_frame().x),
 				"upright":mech.global_basis.y.y,"forward":mech.global_basis.y.dot(Vector3.FORWARD),"inverted":-wing.y.y,
 				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
 				"contacts":int(mech.collided),"torque":fc.torque_fraction,

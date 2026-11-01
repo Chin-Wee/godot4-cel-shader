@@ -17,6 +17,9 @@ Status: implementation contract, 1 November 2026. Runtime evidence and commands 
    W pitches down and S pulls up through bank/inversion. Powered aligned pulls
    receive soft ±30-degree airflow pitch protection. Shift permits an intentional
    departure; large misalignment cannot trigger forced trajectory alignment.
+   The guard covers all powered detents; it does not provide stall immunity when
+   an underpowered climb loses airspeed. Full-output leg posture keeps actual
+   engine moments within the existing cold-gas capacity.
 3. Main engines off: rotate freely while retaining existing travel. Cold-gas
    attitude control supplies actual torque. Compact preparation and arrest poses
    express the maneuver; neither pose nor orientation rewrites velocity. Gravity

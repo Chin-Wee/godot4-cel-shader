@@ -254,6 +254,14 @@ func _update_legs(delta: float, controller) -> void:
 	# at its cone, reduce extra load/airflow articulation rather than bend jets.
 	var articulation := lerpf(1.0,0.35,clampf(controller.engine_level,0,1)*float(controller.motor_saturated))
 	var move: Vector3 = motion.get("translate",Vector3.ZERO)
+	# Full-power streaming otherwise leaves the heel outlets behind the mass
+	# center and overwhelms pitch authority. Paired hip/knee flexion moves the
+	# actual outlets forward without changing the lower-leg thrust heading.
+	var thrust_tuck: float = smoothstep(2,4,controller.engine_level)*profile.high_thrust_tuck
+	thrust_tuck *= 1.0-maxf(maxf(motion.flare,motion.retro),maxf(motion.land,motion.launch))
+	thrust_tuck *= 1.0-move.length()
+	# Reverse hover sweeps the calves forward; ankles counter-rotate for heel aim.
+	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,controller.engine_level)
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
 		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*(0.45+motion.hover*0.20)+motion.lead*motion.asymmetry*0.3+move.x*0.55)*(1.0-motion.land)
@@ -287,6 +295,10 @@ func _update_legs(delta: float, controller) -> void:
 			# Final directional correction survives every base-pose blend.
 			if joint==0: target.x -= role*stagger
 			if joint==1: target.x += role*stagger
+			if joint==0: target.x -= thrust_tuck
+			if joint==1: target.x += thrust_tuck
+			if joint==0: target.x += reverse_slide
+			if joint==2: target.x -= reverse_slide
 			if joint==0: target.x += hover_shift
 			if joint==1: target.x -= hover_shift
 			target = profile.limit_joint(target,side,joint)

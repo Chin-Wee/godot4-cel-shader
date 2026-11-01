@@ -14,6 +14,7 @@ const RATE_GAIN := 6.0
 const MAX_ANGULAR_ACCELERATION := 5.0
 # Feel parameters. Time in seconds, speed in m/s, accelerations in multiples of g.
 const INPUT_RESPONSE := 0.14
+const FULL_POWER_INPUT_RESPONSE := 0.28 # Leave torque reserve while loaded joints settle.
 const BRAKE_RESPONSE := 0.28
 const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
 const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
@@ -204,7 +205,7 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	for axis in 2:
 		if direction[axis]==0 or direction[axis]!=last_direction[axis]:
 			hover_hold[axis] = 0.0
-			hover_press_axes[axis] = float(direction[axis]!=0 and hover_assist>0.5)
+			hover_press_axes[axis] = float(direction[axis]!=0 and hover_assist>=0.5)
 		if detent==0: hover_press_axes[axis] = 0.0
 		if direction[axis]!=0: hover_hold[axis] += dt
 		# Keep the promised interval even if powered ascent increases airspeed.
@@ -215,7 +216,8 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	hover_translation = translation.step(planar,dt,INPUT_RESPONSE)
 	rotation_request = request*Vector3(tilt.x,1,tilt.y)*precision
 	released_axes = Vector3(1.0-absf(rotation_request.x),0,1.0-absf(rotation_request.z))
-	rotation_command = command.step(rotation_request, dt, INPUT_RESPONSE)
+	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,engine_level))
+	rotation_command = command.step(rotation_request, dt, rotation_response)
 	brake_amount = clampf(brake.step(Vector3(float(raw.get("brake", false)), 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
 
 func _measure_airflow(frame: Basis, dt: float) -> void:
@@ -321,7 +323,7 @@ func _calculate_attitude_torque(state: PhysicsDirectBodyState3D) -> void:
 	# the chassis far faster than lift/thrust can bend it. No attitude/velocity snap.
 	# Brake or engine cutoff releases the protection for deliberate combat stalls.
 	var alignment := frame.y.dot(air_velocity.normalized())
-	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.2,0.9,engine_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
+	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.05,0.45,engine_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
 	if flight_protection>0.0001:
 		var net_acceleration := (main_force+aero_force)/body.mass+Vector3.DOWN*GRAVITY
 		var path_rate := air_velocity.cross(net_acceleration).dot(pilot.x)/maxf(air_velocity.length_squared(),1.0)

@@ -10,7 +10,7 @@ func _position_capture_camera() -> void:
 # Real native body and real key timelines. Optional native renderer records the
 # same runs; no duplicate flight solver or render-only pose controller.
 func _capture() -> void:
-	create_timer(240).timeout.connect(func():
+	create_timer(600).timeout.connect(func():
 		if not completed: push_error("Flight control checks did not finish"); quit(1))
 	await _setup_capture()
 	scene.explosion_clock = -1000
@@ -67,22 +67,46 @@ func _capture() -> void:
 	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,3)
 	rows = await _play("powered_hover",180,[[0,[KEY_W]]],false)
 	for row in rows: _expect(row.upright>cos(deg_to_rad(3)),"Climb airspeed cuts short the translation interval")
+	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,1)
+	rows = await _play("half_power_hover",180,[[0,[KEY_W]]],false)
+	for row in rows: _expect(row.upright>cos(deg_to_rad(3)),"Half-power upright thrust tilts before three seconds")
+	_expect(rows[-1].velocity[2]<-1,"Half-power hover input supplies no directional force")
+	for entry in directions:
+		await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,4)
+		rows = await _play("full_power_hover_"+entry[0],180,[[0,[entry[1]]]],false)
+		for row in rows: _expect(row.upright>cos(deg_to_rad(3)),"Full-power hover tilts before three seconds")
+		var travel := Vector3(rows[-1].velocity[0],rows[-1].velocity[1],rows[-1].velocity[2])
+		_expect(travel.dot(entry[2])>1,entry[0]+": full-power upright thrust loses its requested direction")
 	# Initial lean inside the user's 30-degree margin still recovers upright.
 	await _fixture(origin,Quaternion(Vector3.RIGHT,-deg_to_rad(25)),Vector3.ZERO,2)
 	rows = await _play("tilted_hover",180,[[0,[KEY_W]]],false)
 	_expect(rows[-1].upright>cos(deg_to_rad(3)),"A modest initial lean falls out of hover support")
 	# Every flight case holds real W/S for six seconds, well beyond the old stall.
-	for speed in [35.0,70.0,110.0]:
-		for code in [KEY_W,KEY_S]:
-			await _fixture(origin,Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-speed),3)
-			var name := "flight_"+("down" if code==KEY_W else "up")+"_"+str(int(speed))
-			rows = await _play(name,360,[[0,[code]]],speed==70)
-			for row in rows:
-				_expect(absf(row.aoa)<deg_to_rad(33),name+": pitch escaped the 30-degree airflow corridor")
-				_expect(row.torque<1,name+": pitch saturates the actual attitude actuators")
-			var sign := -1.0 if code==KEY_W else 1.0
-			_expect(_at(rows,1.5).velocity[1]*sign>2.0,name+": W/S curves travel the wrong way")
-			_expect(_minimum(rows,"attached_flow")>0.9,name+": held pitch loses attached airflow")
+	for level in [1,2,3,4]:
+		for speed in [35.0,70.0,110.0]:
+			var downward_velocity := 0.0
+			for code in [KEY_W,KEY_S]:
+				await _fixture(origin,Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-speed),level)
+				var name := "flight_"+("down" if code==KEY_W else "up")+"_"+str(int(speed))
+				if level!=3: name += "_"+str(Controller.DETENTS[level])+"x"
+				rows = await _play(name,540,[[0,[code]],[360,[]]],speed==70 and level>=3)
+				for row in rows:
+					# At half power, a climbing trajectory can run out of energy
+					# after release. Test the held steering corridor, not stall immunity.
+					if row.time<6 or level>=3:
+						_expect(absf(row.aoa)<deg_to_rad(33),name+": pitch escaped the 30-degree airflow corridor")
+						_expect(row.attached_flow>0.9,name+": held pitch loses attached airflow")
+					_expect(row.torque<1,name+": pitch saturates the actual attitude actuators")
+				if code==KEY_W: downward_velocity = _at(rows,1.5).velocity[1]
+				else: _expect(_at(rows,1.5).velocity[1]>downward_velocity+2.0,name+": S does not bend travel upward relative to W")
+				# Low thrust/low airspeed may still descend under gravity. Normal
+				# powered cruise must also achieve the absolute requested direction.
+				if level>=3:
+					var sign := -1.0 if code==KEY_W else 1.0
+					_expect(_at(rows,1.5).velocity[1]*sign>2.0,name+": W/S curves travel the wrong way")
+					for row in rows:
+						if row.time>1 and row.time<6: _expect(row.pitch_rate*sign>0.05,name+": held pitch reverses under engine torque")
+					_expect(rows[-1].omega<0.08,name+": full-power rotation does not arrest after release")
 	for bank in [PI/2,PI]:
 		var orientation := Quaternion(Vector3.BACK,bank)*Quaternion(Vector3.RIGHT,-PI/2)
 		var normal := Basis(orientation)*Basis(Vector3.RIGHT,PI/2)*Vector3.UP
@@ -106,7 +130,7 @@ func _capture() -> void:
 	report["failures"] = failures.duplicate()
 	report["controller_sha256"] = FileAccess.get_sha256("res://aerial/flight_controller.gd")
 	report["pose_sha256"] = {}
-	for file in ["flight_pose.gd","arm_pose.gd"]: report.pose_sha256[file] = FileAccess.get_sha256("res://aerial/"+file)
+	for file in ["flight_pose.gd","arm_pose.gd","mech_rig_profile.gd"]: report.pose_sha256[file] = FileAccess.get_sha256("res://aerial/"+file)
 	var file := FileAccess.open(output.path_join("report.json"),FileAccess.WRITE)
 	file.store_string(JSON.stringify(report,"  "))
 	file.close()

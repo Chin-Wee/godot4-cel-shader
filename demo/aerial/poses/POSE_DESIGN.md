@@ -43,6 +43,10 @@ limits rather than stretching the skeleton.
   instead of continuing to lean into the old travel. Yaw offsets both hips and
   retains an asymmetric knee/hand counterbalance. This adds corrections to the
   same full-body writer; it adds no animation mode or post-processing pass.
+- Full-power stream uses paired hip/knee tuck to move the actual leg outlets
+  toward the mass centre. Directional hover replaces this tuck; reverse pushes
+  sweep the calves forward with ankle counter-rotation. The rig profile exposes
+  both offsets. This preserves the existing nozzle cones and cold-gas capacity.
 - Held yaw/roll: hands and knees retain complementary positions after angular
   velocity reaches the requested rate. Release produces a counterstroke.
 - Freefall: use the [USPA neutral body position](https://www.uspa.org/uspa-news/foundations-of-flight-neutral-body-position):

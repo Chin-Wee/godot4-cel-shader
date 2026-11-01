@@ -96,7 +96,13 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   cold-gas torque. Requested rates are 1.0/0.8/1.2 rad/s before precision scaling;
   actuator limits correspond to 5 rad/s² per body axis. Main-engine moments consume
   the same torque budget. Saturation is displayed instead of erased by a velocity
-  clamp. Cold gas is a lumped three-axis actuator: exact outlet allocation and fuel
+  clamp. Rotation requests ease in over 0.14 s at up to 2×, rising to 0.28 s at
+  4× while loaded joints settle. Full-power streaming tucks paired hips/knees to
+  bring the lower outlets toward the mass centre. Directional hover replaces
+  that tuck; backward force sweeps the calves forward with ankle counter-rotation
+  so their canted ports can contribute without exceeding the nozzle cones.
+  These are rig-profile calibrations; the cold-gas limit remains unchanged.
+  Cold gas is a lumped three-axis actuator: exact outlet allocation and fuel
   are omitted. Fixed capsule inertia does not change with procedural limb motion.
 - Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
   main power. It never depends on stall/attached-flow quality. Neutral pilot axes
@@ -114,7 +120,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   of attack, the force-derived trajectory turn rate and 0.2 seconds of prediction
   to keep sustained powered pulls near ±30 degrees. It fades over 35–60 degrees
   of total misalignment and with Shift braking, so it cannot pull a deliberate
-  upright combat slide back toward its velocity. No attitude or velocity is assigned.
+  upright combat slide back toward its velocity. Protection reaches full strength
+  by 0.5× output and fades as the engines spool to zero. Underpowered climbing
+  flight can still lose energy and stall. No attitude or velocity is assigned.
   Lift
   uses a calibrated 80 m² reference area at hero scale, 1.225 kg/m³ air, angle of
   attack and attached flow; pitch attachment stays full through 30 degrees and
@@ -389,6 +397,11 @@ Behavior and launch channels are recorded in the replay reports.
 Use the rig profile to tune animation; flight-force tuning remains in the controller.
 
 ## Checks and comparison captures
+
+`test_flight_controls.gd` runs 44 real-input sequences, including 24 sustained
+W/S pulls across all four powered levels at 35, 70 and 110 m/s. It checks signed
+travel/rotation, actuator reserve, release arrest, the hover hold interval and
+distinct completed limb geometry. Native captures use the same timelines and solver.
 
 ```sh
 godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_mech.gd -- /tmp/aerial-mech
