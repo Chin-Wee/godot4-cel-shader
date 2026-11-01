@@ -69,6 +69,7 @@ var leg_force := Vector3.ZERO
 var hover_assist := 0.0
 var hover_gimbal_trim := Vector3.ZERO
 var brake_amount := 0.0
+var brake_request := 0.0 # Pose preparation before aerodynamic brake smoothing.
 var rotation_command := Vector3.ZERO
 var rotation_request := Vector3.ZERO # Animation intent before control smoothing.
 var hover_translation := Vector3.ZERO # Heading-local force request, not velocity.
@@ -146,6 +147,7 @@ func reset() -> void:
 	jump_requested = false
 	jump_remaining = 0.0
 	brake_amount = 0.0
+	brake_request = 0.0
 	hover_gimbal_trim = Vector3.ZERO
 	control_blend = 0.0
 	clock = 0.0
@@ -221,7 +223,8 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	released_axes = Vector3(1.0-absf(rotation_request.x),0,1.0-absf(rotation_request.z))
 	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,engine_level))
 	rotation_command = command.step(rotation_request, dt, rotation_response)
-	brake_amount = clampf(brake.step(Vector3(float(raw.get("brake", false)), 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
+	brake_request = float(raw.get("brake", false))
+	brake_amount = clampf(brake.step(Vector3(brake_request, 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
 
 func _measure_airflow(frame: Basis, dt: float) -> void:
 	var speed := air_velocity.length()

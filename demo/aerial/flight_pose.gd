@@ -203,7 +203,7 @@ func _choose_posture(controller, delta: float) -> void:
 	for index in 4: motion[["hover","fighter","coast","fall"][index]] = behavior_weights[index]*(1.0-landing)
 	motion["track"] = airload*maxf(motion.fighter,smoothstep(0.55,0.9,absf(motion.flow.y))*(motion.coast+motion.fall))
 	motion["box"] = motion.fall*smoothstep(0.25,0.75,absf(motion.flow.z))
-	motion["brake"] = controller.brake_amount*lerpf(0.2,1,airload)*(1.0-landing)
+	motion["brake"] = maxf(controller.brake_request,controller.brake_amount)*lerpf(0.2,1,airload)*(1.0-landing)
 	motion["flare"] = maxf(motion.brake,motion.deceleration)*(1.0-landing)
 	var spread: float = maxf(motion.flare,motion.box)
 	hover = motion.hover*(1.0-landing-spread)

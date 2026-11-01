@@ -33,6 +33,7 @@ func _neutral() -> void:
 	fc.detent = 0
 	fc.aero_authority = 0
 	fc.brake_amount = 0
+	fc.brake_request = 0
 	fc.departure = 0
 	fc.local_acceleration = Vector3.ZERO
 	fc.angular_acceleration = Vector3.ZERO

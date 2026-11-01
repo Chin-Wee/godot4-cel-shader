@@ -64,6 +64,13 @@ func _run() -> void:
 	fc = mech.controller
 	await _hover_departures()
 	_flight(Vector3(0,0,-70))
+	await _ticks(120)
+	var before_brake: Vector3 = mech.rig.arms.hands[0]
+	fc.brake_request = 1
+	await _ticks(12)
+	assert(fc.brake_amount==0 and mech.rig.motion.flare>0.95,"Braking pose waits for delivered drag")
+	assert(mech.rig.arms.hands[0].distance_to(before_brake)>0.15,"Brake intent has no early arm preparation")
+	_flight(Vector3(0,0,-70))
 	await _ticks(150)
 	var cruise_hand: Vector3 = mech.rig.arms.hands[0]
 	var cruise_knee: float = mech.rig.legs[1].value.x

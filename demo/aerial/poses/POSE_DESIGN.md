@@ -70,7 +70,9 @@ limits rather than stretching the skeleton.
 - Air braking: Shift or loaded rapid deceleration drives one shared flare value.
   Knees squat while hands spread outside the shoulders. Flare wins over reverse
   bracing, which previously consumed its blend weight. The G-load gate excludes
-  ballistic gravity from the deceleration response.
+  ballistic gravity from the deceleration response. The raw Shift request starts
+  pose preparation before the aerodynamic brake finishes ramping; after release,
+  the remaining delivered brake smoothly carries the pose back toward cruise.
 - Acceleration: as braking ends, the brace unwinds, hands sweep aft, and the
   knees lengthen toward aerodynamic cruise as acceleration settles. Existing
   servos preserve continuity through cancellation and re-ignition. Throttle
