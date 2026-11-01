@@ -1,6 +1,6 @@
 # Mech flight animation contract
 
-Status: implementation contract, 1 November 2026. Runtime evidence and commands are documented in README.md.
+Status: implementation contract, 2 November 2026. Runtime evidence and commands are documented in README.md.
 
 ## Required behaviors
 
@@ -23,7 +23,10 @@ Status: implementation contract, 1 November 2026. Runtime evidence and commands 
    departure; large misalignment cannot trigger forced trajectory alignment.
    The guard covers all powered detents; it does not provide stall immunity when
    an underpowered climb loses airspeed. Full-output leg posture keeps actual
-   engine moments within the existing cold-gas capacity.
+   engine moments within the existing cold-gas capacity. Completed torso/limb
+   poses must also generate correctly signed aerodynamic pitch, yaw and roll
+   through actual point forces. Main vectoring trims the combined moment before
+   cold gas supplies the remainder; airspeed alone never disables attitude control.
 3. Main engines off: rotate freely while retaining existing travel. Cold-gas
    attitude control supplies actual torque. Compact preparation and arrest poses
    express the maneuver; neither pose nor orientation rewrites velocity. Gravity
@@ -72,7 +75,12 @@ Review jump/hover, banked/inverted powered flight, cutoff with independent
 rotation/travel, spread-versus-track falling, and an uninterrupted combined
 transition sequence. Review both close-up body-relative and normal chase views.
 Active body preparation should read before acceleration/rate develops; passive
-lag must remain secondary. Numeric flight checks alone cannot establish pose quality.
+lag must remain secondary. Numeric flight checks alone cannot establish pose
+quality. Include staged
+bank → capture/release → pull-up → release, overlapping input, cancellation and
+reversal at 2×/4×. Four directional hover slides need 20–25 degree torso lean
+and complementary knee/hand roles. Full-power sideways travel must retain yaw
+stability and finite torque reserve; both camera views must keep the mech framed.
 
 References:
 - https://www.gdcvault.com/play/1020583/Animation-Bootcamp-An-Indie-Approach

@@ -7,7 +7,7 @@ const DETENTS := [0.0, 0.5, 1.0, 2.0, 4.0]
 # Scene geometry is retained: 10 world units = 1 meter. Forces use N, torque N m.
 const WORLD_UNITS_PER_METER := 10.0
 const GRAVITY := 9.81
-const TRIM_SHARES := [0.05, 0.05, 0.05, 0.05, 0.40, 0.40]
+const TRIM_SHARES := [0.02, 0.02, 0.02, 0.02, 0.46, 0.46]
 const VECTOR_LIMIT := PI / 6.0
 const MAX_RATE := Vector3(1.0, 0.8, 1.2)
 const RATE_GAIN := 6.0
@@ -19,10 +19,10 @@ const BRAKE_RESPONSE := 0.28
 const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
 const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
 const HOVER_TRIM_GAIN := 1.0
-const HOVER_CANT_BIAS := 0.15
+const HOVER_CANT_BIAS := 0.07
 const HOVER_TRANSLATE_TIME := 3.0
 const HOVER_TILT_RAMP := 1.25
-const HOVER_TRANSLATE_G := 0.35
+const HOVER_TRANSLATE_G := 0.50
 const FLIGHT_PITCH_LIMIT := PI / 6.0
 const FLIGHT_PITCH_GAIN := 3.0
 const JUMP_PUSH_TIME := 0.22
@@ -32,6 +32,7 @@ const AERO_AREA_M2 := 80.0
 const BASE_DRAG_CD := 0.075
 const HIGH_SPEED_DRAG_CD := 0.28
 const BRAKE_DRAG_CD := 1.8
+const LIFT_BIAS := 0.36 # Shared camber calibrated after splitting the original area.
 const ACTION_KEYS := {
 	"flight_forward": KEY_W, "flight_back": KEY_S,
 	"flight_left": KEY_A, "flight_right": KEY_D,
@@ -58,7 +59,13 @@ var delivered_thrust := 0.0
 var main_force := Vector3.ZERO
 var main_torque := Vector3.ZERO
 var aero_force := Vector3.ZERO
+var aero_torque := Vector3.ZERO
+var aero_power := 0.0 # Passive air power including angular point velocity, watts.
+var aero_surface_forces: Array[Vector3] = []
+var aero_surfaces: Array = []
 var rcs_torque := Vector3.ZERO
+var control_torque := Vector3.ZERO # Desired total moment before actuator allocation.
+var torque_limits := Vector3.ZERO # Body-local cold-gas capacity, N m.
 var torque_fraction := 0.0
 var torque_saturated := false
 var motor_saturated := false
@@ -161,12 +168,19 @@ func reset() -> void:
 	flight_protection = 0.0
 	requested_rates = Vector3.ZERO
 	requested_main_force = Vector3.ZERO
+	main_force = Vector3.ZERO
+	main_torque = Vector3.ZERO
+	aero_force = Vector3.ZERO
+	rcs_torque = Vector3.ZERO
+	control_torque = Vector3.ZERO
+	aero_torque = Vector3.ZERO
+	aero_power = 0.0
 	sampled = false
 	for spring in [command, brake, accel, translation] + motor_springs:
 		spring.value = Vector3.ZERO
 		spring.velocity = Vector3.ZERO
 
-func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array, on_ground: bool, leg_reach: bool) -> void:
+func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array, on_ground: bool, leg_reach: bool, surfaces: Array) -> void:
 	var dt := state.step
 	clock += dt
 	grounded = on_ground
@@ -175,13 +189,16 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	var frame := state.transform.basis.orthonormalized()
 	_calculate_hover(frame)
 	_read_commands(controls, dt)
-	_calculate_aerodynamics(frame)
+	_calculate_aerodynamics(surfaces)
+	_calculate_attitude_demand(state)
 	_calculate_main_thrusters(outlets, frame, dt)
-	_calculate_attitude_torque(state)
+	_calculate_rcs_torque(frame)
 	_calculate_jump(leg_reach, dt)
 	for index in 6:
 		state.apply_force(motor_forces[index] * WORLD_UNITS_PER_METER, outlets[index].position)
-	state.apply_central_force((aero_force + leg_force) * WORLD_UNITS_PER_METER)
+	for index in aero_surfaces.size():
+		state.apply_force(aero_surface_forces[index]*WORLD_UNITS_PER_METER,aero_surfaces[index].position)
+	state.apply_central_force(leg_force * WORLD_UNITS_PER_METER)
 	state.apply_torque(rcs_torque * WORLD_UNITS_PER_METER * WORLD_UNITS_PER_METER)
 	required_force = (main_force + leg_force) / body.mass
 
@@ -247,18 +264,36 @@ func _calculate_hover(frame: Basis) -> void:
 	var powered := clampf(engine_level, 0, 1) if detent > 0 else 0.0
 	hover_assist = powered * (1.0 - smoothstep(18, 45, air_velocity.length())) * (1.0 - smoothstep(deg_to_rad(30), deg_to_rad(60), tilt))
 
-func _calculate_aerodynamics(frame: Basis) -> void:
-	var speed := air_velocity.length()
-	var direction := air_velocity.normalized()
-	var wing := frame * Basis(Vector3.RIGHT, PI / 2.0)
-	# ponytail: one calibrated lifting area/polar; use measured data if supplied.
-	var area := AERO_AREA_M2 * pow(model_scale / 50.0, 2)
-	var pressure_area := 0.5 * air_density * speed * speed * area
-	var lift_coefficient := clampf(angle_of_attack * 3.2 + 0.32, -1.1, 1.1) * attached_flow
-	var lift := wing.y.slide(direction).normalized() * pressure_area * lift_coefficient if speed > 0.1 else Vector3.ZERO
-	var broadside := absf(direction.dot(frame.z))
-	var drag_coefficient := BASE_DRAG_CD + HIGH_SPEED_DRAG_CD * smoothstep(35, 100, speed) + 0.75 * broadside * broadside + 0.15 * lift_coefficient * lift_coefficient + BRAKE_DRAG_CD * brake_amount
-	aero_force = lift - direction * pressure_area * drag_coefficient
+func _calculate_aerodynamics(surfaces: Array) -> void:
+	# MSFS 2020 production reference: forces follow individual posed surfaces.
+	# ponytail: five calibrated panels and fixed capsule inertia, not mesh CFD.
+	aero_surfaces = surfaces
+	aero_surface_forces.clear()
+	aero_force = Vector3.ZERO
+	aero_torque = Vector3.ZERO
+	aero_power = 0.0
+	for surface in surfaces:
+		var lever: Vector3 = surface.position/WORLD_UNITS_PER_METER
+		var flow := air_velocity+angular_velocity.cross(lever)
+		var speed := flow.length()
+		var direction := flow/maxf(speed,0.001)
+		var normal: Vector3 = surface.normal
+		var forward: Vector3 = surface.forward
+		var alpha := atan2(-flow.dot(normal),flow.dot(forward)) if speed>0.1 else 0.0
+		var span: Vector3 = forward.cross(normal)
+		var slip := absf(direction.dot(span))
+		var attached := (1.0-smoothstep(FLIGHT_PITCH_LIMIT,deg_to_rad(65),absf(alpha)))*(1.0-smoothstep(0.3,0.93,slip))
+		var area: float = AERO_AREA_M2*pow(model_scale/50.0,2)*surface.fraction
+		var pressure_area := 0.5*air_density*speed*speed*area
+		var lift_coefficient := clampf(alpha*3.2+LIFT_BIAS,-1.1,1.1)*attached
+		var lift := normal.slide(direction).normalized()*pressure_area*lift_coefficient if speed>0.1 else Vector3.ZERO
+		var broadside := absf(direction.dot(normal))
+		var cd := BASE_DRAG_CD+HIGH_SPEED_DRAG_CD*smoothstep(35,100,speed)+0.75*broadside*broadside+0.15*lift_coefficient*lift_coefficient+BRAKE_DRAG_CD*brake_amount
+		var force := lift-direction*pressure_area*cd
+		aero_surface_forces.append(force)
+		aero_force += force
+		aero_torque += lever.cross(force)
+		aero_power += force.dot(flow)
 
 func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 	var neutral := minf(released_axes.x, released_axes.z)
@@ -269,9 +304,17 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 	var move := right*hover_translation.x+back*hover_translation.z
 	# Do not brake or integrate trim against a commanded translation. Neutral
 	# directions still catch drift, and release smoothly restores the full catch.
-	var drift := horizontal-horizontal.project(move)*minf(move.length(),1.0) if not move.is_zero_approx() else horizontal
+	var drift := horizontal
+	if not move.is_zero_approx():
+		# Only preserve travel already going the requested way. An opposing
+		# command should catch the old momentum before accelerating out of it.
+		var along := maxf(horizontal.dot(move.normalized()),0.0)
+		drift -= move.normalized()*along*minf(move.length(),1.0)
 	var correction := (-drift * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.45) * hover_assist * neutral
 	correction += move*GRAVITY*HOVER_TRANSLATE_G
+	# Deliberate authority curve: stronger nominal slides without multiplying
+	# their lateral demand fourfold during maximum-power vertical ascent.
+	correction -= move*GRAVITY*HOVER_TRANSLATE_G*(1.0-1.0/sqrt(maxf(engine_level,1.0)))
 	# The pose prepares the actual push, including the opposite force on release.
 	# Animated ankles can then point real heel thrust into the braking direction.
 	hover_actuation = (frame.inverse()*correction/(GRAVITY*HOVER_TRANSLATE_G)).limit_length(1.0)
@@ -287,18 +330,12 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 	var desired := (frame.y * GRAVITY + correction + (cant_bias + hover_gimbal_trim) * hover_assist).normalized()
 	var vertical_fraction := 0.0
 	motor_saturated = false
+	var directions: Array[Vector3] = []
 	for index in 6:
-		var local: Vector3 = outlets[index].basis.inverse() * -desired
-		var requested_angle := acos(clampf(local.z, -1, 1))
+		var requested_angle := acos(clampf((outlets[index].basis.inverse()*-desired).z,-1,1))
 		motor_saturated = motor_saturated or requested_angle > VECTOR_LIMIT + 0.01
-		var axis := Vector3.BACK.cross(local).normalized()
-		if axis.is_zero_approx(): axis = Vector3.RIGHT
-		var angle: Vector3 = motor_springs[index].step(axis * minf(requested_angle, VECTOR_LIMIT), dt, 0.16).limit_length(VECTOR_LIMIT)
-		motor_springs[index].value = angle
-		motor_angles[index] = angle
-		var rotation := Basis.IDENTITY if angle.is_zero_approx() else Basis(Quaternion(angle.normalized(), angle.length()))
-		motor_forces[index] = -(outlets[index].basis * rotation).z.normalized()
-		vertical_fraction += motor_forces[index].y * engine_shares[index]
+		directions.append(_motor_direction(outlets[index].basis,_motor_angle(outlets[index].basis,desired)))
+		vertical_fraction += directions[index].y * engine_shares[index]
 	var target: float = DETENTS[detent]
 	if detent == 2 and vertical_fraction > 0.3:
 		var support := body.mass * (GRAVITY - motion.y * 1.8) - aero_force.y
@@ -315,13 +352,83 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		# capacity; all six equalize at 4x. Canted barrels cannot oppose every slide.
 		var heel_share := minf(TRIM_SHARES[4],(4.0/6.0)/maxf(engine_level,0.01))
 		engine_shares[index] = heel_share if index>=4 else (1.0-2.0*heel_share)/4.0
-		motor_forces[index] *= delivered_thrust * engine_shares[index]
+	_trim_main_moment(outlets,directions)
+	for index in 6:
+		var angle: Vector3 = motor_springs[index].step(_motor_angle(outlets[index].basis,directions[index]),dt,0.16).limit_length(VECTOR_LIMIT)
+		motor_springs[index].value = angle
+		motor_angles[index] = angle
+		motor_forces[index] = _motor_direction(outlets[index].basis,angle)*delivered_thrust*engine_shares[index]
 		main_force += motor_forces[index]
 		# Application positions are world-oriented offsets from the body origin.
 		var lever: Vector3 = outlets[index].position / WORLD_UNITS_PER_METER
 		main_torque += lever.cross(motor_forces[index])
 
-func _calculate_attitude_torque(state: PhysicsDirectBodyState3D) -> void:
+func _motor_angle(basis: Basis, direction: Vector3) -> Vector3:
+	var local := basis.inverse()*-direction
+	var axis := Vector3.BACK.cross(local).normalized()
+	if axis.is_zero_approx(): axis = Vector3.RIGHT
+	return axis*minf(acos(clampf(local.z,-1,1)),VECTOR_LIMIT)
+
+func _motor_direction(basis: Basis, angle: Vector3) -> Vector3:
+	var rotation := Basis.IDENTITY if angle.is_zero_approx() else Basis(Quaternion(angle.normalized(),angle.length()))
+	return -(basis*rotation).z.normalized()
+
+func _trim_main_moment(outlets: Array, directions: Array[Vector3]) -> void:
+	# Force-priority control allocation. Native 3x3 blocks solve the small
+	# force/moment correction; each sweep projects back into the real cones.
+	# ponytail: six linearized sweeps, not a general-purpose optimizer.
+	if delivered_thrust<1.0: return
+	var reference := Vector3.ZERO
+	var original: Array[Vector3] = directions.duplicate()
+	for i in 6: reference += directions[i]*engine_shares[i]
+	for sweep in 6:
+		# Allocate the desired total moment after accounting for the actual air
+		# moment. Main engines help with the deficit; cold gas covers what remains.
+		var moment := (aero_torque-control_torque)/maxf(delivered_thrust,1.0)
+		var force := Vector3.ZERO
+		var force_response := Basis(Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
+		var coupling := Basis(Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
+		var moment_response := Basis(Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
+		for i in 6:
+			var lever: Vector3 = outlets[i].position/WORLD_UNITS_PER_METER
+			var weight: float = engine_shares[i]
+			moment += lever.cross(directions[i])*weight
+			force += directions[i]*weight
+			for axis in 3:
+				var unit := Vector3.ZERO
+				unit[axis] = 1.0
+				var rotational := unit.cross(lever).slide(directions[i])
+				force_response[axis] += unit.slide(directions[i])*weight
+				coupling[axis] += rotational*weight
+				moment_response[axis] += lever.cross(rotational)*weight
+		# Translation has much higher priority than removing the final trim error.
+		for axis in 3:
+			var unit := Vector3.ZERO
+			unit[axis] = 1.0
+			force_response[axis] += unit*0.001
+			moment_response[axis] += unit*0.08
+		var inverse_force := force_response.inverse()
+		var residual := moment_response
+		for axis in 3: residual[axis] -= coupling.transposed()*inverse_force*coupling[axis]
+		if absf(residual.determinant())<0.000001: break
+		var linear_error := reference-force
+		var angular: Vector3 = (residual.inverse()*(-moment-coupling.transposed()*inverse_force*linear_error)).limit_length(0.3)
+		var linear: Vector3 = inverse_force*(linear_error-coupling*angular)
+		for i in 6:
+			var lever: Vector3 = outlets[i].position/WORLD_UNITS_PER_METER
+			var change: Vector3 = (linear+angular.cross(lever)).slide(directions[i]).limit_length(0.2)
+			var candidate := (directions[i]+change*0.65).normalized()
+			directions[i] = _motor_direction(outlets[i].basis,_motor_angle(outlets[i].basis,candidate))
+	var delivered := Vector3.ZERO
+	for i in 6: delivered += directions[i]*engine_shares[i]
+	# Lift-supported flight can trade some resultant thrust for a balanced
+	# engine moment. Upright directional hover keeps its tighter force budget.
+	var flight_margin := aero_authority*(1.0-minf(hover_translation.length(),1.0))
+	var force_budget := lerpf(0.03,0.10,flight_margin)
+	var blend := minf(1.0,force_budget/maxf(delivered.distance_to(reference),0.00001))
+	for i in 6: directions[i] = original[i].lerp(directions[i],blend).normalized()
+
+func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	var frame := state.transform.basis.orthonormalized()
 	var pilot := frame * Basis(Vector3.RIGHT, PI / 2.0 * control_blend)
 	var local_rates := rotation_command*MAX_RATE
@@ -342,15 +449,19 @@ func _calculate_attitude_torque(state: PhysicsDirectBodyState3D) -> void:
 	rates += pilot * upright
 	requested_rates = rates
 	var local_accel := frame.inverse() * (rates - state.angular_velocity) * RATE_GAIN
+	local_accel = local_accel.clamp(-Vector3.ONE*MAX_ANGULAR_ACCELERATION,Vector3.ONE*MAX_ANGULAR_ACCELERATION)
 	# Native inertia uses world units²; controller torque is explicitly N m.
 	var inertia := frame.inverse() * state.inverse_inertia_tensor.inverse() * frame
 	inertia = inertia.scaled(Vector3.ONE / (WORLD_UNITS_PER_METER * WORLD_UNITS_PER_METER))
-	var request := inertia * local_accel - frame.inverse() * main_torque
+	control_torque = frame*(inertia*local_accel)
+	torque_limits = Vector3(inertia.x.x,inertia.y.y,inertia.z.z)*MAX_ANGULAR_ACCELERATION
+
+func _calculate_rcs_torque(frame: Basis) -> void:
+	var request := frame.inverse()*(control_torque-main_torque-aero_torque)
 	# ponytail: lumped three-axis cold-gas actuator; per-outlet allocation only
 	# if its fuel usage or force coupling becomes gameplay-relevant.
-	var limits := Vector3(inertia.x.x, inertia.y.y, inertia.z.z) * MAX_ANGULAR_ACCELERATION
-	var applied := request.clamp(-limits, limits)
-	torque_fraction = maxf(absf(request.x) / maxf(limits.x, 0.001), maxf(absf(request.y) / maxf(limits.y, 0.001), absf(request.z) / maxf(limits.z, 0.001)))
+	var applied := request.clamp(-torque_limits, torque_limits)
+	torque_fraction = maxf(absf(request.x) / maxf(torque_limits.x, 0.001), maxf(absf(request.y) / maxf(torque_limits.y, 0.001), absf(request.z) / maxf(torque_limits.z, 0.001)))
 	torque_saturated = torque_fraction > 1.0
 	rcs_torque = frame * applied
 

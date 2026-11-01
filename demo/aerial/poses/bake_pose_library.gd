@@ -9,10 +9,16 @@ const KEYS := {
 	"Launch_Push":{"hover":1.0,"launch":1.0},
 	"Hover_Catch":{"hover":1.0,"compression":0.45,"acceleration":Vector3(0,12,0)},
 	"Hover_Support":{"hover":1.0,"trim":Vector3(0.35,0.6,-0.3)},
+	"Hover_Left":{"hover":1.0,"move_intent":Vector3.RIGHT},
+	"Hover_Right":{"hover":1.0,"move_intent":Vector3.LEFT},
+	"Hover_Forward":{"hover":1.0,"move_intent":Vector3.BACK},
+	"Hover_Back":{"hover":1.0,"move_intent":Vector3.FORWARD},
 	"Flight_Pierce":{"fighter":1.0,"track":1.0,"steer":Vector3(-0.45,0,0)},
 	"Flight_Sustain":{"fighter":1.0,"track":1.0},
 	"Bank_Left":{"fighter":1.0,"track":1.0,"steer":Vector3(-0.15,0,1)},
 	"Bank_Right":{"fighter":1.0,"track":1.0,"steer":Vector3(-0.15,0,-1)},
+	"Bank_Pull_Left":{"fighter":1.0,"track":1.0,"steer":Vector3(0.65,0,0.45)},
+	"Bank_Pull_Right":{"fighter":1.0,"track":1.0,"steer":Vector3(0.65,0,-0.45)},
 	"Coast_Gather":{"coast":1.0,"steer":Vector3(0,0.25,0.7)},
 	"Coast_Arrest":{"coast":1.0,"steer":Vector3(-0.25,-0.4,-1)},
 	"Coast_Settle":{"coast":1.0},
@@ -32,6 +38,8 @@ const STUDIES := {
 	"Coast_And_Arrest":[[0.0,"Hover_Support"],[0.8,"Coast_Gather"],[1.15,"Coast_Gather"],[1.45,"Coast_Arrest"],[1.9,"Coast_Settle"],[2.2,"Coast_Settle"]],
 	"Skydive":[[0.0,"Track"],[0.9,"Fall_Box"],[1.4,"Fall_Turn_Left"],[1.85,"Fall_Box"],[2.3,"Fall_Turn_Right"],[3.5,"Brake_Flare"],[4.7,"Fall_Box"],[5.7,"Track"]],
 	"Landing":[[0.0,"Landing_Guard"],[0.25,"Landing_Guard"],[0.36,"Landing_Absorb"],[0.55,"Landing_Absorb"],[0.95,"Ready_Coil"],[1.4,"Hover_Support"]],
+	"Horizontal_Slides":[[0.0,"Hover_Support"],[0.6,"Hover_Left"],[1.3,"Hover_Right"],[2.0,"Hover_Forward"],[2.7,"Hover_Back"],[3.5,"Hover_Support"]],
+	"Bank_And_Pull":[[0.0,"Flight_Sustain"],[0.5,"Bank_Left"],[1.2,"Bank_Pull_Left"],[2.1,"Bank_Right"],[2.8,"Bank_Pull_Right"],[3.6,"Flight_Sustain"]],
 }
 
 func _initialize() -> void: call_deferred("_bake")
@@ -57,6 +65,7 @@ func _bake() -> void:
 			"side_load":0.0,"brake_rate":0.0,"roll_stop":0.0,"pressure":0.0,
 			"drive":0.0,"prepare":0.0,"lead":1.0,"asymmetry":0.0,"load_direction":Vector3.ZERO,"flare":0.0,
 			"steer":Vector3.ZERO,"body_steer":Vector3.ZERO,"flow":Vector3.ZERO,"gyro":Vector3.ZERO,
+			"reach":Vector3.ZERO,"gather":Vector2.ZERO,"move_intent":Vector3.ZERO,"translate":Vector3.ZERO,
 			"trim":Vector3.ZERO,"up":Vector3.UP,"omega":Vector3.ZERO,"alpha":Vector3.ZERO,"acceleration":Vector3.ZERO}
 		frame.merge(KEYS[name],true)
 		frame.flare = maxf(frame.flare,frame.brake)
@@ -64,9 +73,11 @@ func _bake() -> void:
 		frame["yaw"] = frame.steer.y
 		frame["roll"] = frame.steer.z
 		frame["body_steer"] = Basis(Vector3.RIGHT,PI/2)*frame.steer if frame.fighter>0 else frame.steer
+		frame.body_steer *= Vector3(-1,1,-1)
 		frame["spread"] = maxf(frame.box,frame.brake)
 		frame["stream"] = frame.track
 		rig.motion = frame
+		rig._prepare_directional_pose(mech.controller)
 		var available: float = 1-frame.land
 		var spread: float = frame.spread*available
 		var flight: float = frame.track*(available-spread)
@@ -100,11 +111,11 @@ func _bake() -> void:
 	var skeleton_path: NodePath = mech.actor.get_path_to(sk)
 	for name in KEYS: library.add_animation("K_"+name,_clip([[0.0,name],[0.8,name]],samples,sk,skeleton_path,""))
 	for name in STUDIES: library.add_animation("M_"+name,_clip(STUDIES[name],samples,sk,skeleton_path,name))
-	assert(library.get_animation_list().size()==25)
+	assert(library.get_animation_list().size()==KEYS.size()+STUDIES.size())
 	assert(library.get_animation("K_Fall_Box").get_track_count()>15,"Pose export omitted the completed skeleton")
 	assert(samples.Hover_Support.position.is_finite())
 	assert(ResourceSaver.save(library,OUTPUT)==OK)
-	print("Pose library baked: 19 full-body keys and 6 native AnimationPlayer motion studies.")
+	print("Pose library baked: %d full-body keys and %d native AnimationPlayer motion studies."%[KEYS.size(),STUDIES.size()])
 	stage.queue_free()
 	await process_frame
 	quit()
@@ -118,10 +129,13 @@ func _study_attitude(name: String) -> Quaternion:
 		"Launch_Push": return Quaternion(Vector3.RIGHT,deg_to_rad(-8))
 		"Hover_Catch": return Quaternion(Vector3.RIGHT,deg_to_rad(10))
 		"Hover_Support": return Quaternion(Vector3.FORWARD,deg_to_rad(5))
+		"Hover_Left","Hover_Right","Hover_Forward","Hover_Back": return Quaternion.IDENTITY
 		"Flight_Pierce": return Quaternion(Vector3.RIGHT,deg_to_rad(-75))
 		"Flight_Sustain","Fall_Box": return flight
 		"Bank_Left": return Quaternion(Vector3.BACK,deg_to_rad(25))*flight
 		"Bank_Right": return Quaternion(Vector3.BACK,deg_to_rad(-25))*flight
+		"Bank_Pull_Left": return Quaternion(Vector3.BACK,deg_to_rad(45))*Quaternion(Vector3.RIGHT,deg_to_rad(15))*flight
+		"Bank_Pull_Right": return Quaternion(Vector3.BACK,deg_to_rad(-45))*Quaternion(Vector3.RIGHT,deg_to_rad(15))*flight
 		"Coast_Gather","Coast_Arrest","Coast_Settle": return Quaternion(Vector3.UP,deg_to_rad(20))*Quaternion(Vector3.RIGHT,deg_to_rad(-35))*Quaternion(Vector3.BACK,deg_to_rad(-35))
 		"Fall_Turn_Left": return Quaternion(Vector3.UP,deg_to_rad(15))*Quaternion(Vector3.BACK,deg_to_rad(20))*flight
 		"Fall_Turn_Right": return Quaternion(Vector3.UP,deg_to_rad(-15))*Quaternion(Vector3.BACK,deg_to_rad(-20))*flight

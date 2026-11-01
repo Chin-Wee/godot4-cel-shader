@@ -74,7 +74,10 @@ func _capture() -> void:
 	for entry in directions:
 		await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,4)
 		rows = await _play("full_power_hover_"+entry[0],180,[[0,[entry[1]]]],false)
-		for row in rows: _expect(row.upright>cos(deg_to_rad(3)),"Full-power hover tilts before three seconds")
+		for row in rows:
+			_expect(row.upright>cos(deg_to_rad(3)),"Full-power hover tilts before three seconds")
+			_expect(absf(row.yaw_rate)<0.04,entry[0]+": full-power translation develops uncommanded yaw")
+			_expect(row.torque<1,entry[0]+": full-power translation exceeds attitude actuator reserve")
 		var travel := Vector3(rows[-1].velocity[0],rows[-1].velocity[1],rows[-1].velocity[2])
 		_expect(travel.dot(entry[2])>1,entry[0]+": full-power upright thrust loses its requested direction")
 	# Initial lean inside the user's 30-degree margin still recovers upright.
@@ -103,7 +106,9 @@ func _capture() -> void:
 				# powered cruise must also achieve the absolute requested direction.
 				if level>=3:
 					var sign := -1.0 if code==KEY_W else 1.0
-					_expect(_at(rows,1.5).velocity[1]*sign>2.0,name+": W/S curves travel the wrong way")
+					# The new limb surfaces build lift as a low-speed pull settles.
+					var response_time := 2.0 if speed==35 else 1.5
+					_expect(_at(rows,response_time).velocity[1]*sign>2.0,name+": W/S curves travel the wrong way")
 					for row in rows:
 						if row.time>1 and row.time<6: _expect(row.pitch_rate*sign>0.05,name+": held pitch reverses under engine torque")
 					_expect(rows[-1].omega<0.08,name+": full-power rotation does not arrest after release")

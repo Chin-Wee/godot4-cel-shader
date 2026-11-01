@@ -10,6 +10,11 @@ extends Resource
 @export var arm_roots := PackedStringArray(["Shoulder.L", "Shoulder.R"])
 @export var arm_middles := PackedStringArray(["ArmJoint.L", "ArmJoint.R"])
 @export var arm_ends := PackedStringArray(["Hands.L", "Hands.R"])
+# MSFS 2020 surface-force principle, reduced to torso and four limb panels.
+# Fractions share the controller's existing total area; no duplicated body lift.
+@export var aero_bones := PackedStringArray(["Torso","ArmJoint.L","ArmJoint.R","Shin.L","Shin.R"])
+@export var aero_fractions := PackedFloat32Array([0.5,0.075,0.075,0.175,0.175])
+@export var aero_incidence := PackedFloat32Array([0.04,0.15,0.15,0.12,0.12]) # Neutral stream calibration, radians.
 # Thigh, knee, ankle offsets in skeleton axes. Mirror Z for the right leg.
 # Retain the calibrated hover anchor: physical heel/calf outlets move with it.
 @export var hover_pose := PackedVector3Array([Vector3(-0.25,0,0.12), Vector3(0.42,0,0), Vector3.ZERO])
@@ -36,7 +41,7 @@ extends Resource
 @export var effort_response := Vector3(0.07,0.13,0.20) # Prepare, reverse load, acceleration.
 @export var role_stagger := 0.24 # Coupled thigh/knee offset, radians.
 @export var slide_knees := Vector2(0.50,-0.18) # Gathering and extended leg offsets, radians.
-@export var slide_lean := Vector2(0.16,0.20) # Forward/back and lateral chest lean, radians.
+@export var slide_lean := Vector2(0.38,0.42) # Forward/back and lateral chest lean, radians.
 @export var slide_response := 0.22 # Knee commitment; normal recovery uses leg_response.
 @export var high_thrust_tuck := 0.65 # Draw leg outlets forward under full engine load.
 @export var high_thrust_reverse := 0.8 # Present canted calf ports for a reverse hover push.

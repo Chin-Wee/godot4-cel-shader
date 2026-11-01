@@ -47,7 +47,9 @@ func update(delta: float, frame: Dictionary) -> void:
 	# of blend weight. Steering is applied afterward, including during freefall.
 	pose = pose.lerp(profile.arm_brake,frame.get("flare",frame.brake))
 	pose = pose.lerp(profile.arm_land,frame.land)
-	var steer: Vector3 = frame.steer
+	# Forearm pressure opposes the desired rotation at the moving side: the
+	# resulting air force supplies the turn, rather than flaring against it.
+	var steer: Vector3 = frame.steer*Vector3(1,-1,-1)
 	var slip: Vector3 = frame.get("slip",Vector3.ZERO)
 	var flare: float = frame.get("flare",frame.brake)
 	var balance: Vector3 = frame.acceleration*Vector3(-1,1,-1)*clampf(frame.g_load,0,1)
@@ -55,9 +57,9 @@ func update(delta: float, frame: Dictionary) -> void:
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		var bias: float = sx*frame.get("lead",1.0)*(0.06+frame.get("asymmetry",0.0)*0.18)*(1-frame.land)
-		var swing: float = pose.x+sx*steer.y*0.48-steer.x*0.28+slip.x*sx*0.12
+		var swing: float = pose.x+sx*steer.y*0.52-steer.x*0.28+slip.x*sx*0.12
 		var spread: float = pose.y-sx*steer.z*0.36+bias
-		var flex: float = pose.z+sx*steer.y*0.34+sx*steer.z*0.24-bias
+		var flex: float = pose.z+sx*steer.y*0.34+sx*steer.z*0.45-bias
 		# AC VI-style directional slides: arms trail forward thrust, catch reverse
 		# thrust and take different inside/outside roles during lateral movement.
 		swing += move.z*0.42+sx*move.x*0.26

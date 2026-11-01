@@ -128,7 +128,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
 		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
 		"up":basis.inverse()*Vector3.UP,"trim":trim,"gyro":gyro,
-		"steer":steer,"body_steer":basis.inverse()*pilot*steer,
+		"steer":steer,"body_steer":(basis.inverse()*pilot*steer)*Vector3(-1,1,-1),
 		"retro":retro,"brake_rate":brake_rate,"deceleration":smoothstep(2,12,slowing)*smoothstep(6,25,speed)*smoothstep(0.15,0.65,controller.g_load)}
 
 func _sample_effort(controller, delta: float) -> void:
@@ -264,7 +264,7 @@ func _update_body(delta: float) -> void:
 	arch += motion.gyro*Vector3(0.018,0.012,0.018)*motion.hover
 	# Critically damped powered articulation: commit, decelerate, hold. No spring
 	# overshoot through the torso after a command stops (Titanfall Titan reference).
-	chest.step((lag*0.2+anticipation+brace*0.6+arch-hover*0.5).limit_length(lerpf(0.30,0.22,powered)),delta,0.30,0.9)
+	chest.step((lag*0.2+anticipation+brace*0.6+arch-hover*0.5).clamp(Vector3(-0.45,-0.30,-0.45),Vector3(0.45,0.30,0.45)),delta,0.30,0.9)
 	# Head leads the maneuver and counter-rolls slightly; mouse look never
 	# imposes a weapon-facing pose on the torso or either arm.
 	head.step(Vector3(intent.x*0.10,intent.y*0.20,-chest.value.z*0.2),delta,0.22,1.0)
@@ -299,8 +299,11 @@ func _update_legs(delta: float, controller) -> void:
 		extras[0] += Vector3(steer+move.z*0.14,motion.yaw*(sx*0.06+motion.hover*0.10),move.x*0.10)
 		extras[1].x -= move.z*0.14 # Keep the loaded lower-leg nozzle axis coupled.
 		extras[1] += Vector3(-steer*0.65+motion.brake_rate*0.04,0,0)
+		# A small calf-panel incidence difference rolls lengthwise body flight.
+		# Actual calf nozzles move with it and retain their vectoring limits.
+		extras[1].x -= sx*motion.steer.z*0.12*motion.track
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
-		extras[2].x += move.z*0.18 # Ankle points the physical heel thrust into the slide.
+		extras[2].x += move.z*(0.24 if move.z<0 else 0.18) # Reverse brace presents the heel outlets farther aft.
 		var targets: Array[Vector3] = []
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation

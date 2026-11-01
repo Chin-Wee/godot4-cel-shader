@@ -36,7 +36,7 @@ limits rather than stretching the skeleton.
   follow real attitude-control effort; a stable chassis holds its pose instead
   of swimming to a clock-driven cycle.
 - Directional hover slides use [Armored Core VI](https://www.youtube.com/watch?v=64ChiBxhk4U&t=150s)
-  as the visual reference: a modest committed torso lean, leading/trailing knees,
+  as the visual reference: a 20–25 degree committed torso lean, leading/trailing knees,
   different inside/outside arm roles, and ankle preparation for the actual push.
   Hands trail forward thrust and catch backward force. The planned acceleration
   includes the braking push on release, so posture follows physical intention
@@ -98,6 +98,21 @@ rotating a loaded calf nozzle. At 4x output, the extra gathering stroke retains
 hover gesture so real ground support retains priority. `slide_knees`,
 `slide_lean` and `slide_response` in the rig profile calibrate the silhouette.
 
+## Physical body-flight coupling
+
+Torso, forearms and calves supply five aerodynamic panels sharing one total
+reference area. Their completed bone orientation and position determine native
+point forces; local airflow includes angular velocity. This follows Microsoft
+Flight Simulator 2020's distributed-surface principle at a deliberately small
+proxy scale. Corrected skeleton-axis conversion makes a pull-up prepare into the
+turn. Opposing forearm pressure and differential calf incidence supply signed
+yaw/roll moments. The controller trims main engines first, then asks cold gas
+for the remaining moment; air control does not merely hide RCS effects.
+
+The profile exposes panel fractions/incidence and slide lean for calibration.
+Powered joint servos, mechanical limits, planted feet and the fixed capsule
+remain authoritative. No extra animation writer or physical limb bodies are added.
+
 ## Verification and authoring
 
 ```sh
@@ -113,7 +128,7 @@ captures. The real input replays record reverse, burst, interruption, opposing
 turns, body flight and a complete `flare_exit` in body and gameplay chase views.
 Reports use completed hand positions and geometric knee flexion, not IK targets.
 
-`pose_studio.tscn` retains 19 static key references and six native AnimationPlayer
+`pose_studio.tscn` retains 25 static key references and eight native AnimationPlayer
 studies. Select PosePlayer for the Animation dock. Arrow keys select clips,
 Space pauses, R restarts, and 1/2/3 changes views. Rebuild that library with:
 

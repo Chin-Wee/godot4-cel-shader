@@ -319,7 +319,8 @@ func _update_camera(delta: float) -> void:
 	if not follow_camera: return
 	var center: Vector3 = hero.position+Vector3.UP*hero.display_scale*0.35
 	var lag: Vector3 = (-hero.controller.acceleration*0.016*hero.display_scale).limit_length(0.45*hero.display_scale)
-	var target: Vector3 = camera_target.step(center,delta,0.14)+camera_lag.step(lag,delta,0.35)
+	# Compensate the spring's constant-velocity lag so fast climbs stay framed.
+	var target: Vector3 = camera_target.step(center+hero.linear_velocity*0.14,delta,0.14)+camera_lag.step(lag,delta,0.35)
 	if is_instance_valid(focus_target):
 		var focus_direction := (focus_target.global_position-center).normalized()
 		camera_yaw = atan2(-focus_direction.x,-focus_direction.z)
@@ -440,6 +441,7 @@ func _update_flight_stats() -> void:
 		fc.requested_thrust / 1000, fc.delivered_thrust / 1000, fc.torque_fraction * 100,
 		" · TORQUE LIMIT" if fc.torque_saturated else "", " · GIMBAL LIMIT" if fc.motor_saturated else ""]
 	if hero.debug_forces:
+		flight_stats.text += "\nMOMENT kNm · MAIN %.0f · AIR %.0f · COLD GAS %.0f"%[fc.main_torque.length()/1000,fc.aero_torque.length()/1000,fc.rcs_torque.length()/1000]
 		var weights: PackedFloat32Array = hero.rig.posture_weights
 		var feet = hero.rig.contacts
 		flight_stats.text += "\nPOSE H %.0f / FLIGHT %.0f / SPREAD %.0f / COAST %.0f / LAND %.0f%%\nFEET %s/%s · PROBES %d · IMPACT %.2f" % [weights[0]*100,weights[1]*100,weights[2]*100,weights[3]*100,weights[4]*100,"PLANT" if feet.planted[0] else "FREE","PLANT" if feet.planted[1] else "FREE",feet.probe_count,feet.impact]

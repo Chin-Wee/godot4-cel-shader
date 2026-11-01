@@ -82,7 +82,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   [Elite Dangerous](https://d1wv0x2frmpnh.cloudfront.net/elite/website/assets/English-PlayersGuide_v2.00-Horizons.pdf)
   for independent attitude/momentum. No unpublished internals are assumed.
 - `flight_controller.gd` reads commands, measures motion/airflow, computes hover
-  assistance, aerodynamics, main propulsion, RCS torque and leg push, then applies
+  assistance, posed-surface aerodynamics, desired attitude moment, main-engine
+  trim, remaining RCS torque and leg push, then applies
   them through native physics. Forces are newtons; torque is newton metres. Ten
   world units represent one metre: native forces multiply by 10, torque by 100,
   velocities divide by 10, and native inertia divides by 100. Native gravity is
@@ -90,8 +91,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - Main forces use actual physics-tick gimbal directions and animated attachment
   positions. Off-centre application generates the actual engine moment. Measured
   equal shares caused forward drift because the calf ports cannot vector upright
-  within their 30-degree cones. Low-power shares are 40% per steerable heel and
-  5% per remaining motor. Each heel's share falls as it reaches the common engine
+  within their 30-degree cones. Low-power shares are 46% per steerable heel and
+  2% per remaining motor. Each heel's share falls as it reaches the common engine
   capacity; the remainder is shared by the other four. All six reach one-sixth
   at maximum power. This permits backward hover force without demanding that the
   canted barrels point outside their cones. Bounded hover gimbal trim removes
@@ -101,9 +102,12 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   quiet hover below 1.5 m/s, preventing windup against an intentional slide.
 - One damped angular-rate controller uses native shape-derived inertia and finite
   cold-gas torque. Requested rates are 1.0/0.8/1.2 rad/s before precision scaling;
-  actuator limits correspond to 5 rad/s² per body axis. Main-engine moments consume
-  the same torque budget. Saturation is displayed instead of erased by a velocity
-  clamp. Rotation requests ease in over 0.14 s at up to 2×, rising to 0.28 s at
+  actuator limits correspond to 5 rad/s² per body axis. Main gimbals first trim
+  the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight budget. Six
+  bounded native 3×3 correction sweeps project directions into the existing cones;
+  finite gimbal motors still deliver the result. Cold gas supplies only the
+  remaining moment; its capacity never fades with airspeed. Saturation is
+  displayed instead of erased by a velocity clamp. Rotation requests ease in over 0.14 s at up to 2×, rising to 0.28 s at
   4× while loaded joints settle. Full-power streaming tucks paired hips/knees to
   bring the lower outlets toward the mass centre. Directional hover replaces
   that tuck; backward force sweeps the calves forward with ankle counter-rotation
@@ -130,10 +134,15 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   upright combat slide back toward its velocity. Protection reaches full strength
   by 0.5× output and fades as the engines spool to zero. Underpowered climbing
   flight can still lose energy and stall. No attitude or velocity is assigned.
-  Lift
-  uses a calibrated 80 m² reference area at hero scale, 1.225 kg/m³ air, angle of
-  attack and attached flow; pitch attachment stays full through 30 degrees and
-  fades toward a stall at 65 degrees. Quadratic drag includes broadside area, induced drag,
+  Lift uses five posed torso/forearm/calf panels sharing the existing 80 m²
+  reference area at hero scale and 1.225 kg/m³ air. Each samples local airflow,
+  including angular point velocity, and applies its force at the actual bone
+  offset. Summed point forces produce physical pitch/yaw/roll moments and angular
+  damping. Pitch attachment stays full through 30 degrees and fades toward a
+  stall at 65 degrees. This small proxy model follows the surface-force approach
+  of [Microsoft Flight Simulator 2020](https://docs.flightsimulator.com/html/Samples_And_Tutorials/Tutorials/Defining_A_Flight_Model.htm);
+  it is calibrated, not mesh CFD. Fixed capsule inertia remains unchanged.
+  Quadratic drag includes broadside area, induced drag,
   passive high-speed drag and Shift spread. Engine-off gliding and falling use
   these same equations; no velocity clamp supplies a terminal falling speed.
   Named feel parameters retain positive base Cd 0.075 plus 0.28 high-speed Cd.
@@ -490,7 +499,8 @@ families, plus isolated landing, braking, retro-thrust, steering/roll and endura
 
 Fixtures set initial conditions once per replay. Timed inputs never rewrite
 position, attitude or velocity. Each native physics tick checks finite state,
-non-positive aerodynamic work and the applied-force momentum budget. Regressions
+non-positive total aerodynamic power (including angular point velocity) and
+the applied-force momentum budget. Regressions
 also limit jump/brake acceleration jerk and residual hover drift. Contact impulses are
 excluded from flight smoothness limits. All reports include input timelines,
 controller/driver hashes, sampled numeric telemetry, peaks and failures.
@@ -536,8 +546,9 @@ this path is verified on the current Mobile renderer.
 
 ### Flight animation contract validation
 
-The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 19 full-body
-key poses and six editable motion studies. Run `pose_studio.tscn` to inspect the
+The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 25 full-body
+key poses and eight editable motion studies, including four directional hover
+keys and horizontal-slide / bank-and-pull studies. Run `pose_studio.tscn` to inspect the
 silhouettes and timing separately from the physical gameplay replays below.
 Runtime maneuver effort adds directional reverse/acceleration bracing, retained
 left/right roles, independent hand expression and alignment-dependent cruise.
@@ -566,6 +577,28 @@ camera. Rendering never evaluates a separate pose. `--metrics-only` skips frame 
 A head-first dive pitches into broadside falling and a flare. The uninterrupted
 transition visits all four behavior influences; its recovery continuation cuts
 thrust, retains aerodynamic coasting, then re-ignites without a fixture reset.
+
+### Body-flight control checks
+
+Directional hover uses 0.50 g command authority with a bounded high-output curve,
+20–25 degree visual lean, leading/trailing knees and complementary hands. Opposing
+input catches the old momentum before accelerating outward; it never assigns
+velocity. The chase spring compensates constant-velocity lag so fast climbs stay
+framed. F9 reports main-engine, aerodynamic and cold-gas moments separately.
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_bodyflight.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/capture_bodyflight.gd -- /tmp/bodyflight
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_bodyflight.gd -- /tmp/bodyflight-native
+```
+
+The isolated check verifies five shared-area panels, signed limb-generated
+pitch/yaw/roll, angular airflow, passive power, zero flow and vacuum. Thirteen
+input sequences run in both body and chase views: 35/70/110 m/s staged bank →
+release → pull-up → release at 2×/4×, overlapping/cancelled maneuvers, four hover
+directions and 4× sideways movement. Gates cover yaw, torque reserve, angle of
+attack, recovery, visual lean, drift and reduced cold-gas demand against the
+recorded pre-change 70 m/s baseline. Native chase captures also check framing.
 
 ## Visual review and remaining goal
 

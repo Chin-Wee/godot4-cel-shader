@@ -208,7 +208,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
 		outlets.append({"position":transform * MOUNTS[index][2] - global_position,
 			"basis":(transform.basis * neutral_bases[index]).orthonormalized()})
-	controller.step(state, FlightController.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable)
+	controller.step(state, FlightController.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable, aerodynamic_surfaces())
 	collided = state.get_contact_count() > 0
 	native_support = false
 	for index in state.get_contact_count():
@@ -220,6 +220,19 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		prediction_clock = 0.1
 	_update_cold_gimbals(state.step)
 	update_animation(state.step)
+
+func aerodynamic_surfaces() -> Array:
+	var surfaces := []
+	var profile = rig.profile
+	for index in profile.aero_bones.size():
+		var bone := skeleton.find_bone(profile.aero_bones[index])
+		var pose: Transform3D = bone_poses[bone]
+		var rotation := skeleton.global_basis.orthonormalized()*pose.basis.orthonormalized()*skeleton.get_bone_global_rest(bone).basis.orthonormalized().inverse()*Basis(Vector3.RIGHT,-profile.aero_incidence[index])
+		var offset: Vector3 = skeleton.global_transform*pose.origin-global_position
+		# Torso panel represents the whole trunk/pelvis, below its upper bone pivot.
+		if index==0: offset -= global_basis.y*2.0*display_scale/50.0*FlightController.WORLD_UNITS_PER_METER
+		surfaces.append({"position":offset,"normal":rotation*Vector3.FORWARD,"forward":rotation*Vector3.UP,"fraction":profile.aero_fractions[index]})
+	return surfaces
 
 func _update_cold_gimbals(dt: float) -> void:
 	for index in 4:

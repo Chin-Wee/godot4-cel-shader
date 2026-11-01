@@ -38,9 +38,9 @@ func _hover_departures() -> void:
 		var leading := 1 if direction==Vector3.RIGHT else 0
 		var trailing := 1-leading
 		assert(mech.rig.legs[leading*3+1].value.x-mech.rig.legs[trailing*3+1].value.x>0.45,"Hover departure lacks a gathering and extended leg")
-		var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
-		var first: Vector3 = ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[leading])].origin
-		var second: Vector3 = ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[trailing])].origin
+		var upright_frame: Basis = (mech.global_basis.inverse()*mech.skeleton.global_basis).orthonormalized()
+		var first: Vector3 = upright_frame*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[leading])].origin
+		var second: Vector3 = upright_frame*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[trailing])].origin
 		assert(first.y>second.y+0.35,"Gather gesture changes angles without lifting the displayed knee")
 		var previous: Vector3 = mech.rig.legs[1].value
 		fc.translation_request = -direction

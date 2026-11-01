@@ -282,7 +282,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			max_residual = maxf(max_residual,residual)
 		max_speed = maxf(max_speed,fc.velocity.length())
 		_expect(fc.velocity.is_finite() and mech.position.is_finite(),name+": non-finite physics state")
-		_expect(fc.aero_force.dot(fc.air_velocity) <= 1.0,name+": aerodynamics added kinetic energy")
+		_expect(fc.aero_power <= 1.0,name+": passive surfaces added translation/rotation energy")
 		if tick%6 == 0:
 			var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
 			var knees := []
@@ -294,6 +294,11 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				knees.append(ti*knee)
 				flex.append((knee-hip).angle_to(foot-knee))
 			var wing: Basis = mech.global_basis*Basis(Vector3.RIGHT,PI/2)
+			var body_frame: Basis = (mech.global_basis.inverse()*mech.skeleton.global_basis).orthonormalized()
+			var left_knee: Vector3 = body_frame*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[0])].origin
+			var right_knee: Vector3 = body_frame*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[1])].origin
+			var torso_index: int = mech.skeleton.find_bone("Torso")
+			var torso_up: Vector3 = mech.skeleton.global_basis.orthonormalized()*mech.bone_poses[torso_index].basis.orthonormalized()*mech.skeleton.get_bone_global_rest(torso_index).basis.orthonormalized().inverse()*Vector3.UP
 			var lift: Vector3 = fc.aero_force.slide(fc.air_velocity.normalized()) if fc.air_velocity.length_squared()>0.00001 else Vector3.ZERO
 			rows.append({"time":float(tick)/HZ,"speed":fc.velocity.length(),"height":mech.position.y/10.0,
 				"velocity":_array(fc.velocity),"command":_array(fc.rotation_command),"acceleration":_array(acceleration),"omega":fc.angular_velocity.length(),
@@ -302,6 +307,8 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
 				"move_intent":_array(mech.rig.motion.move_intent),"reach":_array(mech.rig.motion.reach),"gather":[mech.rig.motion.gather.x,mech.rig.motion.gather.y],
 				"pitch_rate":fc.angular_velocity.dot(fc.pilot_frame().x),
+				"yaw_rate":fc.angular_velocity.dot(mech.global_basis.y),
+				"bank":atan2(wing.y.x,wing.y.y),"visual_lean":acos(clampf(torso_up.dot(mech.global_basis.y),-1,1)),
 				"upright":mech.global_basis.y.y,"forward":mech.global_basis.y.dot(Vector3.FORWARD),"inverted":-wing.y.y,
 				"angle":initial.angle_to(mech.quaternion),"brake":fc.brake_amount,"leg":fc.leg_force.length(),"lift_up":lift.y,
 				"contacts":int(mech.collided),"torque":fc.torque_fraction,
@@ -313,6 +320,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"effort_phase":mech.rig.effort_phase,"lead_side":mech.rig.lead_side,"role_strength":mech.rig.motion.asymmetry,
 				"alignment":mech.rig.motion.alignment,"request_alignment":mech.rig.motion.request_alignment,"load_direction":_array(mech.rig.motion.load_direction),
 				"main_force":_array(fc.main_force),"requested_main_force":_array(fc.requested_main_force),
+				"main_torque":_array(fc.main_torque),"aero_torque":_array(fc.aero_torque),"rcs_torque":_array(fc.rcs_torque),"aero_power":fc.aero_power,
 				"gimbal_peak":fc.motor_angles.map(func(angle): return angle.length()).max(),"rcs_saturated":fc.torque_saturated,
 				"left_fingers":mech.rig.arms.finger_curl[0],"right_fingers":mech.rig.arms.finger_curl[1],
 				"box":mech.rig.motion.box,"steer":_array(mech.rig.motion.steer),
@@ -325,7 +333,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"hand_forward":(mech.rig.arms.hands[0].z+mech.rig.arms.hands[1].z)*0.5,
 				"hand_height":(mech.rig.arms.hands[0].y+mech.rig.arms.hands[1].y)*0.5,
 				"knee":flex[0],"knee_asymmetry":flex[0]-flex[1],
-				"knee_height_difference":knees[0].y-knees[1].y,
+				"knee_height_difference":left_knee.y-right_knee.y,
 				"chest":_array(mech.rig.chest.value),"hip_pose":_array(mech.rig.hips.value),
 				"left_hand":_array(mech.rig.arms.hands[0]),"right_hand":_array(mech.rig.arms.hands[1]) })
 		if capture_enabled and capture and tick%4 == 0:
