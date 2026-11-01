@@ -5,8 +5,10 @@
     "demo/aerial/flight-animation-contract.md",
     "demo/aerial/poses/POSE_DESIGN.md"
   ],
-  "source_revision": "799d5673132ed9eb3e363e5c1487f5c578274294",
+  "source_revision": "1994763751dfe810b6ce9cf4af0bb79793f93618",
   "code_graph_updated": true,
   "backend": "opencode-go",
-  "reason": "Semantic extraction was previously rejected with MissingSessionID by the configured provider. This code/structural update does not retry that unsupported adapter. Re-run semantic extraction with a supported session adapter. Source remains authoritative."
+  "reason": "Semantic extraction was previously rejected with MissingSessionID by the configured provider. This code/structural update does not retry that unsupported adapter. Re-run semantic extraction with a supported session adapter. Source remains authoritative.",
+  "gdscript_ast_supported": false,
+  "indexing_note": "The installed updater refreshes structural/document headings but does not index .gd source. GDScript remains authoritative; no synthetic code relationships were added."
 }
