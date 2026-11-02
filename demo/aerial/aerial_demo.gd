@@ -6,8 +6,9 @@ const Explosion = preload("res://aerial/graphic_explosion.gd")
 const CloudBanks = preload("res://aerial/cloud_banks.gd")
 const AerialMech = preload("res://aerial/aerial_mech.gd")
 const FlightController = preload("res://aerial/flight_controller.gd")
-const Spring = preload("res://aerial/flight_pose.gd").Spring
 var camera: Camera3D
+var phantom_camera: PhantomCamera3D
+var camera_host: PhantomCameraHost
 var environment: Environment
 var sun: DirectionalLight3D
 var clouds: Node3D
@@ -46,8 +47,7 @@ var follow_camera := true
 var camera_yaw := 0.45
 var camera_pitch := 0.22
 var camera_distance := 3.8
-var camera_target := Spring.new()
-var camera_lag := Spring.new()
+var camera_target: Node3D
 var focus_target: Node3D
 var focus_index := -1
 var flight_stats: Label
@@ -55,6 +55,9 @@ var walk_ground: StaticBody3D
 var volume_effect
 
 func _ready() -> void:
+	# Only the physics-driven mechs interpolate; scenery/VFX use the render clock.
+	get_tree().physics_interpolation = true
+	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	FlightController.install_input_actions()
 	environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
@@ -124,6 +127,7 @@ func _ready() -> void:
 	hero.name = "HeroMech"
 	hero.display_scale = 50.0
 	hero.player_controlled = true
+	hero.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	add_child(hero)
 	hero.build(body,afterburner_material)
 	palette_materials.append_array(hero.palette_materials)
@@ -131,6 +135,7 @@ func _ready() -> void:
 	wingman = AerialMech.new()
 	wingman.name = "WingmanMech"
 	wingman.display_scale = 35.0
+	wingman.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	add_child(wingman)
 	wingman.build(body,afterburner_material)
 	palette_materials.append_array(wingman.palette_materials)
@@ -142,6 +147,7 @@ func _ready() -> void:
 	add_child(camera)
 	camera.look_at(Vector3(-160,550,-800))
 	camera.current = true
+	_make_phantom_camera()
 	missile = Node3D.new()
 	missile.position = missile_position(0.0)
 	add_child(missile)
@@ -157,6 +163,7 @@ func _ready() -> void:
 	for mech in [hero,wingman]:
 		mech.controller.reset()
 		mech.update_animation(0.0)
+		mech.reset_physics_interpolation()
 	wingman.collision_layer = 4
 	wingman.simulation_enabled = false
 	_make_ground()
@@ -298,36 +305,67 @@ func _update_walk_pose() -> void:
 
 func set_walk_mode(enabled: bool) -> void:
 	hero.flying = not enabled
+	hero.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF if enabled else Node.PHYSICS_INTERPOLATION_MODE_ON
 	if enabled: _update_walk_pose()
 	hero.controller.reset()
 	hero.update_animation(0.0)
+	hero.reset_physics_interpolation()
 	_update_afterburners()
 	reset_camera()
 	trails[0].visible = not enabled and hero.controller.velocity.length() > 1.5
+
+func _make_phantom_camera() -> void:
+	# Armored Core VI reference: independent orbit and target focus, upright horizon.
+	camera_target = Node3D.new()
+	camera_target.name = "CameraTarget"
+	add_child(camera_target)
+	phantom_camera = PhantomCamera3D.new()
+	phantom_camera.name = "FlightPhantomCamera"
+	phantom_camera.follow_mode = PhantomCamera3D.FollowMode.SIMPLE
+	phantom_camera.follow_target = camera_target
+	phantom_camera.follow_damping = true
+	phantom_camera.follow_damping_value = Vector3.ONE*0.14
+	phantom_camera.look_at_mode = PhantomCamera3D.LookAtMode.SIMPLE
+	phantom_camera.look_at_target = camera_target
+	phantom_camera.tween_on_load = false
+	add_child(phantom_camera)
+	camera_host = PhantomCameraHost.new()
+	camera_host.name = "PhantomCameraHost"
+	# Update once, after the render target and before camera-dependent weather/VFX.
+	camera_host.interpolation_mode = PhantomCameraHost.InterpolationMode.MANUAL
+	camera.add_child(camera_host)
+	camera_host.refresh_pcam_list_priorty()
 
 func reset_camera() -> void:
 	camera_yaw = atan2(-hero.global_basis.z.x, -hero.global_basis.z.z) + PI
 	camera_pitch = 0.08
 	camera_distance = 3.8
-	camera_target.value = hero.position+Vector3.UP*hero.display_scale*0.35
-	camera_target.velocity = Vector3.ZERO
-	camera_lag.value = Vector3.ZERO
-	camera_lag.velocity = Vector3.ZERO
 	_update_camera(0.0)
 
 func _update_camera(delta: float) -> void:
 	if not follow_camera: return
-	var center: Vector3 = hero.position+Vector3.UP*hero.display_scale*0.35
+	# Read the same transform the renderer uses, never the latest physics tick.
+	var hero_position: Vector3 = hero.get_global_transform_interpolated().origin if hero.flying else hero.global_position
+	var center: Vector3 = hero_position+Vector3.UP*hero.display_scale*0.35
+	var snap: bool = delta <= 0.0 or camera_target.global_position.distance_to(center) > hero.display_scale*20.0
+	camera_target.global_position = center
 	var lag: Vector3 = (-hero.controller.acceleration*0.016*hero.display_scale).limit_length(0.45*hero.display_scale)
-	# Compensate the spring's constant-velocity lag so fast climbs stay framed.
-	var target: Vector3 = camera_target.step(center+hero.linear_velocity*0.14,delta,0.14)+camera_lag.step(lag,delta,0.35)
+	var aim: Vector3 = hero_position+look_direction()*4500.0
 	if is_instance_valid(focus_target):
-		var focus_direction := (focus_target.global_position-center).normalized()
+		aim = focus_target.get_global_transform_interpolated().origin if focus_target.is_physics_interpolated_and_enabled() else focus_target.global_position
+		var focus_direction := (aim-center).normalized()
 		camera_yaw = atan2(-focus_direction.x,-focus_direction.z)
 		camera_pitch = -asin(clampf(focus_direction.y,-1,1))
 	var offset: Vector3 = Vector3(sin(camera_yaw)*cos(camera_pitch),sin(camera_pitch),cos(camera_yaw)*cos(camera_pitch))*camera_distance*hero.display_scale
-	camera.position = target+offset+Basis(Vector3.UP,camera_yaw).x*hero.display_scale*0.4
-	camera.look_at(focus_target.global_position if is_instance_valid(focus_target) else hero.position+look_direction()*4500.0)
+	# Compensate damping's constant-velocity lag so fast climbs stay framed.
+	var lead: Vector3 = hero.linear_velocity*0.14 if not snap else Vector3.ZERO
+	phantom_camera.follow_offset = offset+Basis(Vector3.UP,camera_yaw).x*hero.display_scale*0.4+lead+lag
+	phantom_camera.look_at_offset = aim-center
+	if snap: phantom_camera.teleport_position()
+	# The addon's SmoothDamp divides by delta when snapping; bypass it at zero.
+	phantom_camera.follow_damping = not snap
+	camera_host.process(delta)
+	phantom_camera.follow_damping = true
 
 func missile_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)+Vector3(-120.0+cos(time*0.6)*80.0,50.0+sin(time*0.6)*50.0,-200.0-sin(time*0.6)*100.0)
@@ -453,7 +491,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.pressed and event.button_index == MOUSE_BUTTON_MIDDLE: focus_next()
 		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
 			camera_distance = clampf(camera_distance+(-0.3 if event.button_index == MOUSE_BUTTON_WHEEL_UP else 0.3),1.8,9.5)
-			_update_camera(0.0)
+			if not animate: _update_camera(0.0)
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED: _orbit(event.relative)
 	if event is InputEventScreenDrag: _orbit(event.relative)
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -478,7 +516,7 @@ func _orbit(relative: Vector2) -> void:
 	focus_index = -1
 	camera_yaw -= relative.x*0.004
 	camera_pitch = clampf(camera_pitch+relative.y*0.004,-1.45,1.45)
-	_update_camera(0.0)
+	if not animate: _update_camera(0.0)
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_WINDOW_FOCUS_OUT: Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

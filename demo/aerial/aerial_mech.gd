@@ -269,6 +269,7 @@ func reset_flight(origin: Vector3, orientation := Quaternion.IDENTITY, speed := 
 	collided = false
 	prediction_clock = 0.0
 	update_animation(0.0)
+	reset_physics_interpolation()
 
 func predict_impact() -> float:
 	if controller.velocity.length() < 0.5: return INF
