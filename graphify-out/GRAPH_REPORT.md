@@ -1,17 +1,17 @@
 # Graph Report - godot4-cel-shader  (2026-11-02)
 
 ## Corpus Check
-- 20 files · ~2,113,561 words
+- 21 files · ~2,113,760 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1032 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- Unclassified: 1036 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 429 nodes · 500 edges · 27 communities (21 shown, 6 thin omitted)
+- 434 nodes · 504 edges · 27 communities (22 shown, 5 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `19947637`
+- Built from commit: `b712c677`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -33,14 +33,14 @@
 - Grass direction: Breath of the Wild
 - LimitTargetQueryResult
 - PhantomCamera3DExtensions
-- Node2D
+- PhantomCamera2D.cs
 - Node3D
 - StringName
 - .GetLimit
 - StringName
 - .EmitNoise
 - .EmitNoise
-- PhantomCameraNoise2D
+- Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.
 - MechAsset
 
 ## God Nodes (most connected - your core abstractions)
@@ -70,7 +70,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (27 total, 6 thin omitted)
+## Communities (27 total, 5 thin omitted)
 
 ### Community 0 - "Aerial rendering study — DELIVERY MUST COMPLETE"
 Cohesion: 0.07
@@ -85,7 +85,7 @@ Cohesion: 0.05
 Nodes (37): NodePath, Vector2, PhantomCamera2D, AutoZoom, AutoZoomMargin, AutoZoomMax, AutoZoomMin, DrawLimits (+29 more)
 
 ### Community 3 - "TransitionType"
-Cohesion: 0.08
+Cohesion: 0.07
 Nodes (26): GDScript, StringName, EaseType, EaseIn, EaseInOut, EaseOut, EaseOutIn, PhantomCameraTween (+18 more)
 
 ### Community 4 - "TweenDirectorResource"
@@ -98,7 +98,7 @@ Nodes (24): GodotObject, StringName, InactiveUpdateMode, Always, Never, MethodNa
 
 ### Community 6 - "Camera3DResource"
 Cohesion: 0.08
-Nodes (24): Camera3DResource, KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMask, Far (+16 more)
+Nodes (23): KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMask, Far, Fov (+15 more)
 
 ### Community 7 - "PhantomCameraHost"
 Cohesion: 0.10
@@ -109,8 +109,8 @@ Cohesion: 0.09
 Nodes (22): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+14 more)
 
 ### Community 9 - "FollowMode2D"
-Cohesion: 0.11
-Nodes (13): PhantomCamera.Noise, FollowLockAxis2D, None, X, Xy, Y, FollowMode2D, Framed (+5 more)
+Cohesion: 0.29
+Nodes (7): FollowMode2D, Framed, Glued, Group, None, Path, Simple
 
 ### Community 10 - "PhantomCameraNoise3D"
 Cohesion: 0.11
@@ -121,8 +121,8 @@ Cohesion: 0.15
 Nodes (12): PhantomCamera.Manager, GodotObject, PhantomCamera2D, PhantomCamera3D, PhantomCameraHost, StringName, MethodName, PhantomCameraManager (+4 more)
 
 ### Community 12 - "PhantomCameraNoiseEmitter2D"
-Cohesion: 0.12
-Nodes (11): GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime, Duration (+3 more)
+Cohesion: 0.06
+Nodes (26): PhantomCamera.Noise, GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime (+18 more)
 
 ### Community 13 - "PhantomCameraNoiseEmitter3D"
 Cohesion: 0.12
@@ -137,8 +137,12 @@ Cohesion: 0.22
 Nodes (6): CollisionShape2D, GodotObject, LimitTargetQueryResult, IsCollisionShape2D, IsTileMapLayer, TileMapLayer
 
 ### Community 16 - "PhantomCamera3DExtensions"
-Cohesion: 0.29
-Nodes (3): PhantomCamera3DExtensions, Quaternion, Vector3
+Cohesion: 0.25
+Nodes (4): Camera3DResource, PhantomCamera3DExtensions, Quaternion, Vector3
+
+### Community 17 - "PhantomCamera2D.cs"
+Cohesion: 0.17
+Nodes (7): FollowLockAxis2D, None, X, Xy, Y, Node2D, PhantomCamera2DExtensions
 
 ### Community 19 - "StringName"
 Cohesion: 0.67
@@ -148,30 +152,30 @@ Nodes (3): StringName, MethodName, PropertyName
 Cohesion: 0.67
 Nodes (3): StringName, MethodName, SignalName
 
-### Community 24 - "PhantomCameraNoise2D"
-Cohesion: 0.13
-Nodes (14): GDScript, Resource, StringName, MethodName, PhantomCameraNoise2D, Amplitude, Frequency, NoiseSeed (+6 more)
+### Community 24 - "Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff."
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff., Source Nodes
 
 ### Community 26 - "MechAsset"
 Cohesion: 0.50
 Nodes (3): Controls and animations, MechAsset, Validation
 
 ## Knowledge Gaps
-- **236 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+231 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 296 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **239 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+234 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 300 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.342) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `FollowMode2D`, `LimitTargetQueryResult`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`, `PhantomCameraNoise2D`?**
-  _High betweenness centrality (0.266) - this node is a cross-community bridge._
+  _High betweenness centrality (0.334) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `FollowMode2D`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
+  _High betweenness centrality (0.260) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.223) - this node is a cross-community bridge._
+  _High betweenness centrality (0.217) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _236 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _239 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Aerial rendering study — DELIVERY MUST COMPLETE` be split into smaller, more focused modules?**
   _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
