@@ -1,17 +1,17 @@
-# Graph Report - godot4-cel-shader  (2026-11-02)
+# Graph Report - godot4-cel-shader  (2026-11-03)
 
 ## Corpus Check
-- 21 files · ~2,113,760 words
+- 21 files · ~2,114,391 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1036 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- Unclassified: 1038 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 434 nodes · 504 edges · 27 communities (22 shown, 5 thin omitted)
+- 437 nodes · 507 edges · 28 communities (22 shown, 6 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `b712c677`
+- Built from commit: `7abf518d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -42,6 +42,7 @@
 - .EmitNoise
 - Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.
 - MechAsset
+- FollowLockAxis2D
 
 ## God Nodes (most connected - your core abstractions)
 1. `PhantomCamera3D` - 70 edges
@@ -70,11 +71,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (27 total, 5 thin omitted)
+## Communities (28 total, 6 thin omitted)
 
 ### Community 0 - "Aerial rendering study — DELIVERY MUST COMPLETE"
-Cohesion: 0.07
-Nodes (26): Mech flight animation contract, Recommended architecture, Required behaviors, Visual acceptance, Flight pose design, Motion language, Ownership, Physical body-flight coupling (+18 more)
+Cohesion: 0.06
+Nodes (29): Dynamic rotation requirements, Mech flight animation contract, Recommended architecture, Required behaviors, Visual acceptance, Banks, rolls and somersaults, Flight pose design, Motion language (+21 more)
 
 ### Community 1 - "PhantomCamera3D"
 Cohesion: 0.04
@@ -102,11 +103,11 @@ Nodes (23): KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMas
 
 ### Community 7 - "PhantomCameraHost"
 Cohesion: 0.10
-Nodes (19): Callable, PhantomCamera, StringName, InterpolationMode, Auto, Idle, Manual, Physics (+11 more)
+Nodes (18): Callable, StringName, InterpolationMode, Auto, Idle, Manual, Physics, MethodName (+10 more)
 
 ### Community 8 - "FollowLockAxis3D"
-Cohesion: 0.09
-Nodes (22): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+14 more)
+Cohesion: 0.08
+Nodes (23): PhantomCamera, FollowLockAxis3D, None, X, XY, XYZ, XZ, Y (+15 more)
 
 ### Community 9 - "FollowMode2D"
 Cohesion: 0.29
@@ -140,10 +141,6 @@ Nodes (6): CollisionShape2D, GodotObject, LimitTargetQueryResult, IsCollisionSha
 Cohesion: 0.25
 Nodes (4): Camera3DResource, PhantomCamera3DExtensions, Quaternion, Vector3
 
-### Community 17 - "PhantomCamera2D.cs"
-Cohesion: 0.17
-Nodes (7): FollowLockAxis2D, None, X, Xy, Y, Node2D, PhantomCamera2DExtensions
-
 ### Community 19 - "StringName"
 Cohesion: 0.67
 Nodes (3): StringName, MethodName, PropertyName
@@ -160,24 +157,28 @@ Nodes (4): Answer, Outcome, Q: implement the phantom camera in the aerial demo s
 Cohesion: 0.50
 Nodes (3): Controls and animations, MechAsset, Validation
 
+### Community 27 - "FollowLockAxis2D"
+Cohesion: 0.40
+Nodes (5): FollowLockAxis2D, None, X, Xy, Y
+
 ## Knowledge Gaps
-- **239 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+234 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 300 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **5 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **242 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+237 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 303 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **6 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.334) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `FollowMode2D`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.260) - this node is a cross-community bridge._
+  _High betweenness centrality (0.329) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `FollowMode2D`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`, `FollowLockAxis2D`?**
+  _High betweenness centrality (0.256) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.217) - this node is a cross-community bridge._
+  _High betweenness centrality (0.215) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _239 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _242 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Aerial rendering study — DELIVERY MUST COMPLETE` be split into smaller, more focused modules?**
-  _Cohesion score 0.06896551724137931 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.0625 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
   _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera2D` be split into smaller, more focused modules?**

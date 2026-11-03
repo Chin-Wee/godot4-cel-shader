@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793577054.6806293,
-    "seen": 1793577139.978627,
-    "ast_hash": "b75a1413e6e2b02c7f2dab1112852d37",
+    "mtime": 1793673141.9879854,
+    "seen": 1793678081.20502,
+    "ast_hash": "2fac7f999920faa804ab5148c6ea537c",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1392,15 +1392,15 @@
     "semantic_hash": ""
   },
   "demo/aerial/flight-animation-contract.md": {
-    "mtime": 1793577054.685967,
-    "seen": 1793577139.978629,
-    "ast_hash": "c776486b625a1f4864535ca18e40287b",
+    "mtime": 1793673141.9892497,
+    "seen": 1793678081.2050219,
+    "ast_hash": "b585878674c93c380c1bb387e1c384b0",
     "semantic_hash": ""
   },
   "demo/aerial/poses/POSE_DESIGN.md": {
-    "mtime": 1793577054.6895833,
-    "seen": 1793577139.9786298,
-    "ast_hash": "b0ea0ddb89b72a92e8844cb7a7c56e36",
+    "mtime": 1793673141.9921613,
+    "seen": 1793678081.205023,
+    "ast_hash": "2def34a6de51c4f2da939c4b1307f2a4",
     "semantic_hash": ""
   },
   "graphify-out/memory/query_20261102_073400_970b2df8_implement_the_phantom_camera_in_the_aerial_demo_sc.md": {

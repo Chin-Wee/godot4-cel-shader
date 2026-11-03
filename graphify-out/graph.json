@@ -256,25 +256,6 @@
       "source_location": "L42"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
-      "label": "FollowLockAxis2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "PhantomCamera2D.cs",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followlockaxis2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L20"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2dextensions",
       "label": "PhantomCamera2DExtensions",
       "_callable": true,
@@ -391,6 +372,25 @@
       "norm_label": "signalname",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
       "source_location": "L477"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
+      "label": "FollowLockAxis2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "followlockaxis2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L20"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween_phantomcamera_easetype",
@@ -2072,6 +2072,18 @@
       "source_location": "L1"
     },
     {
+      "id": "demo_aerial_flight_animation_contract_dynamic_rotation_requirements",
+      "label": "Dynamic rotation requirements",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "dynamic rotation requirements",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L72"
+    },
+    {
       "id": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
       "label": "Mech flight animation contract",
       "_origin": "ast",
@@ -2117,7 +2129,7 @@
       "node_kind": "heading",
       "norm_label": "visual acceptance",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L72"
+      "source_location": "L88"
     },
     {
       "id": "demo_aerial_poses_pose_design",
@@ -2130,6 +2142,18 @@
       "norm_label": "pose_design.md",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
       "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_poses_pose_design_banks_rolls_and_somersaults",
+      "label": "Banks, rolls and somersaults",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "banks, rolls and somersaults",
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L116"
     },
     {
       "id": "demo_aerial_poses_pose_design_flight_pose_design",
@@ -2189,7 +2213,7 @@
       "node_kind": "heading",
       "norm_label": "verification and authoring",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L116"
+      "source_location": "L145"
     },
     {
       "id": "demo_aerial_readme",
@@ -2252,6 +2276,18 @@
       "source_location": "L415"
     },
     {
+      "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
+      "label": "Dynamic rotation and flip checks",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "dynamic rotation and flip checks",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L603"
+    },
+    {
       "id": "demo_aerial_readme_flight_animation_contract_validation",
       "label": "Flight animation contract validation",
       "_origin": "ast",
@@ -2309,7 +2345,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L603"
+      "source_location": "L634"
     },
     {
       "id": "readme",
@@ -4242,74 +4278,6 @@
       "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
-      "label": "None",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "PhantomCamera2D.cs",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L22"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
-      "label": "X",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "PhantomCamera2D.cs",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "x",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L23"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
-      "label": "Xy",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "PhantomCamera2D.cs",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "xy",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L25"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
-      "label": "Y",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "PhantomCamera2D.cs",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "y",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L24"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_node2d",
       "label": "Node2D",
       "_origin": "ast",
@@ -5107,6 +5075,74 @@
       "norm_label": "validation",
       "source_file": "demo/models/MechAsset/README.md",
       "source_location": "L38"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
+      "label": "X",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "x",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L23"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
+      "label": "Xy",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "xy",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L25"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
+      "label": "Y",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "y",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L24"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween",
@@ -6427,22 +6463,6 @@
       "source_location": ""
     },
     {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "PhantomCameraHost",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -6633,6 +6653,22 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
+    },
+    {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "FollowLockAxis3D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -12295,13 +12331,24 @@
     },
     {
       "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
-      "target": "demo_aerial_flight_animation_contract_visual_acceptance",
+      "target": "demo_aerial_flight_animation_contract_dynamic_rotation_requirements",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
       "source_location": "L72",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_visual_acceptance",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L88",
       "weight": 1.0
     },
     {
@@ -12339,13 +12386,24 @@
     },
     {
       "source": "demo_aerial_poses_pose_design_flight_pose_design",
-      "target": "demo_aerial_poses_pose_design_verification_and_authoring",
+      "target": "demo_aerial_poses_pose_design_banks_rolls_and_somersaults",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
       "source_location": "L116",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design_flight_pose_design",
+      "target": "demo_aerial_poses_pose_design_verification_and_authoring",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L145",
       "weight": 1.0
     },
     {
@@ -12405,17 +12463,6 @@
     },
     {
       "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
-      "target": "demo_aerial_readme_visual_review_and_remaining_goal",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L603",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
       "target": "demo_aerial_readme_implementation_and_reference",
       "relation": "contains",
       "_origin": "ast",
@@ -12423,6 +12470,17 @@
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
       "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "target": "demo_aerial_readme_visual_review_and_remaining_goal",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L634",
       "weight": 1.0
     },
     {
@@ -12456,6 +12514,17 @@
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
       "source_location": "L581",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_checks_and_comparison_captures",
+      "target": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L603",
       "weight": 1.0
     },
     {
@@ -13287,5 +13356,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "b712c6779b38be326588727a44209caf059d2fa0"
+  "built_at_commit": "7abf518d60c65f9b01f5b5a2773b09c6e06fb2a4"
 }
