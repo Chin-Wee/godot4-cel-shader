@@ -81,6 +81,7 @@ func update(delta: float, controller) -> void:
 	motion["launch"] = launch.value.x
 	motion["land"] = contacts.preparation
 	_prepare_directional_pose(controller)
+	_prepare_maneuver_pose(controller)
 	motion.make_read_only()
 	_update_body(delta)
 	_update_legs(delta,controller)
@@ -232,6 +233,32 @@ func _prepare_directional_pose(controller) -> void:
 	motion["reach"] = reach
 	motion["gather"] = knees*loaded_scale
 
+func _prepare_maneuver_pose(controller) -> void:
+	var weight: Vector2 = controller.maneuver_strength
+	var sum := weight.x+weight.y
+	if sum>1.0: weight /= sum
+	var recovery: Vector2 = controller.maneuver_recovery
+	var signs: Vector2 = controller.maneuver_direction
+	var travel: Vector2 = controller.maneuver_travel*signs
+	# Bank remains long and staggered; only sustained travel gathers a full roll.
+	var rolling := smoothstep(deg_to_rad(55),deg_to_rad(140),maxf(travel.y,0))
+	var bank: float = signs.y*weight.y*(1.0-rolling)
+	# A captured, lift-loaded bank still needs inside/outside roles after the
+	# rotation input is released. Relative world-up excludes heading dependence.
+	var held_bank: float = controller.pilot_frame().x.y*motion.fighter*smoothstep(0.1,0.8,motion.g_load)*0.55
+	bank = lerpf(held_bank,bank,minf(controller.maneuver_strength.y,1.0))
+	weight.y *= rolling
+	var available: float = (1.0-motion.land)*(1.0-motion.launch)
+	weight *= available
+	recovery *= available
+	var flip := profile.maneuver_shape(maxf(travel.x,0.0))
+	var roll := profile.maneuver_shape(maxf(travel.y,0.0))
+	# Release/reversal opens now, regardless of how much rotation remains.
+	flip = flip.lerp(Vector3(0,0,1),recovery.x)
+	roll = roll.lerp(Vector3(0,0,1),recovery.y)
+	motion.merge({"bank_gesture":bank*available,"acro":weight,"acro_recovery":recovery,"acro_sign":signs,
+		"flip_shape":flip,"roll_shape":roll},true)
+
 func _update_body(delta: float) -> void:
 	var omega: Vector3 = motion.omega
 	var alpha: Vector3 = motion.alpha
@@ -250,7 +277,19 @@ func _update_body(delta: float) -> void:
 	anticipation += Vector3(move.z*profile.slide_lean.x,0,move.x*profile.slide_lean.y)
 	var hover: Vector3 = Vector3(motion.trim.z*0.015,motion.trim.x*0.018,motion.trim.y*0.012)*motion.hover
 	var supported := Vector3(-motion.land*0.035,0,0)
-	hips.step((-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(0.07),delta,0.30,0.5)
+	var acro: Vector2 = motion.get("acro",Vector2.ZERO)
+	var signs: Vector2 = motion.get("acro_sign",Vector2.ZERO)
+	var flip: Vector3 = motion.get("flip_shape",Vector3.ZERO)
+	var roll: Vector3 = motion.get("roll_shape",Vector3.ZERO)
+	var bank: float = motion.get("bank_gesture",0.0)
+	var front: float = maxf(-signs.x,0.0)
+	var back: float = maxf(signs.x,0.0)
+	var swing_pitch: float = front*0.20-back*0.24
+	anticipation.x += acro.x*(swing_pitch*flip.x+0.32*flip.y-0.12*flip.z)
+	anticipation.y += bank*0.14+signs.y*acro.y*(0.14*roll.x-0.12*roll.y)
+	anticipation.z += signs.y*acro.y*(0.08*roll.x-0.08*roll.y)
+	var pelvic := Vector3(acro.x*(-swing_pitch*flip.x+0.26*flip.y),-bank*0.12-signs.y*acro.y*roll.x*0.12,acro.y*signs.y*0.08)
+	hips.step((pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0))),delta,0.30,0.5)
 	root_angles = hips.value*Vector3(-1,1,1)
 	var displacement := Vector3(-acceleration.x*0.001,-clampf(motion.g_load-1,0,3)*0.012,acceleration.z*0.001)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
@@ -267,7 +306,7 @@ func _update_body(delta: float) -> void:
 	chest.step((lag*0.2+anticipation+brace*0.6+arch-hover*0.5).clamp(Vector3(-0.45,-0.30,-0.45),Vector3(0.45,0.30,0.45)),delta,0.30,0.9)
 	# Head leads the maneuver and counter-rolls slightly; mouse look never
 	# imposes a weapon-facing pose on the torso or either arm.
-	head.step(Vector3(intent.x*0.10,intent.y*0.20,-chest.value.z*0.2),delta,0.22,1.0)
+	head.step(Vector3(intent.x*0.10+acro.x*(front*0.16-back*0.10)*flip.x,intent.y*0.20,-chest.value.z*0.2),delta,0.22,1.0)
 
 func _update_legs(delta: float, controller) -> void:
 	var flow: Vector3 = motion.flow*motion.pressure
@@ -287,7 +326,7 @@ func _update_legs(delta: float, controller) -> void:
 	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,controller.engine_level)
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
-		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*(0.45+motion.hover*0.20)+motion.lead*motion.asymmetry*0.3+move.x*0.55)*(1.0-motion.land)
+		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*(0.45+motion.hover*0.20)+motion.lead*motion.asymmetry*0.3+move.x*0.55+motion.get("bank_gesture",0.0)*0.3)*(1.0-motion.land)
 		var stagger: float = profile.role_stagger*lerpf(articulation,1.0,motion.flare)
 		var brace := clampf(sx*motion.side_load+omega.z*0.25,-1,1)
 		var extras := [Vector3(flow.z*profile.leg_airflow_gain-compression*0.32+brace*0.22,-flow.x*0.22+omega.y*0.12,-flow.x*0.28-motion.side_load*0.12+sx*compression*0.10),
@@ -321,6 +360,27 @@ func _update_legs(delta: float, controller) -> void:
 			target = target.lerp(extension,motion.launch)
 			if joint==0: target.x += reverse_slide
 			if joint==2: target.x -= reverse_slide
+			var acro: Vector2 = motion.get("acro",Vector2.ZERO)
+			var signs: Vector2 = motion.get("acro_sign",Vector2.ZERO)
+			var flip: Vector3 = motion.get("flip_shape",Vector3.ZERO)
+			var roll: Vector3 = motion.get("roll_shape",Vector3.ZERO)
+			var lead: float = sx*motion.lead
+			var front: float = maxf(-signs.x,0.0)
+			# The long leg swings before inversion; the other knee leads. Front
+			# and back targets differ instead of playing the same pose backward.
+			var hip := -0.20-lead*0.32-front*0.12
+			var knee := 0.35+lead*0.28+front*0.10
+			var flip_target := Vector3.ZERO
+			if joint==0: flip_target = Vector3(hip*flip.x-0.95*flip.y-0.12*flip.z,0,sx*0.14)
+			elif joint==1: flip_target.x = knee*flip.x+1.40*flip.y+0.18*flip.z
+			else: flip_target.x = -0.18*flip.x-0.28*flip.y+0.12*flip.z
+			var roll_target: Vector3 = target
+			if joint==0: roll_target += Vector3(-0.35*roll.y-sx*signs.y*0.24*(roll.x-roll.z),signs.y*0.12*roll.x,0)
+			if joint==1: roll_target.x += 0.50*roll.y+sx*signs.y*0.22*(roll.x-roll.z)
+			# Shift still supplies the wide aerodynamic brake; blend a feasible
+			# compact knee action without replacing that whole-body spread.
+			var pitch_weight: float = acro.x*lerpf(1.0,0.65,motion.brake)
+			target = target*(1.0-pitch_weight-acro.y)+flip_target*pitch_weight+roll_target*acro.y
 			targets.append(profile.limit_joint(target,side,joint))
 		# Clamp coupled flexion against BOTH joints before applying it. Clipping
 		# only the hip while bending the knee would rotate a loaded calf nozzle.

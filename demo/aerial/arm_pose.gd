@@ -65,6 +65,31 @@ func update(delta: float, frame: Dictionary) -> void:
 		swing += move.z*0.42+sx*move.x*0.26
 		spread += absf(move.z)*0.14+sx*move.x*0.26
 		flex += absf(move.z)*0.22+sx*move.x*0.22
+		var acro: Vector2 = frame.get("acro",Vector2.ZERO)
+		var signs: Vector2 = frame.get("acro_sign",Vector2.ZERO)
+		var flip: Vector3 = frame.get("flip_shape",Vector3.ZERO)
+		var roll: Vector3 = frame.get("roll_shape",Vector3.ZERO)
+		var front: float = maxf(-signs.x,0.0)
+		var back: float = maxf(signs.x,0.0)
+		# Backward reach becomes a row toward the ribs; forward flip sweeps aft,
+		# folds tightly and reaches out. Independent hands preserve lead roles.
+		var flip_swing: float = (front*0.75-back*0.70)*flip.x-0.12*flip.y-0.45*flip.z
+		var flip_spread: float = 0.65*flip.x+0.24*flip.y+1.10*flip.z
+		var flip_flex: float = 0.35*flip.x+1.50*flip.y+0.65*flip.z
+		var bank: float = sx*frame.get("bank_gesture",0.0)
+		swing += bank*0.16
+		spread += bank*0.12
+		flex += bank*0.20
+		var turn: float = sx*signs.y
+		var pitch_weight: float = acro.x*lerpf(1.0,0.65,flare)
+		swing = swing*(1.0-pitch_weight)+flip_swing*pitch_weight
+		spread = spread*(1.0-pitch_weight)+flip_spread*pitch_weight
+		flex = flex*(1.0-pitch_weight)+flip_flex*pitch_weight
+		swing += acro.y*(turn*0.35*roll.x-turn*0.25*roll.y-turn*0.20*roll.z)
+		spread += acro.y*(-0.22*roll.y+turn*0.30*roll.x+0.45*roll.z)
+		flex += acro.y*(0.65*roll.y+turn*0.25*(roll.x-roll.z))
+		swing += acro.x*sx*frame.get("lead",1.0)*0.10*(flip.x+flip.z)
+		flex += acro.x*sx*frame.get("lead",1.0)*0.12*flip.x
 		swing += clampf(balance.z*0.006,-0.08,0.08)+frame.trim.y*frame.hover*0.06
 		spread += clampf(-sx*balance.x*0.006,-0.08,0.08)+sx*frame.trim.x*frame.hover*0.07
 		flex += sx*frame.trim.z*frame.hover*0.06
@@ -73,8 +98,10 @@ func update(delta: float, frame: Dictionary) -> void:
 		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.box
 		upper[side].step(Vector3(clampf(swing,-0.8,1.1),twist,sx*clampf(spread,0.18,2.15)),delta,0.30,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.34,profile.arm_speed)
-		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18,0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.24,1.0)
+		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18+acro.x*(-0.12*flip.x+0.08*flip.y-0.16*flip.z),0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.24,1.0)
 		var curl: float = clampf(0.25-flare*0.15-frame.box*0.10+frame.retro*(0.35+bias)+frame.get("drive",0.0)*0.1,0.05,0.85)
+		curl = lerpf(curl,0.15+0.45*flip.y,acro.x)
+		curl = lerpf(curl,0.20+0.35*roll.y,acro.y)
 		finger_curl[side] = move_toward(finger_curl[side],curl,delta*2.0)
 
 func apply(sk: Skeleton3D, rotate: Callable, weight := 1.0) -> void:

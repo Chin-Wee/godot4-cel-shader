@@ -15,10 +15,10 @@ const KEYS := {
 	"Hover_Back":{"hover":1.0,"move_intent":Vector3.FORWARD},
 	"Flight_Pierce":{"fighter":1.0,"track":1.0,"steer":Vector3(-0.45,0,0)},
 	"Flight_Sustain":{"fighter":1.0,"track":1.0},
-	"Bank_Left":{"fighter":1.0,"track":1.0,"steer":Vector3(-0.15,0,1)},
-	"Bank_Right":{"fighter":1.0,"track":1.0,"steer":Vector3(-0.15,0,-1)},
-	"Bank_Pull_Left":{"fighter":1.0,"track":1.0,"steer":Vector3(0.65,0,0.45)},
-	"Bank_Pull_Right":{"fighter":1.0,"track":1.0,"steer":Vector3(0.65,0,-0.45)},
+	"Bank_Left":{"bank_gesture":1.0,"fighter":1.0,"track":1.0,"steer":Vector3(-0.15,0,1)},
+	"Bank_Right":{"bank_gesture":-1.0,"fighter":1.0,"track":1.0,"steer":Vector3(-0.15,0,-1)},
+	"Bank_Pull_Left":{"bank_gesture":1.0,"fighter":1.0,"track":1.0,"steer":Vector3(0.65,0,0.45)},
+	"Bank_Pull_Right":{"bank_gesture":-1.0,"fighter":1.0,"track":1.0,"steer":Vector3(0.65,0,-0.45)},
 	"Coast_Gather":{"coast":1.0,"steer":Vector3(0,0.25,0.7)},
 	"Coast_Arrest":{"coast":1.0,"steer":Vector3(-0.25,-0.4,-1)},
 	"Coast_Settle":{"coast":1.0},
@@ -28,6 +28,15 @@ const KEYS := {
 	"Track":{"fall":1.0,"track":1.0,"pressure":1.0,"flow":Vector3(0,-1,0)},
 	"Brake_Flare":{"coast":1.0,"brake":1.0,"steer":Vector3(0.4,0,0)},
 	"Retro_Brace":{"coast":1.0,"retro":1.0,"acceleration":Vector3(0,0,14)},
+	"Front_Swing":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(-1,0),"flip_degrees":25},
+	"Front_Inversion":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(-1,0),"flip_degrees":180},
+	"Front_Opening":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(-1,0),"flip_degrees":310},
+	"Back_Swing":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(1,0),"flip_degrees":25},
+	"Back_Inversion":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(1,0),"flip_degrees":180},
+	"Back_Opening":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(1,0),"flip_degrees":310},
+	"Roll_Initiate":{"coast":1.0,"acro":Vector2(0,1),"acro_sign":Vector2(0,1),"roll_degrees":55},
+	"Roll_Corkscrew":{"coast":1.0,"acro":Vector2(0,1),"acro_sign":Vector2(0,1),"roll_degrees":180},
+	"Roll_Open":{"coast":1.0,"acro":Vector2(0,1),"acro_sign":Vector2(0,1),"roll_degrees":310},
 	"Landing_Guard":{"land":1.0},
 	"Landing_Absorb":{"land":1.0,"compression":1.1,"g_load":4.0},
 }
@@ -38,6 +47,9 @@ const STUDIES := {
 	"Coast_And_Arrest":[[0.0,"Hover_Support"],[0.8,"Coast_Gather"],[1.15,"Coast_Gather"],[1.45,"Coast_Arrest"],[1.9,"Coast_Settle"],[2.2,"Coast_Settle"]],
 	"Skydive":[[0.0,"Track"],[0.9,"Fall_Box"],[1.4,"Fall_Turn_Left"],[1.85,"Fall_Box"],[2.3,"Fall_Turn_Right"],[3.5,"Brake_Flare"],[4.7,"Fall_Box"],[5.7,"Track"]],
 	"Landing":[[0.0,"Landing_Guard"],[0.25,"Landing_Guard"],[0.36,"Landing_Absorb"],[0.55,"Landing_Absorb"],[0.95,"Ready_Coil"],[1.4,"Hover_Support"]],
+	"Front_Flip":[[0.0,"Hover_Support"],[0.35,"Front_Swing"],[1.5,"Front_Inversion"],[2.6,"Front_Opening"],[3.2,"Hover_Support"]],
+	"Back_Flip":[[0.0,"Hover_Support"],[0.35,"Back_Swing"],[1.5,"Back_Inversion"],[2.6,"Back_Opening"],[3.2,"Hover_Support"]],
+	"Dynamic_Roll":[[0.0,"Flight_Sustain"],[0.8,"Roll_Initiate"],[2.6,"Roll_Corkscrew"],[4.6,"Roll_Open"],[5.4,"Flight_Sustain"]],
 	"Horizontal_Slides":[[0.0,"Hover_Support"],[0.6,"Hover_Left"],[1.3,"Hover_Right"],[2.0,"Hover_Forward"],[2.7,"Hover_Back"],[3.5,"Hover_Support"]],
 	"Bank_And_Pull":[[0.0,"Flight_Sustain"],[0.5,"Bank_Left"],[1.2,"Bank_Pull_Left"],[2.1,"Bank_Right"],[2.8,"Bank_Pull_Right"],[3.6,"Flight_Sustain"]],
 }
@@ -65,10 +77,13 @@ func _bake() -> void:
 			"side_load":0.0,"brake_rate":0.0,"roll_stop":0.0,"pressure":0.0,
 			"drive":0.0,"prepare":0.0,"lead":1.0,"asymmetry":0.0,"load_direction":Vector3.ZERO,"flare":0.0,
 			"steer":Vector3.ZERO,"body_steer":Vector3.ZERO,"flow":Vector3.ZERO,"gyro":Vector3.ZERO,
+			"acro":Vector2.ZERO,"acro_sign":Vector2.ZERO,"acro_recovery":Vector2.ZERO,"flip_shape":Vector3.ZERO,"roll_shape":Vector3.ZERO,
 			"reach":Vector3.ZERO,"gather":Vector2.ZERO,"move_intent":Vector3.ZERO,"translate":Vector3.ZERO,
 			"trim":Vector3.ZERO,"up":Vector3.UP,"omega":Vector3.ZERO,"alpha":Vector3.ZERO,"acceleration":Vector3.ZERO}
 		frame.merge(KEYS[name],true)
 		frame.flare = maxf(frame.flare,frame.brake)
+		frame.flip_shape = rig.profile.maneuver_shape(deg_to_rad(frame.get("flip_degrees",0)))
+		frame.roll_shape = rig.profile.maneuver_shape(deg_to_rad(frame.get("roll_degrees",0)))
 		frame["pitch"] = frame.steer.x
 		frame["yaw"] = frame.steer.y
 		frame["roll"] = frame.steer.z
@@ -124,6 +139,10 @@ func _study_attitude(name: String) -> Quaternion:
 	# Presentation attitude belongs only to this frozen-chassis authoring asset.
 	# Gameplay gets the corresponding attitude from its physical controller.
 	var flight := Quaternion(Vector3.RIGHT,-PI/2)
+	if name.begins_with("Front_") or name.begins_with("Back_"):
+		return Quaternion(Vector3.RIGHT,deg_to_rad(KEYS[name].flip_degrees)*KEYS[name].acro_sign.x)
+	if name.begins_with("Roll_"):
+		return Quaternion(Vector3.FORWARD,deg_to_rad(KEYS[name].roll_degrees))*flight
 	match name:
 		"Ready_Coil": return Quaternion(Vector3.RIGHT,deg_to_rad(-6))
 		"Launch_Push": return Quaternion(Vector3.RIGHT,deg_to_rad(-8))

@@ -74,3 +74,12 @@ func limit_joint(target: Vector3, side: int, joint: int) -> Vector3:
 	target = target.clamp(joint_min[joint],joint_max[joint])
 	if side == 1: target.z = -target.z
 	return target
+
+# Overgrowth authored corrections: long swing, compact inversion, open recovery.
+# World Athletics pole-vault reference supplies the long-leg swing/inversion cue.
+# No timeline advances these weights; the controller supplies actual angular travel.
+func maneuver_shape(travel: float) -> Vector3:
+	var angle := rad_to_deg(fposmod(travel,TAU))
+	var tuck := smoothstep(35,140,angle)*(1.0-smoothstep(260,340,angle))
+	var opening := smoothstep(260,310,angle)*(1.0-smoothstep(340,360,angle))
+	return Vector3((1.0-tuck)*(1.0-opening),tuck*(1.0-opening),opening)

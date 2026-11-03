@@ -229,11 +229,12 @@ func _bodyflight() -> void:
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
 	# The hover entry now spends three seconds translating before tilt ramps in.
-	# Brake while pulling upright; align the unpowered fall before re-ignition.
+	# Brake while pulling upright; shorter departure holds reflect the new
+	# 2.6 rad/s somersault authority. Align the coast before re-ignition.
 	var rows: Array = await _play("transitions",1800,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[462,[]],
-		[660,[KEY_C,KEY_S,KEY_SHIFT]],[661,[KEY_S,KEY_SHIFT]],[771,[]],
-		[870,[KEY_C]],[871,[]],[872,[KEY_C]],[873,[]],[900,[KEY_S]],[984,[]],[1020,[KEY_W]],[1272,[]],
-		[1320,[KEY_SPACE]],[1321,[]],[1322,[KEY_SPACE]],[1323,[]],[1324,[KEY_SPACE]],[1325,[]],[1368,[KEY_S]],[1524,[]]])
+		[660,[KEY_C,KEY_S,KEY_SHIFT]],[661,[KEY_S,KEY_SHIFT]],[724,[KEY_SHIFT]],[771,[]],
+		[870,[KEY_C]],[871,[]],[872,[KEY_C]],[873,[]],[900,[KEY_S]],[936,[]],[1020,[KEY_W]],[1089,[]],
+		[1320,[KEY_SPACE]],[1321,[]],[1322,[KEY_SPACE]],[1323,[]],[1324,[KEY_SPACE]],[1325,[]]])
 	_expect(report.transitions.max_jerk < 250,"transitions: brake or thrust handoff arrived too abruptly")
 	_expect(_at(rows,9.0).forward > 0.9 and _at(rows,9.0).speed > 35,"transitions: hover-to-jet did not establish forward flight")
 	_expect(_at(rows,13.5).upright > 0.9,"transitions: combat slide never became upright")
@@ -306,6 +307,9 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"aoa":fc.angle_of_attack,"slip":fc.sideslip,"attached_flow":fc.attached_flow,"flight_protection":fc.flight_protection,
 				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
 				"move_intent":_array(mech.rig.motion.move_intent),"reach":_array(mech.rig.motion.reach),"gather":[mech.rig.motion.gather.x,mech.rig.motion.gather.y],
+				"maneuver_travel":[fc.maneuver_travel.x,fc.maneuver_travel.y],"maneuver_strength":[fc.maneuver_strength.x,fc.maneuver_strength.y],
+				"maneuver_recovery":[fc.maneuver_recovery.x,fc.maneuver_recovery.y],"control_blend":fc.control_blend,
+				"bank_gesture":mech.rig.motion.bank_gesture,"acro":[mech.rig.motion.acro.x,mech.rig.motion.acro.y],"flip_shape":_array(mech.rig.motion.flip_shape),"roll_shape":_array(mech.rig.motion.roll_shape),
 				"pitch_rate":fc.angular_velocity.dot(fc.pilot_frame().x),
 				"yaw_rate":fc.angular_velocity.dot(mech.global_basis.y),
 				"bank":atan2(wing.y.x,wing.y.y),"visual_lean":acos(clampf(torso_up.dot(mech.global_basis.y),-1,1)),

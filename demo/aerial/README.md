@@ -546,8 +546,8 @@ this path is verified on the current Mobile renderer.
 
 ### Flight animation contract validation
 
-The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 25 full-body
-key poses and eight editable motion studies, including four directional hover
+The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 34 full-body
+key poses and eleven editable motion studies, including four directional hover
 keys and horizontal-slide / bank-and-pull studies. Run `pose_studio.tscn` to inspect the
 silhouettes and timing separately from the physical gameplay replays below.
 Runtime maneuver effort adds directional reverse/acceleration bracing, retained
@@ -599,6 +599,37 @@ release → pull-up → release at 2×/4×, overlapping/cancelled maneuvers, fou
 directions and 4× sideways movement. Gates cover yaw, torque reserve, angle of
 attack, recovery, visual lean, drift and reduced cold-gas demand against the
 recorded pre-change 70 m/s baseline. Native chase captures also check framing.
+
+### Dynamic rotation and flip checks
+
+Existing W/S and A/D remain pitch and roll. Powered, unbraked pitch keeps the
+soft airflow envelope. With main thrust selected off or Shift held, sustained
+pitch ramps toward 2.6 rad/s over 0.20–0.65 seconds of rotational intent; the
+existing 5 rad/s² actuator limit remains. A clean low-airload revolution takes
+about three seconds. Release arrests rotation; holding continues into another turn.
+There is no maneuver button, attitude snap or automatic completion.
+
+The controller exposes signed `maneuver_travel`, `maneuver_strength` and
+`maneuver_recovery` as pitch/roll pairs. Completed native rotation, not elapsed
+animation time, drives long swing → compact inversion → opening. The fixed
+capsule inertia is unchanged: extra rotation comes from actuator torque, not a
+fabricated angular-momentum boost from the visual tuck. Banks remain loaded and
+staggered; rolls corkscrew; front/back flips have distinct full-body preparations.
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_acrobatics.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/capture_acrobatics.gd -- /tmp/acrobatics
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_acrobatics.gd -- /tmp/acrobatics-native
+```
+
+Thirteen timelines run in both body and independent chase cameras: front/back
+flips, left/right bank and full roll, cancellation before/after inversion,
+reversal, compound pitch/roll, repeated revolutions, powered braking departure
+and protected powered pitch. Tests check real progress, blocked-motion exclusion,
+normalized phase/compound weights, skin deformation, finite rates, arrest,
+passive air power and the native force budget. The older combined-transition
+replay uses shorter unpowered/braking holds for the stronger departure authority;
+it retains the upright slide and forward-flight recovery gates.
 
 ## Visual review and remaining goal
 

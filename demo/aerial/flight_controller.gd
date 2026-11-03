@@ -10,6 +10,7 @@ const GRAVITY := 9.81
 const TRIM_SHARES := [0.02, 0.02, 0.02, 0.02, 0.46, 0.46]
 const VECTOR_LIMIT := PI / 6.0
 const MAX_RATE := Vector3(1.0, 0.8, 1.2)
+const FLIP_RATE := 2.6 # Motor-assisted somersault; fixed capsule inertia is retained.
 const RATE_GAIN := 6.0
 const MAX_ANGULAR_ACCELERATION := 5.0
 # Feel parameters. Time in seconds, speed in m/s, accelerations in multiples of g.
@@ -90,6 +91,15 @@ var flight_protection := 0.0
 var requested_rates := Vector3.ZERO # World angular-rate request after protection.
 var released_axes := Vector3(1, 0, 1)
 var control_blend := 0.0
+var control_target := 0.0
+# Pitch/roll channels, measured in the current pilot frame. Signed, unwrapped
+# travel is telemetry, never an integrated replacement for native attitude.
+var maneuver_travel := Vector2.ZERO
+var maneuver_strength := Vector2.ZERO
+var maneuver_recovery := Vector2.ZERO
+var maneuver_direction := Vector2.ZERO
+var maneuver_hold := Vector2.ZERO
+var roll_frame_locked := false
 var acceleration := Vector3.ZERO
 var angular_acceleration := Vector3.ZERO
 var local_acceleration := Vector3.ZERO
@@ -157,6 +167,13 @@ func reset() -> void:
 	brake_request = 0.0
 	hover_gimbal_trim = Vector3.ZERO
 	control_blend = 0.0
+	control_target = 0.0
+	maneuver_travel = Vector2.ZERO
+	maneuver_strength = Vector2.ZERO
+	maneuver_recovery = Vector2.ZERO
+	maneuver_direction = Vector2.ZERO
+	maneuver_hold = Vector2.ZERO
+	roll_frame_locked = false
 	clock = 0.0
 	rotation_request = Vector3.ZERO
 	hover_translation = Vector3.ZERO
@@ -189,6 +206,7 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	var frame := state.transform.basis.orthonormalized()
 	_calculate_hover(frame)
 	_read_commands(controls, dt)
+	_update_maneuvers(dt)
 	_calculate_aerodynamics(surfaces)
 	_calculate_attitude_demand(state)
 	_calculate_main_thrusters(outlets, frame, dt)
@@ -257,7 +275,40 @@ func _measure_airflow(frame: Basis, dt: float) -> void:
 	var projection := Vector2(frame.y.y, frame.z.y)
 	var posture := control_blend if projection.length() < 0.15 else atan2(absf(projection.y), absf(projection.x)) / (PI / 2.0)
 	var vertical_flight := smoothstep(20, 50, speed) * absf(frame.y.dot(air_velocity.normalized()))
-	control_blend = lerpf(control_blend, maxf(posture, vertical_flight), 1.0 - exp(-dt / 0.20))
+	control_target = maxf(posture, vertical_flight)
+	if not roll_frame_locked:
+		control_blend = lerpf(control_blend, control_target, 1.0 - exp(-dt / 0.20))
+
+func _update_maneuvers(dt: float) -> void:
+	# Capture the intended convention, not a partially filtered transition
+	# from a reset/hover entry that would turn a lengthwise roll into yaw.
+	if not roll_frame_locked and absf(rotation_request.z)>0.1 and not grounded and jump_remaining<=0.0:
+		control_blend = control_target
+	var rates := pilot_frame().inverse()*angular_velocity
+	var request := Vector2(rotation_request.x,rotation_request.z)
+	var measured := Vector2(rates.x,rates.z)
+	var airborne := not grounded and jump_remaining<=0.0
+	var flip_allowed := airborne and (detent==0 or brake_request>0.5)
+	for axis in 2:
+		var active := absf(request[axis])>0.1 and airborne and (axis==1 or flip_allowed)
+		if active:
+			if maneuver_direction[axis]!=signf(request[axis]):
+				maneuver_travel[axis] = 0.0
+				maneuver_hold[axis] = 0.0
+			maneuver_direction[axis] = signf(request[axis])
+			maneuver_hold[axis] += dt
+		else: maneuver_hold[axis] = 0.0
+		# Native angular motion advances the gesture; held input alone cannot.
+		maneuver_travel[axis] += measured[axis]*dt
+		var opposing := float(request[axis]*measured[axis]<0.0)
+		var recovering := maxf(1.0-absf(request[axis]),opposing) if airborne else 0.0
+		maneuver_recovery[axis] = smoothstep(0.15,1.0,absf(measured[axis]))*recovering
+		var target := absf(request[axis]) if active else 0.0
+		maneuver_strength[axis] = lerpf(maneuver_strength[axis],target,1.0-exp(-dt/(0.12 if active else 0.28)))
+		if not active and absf(measured[axis])<0.15 and maneuver_strength[axis]<0.01:
+			maneuver_travel[axis] = 0.0
+			maneuver_direction[axis] = 0.0
+	roll_frame_locked = airborne and (absf(request.y)>0.1 or absf(measured.y)>=0.15)
 
 func _calculate_hover(frame: Basis) -> void:
 	var tilt := acos(clampf(frame.y.dot(Vector3.UP), -1, 1))
@@ -432,6 +483,10 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	var frame := state.transform.basis.orthonormalized()
 	var pilot := frame * Basis(Vector3.RIGHT, PI / 2.0 * control_blend)
 	var local_rates := rotation_command*MAX_RATE
+	# Existing coast/brake departure only. Ordinary powered W/S keeps the
+	# DCS-style envelope below; acceleration remains finite actuator torque.
+	var flip_rate := lerpf(MAX_RATE.x,FLIP_RATE,smoothstep(0.20,0.65,maneuver_hold.x))
+	local_rates.x = rotation_command.x*flip_rate
 	# DCS-style soft AoA protection: pitch with the trajectory instead of rotating
 	# the chassis far faster than lift/thrust can bend it. No attitude/velocity snap.
 	# Brake or engine cutoff releases the protection for deliberate combat stalls.

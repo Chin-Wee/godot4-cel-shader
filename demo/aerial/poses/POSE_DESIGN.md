@@ -113,6 +113,35 @@ The profile exposes panel fractions/incidence and slide lean for calibration.
 Powered joint servos, mechanical limits, planted feet and the fixed capsule
 remain authoritative. No extra animation writer or physical limb bodies are added.
 
+## Banks, rolls and somersaults
+
+The existing Overgrowth-style pose writer adds corrections from real signed
+pitch/roll travel. Native angular velocity advances that travel; holding input
+against blocked motion can prepare a swing but cannot animate an inversion.
+The profile's `maneuver_shape()` shares one normalized swing/tuck/open envelope:
+long through 35°, gathering toward 140°, compact through 260°, then opening
+through the last quarter. Its endpoints match across successive revolutions.
+
+Banks retain their normal physical rate while shoulders and pelvis twist in
+opposition over inside/outside knee and hand roles. After 55–140° of sustained
+roll travel, the long bank blends into a compact, asymmetric corkscrew. Opening
+reverses the arm/leg roles. The pilot-frame blend remains fixed until roll input
+releases and measured roll rate falls below 0.15 rad/s.
+
+Backflips open the chest and reach before a long-leg swing and leading knee
+bring the pelvis into inversion. Frontflips fold the chest and sweep the hands
+aft before compacting; they use different swing targets rather than a reversed
+clip. Both then extend the legs and reach outward. The visual cue is the long
+swing, inversion and extension of [pole vaulting](https://worldathletics.org/disciplines/jumps/pole-vault),
+adapted to powered mechanical joints rather than a simulated pole.
+
+Release/reversal requests an opening counterstroke immediately, independent of
+remaining turn angle. Compound pitch/roll corrections share one blend budget.
+Landing and leg launch suppress them; Shift retains a wide braking contribution.
+The same joint limits and critically damped, speed-bounded servos apply afterward.
+No pose writer, ragdoll, motion clip controller or extra inverse-kinematic pass
+is added. The actual completed limbs still determine air panels and main outlets.
+
 ## Verification and authoring
 
 ```sh
@@ -128,7 +157,7 @@ captures. The real input replays record reverse, burst, interruption, opposing
 turns, body flight and a complete `flare_exit` in body and gameplay chase views.
 Reports use completed hand positions and geometric knee flexion, not IK targets.
 
-`pose_studio.tscn` retains 25 static key references and eight native AnimationPlayer
+`pose_studio.tscn` retains 34 static key references and eleven native AnimationPlayer
 studies. Select PosePlayer for the Animation dock. Arrow keys select clips,
 Space pauses, R restarts, and 1/2/3 changes views. Rebuild that library with:
 

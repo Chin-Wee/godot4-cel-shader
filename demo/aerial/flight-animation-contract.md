@@ -1,6 +1,6 @@
 # Mech flight animation contract
 
-Status: implementation contract, 2 November 2026. Runtime evidence and commands are documented in README.md.
+Status: implementation contract, 3 November 2026. Runtime evidence and commands are documented in README.md.
 
 ## Required behaviors
 
@@ -68,6 +68,22 @@ speed-bounded powered joints. Do not add idle swimming or torso spring ringing.
 In broadside freefall, elbows stay below/ahead of the shoulders and externally
 rotated upper arms fold forearms toward the head. Hands must not be raised by
 lifting nearly straight arms overhead.
+
+## Dynamic rotation requirements
+
+Preserve existing controls and powered pitch protection. Engine-off or Shift
+braking permits full front/back flips with a 2.6 rad/s request ceiling and the
+existing finite torque limit. Target 2.5–3.5 seconds per clean low-airload flip.
+Actual rotation drives preparation, swing, inversion and opening; blocked motion
+cannot advance a turn. Front/back swing targets must differ. Full rolls need
+shoulder/pelvis opposition, staggered arms/legs, compact corkscrew and opening;
+a captured bank must remain a loaded, offset pose rather than a continuous tuck.
+
+Holding permits repeated turns without a pose reset. Release/reversal must
+interrupt at any angle. Preserve joint velocities, normalize simultaneous
+pitch/roll correction strength, and give landing/leg launch priority. Keep Shift
+braking visible. Reuse the current native body, point forces, pose writer and
+joint servos; no direct velocity/attitude edits or simulated tuck inertia.
 
 ## Visual acceptance
 
