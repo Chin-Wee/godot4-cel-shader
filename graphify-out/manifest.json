@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793699925.6656375,
-    "seen": 1793699997.594406,
-    "ast_hash": "9cb15acde7f54681c3735cf855aeabe4",
+    "mtime": 1793706217.8553433,
+    "seen": 1793706273.971951,
+    "ast_hash": "b703bf1b2a24d4bdd72ed3af07dcc1ef",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1392,9 +1392,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/flight-animation-contract.md": {
-    "mtime": 1793699925.6679895,
-    "seen": 1793699997.594408,
-    "ast_hash": "c5be2cf262cb7dc14f869812e680f60e",
+    "mtime": 1793706217.8559034,
+    "seen": 1793706273.9719539,
+    "ast_hash": "0cb74961fdadae3bdb05d2b16877e119",
     "semantic_hash": ""
   },
   "demo/aerial/poses/POSE_DESIGN.md": {
