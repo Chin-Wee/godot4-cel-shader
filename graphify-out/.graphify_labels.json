@@ -1,5 +1,5 @@
 {
-  "0": "Aerial rendering study — DELIVERY MUST COMPLETE",
+  "0": "Flight pose design",
   "1": "PhantomCamera3D",
   "2": "PhantomCamera2D",
   "3": "TransitionType",
@@ -26,5 +26,6 @@
   "24": "Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.",
   "25": "NOTICE.md",
   "26": "MechAsset",
-  "27": "FollowLockAxis2D"
+  "27": "FollowLockAxis2D",
+  "28": "Aerial rendering study — DELIVERY MUST COMPLETE"
 }

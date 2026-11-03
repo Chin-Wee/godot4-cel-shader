@@ -2064,7 +2064,7 @@
       "label": "flight-animation-contract.md",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "flight-animation-contract.md",
@@ -2076,19 +2076,19 @@
       "label": "Dynamic rotation requirements",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "dynamic rotation requirements",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L72"
+      "source_location": "L73"
     },
     {
       "id": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
       "label": "Mech flight animation contract",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "mech flight animation contract",
@@ -2100,19 +2100,19 @@
       "label": "Recommended architecture",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "recommended architecture",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L41"
+      "source_location": "L42"
     },
     {
       "id": "demo_aerial_flight_animation_contract_required_behaviors",
       "label": "Required behaviors",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "required behaviors",
@@ -2120,23 +2120,35 @@
       "source_location": "L5"
     },
     {
+      "id": "demo_aerial_flight_animation_contract_research_body_flight_requirements",
+      "label": "Research body-flight requirements",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "research body-flight requirements",
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L109"
+    },
+    {
       "id": "demo_aerial_flight_animation_contract_visual_acceptance",
       "label": "Visual acceptance",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "visual acceptance",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L88"
+      "source_location": "L89"
     },
     {
       "id": "demo_aerial_poses_pose_design",
       "label": "POSE_DESIGN.md",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "pose_design.md",
@@ -2148,7 +2160,7 @@
       "label": "Banks, rolls and somersaults",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "banks, rolls and somersaults",
@@ -2160,7 +2172,7 @@
       "label": "Flight pose design",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "flight pose design",
@@ -2172,7 +2184,7 @@
       "label": "Motion language",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "motion language",
@@ -2184,7 +2196,7 @@
       "label": "Ownership",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "ownership",
@@ -2196,7 +2208,7 @@
       "label": "Physical body-flight coupling",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "physical body-flight coupling",
@@ -2204,11 +2216,23 @@
       "source_location": "L101"
     },
     {
+      "id": "demo_aerial_poses_pose_design_research_adaptation_and_head_intent",
+      "label": "Research adaptation and head intent",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "research adaptation and head intent",
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L172"
+    },
+    {
       "id": "demo_aerial_poses_pose_design_verification_and_authoring",
       "label": "Verification and authoring",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "verification and authoring",
@@ -2220,7 +2244,7 @@
       "label": "aerial/README.md",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "aerial/readme.md",
@@ -2228,131 +2252,11 @@
       "source_location": "L1"
     },
     {
-      "id": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
-      "label": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "aerial rendering study \u2014 delivery must complete",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_aerial_readme_asset_selection",
-      "label": "Asset selection",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "asset selection",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L328"
-    },
-    {
-      "id": "demo_aerial_readme_body_flight_control_checks",
-      "label": "Body-flight control checks",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "body-flight control checks",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L581"
-    },
-    {
-      "id": "demo_aerial_readme_checks_and_comparison_captures",
-      "label": "Checks and comparison captures",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "checks and comparison captures",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L415"
-    },
-    {
-      "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
-      "label": "Dynamic rotation and flip checks",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "dynamic rotation and flip checks",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L603"
-    },
-    {
-      "id": "demo_aerial_readme_flight_animation_contract_validation",
-      "label": "Flight animation contract validation",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "flight animation contract validation",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L547"
-    },
-    {
-      "id": "demo_aerial_readme_implementation_and_reference",
-      "label": "Implementation and reference",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "implementation and reference",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L61"
-    },
-    {
-      "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
-      "label": "Procedural pose ownership and tuning",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "procedural pose ownership and tuning",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L343"
-    },
-    {
-      "id": "demo_aerial_readme_run_and_controls",
-      "label": "Run and controls",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "run and controls",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L7"
-    },
-    {
-      "id": "demo_aerial_readme_visual_review_and_remaining_goal",
-      "label": "Visual review and remaining goal",
-      "_origin": "ast",
-      "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "visual review and remaining goal",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L634"
-    },
-    {
       "id": "readme",
       "label": "README.md",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "readme.md",
@@ -2364,7 +2268,7 @@
       "label": "Aerial rendering study",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "aerial rendering study",
@@ -2376,7 +2280,7 @@
       "label": "Base Materials",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "base materials",
@@ -2388,7 +2292,7 @@
       "label": "Changelog",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "changelog",
@@ -2400,7 +2304,7 @@
       "label": "Credits",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "credits",
@@ -2412,7 +2316,7 @@
       "label": "Godot 4 Complete Cel Shader",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "godot 4 complete cel shader",
@@ -2424,7 +2328,7 @@
       "label": "Instructions",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "instructions",
@@ -2436,7 +2340,7 @@
       "label": "License",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "license",
@@ -2448,7 +2352,7 @@
       "label": "Outlines",
       "_origin": "ast",
       "community": 0,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Flight pose design",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "outlines",
@@ -5145,6 +5049,138 @@
       "source_location": "L24"
     },
     {
+      "id": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "label": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "aerial rendering study \u2014 delivery must complete",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_readme_asset_selection",
+      "label": "Asset selection",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "asset selection",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L329"
+    },
+    {
+      "id": "demo_aerial_readme_body_flight_control_checks",
+      "label": "Body-flight control checks",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "body-flight control checks",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L631"
+    },
+    {
+      "id": "demo_aerial_readme_checks_and_comparison_captures",
+      "label": "Checks and comparison captures",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "checks and comparison captures",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L416"
+    },
+    {
+      "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
+      "label": "Dynamic rotation and flip checks",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "dynamic rotation and flip checks",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L653"
+    },
+    {
+      "id": "demo_aerial_readme_flight_animation_contract_validation",
+      "label": "Flight animation contract validation",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "flight animation contract validation",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L597"
+    },
+    {
+      "id": "demo_aerial_readme_implementation_and_reference",
+      "label": "Implementation and reference",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "implementation and reference",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L61"
+    },
+    {
+      "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
+      "label": "Procedural pose ownership and tuning",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "procedural pose ownership and tuning",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L344"
+    },
+    {
+      "id": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
+      "label": "Research mapped to the current behaviours",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "research mapped to the current behaviours",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L548"
+    },
+    {
+      "id": "demo_aerial_readme_run_and_controls",
+      "label": "Run and controls",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "run and controls",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L7"
+    },
+    {
+      "id": "demo_aerial_readme_visual_review_and_remaining_goal",
+      "label": "Visual review and remaining goal",
+      "_origin": "ast",
+      "community": 28,
+      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "visual review and remaining goal",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L684"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween",
       "label": "PhantomCameraTween.cs",
       "_origin": "ast",
@@ -6463,6 +6499,22 @@
       "source_location": ""
     },
     {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "PhantomCameraHost",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -6653,22 +6705,6 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
-    },
-    {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -12309,13 +12345,24 @@
     },
     {
       "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_research_body_flight_requirements",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L109",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
       "target": "demo_aerial_flight_animation_contract_recommended_architecture",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L41",
+      "source_location": "L42",
       "weight": 1.0
     },
     {
@@ -12337,7 +12384,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L72",
+      "source_location": "L73",
       "weight": 1.0
     },
     {
@@ -12348,7 +12395,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L88",
+      "source_location": "L89",
       "weight": 1.0
     },
     {
@@ -12408,6 +12455,17 @@
     },
     {
       "source": "demo_aerial_poses_pose_design_flight_pose_design",
+      "target": "demo_aerial_poses_pose_design_research_adaptation_and_head_intent",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L172",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design_flight_pose_design",
       "target": "demo_aerial_poses_pose_design_motion_language",
       "relation": "contains",
       "_origin": "ast",
@@ -12436,7 +12494,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L328",
+      "source_location": "L329",
       "weight": 1.0
     },
     {
@@ -12447,7 +12505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L343",
+      "source_location": "L344",
       "weight": 1.0
     },
     {
@@ -12458,7 +12516,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L415",
+      "source_location": "L416",
       "weight": 1.0
     },
     {
@@ -12480,7 +12538,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L634",
+      "source_location": "L684",
       "weight": 1.0
     },
     {
@@ -12496,13 +12554,24 @@
     },
     {
       "source": "demo_aerial_readme_checks_and_comparison_captures",
+      "target": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L548",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_readme_checks_and_comparison_captures",
       "target": "demo_aerial_readme_flight_animation_contract_validation",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L547",
+      "source_location": "L597",
       "weight": 1.0
     },
     {
@@ -12513,7 +12582,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L581",
+      "source_location": "L631",
       "weight": 1.0
     },
     {
@@ -12524,7 +12593,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L603",
+      "source_location": "L653",
       "weight": 1.0
     },
     {
@@ -13288,6 +13357,17 @@
     },
     {
       "source": "demo_aerial_poses_pose_design",
+      "target": "demo_aerial_readme",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L174",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design",
       "target": "demo_aerial_flight_animation_contract",
       "relation": "references",
       "_origin": "ast",
@@ -13305,18 +13385,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L345",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_readme",
-      "target": "demo_aerial_poses_pose_design",
-      "relation": "references",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L409",
+      "source_location": "L346",
       "weight": 1.0
     },
     {
@@ -13356,5 +13425,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "7abf518d60c65f9b01f5b5a2773b09c6e06fb2a4"
+  "built_at_commit": "828905e65e8c9ccae05ff90b4f957b7691a71455"
 }
