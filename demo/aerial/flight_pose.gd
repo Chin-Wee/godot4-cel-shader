@@ -119,7 +119,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var retro: float = maxf(0,-thrust_direction.dot(controller.velocity.normalized()))*smoothstep(2,12,speed)*smoothstep(0.1,0.8,maxf(controller.engine_level,next_output))
 	var brake_rate := clampf((controller.brake_amount-last_brake)/delta,-3,3) if delta>0 else 0.0
 	last_brake = controller.brake_amount
-	var roll_stop := clampf(pilot_rates.z/1.2-intent.z,-1,1)*(1.0-absf(intent.z))
+	var roll_stop := clampf(pilot_rates.z/controller.MAX_RATE.z-intent.z,-1,1)*(1.0-absf(intent.z))
 	# Powered joints hold a pose. Hover corrections follow actual attitude effort,
 	# never a perpetual clock-driven swim while the chassis is stable.
 	var gyro: Vector3 = basis.inverse()*controller.rcs_torque.normalized()*clampf(controller.torque_fraction,0,1)
@@ -145,7 +145,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
 		"look_angles":look,"look_weight":float(not gaze.is_zero_approx()),"target_rates":target_rates,"pilot_rates":pilot_rates,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
-		"roll":clampf(intent.z*0.7+pilot_rates.z/1.2*0.3,-1,1),"roll_stop":roll_stop,
+		"roll":clampf(intent.z*0.7+pilot_rates.z/controller.MAX_RATE.z*0.3,-1,1),"roll_stop":roll_stop,
 		"up":basis.inverse()*Vector3.UP,"trim":trim,"gyro":gyro,
 		"steer":steer,"body_steer":(basis.inverse()*pilot*steer)*Vector3(-1,1,-1),
 		"retro":retro,"brake_rate":brake_rate,"deceleration":smoothstep(2,12,slowing)*smoothstep(6,25,speed)*smoothstep(0.15,0.65,controller.g_load)*maxf(retro,maxf(controller.brake_request,controller.brake_amount))}
@@ -387,7 +387,7 @@ func _update_legs(delta: float, controller) -> void:
 		# Actual calf nozzles move with it and retain their vectoring limits.
 		extras[1].x -= sx*motion.steer.z*0.12*motion.track
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
-		extras[2].x += move.z*(0.24 if move.z<0 else 0.18) # Reverse brace presents the heel outlets farther aft.
+		extras[2].x += move.z*(0.36 if move.z<0 else 0.18) # Reverse brace presents the heel outlets farther aft.
 		var targets: Array[Vector3] = []
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation

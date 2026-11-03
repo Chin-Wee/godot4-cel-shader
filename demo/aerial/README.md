@@ -117,8 +117,13 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   are omitted. Fixed capsule inertia does not change with procedural limb motion.
 - Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
   main power. It never depends on stall/attached-flow quality. Neutral pilot axes
-  allow upright restoration. A press beginning in powered hover keeps its first
-  three seconds of directional thrust even if climb airspeed then increases.
+  allow upright restoration. Directional hover requests 0.60 g (+20%); its
+  drift catch permits 0.55 g. Reverse ankle preparation exposes enough actual
+  heel authority for the stronger push. Normal pitch is 0.75 rad/s (−25%),
+  roll 1.50 rad/s (+25%), and yaw remains 0.80 rad/s. A press beginning in
+  powered hover keeps its first three seconds of directional thrust even if
+  climb airspeed then increases. Flight-path pitch protection fades out during
+  that upright translation interval.
   Per-axis hold times reset on release/reversal; afterward the same input ramps
   from translation into rotation. Unpowered presses rotate immediately. Only nominal 1× receives
   vertical thrust compensation, capped at 2×. Other detents retain their collective
@@ -545,6 +550,15 @@ renders two intersecting spheres and checks that the enabled material fades at
 the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
 this path is verified on the current Mobile renderer.
 
+`test_handling_speeds.gd` replays four-direction hover pushes and release, then
+measures actual powered pitch, unpowered flip, roll and yaw rates in vacuum.
+It checks improved travel against the pre-tuning 2.5-second baseline, upright
+support, nozzle cones, actuator reserve and release arrest:
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_handling_speeds.gd -- /tmp/handling-speeds
+```
+
 ### Research mapped to the current behaviours
 
 The implementation keeps Overgrowth's authored poses plus procedural corrections,
@@ -555,7 +569,7 @@ silhouettes; these are calibrated mech adaptations, not footage-fitted motion.
 | Existing behaviour | Research cue and implemented response |
 | --- | --- |
 | Leg jump / upright hover | Intent prepares head, shoulders and staggered knees before acceleration. Ground launch/contact retain priority; quiet hover has no idle swimming. |
-| Powered fighter flight | Effective commanded pitch/yaw/roll rates supply the start/hold/stop error, including protection and the 2.6 rad/s flip request. Air-loaded banks retain inside/outside limb roles. |
+| Powered fighter flight | Effective commanded pitch/yaw/roll rates supply the start/hold/stop error, including protection and the 1.95 rad/s flip request. Air-loaded banks retain inside/outside limb roles. |
 | Engines-off coast | Air pressure remains available independently of engine output and attached-flow authority. Rotation still uses native torque; attitude never rewrites travel. Low air load favours compact articulation. |
 | Atmospheric falling | Signed torso-relative wind separates belly arch/box from back-facing hip/knee gather and different arm/head presentation. Lengthwise airflow selects tracking. Useful body-flight support fades in over roughly 10–31 m/s at sea-level density. |
 | Shift braking / reverse thrust | Completed forearm/upper-arm lateral projection supplies extra drag. Existing knee/hand flare and reverse brace remain distinct. Release removes the requested flare; residual deceleration cannot keep its own braking pose latched. |
@@ -654,9 +668,9 @@ recorded pre-change 70 m/s baseline. Native chase captures also check framing.
 
 Existing W/S and A/D remain pitch and roll. Powered, unbraked pitch keeps the
 soft airflow envelope. With main thrust selected off or Shift held, sustained
-pitch ramps toward 2.6 rad/s over 0.20–0.65 seconds of rotational intent; the
+pitch ramps toward 1.95 rad/s over 0.20–0.65 seconds of rotational intent; the
 existing 5 rad/s² actuator limit remains. A clean low-airload revolution takes
-about three seconds. Release arrests rotation; holding continues into another turn.
+about four seconds. Release arrests rotation; holding continues into another turn.
 There is no maneuver button, attitude snap or automatic completion.
 
 The controller exposes signed `maneuver_travel`, `maneuver_strength` and

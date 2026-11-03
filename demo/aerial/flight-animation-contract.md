@@ -73,8 +73,9 @@ lifting nearly straight arms overhead.
 ## Dynamic rotation requirements
 
 Preserve existing controls and powered pitch protection. Engine-off or Shift
-braking permits full front/back flips with a 2.6 rad/s request ceiling and the
-existing finite torque limit. Target 2.5–3.5 seconds per clean low-airload flip.
+braking permits full front/back flips with a 1.95 rad/s request ceiling and the
+existing finite torque limit. Target 3.3–4.5 seconds per clean low-airload flip
+after the slower-pitch tuning.
 Actual rotation drives preparation, swing, inversion and opening; blocked motion
 cannot advance a turn. Front/back swing targets must differ. Full rolls need
 shoulder/pelvis opposition, staggered arms/legs, compact corkscrew and opening;

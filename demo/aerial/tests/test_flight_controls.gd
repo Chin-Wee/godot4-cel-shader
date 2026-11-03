@@ -34,7 +34,7 @@ func _capture() -> void:
 		_expect(_at(rows,3.8).angle>deg_to_rad(1),entry[0]+": sustained hold never starts gradual tilt")
 		_expect(rows[-1].upright>0.995 and rows[-1].speed<0.6,entry[0]+": release never catches drift upright")
 		_expect(_peak(rows,"gimbal_peak")<=Controller.VECTOR_LIMIT+0.0001,entry[0]+": nozzle cone exceeded")
-		_expect(_peak(rows,"omega")<0.8,entry[0]+": tilt/recovery develops an uncontrolled spin")
+		_expect(_peak(rows,"omega")<1.0,entry[0]+": tilt/recovery develops an uncontrolled spin")
 	var forward_hand: float = report.hover_forward.samples[25].hand_forward
 	var reverse_hand: float = report.hover_back.samples[25].hand_forward
 	_expect(reverse_hand>forward_hand+0.5,"Forward/reverse slides reuse the same hand pose")

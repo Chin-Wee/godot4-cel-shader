@@ -15,10 +15,10 @@ func _run() -> void:
 	_neutral()
 	# Actual commanded flip rate must not read as an animation overspeed.
 	fc.rotation_request = Vector3.RIGHT
-	fc.effective_rates = Vector3.RIGHT*2.6
-	mech.angular_velocity = Vector3.RIGHT*2.6
+	fc.effective_rates = Vector3.RIGHT*fc.FLIP_RATE
+	mech.angular_velocity = Vector3.RIGHT*fc.FLIP_RATE
 	await _ticks(45,false)
-	assert(mech.rig.motion.steer.x>0.6,"Correct 2.6 rad/s flip produces an opposing stroke")
+	assert(mech.rig.motion.steer.x>0.6,"Correct flip rate produces an opposing stroke")
 	fc.effective_rates = Vector3.ZERO
 	fc.rotation_request = Vector3.ZERO
 	await _ticks(15,false)
@@ -119,8 +119,8 @@ func _run() -> void:
 	fc.aero_authority = 1
 	fc.local_acceleration = Vector3.ZERO
 	fc.rotation_request = Vector3.RIGHT
-	fc.effective_rates = Vector3.RIGHT*2.6
-	mech.angular_velocity = fc.pilot_frame()*Vector3.RIGHT*2.6
+	fc.effective_rates = Vector3.RIGHT*fc.FLIP_RATE
+	mech.angular_velocity = fc.pilot_frame()*Vector3.RIGHT*fc.FLIP_RATE
 	fc.maneuver_strength = Vector2(1,0)
 	fc.maneuver_direction = Vector2(1,0)
 	fc.maneuver_travel = Vector2(PI,0)

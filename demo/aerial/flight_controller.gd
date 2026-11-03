@@ -9,8 +9,8 @@ const WORLD_UNITS_PER_METER := 10.0
 const GRAVITY := 9.81
 const TRIM_SHARES := [0.02, 0.02, 0.02, 0.02, 0.46, 0.46]
 const VECTOR_LIMIT := PI / 6.0
-const MAX_RATE := Vector3(1.0, 0.8, 1.2)
-const FLIP_RATE := 2.6 # Motor-assisted somersault; fixed capsule inertia is retained.
+const MAX_RATE := Vector3(0.75, 0.8, 1.5)
+const FLIP_RATE := 1.95 # Motor-assisted somersault; fixed capsule inertia is retained.
 const RATE_GAIN := 6.0
 const MAX_ANGULAR_ACCELERATION := 5.0
 # Feel parameters. Time in seconds, speed in m/s, accelerations in multiples of g.
@@ -23,7 +23,7 @@ const HOVER_TRIM_GAIN := 1.0
 const HOVER_CANT_BIAS := 0.07
 const HOVER_TRANSLATE_TIME := 3.0
 const HOVER_TILT_RAMP := 1.25
-const HOVER_TRANSLATE_G := 0.50
+const HOVER_TRANSLATE_G := 0.60
 const FLIGHT_PITCH_LIMIT := PI / 6.0
 const FLIGHT_PITCH_GAIN := 3.0
 const JUMP_PUSH_TIME := 0.22
@@ -368,7 +368,7 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		# command should catch the old momentum before accelerating out of it.
 		var along := maxf(horizontal.dot(move.normalized()),0.0)
 		drift -= move.normalized()*along*minf(move.length(),1.0)
-	var correction := (-drift * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.45) * hover_assist * neutral
+	var correction := (-drift * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.55) * hover_assist * neutral
 	correction += move*GRAVITY*HOVER_TRANSLATE_G
 	# Deliberate authority curve: stronger nominal slides without multiplying
 	# their lateral demand fourfold during maximum-power vertical ascent.
@@ -499,6 +499,8 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	# Brake or engine cutoff releases the protection for deliberate combat stalls.
 	var alignment := frame.y.dot(air_velocity.normalized())
 	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.05,0.45,engine_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
+	# A latched upright thrust press must not acquire flight-path pitch commands.
+	flight_protection *= 1.0-hover_translation.length()
 	if flight_protection>0.0001:
 		var net_acceleration := (main_force+aero_force)/body.mass+Vector3.DOWN*GRAVITY
 		var path_rate := air_velocity.cross(net_acceleration).dot(pilot.x)/maxf(air_velocity.length_squared(),1.0)

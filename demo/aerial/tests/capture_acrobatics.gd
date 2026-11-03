@@ -32,12 +32,12 @@ func _capture() -> void:
 		for entry in [["front",KEY_W,-1.0],["back",KEY_S,1.0]]:
 			await _fixture(Vector3(175,12000,340),Quaternion.IDENTITY,Vector3.ZERO,0)
 			scene.hero.controller.air_density = 0.0
-			var rows: Array = await _play(entry[0]+"_flip",360,[[0,[entry[1]]],[158,[]]])
+			var rows: Array = await _play(entry[0]+"_flip",480,[[0,[entry[1]]],[210,[]]])
 			var crossing := INF
 			for row in rows:
 				if row.maneuver_travel[0]*entry[2]>=TAU and crossing==INF: crossing = row.time
-			_expect(crossing>=2.5 and crossing<=3.5,entry[0]+": clean flip is outside the heavy three-second target")
-			_expect(_peak(rows,"omega")<=2.7 and rows[-1].omega<0.08,entry[0]+": rate limit or release arrest failed")
+			_expect(crossing>=3.3 and crossing<=4.5,entry[0]+": clean flip is outside the slower four-second target")
+			_expect(_peak(rows,"omega")<=2.05 and rows[-1].omega<0.08,entry[0]+": rate limit or release arrest failed")
 			report[entry[0]+"_flip"]["full_turn_time"] = crossing if is_finite(crossing) else -1.0
 			scene.hero.controller.air_density = 1.225
 		for entry in [["left",KEY_A],["right",KEY_D]]:
@@ -52,12 +52,12 @@ func _capture() -> void:
 			var blend: float = _at(rows,0.3).control_blend
 			for row in rows:
 				if row.time>0.3 and row.time<6.5: _expect(absf(row.control_blend-blend)<0.001,"Roll axes drift through inversion")
-		for entry in [["early_cancel",[[0,[KEY_S]],[25,[]]]],["inverted_cancel",[[0,[KEY_W]],[100,[]]]],
-			["reverse",[[0,[KEY_S]],[90,[KEY_W]],[210,[]]]],
+		for entry in [["early_cancel",[[0,[KEY_S]],[25,[]]]],["inverted_cancel",[[0,[KEY_W]],[133,[]]]],
+			["reverse",[[0,[KEY_S]],[120,[KEY_W]],[280,[]]]],
 			["compound",[[0,[KEY_S,KEY_D]],[150,[]]]],
-			["sustained",[[0,[KEY_S]],[355,[]]]]]:
+			["sustained",[[0,[KEY_S]],[474,[]]]]]:
 			await _fixture(Vector3(175,12000,340),Quaternion.IDENTITY,Vector3.ZERO,0)
-			var rows: Array = await _play(entry[0],540,entry[1],entry[0] in ["inverted_cancel","reverse","compound"])
+			var rows: Array = await _play(entry[0],660,entry[1],entry[0] in ["inverted_cancel","reverse","compound"])
 			_expect(rows[-1].omega<0.08,entry[0]+": interrupted/combined rotation does not recover")
 			if entry[0]=="sustained":
 				var turn: float = rows.map(func(r):return absf(r.maneuver_travel[0])).max()
