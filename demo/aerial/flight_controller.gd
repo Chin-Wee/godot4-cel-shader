@@ -18,6 +18,11 @@ const INPUT_RESPONSE := 0.14
 const FULL_POWER_INPUT_RESPONSE := 0.28 # Leave torque reserve while loaded joints settle.
 const BRAKE_RESPONSE := 0.28
 const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
+const HOVER_VECTOR_RESPONSE := 0.08 # AC VI directional boost reference: jets lead the slide.
+const RCS_PULSE_HZ := 3.0
+const RCS_DEADBAND := 0.012 # Fraction of actuator capacity; tolerate quiet trim error.
+const RCS_TRIM_DUTY := 0.65 # Long, soft trim bursts with a visible coast interval.
+const RCS_CONTINUOUS_DEMAND := 0.35 # Larger attitude demands use a sustained burn.
 const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
 const HOVER_TRIM_GAIN := 1.0
 const HOVER_CANT_BIAS := 0.07
@@ -65,6 +70,8 @@ var aero_power := 0.0 # Passive air power including angular point velocity, watt
 var aero_surface_forces: Array[Vector3] = []
 var aero_surfaces: Array = []
 var rcs_torque := Vector3.ZERO
+var rcs_request := Vector3.ZERO # Bounded continuous demand for nozzle aiming.
+var rcs_load := 0.0 # Delivered pulse, shared by physical torque and exhaust.
 var control_torque := Vector3.ZERO # Desired total moment before actuator allocation.
 var torque_limits := Vector3.ZERO # Body-local cold-gas capacity, N m.
 var torque_fraction := 0.0
@@ -195,6 +202,8 @@ func reset() -> void:
 	main_torque = Vector3.ZERO
 	aero_force = Vector3.ZERO
 	rcs_torque = Vector3.ZERO
+	rcs_request = Vector3.ZERO
+	rcs_load = 0.0
 	control_torque = Vector3.ZERO
 	aero_torque = Vector3.ZERO
 	aero_power = 0.0
@@ -217,7 +226,7 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	_calculate_aerodynamics(surfaces)
 	_calculate_attitude_demand(state)
 	_calculate_main_thrusters(outlets, frame, dt)
-	_calculate_rcs_torque(frame)
+	_calculate_rcs_torque(frame,dt)
 	_calculate_jump(leg_reach, dt)
 	for index in 6:
 		state.apply_force(motor_forces[index] * WORLD_UNITS_PER_METER, outlets[index].position)
@@ -412,7 +421,8 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		engine_shares[index] = heel_share if index>=4 else (1.0-2.0*heel_share)/4.0
 	_trim_main_moment(outlets,directions)
 	for index in 6:
-		var angle: Vector3 = motor_springs[index].step(_motor_angle(outlets[index].basis,directions[index]),dt,0.16).limit_length(VECTOR_LIMIT)
+		var response := lerpf(0.16,HOVER_VECTOR_RESPONSE,minf(translation_request.length(),1.0))
+		var angle: Vector3 = motor_springs[index].step(_motor_angle(outlets[index].basis,directions[index]),dt,response).limit_length(VECTOR_LIMIT)
 		motor_springs[index].value = angle
 		motor_angles[index] = angle
 		motor_forces[index] = _motor_direction(outlets[index].basis,angle)*delivered_thrust*engine_shares[index]
@@ -521,14 +531,30 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	control_torque = frame*(inertia*local_accel)
 	torque_limits = Vector3(inertia.x.x,inertia.y.y,inertia.z.z)*MAX_ANGULAR_ACCELERATION
 
-func _calculate_rcs_torque(frame: Basis) -> void:
+func _calculate_rcs_torque(frame: Basis, dt: float) -> void:
 	var request := frame.inverse()*(control_torque-main_torque-aero_torque)
 	# ponytail: lumped three-axis cold-gas actuator; per-outlet allocation only
 	# if its fuel usage or force coupling becomes gameplay-relevant.
 	var applied := request.clamp(-torque_limits, torque_limits)
 	torque_fraction = maxf(absf(request.x) / maxf(torque_limits.x, 0.001), maxf(absf(request.y) / maxf(torque_limits.y, 0.001), absf(request.z) / maxf(torque_limits.z, 0.001)))
 	torque_saturated = torque_fraction > 1.0
-	rcs_torque = frame * applied
+	rcs_request = frame*applied
+	var fractions := (applied/torque_limits.max(Vector3.ONE*0.001)).abs()
+	var demand := maxf(fractions.x,maxf(fractions.y,fractions.z))
+	rcs_load = 0.0
+	rcs_torque = Vector3.ZERO
+	if demand<=RCS_DEADBAND: return
+	# Low-demand correction is an actual bounded pulse, not a cosmetic flicker.
+	# A longer, softer burst avoids full-capacity kicks during quiet hover.
+	var duty := 1.0 if demand>=RCS_CONTINUOUS_DEMAND else RCS_TRIM_DUTY
+	# Integrate the on-window over this physics step, including a cycle wrap.
+	# This avoids rounding every short pulse up to an entire physics tick.
+	var end := clock*RCS_PULSE_HZ
+	var start := (clock-dt)*RCS_PULSE_HZ
+	var on_time := (floorf(end)-floorf(start))*duty+minf(fposmod(end,1.0),duty)-minf(fposmod(start,1.0),duty)
+	var fraction := clampf(on_time/maxf(dt*RCS_PULSE_HZ,0.000001),0,1)
+	rcs_torque = rcs_request*(fraction/duty)
+	rcs_load = demand*fraction/duty
 
 func _calculate_jump(leg_reach: bool, dt: float) -> void:
 	if jump_requested:

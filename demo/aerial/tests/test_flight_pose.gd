@@ -57,9 +57,11 @@ func _run() -> void:
 	# held direction gradually starts tilt after the three-second interval.
 	mech.controls = {"forward":true,"precision":true}
 	await _ticks(30)
-	assert(absf(mech.angular_velocity.x)<0.02 and mech.controller.hover_translation.z< -0.3)
+	assert(absf(mech.angular_velocity.x)<0.02 and absf(mech.controller.rotation_request.x)<0.0001 and mech.controller.hover_translation.z< -0.3)
+	var before_tilt: float = mech.global_basis.y.z
 	await _ticks(180)
-	assert(mech.angular_velocity.x< -0.02 and mech.controller.released_axes.x<1)
+	# Check actual forward travel: an instantaneous rate can sample a pulse's coast.
+	assert(mech.global_basis.y.z<before_tilt-0.002 and mech.controller.released_axes.x<1)
 	# Same six rotation commands at upright/prone/inverted/vertical-flight poses.
 	for orientation in [Quaternion.IDENTITY, Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.RIGHT,PI)]:
 		for key in ["forward","back","left","right","yaw_left","yaw_right"]:

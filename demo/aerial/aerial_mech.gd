@@ -240,7 +240,7 @@ func _update_cold_gimbals(dt: float) -> void:
 		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
 		var neutral := (transform.basis * neutral_bases[index + 6]).orthonormalized()
 		var lever: Vector3 = transform * COLD_MOUNTS[index][2] - global_position
-		var force: Vector3 = controller.rcs_torque.cross(lever).normalized()
+		var force: Vector3 = controller.rcs_request.cross(lever).normalized()
 		var desired: Vector3 = neutral.inverse() * -force
 		var angle := minf(acos(clampf(desired.z, -1, 1)), VECTOR_LIMIT) if not force.is_zero_approx() else 0.0
 		var axis := Vector3.BACK.cross(desired).normalized()
@@ -360,10 +360,12 @@ func _refresh_exhaust() -> void:
 		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,exhaust_throttle)*load*(1.0+sin(beat*4.0)*0.12))
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
-		# The bounded RCS torque is the actuator; outlets present its demand.
-		var demand := clampf(controller.torque_fraction, 0.0, 1.0)
-		var pulse := fposmod(rig.clock*6.0+index*0.27,1.0)
-		gas_jets[index].visible = flying and demand > 0.02 and pulse < demand
+		# Present the delivered physical pulse, never an independent flash clock.
+		var demand := controller.rcs_load
+		var lever := gas_gimbals[index].global_position-global_position
+		var force: Vector3 = controller.rcs_torque.cross(lever)
+		var useful := not force.is_zero_approx() and (-gas_gimbals[index].global_basis.z).dot(force.normalized())>0.05
+		gas_jets[index].visible = flying and demand>0.001 and useful
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
 		gas_jets[index].set_instance_shader_parameter("thrust_load",0.6)
 		gas_jets[index].set_instance_shader_parameter("engine_throttle",1.0)

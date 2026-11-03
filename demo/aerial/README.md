@@ -101,12 +101,16 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   motors. Velocity feedback is 3.6/s; residual integral trim learns only during
   quiet hover below 1.5 m/s, preventing windup against an intentional slide.
 - One damped angular-rate controller uses native shape-derived inertia and finite
-  cold-gas torque. Requested rates are 1.0/0.8/1.2 rad/s before precision scaling;
+  cold-gas torque. Requested rates are 0.75/0.8/1.5 rad/s before precision scaling;
   actuator limits correspond to 5 rad/s² per body axis. Main gimbals first trim
   the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight budget. Six
   bounded native 3×3 correction sweeps project directions into the existing cones;
-  finite gimbal motors still deliver the result. Cold gas supplies only the
-  remaining moment; its capacity never fades with airspeed. Saturation is
+  finite gimbal motors still deliver the result. AC VI is the directional-boost
+  presentation reference: upright hover requests steer the real nozzles, which
+  ease toward their target over 0.08 s instead of the ordinary 0.16 s. Jets
+  redirect before body lean; the rendered bells/flames use those same motor
+  angles and retain their seated mounts and 30-degree cones.
+  Cold gas supplies only the remaining moment; its capacity never fades with airspeed. Saturation is
   displayed instead of erased by a velocity clamp. Rotation requests ease in over 0.14 s at up to 2×, rising to 0.28 s at
   4× while loaded joints settle. Full-power streaming tucks paired hips/knees to
   bring the lower outlets toward the mass centre. Directional hover replaces
@@ -114,7 +118,18 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   so their canted ports can contribute without exceeding the nozzle cones.
   These are rig-profile calibrations; the cold-gas limit remains unchanged.
   Cold gas is a lumped three-axis actuator: exact outlet allocation and fuel
-  are omitted. Fixed capsule inertia does not change with procedural limb motion.
+  are omitted. Low-demand trim now uses real 3 Hz bursts, with 65% on-time
+  and a coast interval, replacing the independent 6 Hz flash. Burst amplitude
+  preserves requested mean impulse; partial physics ticks integrate the active
+  time exactly. A 1.2% capacity dead zone leaves tiny residual corrections alone.
+  Above 35% demand the actuator burns continuously for strong steering/recovery.
+  Each delivered component still obeys the original torque ceiling. Small
+  rate ripple is intentional: full-power lateral checks permit up to 0.10 rad/s
+  yaw drift instead of the previous 0.04 rad/s near-perfect lock. No random
+  wobble or direct velocity change supplies the instability.
+  `RCS_PULSE_HZ`, `RCS_TRIM_DUTY`, `RCS_DEADBAND` and
+  `RCS_CONTINUOUS_DEMAND` in `flight_controller.gd` tune that tradeoff.
+  Fixed capsule inertia does not change with procedural limb motion.
 - Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
   main power. It never depends on stall/attached-flow quality. Neutral pilot axes
   allow upright restoration. Directional hover requests 0.60 g (+20%); its
@@ -251,15 +266,16 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   attachment bone's space. Backpack barrel normals point down/aft, calf recesses
   point aft/down, and heel openings point down in the standing rest pose.
   Every main and cold-gas motor uses a spring-damped, 30-degree local cone.
-  Yaw intent adds tangential main-exhaust offsets around each mount lever arm
-  and opposite shoulder/thigh axial offsets to produce a visible control couple.
-  Desired exhaust is transformed into that local frame and clamped before the
+  The existing force/moment allocator chooses main directions. Cold-gas
+  gimbals aim from requested torque and hold that direction between bursts.
+  Desired exhaust is transformed into each local frame and clamped before the
   motor moves. Bone animation is never canceled to maintain a world-down axis;
   legs and feet carry their booster axes through the procedural pose. A saturated
   motor remains at its local limit even when the requested force is unreachable.
   Requested thrust/G load sets the six main engines' visible power. Per-instance
   power changes brightness and length without material copies. Shoulder/thigh
-  pulses respond to bounded RCS torque. Main forces use actual motor directions;
+  pulses show delivered RCS torque only, through ports pointing usefully into
+  the requested control couple. Main forces use actual motor directions;
   the cold-gas control couple uses the lumped actuator described above. Final
   modifier poses update attachment readbacks and local motor targets before
   rendering. Trails record actual paths and stay hidden at rest or on foot.
@@ -549,6 +565,17 @@ frames, not the headless functional check alone. The separate soft-depth probe
 renders two intersecting spheres and checks that the enabled material fades at
 the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
 this path is verified on the current Mobile renderer.
+
+`test_thruster_control.gd` checks four directional hover inputs with the
+chassis upright, early force response, rendered/physical nozzle agreement,
+exact integrated 3 Hz impulse, dead-zone silence, sustained steering capacity,
+truthful cold-gas flashes and 30 seconds of bounded hover drift. The native
+version uses a low three-quarter view so the heel and calf redirection is visible.
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_thruster_control.gd -- /tmp/thruster-control
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/test_thruster_control.gd -- /tmp/thruster-control-native
+```
 
 `test_handling_speeds.gd` replays four-direction hover pushes and release, then
 measures actual powered pitch, unpowered flip, roll and yaw rates in vacuum.

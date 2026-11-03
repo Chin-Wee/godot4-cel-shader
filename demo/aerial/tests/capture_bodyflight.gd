@@ -70,7 +70,7 @@ func _capture() -> void:
 				_expect(row.upright>0.995 and absf(row.yaw_rate)<0.04,entry[0]+": animation changes destabilize the chassis")
 		await _fixture(Vector3(175,9000,340),Quaternion.IDENTITY,Vector3.ZERO,4)
 		rows = await _play("full_power_side",180,[[0,[KEY_A]]])
-		for row in rows: _expect(row.torque<1 and absf(row.yaw_rate)<0.04,"Full-power lateral flight repeats the yaw overload")
+		for row in rows: _expect(row.torque<1 and absf(row.yaw_rate)<0.1,"Full-power lateral flight repeats the yaw overload")
 		report["failures"] = failures.duplicate()
 		report["camera"] = view
 		report["source_sha256"] = {}

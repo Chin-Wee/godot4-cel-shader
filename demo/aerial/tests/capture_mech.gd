@@ -326,7 +326,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"effort_phase":mech.rig.effort_phase,"lead_side":mech.rig.lead_side,"role_strength":mech.rig.motion.asymmetry,
 				"alignment":mech.rig.motion.alignment,"request_alignment":mech.rig.motion.request_alignment,"load_direction":_array(mech.rig.motion.load_direction),
 				"main_force":_array(fc.main_force),"requested_main_force":_array(fc.requested_main_force),
-				"main_torque":_array(fc.main_torque),"aero_torque":_array(fc.aero_torque),"rcs_torque":_array(fc.rcs_torque),"aero_power":fc.aero_power,
+				"main_torque":_array(fc.main_torque),"aero_torque":_array(fc.aero_torque),"rcs_torque":_array(fc.rcs_torque),"rcs_request":_array(fc.rcs_request),"rcs_load":fc.rcs_load,"aero_power":fc.aero_power,
 				"gimbal_peak":fc.motor_angles.map(func(angle): return angle.length()).max(),"rcs_saturated":fc.torque_saturated,
 				"left_fingers":mech.rig.arms.finger_curl[0],"right_fingers":mech.rig.arms.finger_curl[1],
 				"box":mech.rig.motion.box,"steer":_array(mech.rig.motion.steer),
