@@ -26,6 +26,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 	fc.local_airflow = Vector3.ZERO
 	fc.rotation_command = controls
 	fc.rotation_request = controls
+	fc.effective_rates = controls*fc.MAX_RATE
 	fc.g_load = 0
 	if name=="hover" or name.begins_with("turn"):
 		fc.engine_level = 1

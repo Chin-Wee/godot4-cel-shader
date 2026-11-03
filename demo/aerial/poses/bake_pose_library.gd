@@ -37,6 +37,17 @@ const KEYS := {
 	"Roll_Initiate":{"coast":1.0,"acro":Vector2(0,1),"acro_sign":Vector2(0,1),"roll_degrees":55},
 	"Roll_Corkscrew":{"coast":1.0,"acro":Vector2(0,1),"acro_sign":Vector2(0,1),"roll_degrees":180},
 	"Roll_Open":{"coast":1.0,"acro":Vector2(0,1),"acro_sign":Vector2(0,1),"roll_degrees":310},
+	"Back_Fall":{"fall":1.0,"box":1.0,"back":1.0,"pressure":1.0,"flow":Vector3(0,0,1)},
+	"Front_Layout_Swing":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(-1,0),"layout":1.0,"flip_degrees":25},
+	"Front_Layout_Inversion":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(-1,0),"layout":1.0,"flip_degrees":180},
+	"Front_Layout_Opening":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(-1,0),"layout":1.0,"flip_degrees":310},
+	"Back_Layout_Swing":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(1,0),"layout":1.0,"flip_degrees":25},
+	"Back_Layout_Inversion":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(1,0),"layout":1.0,"flip_degrees":180},
+	"Back_Layout_Opening":{"coast":1.0,"acro":Vector2(1,0),"acro_sign":Vector2(1,0),"layout":1.0,"flip_degrees":310},
+	"Head_Look_Left":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(0,0.65,0)},
+	"Head_Look_Right":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(0,-0.65,0)},
+	"Head_Look_Up":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(-0.70,0,0)},
+	"Head_Look_Down":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(0.40,0,0)},
 	"Landing_Guard":{"land":1.0},
 	"Landing_Absorb":{"land":1.0,"compression":1.1,"g_load":4.0},
 }
@@ -50,6 +61,9 @@ const STUDIES := {
 	"Front_Flip":[[0.0,"Hover_Support"],[0.35,"Front_Swing"],[1.5,"Front_Inversion"],[2.6,"Front_Opening"],[3.2,"Hover_Support"]],
 	"Back_Flip":[[0.0,"Hover_Support"],[0.35,"Back_Swing"],[1.5,"Back_Inversion"],[2.6,"Back_Opening"],[3.2,"Hover_Support"]],
 	"Dynamic_Roll":[[0.0,"Flight_Sustain"],[0.8,"Roll_Initiate"],[2.6,"Roll_Corkscrew"],[4.6,"Roll_Open"],[5.4,"Flight_Sustain"]],
+	"Belly_Back_Recovery":[[0.0,"Fall_Box"],[1.3,"Back_Fall"],[2.6,"Fall_Box"],[3.7,"Track"]],
+	"Extended_Layouts":[[0.0,"Hover_Support"],[0.35,"Front_Layout_Swing"],[1.5,"Front_Layout_Inversion"],[2.6,"Front_Layout_Opening"],[3.2,"Hover_Support"],[3.55,"Back_Layout_Swing"],[4.7,"Back_Layout_Inversion"],[5.8,"Back_Layout_Opening"],[6.4,"Hover_Support"]],
+	"Head_Scan":[[0.0,"Hover_Support"],[0.6,"Head_Look_Left"],[1.5,"Head_Look_Right"],[2.4,"Head_Look_Up"],[3.3,"Head_Look_Down"],[4.2,"Hover_Support"]],
 	"Horizontal_Slides":[[0.0,"Hover_Support"],[0.6,"Hover_Left"],[1.3,"Hover_Right"],[2.0,"Hover_Forward"],[2.7,"Hover_Back"],[3.5,"Hover_Support"]],
 	"Bank_And_Pull":[[0.0,"Flight_Sustain"],[0.5,"Bank_Left"],[1.2,"Bank_Pull_Left"],[2.1,"Bank_Right"],[2.8,"Bank_Pull_Right"],[3.6,"Flight_Sustain"]],
 }
@@ -73,6 +87,7 @@ func _bake() -> void:
 	for name in KEYS:
 		rig.reset()
 		var frame := {"hover":0.0,"fighter":0.0,"coast":0.0,"fall":0.0,"land":0.0,"launch":0.0,
+			"belly":0.0,"back":0.0,"air_control":0.0,"layout":0.0,"look_angles":Vector3.ZERO,"look_weight":0.0,
 			"box":0.0,"track":0.0,"brake":0.0,"retro":0.0,"compression":0.0,"g_load":1.0,
 			"side_load":0.0,"brake_rate":0.0,"roll_stop":0.0,"pressure":0.0,
 			"drive":0.0,"prepare":0.0,"lead":1.0,"asymmetry":0.0,"load_direction":Vector3.ZERO,"flare":0.0,
@@ -82,6 +97,7 @@ func _bake() -> void:
 			"trim":Vector3.ZERO,"up":Vector3.UP,"omega":Vector3.ZERO,"alpha":Vector3.ZERO,"acceleration":Vector3.ZERO}
 		frame.merge(KEYS[name],true)
 		frame.flare = maxf(frame.flare,frame.brake)
+		if not KEYS[name].has("back"): frame.belly = frame.box*smoothstep(-0.2,0.2,-frame.flow.z)
 		frame.flip_shape = rig.profile.maneuver_shape(deg_to_rad(frame.get("flip_degrees",0)))
 		frame.roll_shape = rig.profile.maneuver_shape(deg_to_rad(frame.get("roll_degrees",0)))
 		frame["pitch"] = frame.steer.x
@@ -139,7 +155,7 @@ func _study_attitude(name: String) -> Quaternion:
 	# Presentation attitude belongs only to this frozen-chassis authoring asset.
 	# Gameplay gets the corresponding attitude from its physical controller.
 	var flight := Quaternion(Vector3.RIGHT,-PI/2)
-	if name.begins_with("Front_") or name.begins_with("Back_"):
+	if KEYS[name].has("flip_degrees"):
 		return Quaternion(Vector3.RIGHT,deg_to_rad(KEYS[name].flip_degrees)*KEYS[name].acro_sign.x)
 	if name.begins_with("Roll_"):
 		return Quaternion(Vector3.FORWARD,deg_to_rad(KEYS[name].roll_degrees))*flight
@@ -151,6 +167,7 @@ func _study_attitude(name: String) -> Quaternion:
 		"Hover_Left","Hover_Right","Hover_Forward","Hover_Back": return Quaternion.IDENTITY
 		"Flight_Pierce": return Quaternion(Vector3.RIGHT,deg_to_rad(-75))
 		"Flight_Sustain","Fall_Box": return flight
+		"Back_Fall": return Quaternion(Vector3.RIGHT,PI/2)
 		"Bank_Left": return Quaternion(Vector3.BACK,deg_to_rad(25))*flight
 		"Bank_Right": return Quaternion(Vector3.BACK,deg_to_rad(-25))*flight
 		"Bank_Pull_Left": return Quaternion(Vector3.BACK,deg_to_rad(45))*Quaternion(Vector3.RIGHT,deg_to_rad(15))*flight

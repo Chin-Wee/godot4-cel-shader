@@ -10,7 +10,9 @@ var finished := false
 func _initialize() -> void: call_deferred("_run")
 
 func _ticks(count: int, mirror_request := true) -> void:
-	if mirror_request: fc.rotation_request = fc.rotation_command
+	if mirror_request:
+		fc.rotation_request = fc.rotation_command
+		fc.effective_rates = fc.rotation_command*fc.MAX_RATE
 	for tick in count:
 		fc.clock += 1.0/60
 		var previous: Vector3 = mech.rig.arms.hands[0]
@@ -39,6 +41,9 @@ func _neutral() -> void:
 	fc.angular_acceleration = Vector3.ZERO
 	fc.rotation_command = Vector3.ZERO
 	fc.rotation_request = Vector3.ZERO
+	fc.effective_rates = Vector3.ZERO
+	fc.gaze_direction = Vector3.ZERO
+	fc.brake_spread = 0.0
 	fc.translation_request = Vector3.ZERO
 	fc.hover_actuation = Vector3.ZERO
 	fc.rcs_torque = Vector3.ZERO

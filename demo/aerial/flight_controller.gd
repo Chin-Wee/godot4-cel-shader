@@ -89,6 +89,9 @@ var last_direction := Vector2.ZERO
 var translation := Spring.new()
 var flight_protection := 0.0
 var requested_rates := Vector3.ZERO # World angular-rate request after protection.
+var effective_rates := Vector3.ZERO # Pilot-local rate after protection and flip scaling.
+var gaze_direction := Vector3.ZERO # Optional world-space vision target; no force authority.
+var brake_spread := 0.0 # Completed limb projection, independent of the brake command.
 var released_axes := Vector3(1, 0, 1)
 var control_blend := 0.0
 var control_target := 0.0
@@ -184,6 +187,9 @@ func reset() -> void:
 	last_direction = Vector2.ZERO
 	flight_protection = 0.0
 	requested_rates = Vector3.ZERO
+	effective_rates = Vector3.ZERO
+	gaze_direction = Vector3.ZERO
+	brake_spread = 0.0
 	requested_main_force = Vector3.ZERO
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
@@ -197,7 +203,7 @@ func reset() -> void:
 		spring.value = Vector3.ZERO
 		spring.velocity = Vector3.ZERO
 
-func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array, on_ground: bool, leg_reach: bool, surfaces: Array) -> void:
+func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array, on_ground: bool, leg_reach: bool, surfaces: Array, spread: float) -> void:
 	var dt := state.step
 	clock += dt
 	grounded = on_ground
@@ -207,6 +213,7 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	_calculate_hover(frame)
 	_read_commands(controls, dt)
 	_update_maneuvers(dt)
+	brake_spread = clampf(spread,0,1)
 	_calculate_aerodynamics(surfaces)
 	_calculate_attitude_demand(state)
 	_calculate_main_thrusters(outlets, frame, dt)
@@ -339,7 +346,7 @@ func _calculate_aerodynamics(surfaces: Array) -> void:
 		var lift_coefficient := clampf(alpha*3.2+LIFT_BIAS,-1.1,1.1)*attached
 		var lift := normal.slide(direction).normalized()*pressure_area*lift_coefficient if speed>0.1 else Vector3.ZERO
 		var broadside := absf(direction.dot(normal))
-		var cd := BASE_DRAG_CD+HIGH_SPEED_DRAG_CD*smoothstep(35,100,speed)+0.75*broadside*broadside+0.15*lift_coefficient*lift_coefficient+BRAKE_DRAG_CD*brake_amount
+		var cd := BASE_DRAG_CD+HIGH_SPEED_DRAG_CD*smoothstep(35,100,speed)+0.75*broadside*broadside+0.15*lift_coefficient*lift_coefficient+BRAKE_DRAG_CD*brake_spread
 		var force := lift-direction*pressure_area*cd
 		aero_surface_forces.append(force)
 		aero_force += force
@@ -498,6 +505,7 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 		var predicted := angle_of_attack+(state.angular_velocity.dot(pilot.x)-path_rate)*0.20
 		var protected_pitch := clampf(local_rates.x,path_rate+(-FLIGHT_PITCH_LIMIT-predicted)*FLIGHT_PITCH_GAIN,path_rate+(FLIGHT_PITCH_LIMIT-predicted)*FLIGHT_PITCH_GAIN)
 		local_rates.x = lerpf(local_rates.x,protected_pitch,flight_protection)
+	effective_rates = local_rates
 	var rates := pilot*local_rates
 	var upright := pilot.inverse() * frame.y.cross(Vector3.UP) * 2.5 * hover_assist
 	upright *= released_axes

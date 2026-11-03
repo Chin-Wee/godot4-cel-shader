@@ -30,6 +30,9 @@ func configure(sk: Skeleton3D, player: AnimationPlayer, rig_profile) -> void:
 	reset()
 
 func reset() -> void:
+	hands = PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
+	shoulders = PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
+	elbow_positions = PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
 	for side in 2:
 		upper[side].reset(Vector3(profile.arm_hover.x,0,(1 if side==0 else -1)*profile.arm_hover.y))
 		elbows[side].reset(Vector3(-profile.arm_hover.z,0,0))
@@ -39,7 +42,8 @@ func reset() -> void:
 func update(delta: float, frame: Dictionary) -> void:
 	var pose: Vector3 = profile.arm_hover*frame.hover+profile.arm_coast*(frame.coast+frame.fall+frame.land)+profile.arm_stream*frame.fighter
 	pose = pose.lerp(profile.arm_stream,frame.track)
-	pose = pose.lerp(profile.arm_box,frame.box)
+	pose = pose.lerp(profile.arm_box,frame.get("belly",frame.box))
+	pose = pose.lerp(profile.arm_back,frame.get("back",0.0))
 	pose = pose.lerp(profile.arm_drive,frame.get("drive",0.0))
 	pose = pose.lerp(profile.arm_prepare,frame.get("prepare",0.0)*0.70)
 	pose = pose.lerp(profile.arm_retro,frame.retro)
@@ -76,6 +80,9 @@ func update(delta: float, frame: Dictionary) -> void:
 		var flip_swing: float = (front*0.75-back*0.70)*flip.x-0.12*flip.y-0.45*flip.z
 		var flip_spread: float = 0.65*flip.x+0.24*flip.y+1.10*flip.z
 		var flip_flex: float = 0.35*flip.x+1.50*flip.y+0.65*flip.z
+		var layout: float = frame.get("layout",0.0)
+		flip_spread = lerpf(flip_spread,0.85+0.25*flip.z,layout)
+		flip_flex = lerpf(flip_flex,0.30+0.35*flip.z,layout)
 		var bank: float = sx*frame.get("bank_gesture",0.0)
 		swing += bank*0.16
 		spread += bank*0.12
@@ -88,6 +95,7 @@ func update(delta: float, frame: Dictionary) -> void:
 		swing += acro.y*(turn*0.35*roll.x-turn*0.25*roll.y-turn*0.20*roll.z)
 		spread += acro.y*(-0.22*roll.y+turn*0.30*roll.x+0.45*roll.z)
 		flex += acro.y*(0.65*roll.y+turn*0.25*(roll.x-roll.z))
+		swing -= steer.x*0.28*acro.x # Keep active air-control pressure through flips.
 		swing += acro.x*sx*frame.get("lead",1.0)*0.10*(flip.x+flip.z)
 		flex += acro.x*sx*frame.get("lead",1.0)*0.12*flip.x
 		swing += clampf(balance.z*0.006,-0.08,0.08)+frame.trim.y*frame.hover*0.06
@@ -95,7 +103,7 @@ func update(delta: float, frame: Dictionary) -> void:
 		flex += sx*frame.trim.z*frame.hover*0.06
 		# External rotation bends the forearms toward the head. Raising the whole
 		# arm instead creates a straight scarecrow silhouette with forward hands.
-		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.box
+		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.get("belly",frame.box)-sx*profile.arm_back_twist*frame.get("back",0.0)
 		upper[side].step(Vector3(clampf(swing,-0.8,1.1),twist,sx*clampf(spread,0.18,2.15)),delta,0.30,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.34,profile.arm_speed)
 		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18+acro.x*(-0.12*flip.x+0.08*flip.y-0.16*flip.z),0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.24,1.0)
@@ -124,3 +132,14 @@ func sample_completed(sk: Skeleton3D, completed: Dictionary) -> void:
 		hands[side] = torso*completed[sk.find_bone(profile.arm_ends[side])].origin
 		shoulders[side] = torso*completed[sk.find_bone(profile.arm_roots[side])].origin
 		elbow_positions[side] = torso*completed[sk.find_bone(profile.arm_middles[side])].origin
+
+func brake_spread() -> float:
+	# ponytail: completed limb projection is a calibrated armor-area proxy;
+	# replace it with measured projected areas if wind-tunnel data becomes available.
+	var projected := 0.0
+	var reach := 0.0
+	for side in 2:
+		projected += absf(elbow_positions[side].x-shoulders[side].x)+absf(hands[side].x-elbow_positions[side].x)
+		reach += elbow_positions[side].distance_to(shoulders[side])+hands[side].distance_to(elbow_positions[side])
+	if reach<0.001: return 0.0
+	return smoothstep(profile.brake_projection.x,profile.brake_projection.y,projected/reach)

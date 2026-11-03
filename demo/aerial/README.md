@@ -143,11 +143,12 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   of [Microsoft Flight Simulator 2020](https://docs.flightsimulator.com/html/Samples_And_Tutorials/Tutorials/Defining_A_Flight_Model.htm);
   it is calibrated, not mesh CFD. Fixed capsule inertia remains unchanged.
   Quadratic drag includes broadside area, induced drag,
-  passive high-speed drag and Shift spread. Engine-off gliding and falling use
+  passive high-speed drag and completed limb spread. Engine-off gliding and falling use
   these same equations; no velocity clamp supplies a terminal falling speed.
   Named feel parameters retain positive base Cd 0.075 plus 0.28 high-speed Cd.
-  Engines spool at 3 hover multiples/s. Shift spread uses a 0.28 s critically
-  damped response and 1.8 added Cd for a forgiving braking slide.
+  Engines spool at 3 hover multiples/s. Shift preparation uses a 0.28 s critically damped response. The 1.8 extra Cd
+  follows the displayed lateral arm projection, so the key cannot add drag
+  before the limbs move. Natural broadside spreading exposes the same area.
 - R applies a 0.22-second sinusoidal contact-leg push with a 4 G peak only while
   suitable ground remains within 0.8 m of leg reach. It never changes main power or writes velocity. Native
   contact handles touchdown. This is one chassis capsule, not articulated limb
@@ -544,10 +545,59 @@ renders two intersecting spheres and checks that the enabled material fades at
 the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
 this path is verified on the current Mobile renderer.
 
+### Research mapped to the current behaviours
+
+The implementation keeps Overgrowth's authored poses plus procedural corrections,
+Titanfall's bounded mechanical articulation, one pose writer and the existing
+native rigid-body forces. Indoor-bodyflight research informs coordination and
+silhouettes; these are calibrated mech adaptations, not footage-fitted motion.
+
+| Existing behaviour | Research cue and implemented response |
+| --- | --- |
+| Leg jump / upright hover | Intent prepares head, shoulders and staggered knees before acceleration. Ground launch/contact retain priority; quiet hover has no idle swimming. |
+| Powered fighter flight | Effective commanded pitch/yaw/roll rates supply the start/hold/stop error, including protection and the 2.6 rad/s flip request. Air-loaded banks retain inside/outside limb roles. |
+| Engines-off coast | Air pressure remains available independently of engine output and attached-flow authority. Rotation still uses native torque; attitude never rewrites travel. Low air load favours compact articulation. |
+| Atmospheric falling | Signed torso-relative wind separates belly arch/box from back-facing hip/knee gather and different arm/head presentation. Lengthwise airflow selects tracking. Useful body-flight support fades in over roughly 10–31 m/s at sea-level density. |
+| Shift braking / reverse thrust | Completed forearm/upper-arm lateral projection supplies extra drag. Existing knee/hand flare and reverse brace remain distinct. Release removes the requested flare; residual deceleration cannot keep its own braking pose latched. |
+| Full flips and transitions | Actual angular travel still supplies progress. Useful air pressure plus small effective-rate error blend toward an extended layout; weak support or high unmet rate demand gathers the body. Release/reversal immediately requests recovery through the same servos. |
+| Head / vision | Turn intent leads the slower shoulders; airflow sets a base sight line. Independent camera look supplies an optional world-space gaze target relative to the completed torso. Only the neck moves; it cannot steer the body, camera or air panels. |
+
+Head limits, response/speed, belly/back/layout anchors and the arm projection
+calibration live in `mech_rig_profile.gd`. Head motion is limited to −54/+29° pitch,
+±46° yaw and ±9° roll, at 1.6 rad/s. It is not a perfect world-level lock.
+`brake_projection` maps lateral segment projection/reach from 0.30 to 0.60 into
+additional drag area. This small armor-area proxy needs measured geometry/data
+before it can claim quantitative aerodynamic accuracy. Panel/control moments
+remain rig-specific calibration; human segment coefficients are not copied.
+All aerodynamic power remains passive; no fitted negative damping, direct spin
+write, ragdoll, new IK pass or flight mode is added.
+
+References: [Clarke & Gutman's dynamic body-flight model](https://arxiv.org/html/2202.10233v1),
+[their control-engineering analysis](https://arxiv.org/html/2201.05917v1),
+[IBA opposing stopping strokes](https://www.tunnelflight.com/skills/flyer-level-1/belly-fly-forward-backward/),
+and [Uncharted's production look-at layering](https://media.gdcvault.com/gdc08/slides/S6169i1.pdf).
+The papers' inferred biomechanical mechanisms are hypotheses, not requirements
+for our passive physical model. No new video was measured or motion-captured.
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_research_bodyflight.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/capture_research_bodyflight.gd -- /tmp/research-bodyflight
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_research_bodyflight.gd -- /tmp/research-bodyflight-native
+```
+
+The ten research replays run in body and independent chase views. They cover
+head scanning, engine cutoff in a loaded bank, belly/back falling and roll
+transitions, front/back layouts, physical braking/release, reverse thrust and
+jump/hover. Every row checks passive aerodynamic power and the force budget;
+reports retain source/driver/input hashes. `--only=head_scan` (or another replay
+name) selects a quick visual pass. The frozen-pose check also covers quiet head
+settling, anticipation, neck speed/bounds, camera independence, unchanged air
+panels under gaze, vacuum exclusion and geometry-before-drag causality.
+
 ### Flight animation contract validation
 
-The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 34 full-body
-key poses and eleven editable motion studies, including four directional hover
+The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 45 full-body
+key poses and fourteen editable motion studies, including four directional hover
 keys and horizontal-slide / bank-and-pull studies. Run `pose_studio.tscn` to inspect the
 silhouettes and timing separately from the physical gameplay replays below.
 Runtime maneuver effort adds directional reverse/acceleration bracing, retained

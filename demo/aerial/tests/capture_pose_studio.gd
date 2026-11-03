@@ -27,7 +27,7 @@ func _run() -> void:
 	studio.player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	await process_frame
 	var library: AnimationLibrary = studio.player.get_animation_library(&"design")
-	assert(library.has_animation(&"K_Front_Inversion") and library.has_animation(&"M_Back_Flip") and library.has_animation(&"M_Dynamic_Roll"))
+	assert(library.has_animation(&"K_Back_Fall") and library.has_animation(&"M_Extended_Layouts") and library.has_animation(&"M_Head_Scan"))
 	for clip in studio.clips:
 		studio.show_clip(studio.clips.find(clip))
 		studio.caption.text = str(clip).trim_prefix("design/").replace("_"," ")+"\nPOSE / MOTION STUDY · frozen chassis"
@@ -53,7 +53,7 @@ func _run() -> void:
 	studio.player.play(&"design/K_Fall_Box")
 	studio.player.seek(0,true)
 	assert(hover.angle_to(sk.get_bone_pose_rotation(sk.find_bone("Shoulder.L")))>0.3)
-	print("Pose studio checks passed: directional hover, front/back flip and dynamic roll studies and real skeleton deformation in three views.")
+	print("Pose studio checks passed: signed belly/back, extended layouts and bounded head-look studies and real skeleton deformation in three views.")
 	studio.queue_free()
 	await process_frame
 	quit()

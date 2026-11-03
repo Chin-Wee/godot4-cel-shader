@@ -307,6 +307,8 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 				"aoa":fc.angle_of_attack,"slip":fc.sideslip,"attached_flow":fc.attached_flow,"flight_protection":fc.flight_protection,
 				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
 				"move_intent":_array(mech.rig.motion.move_intent),"reach":_array(mech.rig.motion.reach),"gather":[mech.rig.motion.gather.x,mech.rig.motion.gather.y],
+				"belly":mech.rig.motion.belly,"back":mech.rig.motion.back,"air_control":mech.rig.motion.air_control,"layout":mech.rig.motion.layout,
+				"brake_spread":fc.brake_spread,"head":_array(mech.rig.head.value),"effective_rates":_array(fc.effective_rates),"steer_error":_array(mech.rig.motion.target_rates-mech.rig.motion.pilot_rates),
 				"maneuver_travel":[fc.maneuver_travel.x,fc.maneuver_travel.y],"maneuver_strength":[fc.maneuver_strength.x,fc.maneuver_strength.y],
 				"maneuver_recovery":[fc.maneuver_recovery.x,fc.maneuver_recovery.y],"control_blend":fc.control_blend,
 				"bank_gesture":mech.rig.motion.bank_gesture,"acro":[mech.rig.motion.acro.x,mech.rig.motion.acro.y],"flip_shape":_array(mech.rig.motion.flip_shape),"roll_shape":_array(mech.rig.motion.roll_shape),

@@ -427,6 +427,12 @@ func trigger_explosion(seed_value := -1) -> void:
 	palette_materials.erase(smoke)
 	palette_materials.erase(accent)
 
+func _physics_process(_delta: float) -> void:
+	# Vision is sampled on the fixed pose clock. Head movement never feeds back
+	# into the independent camera or the chassis rotation controller.
+	if is_instance_valid(hero) and hero.player_controlled and animate:
+		hero.controller.gaze_direction = look_direction()
+
 func _process(delta: float) -> void:
 	if not is_instance_valid(camera): return
 	if animate:

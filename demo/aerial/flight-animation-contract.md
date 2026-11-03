@@ -28,12 +28,13 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
    through actual point forces. Main vectoring trims the combined moment before
    cold gas supplies the remainder; airspeed alone never disables attitude control.
 3. Main engines off: rotate freely while retaining existing travel. Cold-gas
-   attitude control supplies actual torque. Compact preparation and arrest poses
+   attitude control supplies actual torque. Air-load/rate-error-dependent compact or extended preparation and arrest poses
    express the maneuver; neither pose nor orientation rewrites velocity. Gravity
    and atmospheric forces remain active.
 4. Atmospheric falling: depict skydiver body flight. Relative wind, broadside
    exposure, downward travel and braking progressively establish arch/box, track,
-   flare or recovery. Both shoulders/elbows, wrists, pelvis and legs participate.
+   flare or recovery. Signed relative wind distinguishes belly and back silhouettes. Both
+   shoulders/elbows, wrists, pelvis, head and legs participate.
 5. Transitions remain continuous. Thrust cutoff alone must not cause an instant
    spread pose; a fast stall must not trigger upright hover posing/braking.
    Preserve joint/spring velocities and actual body momentum across transitions.
@@ -104,3 +105,20 @@ References:
 - https://www.uspa.org/uspa-news/foundations-of-flight-neutral-body-position
 - https://www.uspa.org/skydiveschool/d
 - https://www.apf.com.au/members/members/publications/misc-publications/basic-body-flight-for-b-rels-and-beyond
+
+## Research body-flight requirements
+
+Steering feedback uses the effective protected/flip-scaled pilot-local rate,
+not the nominal MAX_RATE. Engine-off air load must retain bank expression even
+with detached flow. Actual completed limb projection supplies extra braking
+drag; the key alone cannot change force before geometry moves. Deceleration
+after release cannot self-latch a flare. Extended layouts require useful air
+support and low unmet rotation demand; compact alternatives remain in vacuum.
+
+The head anticipates turns, adjusts for belly/back/tracking presentation and
+accepts independent camera vision intent. Preserve bounded mechanical neck
+angles/speed, quiet settling, body momentum and camera independence. Head look
+must not move control panels or nozzles. Keep the existing single pose writer;
+use Uncharted's additive/look-at approach as the production reference for this
+neck-only correction. Research sources and calibrated-model limitations live
+in README.md; no footage-derived parameter fit is claimed.

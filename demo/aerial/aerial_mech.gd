@@ -208,7 +208,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
 		outlets.append({"position":transform * MOUNTS[index][2] - global_position,
 			"basis":(transform.basis * neutral_bases[index]).orthonormalized()})
-	controller.step(state, FlightController.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable, aerodynamic_surfaces())
+	controller.step(state, FlightController.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable, aerodynamic_surfaces(), rig.arms.brake_spread())
 	collided = state.get_contact_count() > 0
 	native_support = false
 	for index in state.get_contact_count():

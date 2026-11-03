@@ -67,7 +67,7 @@ limits rather than stretching the skeleton.
   External shoulder rotation establishes the elbow hinge plane; simply raising
   the upper arms produces the wrong silhouette. Directional corrections survive
   base/freefall blends. Lengthwise flow permits a tracking shape.
-- Air braking: Shift or loaded rapid deceleration drives one shared flare value.
+- Air braking: Shift or loaded deceleration during braking/reverse thrust drives one shared flare value.
   Knees squat while hands spread outside the shoulders. Flare wins over reverse
   bracing, which previously consumed its blend weight. The G-load gate excludes
   ballistic gravity from the deceleration response. The raw Shift request starts
@@ -157,7 +157,7 @@ captures. The real input replays record reverse, burst, interruption, opposing
 turns, body flight and a complete `flare_exit` in body and gameplay chase views.
 Reports use completed hand positions and geometric knee flexion, not IK targets.
 
-`pose_studio.tscn` retains 34 static key references and eleven native AnimationPlayer
+`pose_studio.tscn` retains 45 static key references and fourteen native AnimationPlayer
 studies. Select PosePlayer for the Animation dock. Arrow keys select clips,
 Space pauses, R restarts, and 1/2/3 changes views. Rebuild that library with:
 
@@ -168,3 +168,23 @@ godot --headless --path demo --script res://aerial/poses/bake_pose_library.gd
 Those frozen-chassis studies include a presentation attitude and remain separate
 from physical gameplay. The library is regenerated from the current rig; the
 live input replays provide the evidence for continuity and movement.
+
+## Research adaptation and head intent
+
+See the [behaviour mapping](../README.md#research-mapped-to-the-current-behaviours)
+for sources and calibration limits. Belly and back presentation use signed
+relative wind, with separate arm, hip/knee and head targets. Extended layouts
+blend with compact flips from air pressure and effective-rate tracking error,
+without changing physical inertia. Unpowered air-loaded banks retain their
+loaded silhouette. Extra braking drag follows completed arm projection; release
+cannot feed deceleration back into a permanently latched flare.
+
+The existing neck servo now leads turn intent and accepts independent vision
+intent relative to the completed torso. Uncharted's additive/look-at layering
+is the production reference; this adaptation uses the neck alone. Bounds and
+speed are rig-profile values. Head scanning never moves aerodynamic panels,
+thruster hardpoints, camera or the chassis. There is no idle neck oscillator.
+
+Pose Studio adds Back_Fall, front/back extended swing/inversion/opening, four
+head-look keys, and Belly_Back_Recovery / Extended_Layouts / Head_Scan studies.
+The same joint limits/servos generate these references and the runtime pose.

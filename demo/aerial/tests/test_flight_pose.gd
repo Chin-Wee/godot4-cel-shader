@@ -115,8 +115,9 @@ func _run() -> void:
 	await _ticks(30)
 	assert(mech.controller.velocity.length() < coast_speed-5, "Shift did not brake")
 	assert(mech.controller.rotation_command.z > 0.9, "Shift stole roll input")
-	# A broadside spread fall decelerates differently from a compact fall.
-	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,-50,0), 0)
+	# Compare an actual head-first compact fall with a broadside spread fall.
+	# Belly-facing wind now naturally spreads the body even without Shift.
+	await _fixture(Vector3(175,2600,340), Quaternion(Vector3.RIGHT,PI), Vector3(0,-50,0), 0)
 	await _ticks(60)
 	var compact_fall: float = mech.controller.velocity.y
 	await _fixture(Vector3(175,2600,340), cruise, Vector3(0,-50,0), 0)

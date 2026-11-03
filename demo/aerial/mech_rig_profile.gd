@@ -21,6 +21,9 @@ extends Resource
 @export var stream_pose := PackedVector3Array([Vector3.ZERO, Vector3(0.12,0,0), Vector3(0.32,0,0)])
 @export var spread_pose := PackedVector3Array([Vector3(-0.88,0,0.46), Vector3(1.07,0,0), Vector3(-0.24,0,0)])
 @export var fall_pose := PackedVector3Array([Vector3(0.08,0,0.28),Vector3(1.30,0,0),Vector3(-0.20,0,0)])
+# Back-facing air: knees gather toward the torso instead of folding behind it.
+@export var back_fall_pose := PackedVector3Array([Vector3(-0.98,0,0.22),Vector3(1.35,0,0),Vector3(0.20,0,0)])
+@export var layout_pose := PackedVector3Array([Vector3(-0.08,0,0.12),Vector3(0.18,0,0),Vector3(0.08,0,0)])
 @export var coast_pose := PackedVector3Array([Vector3(-0.32,0,0.16), Vector3(0.58,0,0), Vector3(-0.06,0,0)])
 @export var landing_pose := PackedVector3Array([Vector3(-0.36,0,0.20), Vector3(0.68,0,0), Vector3(-0.10,0,0)])
 @export var launch_pose := PackedVector3Array([Vector3(-0.03,0,0.08),Vector3(0.05,0,0),Vector3.ZERO])
@@ -48,6 +51,13 @@ extends Resource
 @export var arm_coast := Vector3(-0.10,0.6,0.95)
 @export var arm_land := Vector3(-0.15,0.55,0.95)
 @export var arm_box := Vector3(-0.35,1.05,1.40)
+@export var arm_back := Vector3(-0.55,1.10,0.75)
+@export var arm_back_twist := -0.15
+@export var brake_projection := Vector2(0.30,0.60) # Completed lateral arm projection / reach.
+@export var head_min := Vector3(-0.95,-0.80,-0.15)
+@export var head_max := Vector3(0.50,0.80,0.15)
+@export var head_response := 0.18 # Eyes/head lead the slower shoulders and pelvis.
+@export var head_speed := 1.6
 @export var arm_box_twist := 0.55 # Humerus rotation; forearms rise, elbows stay below shoulders.
 @export var arm_speed := 1.8 # Radians per second; powered joints hold their targets.
 @export var hover_leg_motion := 0.04
@@ -83,3 +93,6 @@ func maneuver_shape(travel: float) -> Vector3:
 	var tuck := smoothstep(35,140,angle)*(1.0-smoothstep(260,340,angle))
 	var opening := smoothstep(260,310,angle)*(1.0-smoothstep(340,360,angle))
 	return Vector3((1.0-tuck)*(1.0-opening),tuck*(1.0-opening),opening)
+
+func limit_head(target: Vector3) -> Vector3:
+	return target.clamp(head_min,head_max)
