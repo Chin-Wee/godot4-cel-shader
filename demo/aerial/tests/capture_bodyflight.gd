@@ -29,7 +29,7 @@ func _capture() -> void:
 		view = camera_view
 		output = destination.path_join(view)
 		assert(DirAccess.make_dir_recursive_absolute(output)==OK)
-		scene.follow_camera = view=="chase"
+		scene.camera.follow_enabled = view=="chase"
 		report = {}
 		for speed in [35.0,70.0,110.0]:
 			for level in [3,4]:

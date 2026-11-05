@@ -1,5 +1,6 @@
 extends SceneTree
 
+const FlightInput = preload("res://aerial/flight_input.gd")
 const Controller = preload("res://aerial/flight_controller.gd")
 var scene
 var mech
@@ -29,7 +30,7 @@ func _key(code: Key, pressed := true, echo := false) -> void:
 	event.physical_keycode = code
 	event.pressed = pressed
 	event.echo = echo
-	mech.controller.handle_input(event)
+	FlightInput.handle_input(event,mech.controller)
 
 func _run() -> void:
 	create_timer(80).timeout.connect(func():

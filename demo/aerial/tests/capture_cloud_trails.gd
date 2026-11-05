@@ -22,10 +22,10 @@ func _capture() -> void:
 	for node in [scene.hero,scene.wingman,scene.missile,scene.get_node("Terrain"),scene.get_node("River")]: node.visible = false
 	for trail in scene.trails: trail.visible = false
 	for batch in scene.clouds.batches: batch.visible = false
-	scene.atmosphere_strength = 0.0
-	scene.post_material.set_shader_parameter("post_strength",0.0)
+	scene.lighting.atmosphere_strength = 0.0
+	scene.lighting.post_material.set_shader_parameter("post_strength",0.0)
 	var preview := MeshInstance3D.new()
-	preview.material_override = scene.cloud_material
+	preview.material_override = scene.lighting.cloud_material
 	preview.position = Vector3(0,1800,0)
 	preview.scale = Vector3(170,100,170)
 	scene.add_child(preview)
@@ -41,14 +41,14 @@ func _capture() -> void:
 	scene.camera.position = preview.position+Vector3(120,430,420)
 	scene.camera.look_at(preview.position)
 	await _save_frame(output.path_join("cloud-top.png"))
-	scene.cloud_material.set_shader_parameter("cloud_edge_strength",0.0)
+	scene.lighting.cloud_material.set_shader_parameter("cloud_edge_strength",0.0)
 	await _save_frame(output.path_join("cloud-no-rim.png"))
 	_delta(output,"cloud-top.png","cloud-no-rim.png","cloud_rim")
-	scene.cloud_material.set_shader_parameter("cloud_edge_strength",1.0)
-	scene.cloud_material.set_shader_parameter("cloud_shade_noise_strength",0.0)
+	scene.lighting.cloud_material.set_shader_parameter("cloud_edge_strength",1.0)
+	scene.lighting.cloud_material.set_shader_parameter("cloud_shade_noise_strength",0.0)
 	await _save_frame(output.path_join("cloud-no-paint.png"))
 	_delta(output,"cloud-top.png","cloud-no-paint.png","cloud_threshold_noise")
-	scene.cloud_material.set_shader_parameter("cloud_shade_noise_strength",0.18)
+	scene.lighting.cloud_material.set_shader_parameter("cloud_shade_noise_strength",0.18)
 	preview.visible = false
 	for style in [Trail.SMOKE,Trail.THIN,Trail.MISSILE]:
 		var trail := Trail.new()
@@ -56,10 +56,10 @@ func _capture() -> void:
 		trail.width = 3.0
 		trail.lifetime = 8.0
 		scene.add_child(trail)
-		var material = scene._vfx_material(PackedColorArray([Color(0.9,0.94,1.0),Color(0.4,0.52,0.65)]))
+		var material = scene.lighting.create_vfx_material(PackedColorArray([Color(0.9,0.94,1.0),Color(0.4,0.52,0.65)]))
 		trail.configure(material,style)
 		for layer_material in trail.palette_materials():
-			scene._set_surface_palette(layer_material)
+			scene.lighting.apply_surface_palette(layer_material)
 			layer_material.set_shader_parameter("haze_start",100000.0)
 			layer_material.set_shader_parameter("wind_velocity",Vector3.ZERO)
 			layer_material.set_shader_parameter("wind_curl",0.0)
@@ -94,7 +94,7 @@ func _capture() -> void:
 			trail.material_override.set_shader_parameter("expansion",3.0)
 			await _save_frame(output.path_join("smoke-expanded.png"))
 			_delta(output,"smoke-no-spin.png","smoke-expanded.png","age_expansion")
-			for layer_material in trail.palette_materials(): layer_material.set_shader_parameter("sun_direction",-scene.sun_direction)
+			for layer_material in trail.palette_materials(): layer_material.set_shader_parameter("sun_direction",-scene.lighting.sun_direction)
 			await _save_frame(output.path_join("smoke-opposite-sun.png"))
 			_delta(output,"smoke-expanded.png","smoke-opposite-sun.png","directional_smoke")
 		if style == Trail.THIN:
@@ -108,10 +108,10 @@ func _capture() -> void:
 			trail.material_override.set_shader_parameter("haze_start",100000.0)
 			trail.material_override.set_shader_parameter("haze_distance",6500.0)
 		if style == Trail.MISSILE:
-			scene.environment.glow_enabled = false
+			scene.lighting.environment.glow_enabled = false
 			await _save_frame(output.path_join("missile-no-bloom.png"))
 			_delta(output,"missile-layers.png","missile-no-bloom.png","missile_bloom")
-			scene.environment.glow_enabled = true
+			scene.lighting.environment.glow_enabled = true
 			trail.emissive_core.visible = false
 			await _save_frame(output.path_join("missile-smoke-only.png"))
 			_delta(output,"missile-layers.png","missile-smoke-only.png","missile_emissive_core")

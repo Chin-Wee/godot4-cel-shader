@@ -1,5 +1,6 @@
 extends SceneTree
 
+const MechAssets = preload("res://actors/mechs/mech_assets.gd")
 class InteractionGrass:
 	extends MultiMeshInstance3D
 	var interaction_target: Node3D
@@ -38,7 +39,7 @@ func _run_checks() -> void:
 	var rest: Vector3
 	for name in [&"Idle", &"Walk", &"Jump", &"Fall", &"Land"]:
 		var animation := player.get_animation(name)
-		var index: int = mech._find_position_track(animation, &"Root")
+		var index: int = MechAssets.find_position_track(animation, &"Root")
 		_expect(index >= 0, "Missing root track for " + name)
 		if name == &"Idle": rest = animation.track_get_key_value(index, 0)
 		for key in animation.track_get_key_count(index):
@@ -46,7 +47,7 @@ func _run_checks() -> void:
 	_expect(float(mech.locomotion_stride_distances[&"Walk"]) > 16.0, "Stride must come from original root travel")
 	var imported = load("res://models/MechAsset/MechAsset.glb").instantiate()
 	var original: Animation = imported.find_child("AnimationPlayer",true,false).get_animation("Walk_Forward")
-	var original_track: int = mech._find_position_track(original, &"Root")
+	var original_track: int = MechAssets.find_position_track(original, &"Root")
 	_expect((original.track_get_key_value(original_track,original.track_get_key_count(original_track)-1) as Vector3).z > 16.0, "Imported library was mutated")
 	imported.free()
 	var green_found := false

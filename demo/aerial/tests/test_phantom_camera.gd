@@ -20,8 +20,8 @@ func _run() -> void:
 	scene.hero.custom_integrator = true
 	await process_frame
 	await process_frame
-	assert(scene.camera_host.get_active_pcam() == scene.phantom_camera)
-	assert(scene.camera_host.process_mode == Node.PROCESS_MODE_DISABLED)
+	assert(scene.camera.camera_host.get_active_pcam() == scene.camera.phantom_camera)
+	assert(scene.camera.camera_host.process_mode == Node.PROCESS_MODE_DISABLED)
 	assert(not scene.camera.is_physics_interpolated_and_enabled(),"Camera is being interpolated twice")
 	assert(scene.hero.is_physics_interpolated_and_enabled())
 	assert(scene.camera.fov == 65 and scene.camera.far == 7000)
@@ -31,14 +31,14 @@ func _run() -> void:
 	# Live mouse input must not teleport to the velocity lead on every event.
 	scene.animate = true
 	var live_camera: Transform3D = scene.camera.global_transform
-	scene._orbit(Vector2(130,-50))
+	scene.camera.orbit(Vector2(130,-50))
 	assert(scene.camera.global_transform == live_camera,"Mouse input snapped the moving camera")
-	scene._update_camera(1.0/Engine.max_fps)
+	scene.camera.update_view(1.0/Engine.max_fps)
 	assert(scene.camera.global_position.distance_to(live_camera.origin)<50)
 	scene.animate = false
 	# Orbit, zoom and focus remain usable while paused; no zero-delta NaNs.
 	scene.hero.freeze = true
-	scene._orbit(Vector2(130,-50))
+	scene.camera.orbit(Vector2(130,-50))
 	assert(scene.camera.global_transform.is_finite())
 	assert(scene.camera.global_basis.y.dot(Vector3.UP)>0.9,"Orbit rolled the horizon")
 	var before: Vector3 = scene.camera.global_position
@@ -47,23 +47,23 @@ func _run() -> void:
 	wheel.button_index = MOUSE_BUTTON_WHEEL_UP
 	scene._unhandled_input(wheel)
 	assert(scene.camera.global_position.distance_to(before)>1,"Zoom stopped working")
-	scene.focus_next()
-	scene._update_camera(0.0)
+	scene.camera.focus_next()
+	scene.camera.update_view(0.0)
 	var aim: Vector3 = (scene.wingman.get_global_transform_interpolated().origin-scene.camera.global_position).normalized()
 	assert((-scene.camera.global_basis.z).dot(aim)>0.9999,"Focus did not aim at the rendered target")
-	scene._orbit(Vector2.ZERO)
-	assert(scene.focus_target == null)
+	scene.camera.orbit(Vector2.ZERO)
+	assert(scene.camera.focus_target == null)
 	# Teleports must cut immediately, without dragging history across the world.
 	scene.hero.reset_flight(Vector3(0,15000,0))
 	await process_frame # Godot refreshes its rendered-transform cache each frame.
-	scene._update_camera(1.0/144)
+	scene.camera.update_view(1.0/144)
 	assert(scene.hero.get_global_transform_interpolated().origin.distance_to(scene.hero.global_position)<0.01)
 	assert(scene.camera.global_position.distance_to(scene.hero.global_position)<500)
-	scene.follow_camera = false
+	scene.camera.follow_enabled = false
 	var frozen: Transform3D = scene.camera.global_transform
-	scene._update_camera(1.0/144)
+	scene.camera.update_view(1.0/144)
 	assert(scene.camera.global_transform == frozen,"Camera overwrote a fixed capture view")
-	scene.follow_camera = true
+	scene.camera.follow_enabled = true
 	scene.set_walk_mode(true)
 	assert(not scene.hero.is_physics_interpolated_and_enabled(),"Render-driven walk is being interpolated")
 	scene.set_walk_mode(false)
@@ -79,7 +79,7 @@ func _fast_motion(speed: Vector3) -> bool:
 	scene.hero.reset_flight(Vector3(175,9000,340))
 	scene.hero.linear_velocity = speed
 	scene.hero.freeze = false
-	scene.reset_camera()
+	scene.camera.reset_view()
 	var time := 0.0
 	var min_uv := Vector2(INF,INF)
 	var max_uv := Vector2(-INF,-INF)
@@ -90,9 +90,9 @@ func _fast_motion(speed: Vector3) -> bool:
 		await process_frame
 		var dt: float = root.get_process_delta_time()
 		time += dt
-		scene._update_camera(dt)
+		scene.camera.update_view(dt)
 		var rendered: Vector3 = scene.hero.get_global_transform_interpolated().origin
-		assert(scene.camera_target.global_position.distance_to(rendered+Vector3.UP*17.5)<0.01,"Camera sampled a raw physics transform")
+		assert(scene.camera.camera_target.global_position.distance_to(rendered+Vector3.UP*17.5)<0.01,"Camera sampled a raw physics transform")
 		var tick := Engine.get_physics_frames()
 		if tick==previous_tick and rendered.distance_to(previous_target)>0.01: sub_tick_frames += 1
 		previous_tick = tick

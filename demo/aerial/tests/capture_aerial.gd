@@ -27,27 +27,29 @@ func _capture() -> void:
 	for bank in scene.clouds.bank_transforms.size():
 		var batch: MultiMeshInstance3D = scene.clouds.batches[bank%scene.clouds.SHAPE_COUNT]
 		assert(batch.multimesh.get_instance_transform(bank/scene.clouds.SHAPE_COUNT).is_equal_approx(scene.clouds.bank_transforms[bank]),"Visible cloud transform differs from its weather volume")
-	var trail: MultiMeshInstance3D = scene.trails[0]
+	# Missile history is seeded at startup; the hero trail starts with live flight.
+	var trail: MultiMeshInstance3D = scene.trails[2]
 	var first := trail.multimesh.get_instance_transform(0)
 	var second := trail.multimesh.get_instance_transform(1)
 	var direction := (second.origin-first.origin).normalized()
 	assert(absf(second.basis.z.normalized().dot(direction)) > 0.999,"Trail puffs do not follow their trajectory")
 	assert(trail.multimesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX].size() == 72,"Trail core lost its faceted prism geometry")
 	assert(absf(first.origin.distance_to(second.origin)-trail.spacing) < 0.02,"Seeded trail bypassed fixed-distance sampling")
-	scene.post_material.set_shader_parameter("post_strength",0.0)
-	scene.environment.glow_enabled = false
+	scene.lighting.post_material.set_shader_parameter("post_strength",0.0)
+	scene.lighting.environment.glow_enabled = false
 	await _save_frame(output.path_join("sunset-no-glow.png"))
-	scene.environment.glow_enabled = true
+	scene.lighting.environment.glow_enabled = true
 	await _save_frame(output.path_join("sunset-no-post.png"))
 	assert(Image.load_from_file(output.path_join("sunset-no-glow.png")).get_data() != Image.load_from_file(output.path_join("sunset-no-post.png")).get_data(),"Native HDR glow produced no change in the current renderer")
-	scene.post_material.set_shader_parameter("post_strength",1.0)
+	scene.lighting.post_material.set_shader_parameter("post_strength",1.0)
 	await _save_frame(output.path_join("sunset.png"))
-	var flare_gain = scene.post_material.get_shader_parameter("flare_strength")
-	scene.post_material.set_shader_parameter("flare_strength",0.0)
+	var flare_gain = scene.lighting.post_material.get_shader_parameter("flare_strength")
+	scene.lighting.post_material.set_shader_parameter("flare_strength",0.0)
 	await _save_frame(output.path_join("sunset-no-flare.png"))
-	scene.post_material.set_shader_parameter("flare_strength",flare_gain)
-	var sun_uv: Vector2 = scene.post_material.get_shader_parameter("sun_uv")
-	var ghost_uv := sun_uv+(Vector2(0.5,0.5)-sun_uv)*2.4
+	scene.lighting.post_material.set_shader_parameter("flare_strength",flare_gain)
+	var sun_uv: Vector2 = scene.lighting.post_material.get_shader_parameter("sun_uv")
+	# The shader's inner ghost stays in frame; its outer 2.4x ghost may not.
+	var ghost_uv := sun_uv+(Vector2(0.5,0.5)-sun_uv)*1.35
 	var occluder := MeshInstance3D.new()
 	var sphere := SphereMesh.new()
 	sphere.radius = 12.0
@@ -59,9 +61,9 @@ func _capture() -> void:
 	occluder.material_override = black
 	occluder.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	scene.add_child(occluder)
-	occluder.global_position = scene.camera.global_position+scene.sun_direction.normalized()*150.0
+	occluder.global_position = scene.camera.global_position+scene.lighting.sun_direction.normalized()*150.0
 	await _save_frame(output.path_join("sun-occluded-post.png"))
-	scene.post_material.set_shader_parameter("post_strength",0.0)
+	scene.lighting.post_material.set_shader_parameter("post_strength",0.0)
 	await _save_frame(output.path_join("sun-occluded-raw.png"))
 	var visible_delta := _post_difference(Image.load_from_file(output.path_join("sunset-no-flare.png")),Image.load_from_file(output.path_join("sunset.png")),ghost_uv)
 	var hidden_delta := _post_difference(Image.load_from_file(output.path_join("sun-occluded-raw.png")),Image.load_from_file(output.path_join("sun-occluded-post.png")),ghost_uv)
@@ -70,7 +72,7 @@ func _capture() -> void:
 	print("Solar probe: visible ghost delta=",visible_delta," occluded delta=",hidden_delta)
 	occluder.queue_free()
 	await process_frame
-	scene.post_material.set_shader_parameter("post_strength",1.0)
+	scene.lighting.post_material.set_shader_parameter("post_strength",1.0)
 	scene.set_palette(true)
 	await _save_frame(output.path_join("daylight.png"))
 	var initial_camera: Transform3D = scene.camera.transform
@@ -118,16 +120,16 @@ func _capture() -> void:
 	var bank: Vector4 = scene.clouds.banks[0]
 	scene.camera.position = scene.clouds.to_global(Vector3(bank.x,bank.y,bank.z))
 	await _save_frame(output.path_join("inside-cloud.png"))
-	scene.storm = true
+	scene.lighting.storm = true
 	scene.set_palette(true)
 	await _save_frame(output.path_join("storm-rain.png"))
 	scene.camera.position = outside
 	scene._process(0.0)
 	scene.set_process(false)
-	scene.post_material.set_shader_parameter("rain_strength",0.0)
+	scene.lighting.post_material.set_shader_parameter("rain_strength",0.0)
 	await _save_frame(output.path_join("storm-clear.png"))
-	scene.post_material.set_shader_parameter("rain_strength",1.0)
-	scene.post_material.set_shader_parameter("weather_time",2.3)
+	scene.lighting.post_material.set_shader_parameter("rain_strength",1.0)
+	scene.lighting.post_material.set_shader_parameter("weather_time",2.3)
 	await _save_frame(output.path_join("rain-on-geometry.png"))
 	var dry := Image.load_from_file(output.path_join("storm-clear.png"))
 	var wet := Image.load_from_file(output.path_join("rain-on-geometry.png"))

@@ -36,6 +36,11 @@ A stable screen-space 4×4 Bayer pattern perturbs `N·L` before the ramp lookup.
 
 This is how the defines look on [cel-shader-base.gdshader](src/cel-shader-base.gdshader). For each feature you want, change the `0` to `1` and the additional uniforms should show up on the material. You must have the [includes](src/includes) folder on the same directory as the your modified copy. You can see the demo as an example.
 
+The shader files are feature wrappers around `includes/cel-material.gdshaderinc`.
+The demo enables `USE_COLOR_SATURATION`; its base material also enables
+`USE_PAINT_VARIATION`. The distributable template leaves both disabled. Shared
+includes, aerial shaders and post effects remain identical in the demo copy.
+
 Lastly, you can watch the [Youtube video](https://youtu.be/F0LZ_hAci4k) for more information on how the base functions work and how to set it up.
 
 ### Outlines

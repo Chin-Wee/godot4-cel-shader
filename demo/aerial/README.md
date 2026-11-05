@@ -88,6 +88,16 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   world units represent one metre: native forces multiply by 10, torque by 100,
   velocities divide by 10, and native inertia divides by 100. Native gravity is
   scaled consistently and never added twice.
+- `flight_input.gd` owns InputMap installation, keyboard sampling and input-event
+  translation. The dynamics solver consumes command data and has no global Input
+  dependency. `actors/mechs/mech_assets.gd` prepares local imported animations and
+  materials; `mech_character.gd` owns movement-facing animation playback.
+- `aerial_demo.tscn` composes `Lighting`, `FlightCamera` and `FlightHUD` children.
+  Their scripts own weather/material palettes, the Armored Core VI-style Phantom
+  Camera orbit/focus behavior, and the readout respectively. The scene calls the
+  camera before weather on the render clock; physics remains on its fixed clock.
+  Camera settings are native Camera3D properties. Atmosphere strengths are exported
+  on `Lighting`; pose tuning remains in the existing rig-profile Resource.
 - Main forces use actual physics-tick gimbal directions and animated attachment
   positions. Off-centre application generates the actual engine moment. Measured
   equal shares caused forward drift because the calf ports cannot vector upright
@@ -341,7 +351,7 @@ The current volume path requires a RenderingDevice renderer (Mobile or Forward+)
 and is monoscopic. `atmosphere_strength` controls the solve; zero skips scattering
 but keeps the solar mask active. `atmosphere_shadow_strength` controls cloud-column
 contrast. Density, height falloff, range, Sun energy and ambient color are configured
-in `_update_atmosphere`; optics and cloud terms have separate shader strengths for
+in `aerial_lighting.gd`'s `_update_atmosphere`; optics and cloud terms have separate shader strengths for
 A/B tuning. Sky, surfaces, new/live VFX and the volume share one Sun direction and
 warm/cool palette. Explicit sky fill is applied in the material shaders because
 they disable native ambient lighting. These captures validate desktop Metal
@@ -435,6 +445,15 @@ Behavior and launch channels are recorded in the replay reports.
 Use the rig profile to tune animation; flight-force tuning remains in the controller.
 
 ## Checks and comparison captures
+
+Run every headless first-party check and shared-source copy check with
+`python3 tools/check_godot.py` after importing `demo` in Godot. This includes the
+camera at 30/144/240 FPS and rejects GDScript errors even if the engine exits zero.
+The native material check is
+`godot --path demo --script res://scripts/tests/capture_shader_variants.gd -- /tmp/shader-variants.png`.
+It renders the four demo wrappers plus the distributable and height-mapped
+template configurations. `REFACTOR_PLAN.md` records ownership decisions and the
+refactor's verification scope.
 
 `test_flight_controls.gd` runs 44 real-input sequences, including 24 sustained
 W/S pulls across all four powered levels at 35, 70 and 110 m/s. It checks signed

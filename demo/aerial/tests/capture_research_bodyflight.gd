@@ -44,7 +44,7 @@ func _capture() -> void:
 		view = camera_view
 		output = destination.path_join(view)
 		assert(DirAccess.make_dir_recursive_absolute(output)==OK)
-		scene.follow_camera = view=="chase"
+		scene.camera.follow_enabled = view=="chase"
 		report = {}
 		for name in cases:
 			if not only.is_empty() and name!=only: continue

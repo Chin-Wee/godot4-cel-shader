@@ -9,7 +9,7 @@ func _setup_capture() -> void:
 	await super._setup_capture()
 	# Finish the addon's pending startup camera blend before fixture teleports.
 	# Advancing only the camera leaves the native body/pose clocks untouched.
-	scene.camera_host.process(scene.phantom_camera.tween_duration)
+	scene.camera.camera_host.process(scene.camera.phantom_camera.tween_duration)
 
 func _dive() -> void:
 	var ground: float = scene.ground_height(Vector3(175,0,340))
@@ -36,13 +36,13 @@ func _recovery() -> void:
 func _fixture(origin: Vector3, orientation: Quaternion, speed: Vector3, level: int) -> void:
 	await super._fixture(origin,orientation,speed,level)
 	if view=="chase":
-		scene.reset_camera()
+		scene.camera.reset_view()
 		# One normal player-style orbit per fixture, then leave the real
 		# independent-look camera alone. A side angle keeps the posed limbs visible.
-		var heading: float = atan2(-speed.x,-speed.z) if Vector2(speed.x,speed.z).length()>1 else scene.camera_yaw
+		var heading: float = atan2(-speed.x,-speed.z) if Vector2(speed.x,speed.z).length()>1 else scene.camera.yaw
 		var yaw := heading+0.8
-		scene._orbit(Vector2((scene.camera_yaw-yaw)/0.004,(0.2-scene.camera_pitch)/0.004))
-		scene._update_camera(0.0) # Cut the fixture orbit before recording input.
+		scene.camera.orbit(Vector2((scene.camera.yaw-yaw)/0.004,(0.2-scene.camera.pitch)/0.004))
+		scene.camera.update_view(0.0) # Cut the fixture orbit before recording input.
 
 func _position_capture_camera() -> void:
 	if view=="chase": return # scene._process already evaluated the real camera.
@@ -63,7 +63,7 @@ func _capture() -> void:
 		view = camera_view
 		output = destination.path_join(view)
 		assert(DirAccess.make_dir_recursive_absolute(output)==OK)
-		scene.follow_camera = view=="chase"
+		scene.camera.follow_enabled = view=="chase"
 		report = {}
 		await _hover()
 		await _fighter()

@@ -40,7 +40,7 @@ func _capture() -> void:
 		view = camera_view
 		output = destination.path_join(view)
 		assert(DirAccess.make_dir_recursive_absolute(output)==OK)
-		scene.follow_camera = view=="chase"
+		scene.camera.follow_enabled = view=="chase"
 		report = {}
 		await _directional_hover()
 		await _fixture(Vector3(175,7000,340),Quaternion(Vector3.RIGHT,PI/2),Vector3(12,0,-55),0)

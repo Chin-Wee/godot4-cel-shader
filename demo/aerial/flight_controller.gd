@@ -39,13 +39,6 @@ const BASE_DRAG_CD := 0.075
 const HIGH_SPEED_DRAG_CD := 0.28
 const BRAKE_DRAG_CD := 1.8
 const LIFT_BIAS := 0.36 # Shared camber calibrated after splitting the original area.
-const ACTION_KEYS := {
-	"flight_forward": KEY_W, "flight_back": KEY_S,
-	"flight_left": KEY_A, "flight_right": KEY_D,
-	"flight_yaw_left": KEY_Q, "flight_yaw_right": KEY_E,
-	"flight_thrust_up": KEY_SPACE, "flight_thrust_down": KEY_C,
-	"flight_brake": KEY_SHIFT, "flight_jump": KEY_R, "flight_precision": KEY_CTRL,
-}
 var body: RigidBody3D
 # These are readbacks, never a second integrated position/velocity/attitude.
 var position: Vector3:
@@ -137,28 +130,6 @@ var accel := Spring.new()
 var last_velocity := Vector3.ZERO
 var last_rates := Vector3.ZERO
 var sampled := false
-
-static func install_input_actions() -> void:
-	for action in ACTION_KEYS:
-		if not InputMap.has_action(action): InputMap.add_action(action)
-		InputMap.action_erase_events(action)
-		var event := InputEventKey.new()
-		event.physical_keycode = ACTION_KEYS[action]
-		InputMap.action_add_event(action, event)
-	# Retire the old aerial-only actions, including their Shift/X bindings.
-	for action in ["flight_burst", "flight_rise", "flight_sink"]:
-		if InputMap.has_action(action): InputMap.erase_action(action)
-
-static func read_input() -> Dictionary:
-	var result := {}
-	for key in ["forward", "back", "left", "right", "yaw_left", "yaw_right", "brake", "precision"]:
-		result[key] = Input.is_action_pressed("flight_" + key)
-	return result
-
-func handle_input(event: InputEvent) -> void:
-	if event.is_action_pressed("flight_thrust_up"): detent = mini(detent + 1, DETENTS.size() - 1)
-	if event.is_action_pressed("flight_thrust_down"): detent = maxi(detent - 1, 0)
-	if event.is_action_pressed("flight_jump"): jump_requested = true
 
 func configure(owner_body: RigidBody3D, display_scale: float) -> void:
 	body = owner_body

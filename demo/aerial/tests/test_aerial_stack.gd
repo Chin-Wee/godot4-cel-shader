@@ -1,5 +1,6 @@
 extends SceneTree
 
+const MechAssets = preload("res://actors/mechs/mech_assets.gd")
 var completed := false
 
 func _initialize() -> void:
@@ -40,26 +41,26 @@ func _run() -> void:
 	scene.camera.position = inside
 	await process_frame
 	await process_frame
-	assert(scene.environment.fog_enabled and scene.environment.fog_density > 0.02,"Cloud entry did not reduce visibility")
-	assert(scene.post_material.get_shader_parameter("sun_visible") == 0.0,"Cloud interior still enabled direct-sun optics")
-	scene.storm = true
+	assert(scene.lighting.environment.fog_enabled and scene.lighting.environment.fog_density > 0.02,"Cloud entry did not reduce visibility")
+	assert(scene.lighting.post_material.get_shader_parameter("sun_visible") == 0.0,"Cloud interior still enabled direct-sun optics")
+	scene.lighting.storm = true
 	scene.set_palette(false)
 	await process_frame
 	await process_frame
-	assert(scene.post_material.get_shader_parameter("rain_strength") > 0.9,"Storm cloud entry did not enable camera rain")
+	assert(scene.lighting.post_material.get_shader_parameter("rain_strength") > 0.9,"Storm cloud entry did not enable camera rain")
 	clouds.set_coverage(0.0)
 	for batch in clouds.batches:
 		assert(batch.multimesh.visible_instance_count == 0,"Coverage left a visible cloud variant")
 	await process_frame
 	await process_frame
-	assert(not scene.environment.fog_enabled and scene.post_material.get_shader_parameter("rain_strength") == 0.0,"Invisible banks still produced weather")
+	assert(not scene.lighting.environment.fog_enabled and scene.lighting.post_material.get_shader_parameter("rain_strength") == 0.0,"Invisible banks still produced weather")
 	clouds.set_coverage(1.0)
-	scene.storm = false
+	scene.lighting.storm = false
 	scene.set_palette(false)
 	scene.camera.position = outside
 	await process_frame
 	await process_frame
-	assert(not scene.environment.fog_enabled,"Cloud fog leaked outside the bank")
+	assert(not scene.lighting.environment.fog_enabled,"Cloud fog leaked outside the bank")
 	var trail = scene.trails[0]
 	assert(trail.multimesh.instance_count == 512,"Trail storage is unbounded")
 	trail.sample_position(trail.emitter.global_position)
@@ -75,7 +76,7 @@ func _run() -> void:
 	trail.sample_position(trail.emitter.global_position+Vector3(10000,0,0))
 	assert(trail.sample_count == samples,"Teleport drew a cross-world trail")
 	scene.set_palette(true)
-	var palette_size: int = scene.palette_materials.size()
+	var palette_size: int = scene.lighting.palette_materials.size()
 	scene.trigger_explosion()
 	var explosion = scene.explosion
 	explosion.set_process(false)
@@ -92,12 +93,12 @@ func _run() -> void:
 	explosion.set_time(explosion.duration+0.1)
 	for node in explosion.get_children(): assert(not node.visible,"Expired explosion component stayed visible")
 	explosion.set_time(0.7)
-	assert(scene.palette_materials.size() == palette_size,"Transient effects leaked into persistent palette storage")
-	assert(explosion.materials[0].get_shader_parameter("haze_color") == scene.current_haze,"New VFX did not inherit the active weather palette")
-	assert(explosion.materials[8].get_shader_parameter("sun_direction") == scene.sun_direction,"New smoke did not inherit the active sunlight")
+	assert(scene.lighting.palette_materials.size() == palette_size,"Transient effects leaked into persistent palette storage")
+	assert(explosion.materials[0].get_shader_parameter("haze_color") == scene.lighting.current_haze,"New VFX did not inherit the active weather palette")
+	assert(explosion.materials[8].get_shader_parameter("sun_direction") == scene.lighting.sun_direction,"New smoke did not inherit the active sunlight")
 	scene.set_palette(false)
-	assert(explosion.materials[0].get_shader_parameter("haze_color") == scene.current_haze,"Live VFX missed a palette transition")
-	assert(explosion.materials[8].get_shader_parameter("sun_direction") == scene.sun_direction,"Live smoke missed a sunlight transition")
+	assert(explosion.materials[0].get_shader_parameter("haze_color") == scene.lighting.current_haze,"Live VFX missed a palette transition")
+	assert(explosion.materials[8].get_shader_parameter("sun_direction") == scene.lighting.sun_direction,"Live smoke missed a sunlight transition")
 	explosion._process(explosion.duration+1.0)
 	await process_frame
 	await process_frame
@@ -183,7 +184,7 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(mech.skeleton.find_child("Cube",false,false).visible,"Backpack was hidden with the weapon")
 		for name in [&"Walk",&"Fall"]:
 			var clip: Animation = mech.actor.animation_player.get_animation(name)
-			var track: int = mech.actor._find_position_track(clip,&"Root")
+			var track: int = MechAssets.find_position_track(clip,&"Root")
 			var origin: Vector3 = clip.track_get_key_value(track,0)
 			for key in clip.track_get_key_count(track): assert(origin.is_equal_approx(clip.track_get_key_value(track,key)),"Walk root displacement was restored")
 		for material in mech.palette_materials:

@@ -2,6 +2,7 @@ extends SceneTree
 
 # Fixed-input behavioral replays: DCS Su-27 flight and Elite Dangerous momentum.
 # This is a test driver, never a gameplay movement/pose controller.
+const FlightInput = preload("res://aerial/flight_input.gd")
 const Controller = preload("res://aerial/flight_controller.gd")
 const HZ := 60
 var completed := false
@@ -31,8 +32,8 @@ func _keys(keys: Array) -> void:
 	# Reuse the actor's existing replay-input path. OS focus/key releases must
 	# never change a hardcoded timeline while the user works in another app.
 	scene.hero.controls = {}
-	for action in Controller.ACTION_KEYS:
-		scene.hero.controls[action.trim_prefix("flight_")] = keys.has(Controller.ACTION_KEYS[action])
+	for action in FlightInput.ACTION_KEYS:
+		scene.hero.controls[action.trim_prefix("flight_")] = keys.has(FlightInput.ACTION_KEYS[action])
 
 func _event(code: Key, pressed: bool) -> void:
 	var event := InputEventKey.new()
@@ -77,7 +78,7 @@ func _setup_capture() -> void:
 	scene.set_process(false)
 	scene.set_process_unhandled_input(false)
 	scene.hero.player_controlled = false
-	scene.follow_camera = false
+	scene.camera.follow_enabled = false
 	scene.clouds.set_coverage(0.4)
 	if DisplayServer.get_name() != "headless":
 		root.title = "Godot flight scenario validation"

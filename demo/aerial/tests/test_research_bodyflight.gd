@@ -37,9 +37,9 @@ func _run() -> void:
 	mech.player_controlled = true
 	var camera_before: Transform3D = scene.camera.global_transform
 	var body_before: Transform3D = mech.global_transform
-	scene._orbit(Vector2(120,-30))
+	scene.camera.orbit(Vector2(120,-30))
 	scene._physics_process(1.0/60)
-	assert(fc.gaze_direction.is_equal_approx(scene.look_direction()))
+	assert(fc.gaze_direction.is_equal_approx(scene.camera.look_direction()))
 	assert(scene.camera.global_transform==camera_before and mech.global_transform==body_before)
 	mech.player_controlled = false
 	# Camera gaze affects the displayed neck, not the physical control surfaces.

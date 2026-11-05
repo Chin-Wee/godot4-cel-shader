@@ -60,7 +60,7 @@ func _capture() -> void:
 	_expect(rows[-1].velocity[0]>2 and rows[-1].velocity[2]< -2,"Diagonal thrust does not combine the requested directions")
 	# The force direction follows the chassis heading, independently of mouse look.
 	await _fixture(origin,Quaternion(Vector3.UP,PI/2),Vector3.ZERO,2)
-	scene._orbit(Vector2(500,-80))
+	scene.camera.orbit(Vector2(500,-80))
 	rows = await _play("heading_relative",180,[[0,[KEY_W]]],false)
 	_expect(rows[-1].velocity[0]<-2 and absf(rows[-1].velocity[2])<1,"Hover translation follows world/camera axes")
 	# A powered climb crossing the old speed threshold cannot cancel this press.

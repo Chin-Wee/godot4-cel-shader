@@ -27,7 +27,7 @@ func _capture() -> void:
 		view = camera_view
 		output = destination.path_join(view)
 		assert(DirAccess.make_dir_recursive_absolute(output)==OK)
-		scene.follow_camera = view=="chase"
+		scene.camera.follow_enabled = view=="chase"
 		report = {}
 		for entry in [["front",KEY_W,-1.0],["back",KEY_S,1.0]]:
 			await _fixture(Vector3(175,12000,340),Quaternion.IDENTITY,Vector3.ZERO,0)
