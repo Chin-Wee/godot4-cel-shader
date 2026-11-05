@@ -1,8 +1,8 @@
 {
   "README.md": {
-    "mtime": 1792864184.3862007,
-    "seen": 1792864192.985766,
-    "ast_hash": "249143a1c86a567294946451af9d82de",
+    "mtime": 1793877995.0601318,
+    "seen": 1793878129.749307,
+    "ast_hash": "b3e37a4d23e7fa570c133450d96cff9c",
     "semantic_hash": ""
   },
   "demo/models/kenney_factory-kit_3.0/License.txt": {
@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793707507.0704596,
-    "seen": 1793707580.093504,
-    "ast_hash": "703d80f0f9f055aa7c324ad92a937c63",
+    "mtime": 1793877995.0621443,
+    "seen": 1793878129.74931,
+    "ast_hash": "bb0717e3bfa48f812397bc68cd98d2c7",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1407,6 +1407,24 @@
     "mtime": 1793604840.5922997,
     "seen": 1793604841.690136,
     "ast_hash": "68c4bcc395ed3fd53cf6d876a7467893",
+    "semantic_hash": ""
+  },
+  "tools/check_godot.py": {
+    "mtime": 1793877995.0750568,
+    "seen": 1793878129.749304,
+    "ast_hash": "771d3e36dcfda1c4ff5d2bf1b68bc118",
+    "semantic_hash": ""
+  },
+  "REFACTOR_PLAN.md": {
+    "mtime": 1793878212.269374,
+    "seen": 1793878213.236458,
+    "ast_hash": "5c5fd466c7a89be69b6382ae6bf3a9d4",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261105_112848_78f9098f_refactor_the_codebase_based_on_solid_design_princi.md": {
+    "mtime": 1793878128.6543205,
+    "seen": 1793878129.749321,
+    "ast_hash": "f62de87479ed5be5e26658d2a1191288",
     "semantic_hash": ""
   }
 }

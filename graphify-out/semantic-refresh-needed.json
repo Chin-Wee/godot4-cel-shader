@@ -3,9 +3,11 @@
   "sources": [
     "demo/aerial/README.md",
     "demo/aerial/flight-animation-contract.md",
-    "demo/aerial/poses/POSE_DESIGN.md"
+    "demo/aerial/poses/POSE_DESIGN.md",
+    "README.md",
+    "REFACTOR_PLAN.md"
   ],
-  "source_revision": "80279ef391e53a8cb8ba1f6acf75c2e832484607",
+  "source_revision": "6878170f0791c6317b8fa3eb363bb7bb3278af10",
   "code_graph_updated": true,
   "backend": "opencode-go",
   "reason": "Semantic extraction was previously rejected with MissingSessionID by the configured provider. This code/structural update does not retry that unsupported adapter. Re-run semantic extraction with a supported session adapter. Source remains authoritative.",

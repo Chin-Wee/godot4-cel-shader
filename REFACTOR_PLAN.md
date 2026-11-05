@@ -30,7 +30,7 @@ components); introduce no general-purpose service framework or empty interfaces.
   compositor, shader, and authoring code. Record concrete fixes or why an existing
   cohesive owner should remain; verify corresponding headless/native checks and
   distributable/demo shader parity.
-- [ ] Audit the complete refactor against these boundaries and checks; integrate
+- [x] Audit the complete refactor against these boundaries and checks; integrate
   through `main`, run integration validation, and update the canonical Graphify
   graph. The installed Graphify parser currently does not index GDScript; source
   review and runnable behavior checks remain authoritative.
@@ -81,4 +81,9 @@ Five cel shader wrappers share one implementation with explicit feature defines.
 - Native pose preview loads hover, belly/back, head-scan and extended-layout clips
   and verifies actual shoulder deformation.
 
-Integration validation and the canonical graph update remain pending.
+Integrated source revision: `6878170`. The complete 24-run headless suite and copy
+checks also pass from the `main` worktree. Product source is unchanged from the
+branch on which the native render, replay and authoring checks passed.
+Canonical Graphify code/structure was refreshed after integration. Its existing
+GDScript/semantic-indexing limitations are retained explicitly in
+`graphify-out/semantic-refresh-needed.json`; the verified source remains authoritative.
