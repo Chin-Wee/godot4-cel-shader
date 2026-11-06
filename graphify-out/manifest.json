@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793965308.4683933,
-    "seen": 1793965458.926018,
-    "ast_hash": "fd2b9b85888ad5058ba968adfbb7943b",
+    "mtime": 1793985564.2494025,
+    "seen": 1793986108.9250402,
+    "ast_hash": "5d5f16c6bebeff9c1c43ee81386a76da",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1392,15 +1392,15 @@
     "semantic_hash": ""
   },
   "demo/aerial/flight-animation-contract.md": {
-    "mtime": 1793965308.469957,
-    "seen": 1793965458.926021,
-    "ast_hash": "0aa5260cfa40a4217380b41682b13a5f",
+    "mtime": 1793985564.2510796,
+    "seen": 1793986108.925042,
+    "ast_hash": "6044f35841d74d9a1d8197bc6ce6a436",
     "semantic_hash": ""
   },
   "demo/aerial/poses/POSE_DESIGN.md": {
-    "mtime": 1793699925.6704273,
-    "seen": 1793699997.59441,
-    "ast_hash": "4ab096f45054ebc6a9b5f551fbf5460e",
+    "mtime": 1793985564.2533362,
+    "seen": 1793986108.9250429,
+    "ast_hash": "bd7f987712818bd9b6b6c212808ec75b",
     "semantic_hash": ""
   },
   "graphify-out/memory/query_20261102_073400_970b2df8_implement_the_phantom_camera_in_the_aerial_demo_sc.md": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "tools/check_godot.py": {
-    "mtime": 1793877995.0750568,
-    "seen": 1793878129.749304,
-    "ast_hash": "771d3e36dcfda1c4ff5d2bf1b68bc118",
+    "mtime": 1793985564.2570007,
+    "seen": 1793986108.925035,
+    "ast_hash": "18ab1821ba31813e9dbd246a5b7f7b4d",
     "semantic_hash": ""
   },
   "REFACTOR_PLAN.md": {
@@ -1437,6 +1437,18 @@
     "mtime": 1793961245.030321,
     "seen": 1793965458.9260318,
     "ast_hash": "3539f0e5fca3e94d958d261cb0bc9e50",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md": {
+    "mtime": 1793965647.1003335,
+    "seen": 1793986108.925057,
+    "ast_hash": "c41fe463ad7226301a67c3f7b051c6b5",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md": {
+    "mtime": 1793986299.6035395,
+    "seen": 1793986300.602986,
+    "ast_hash": "20638f0cafeebc0c16853b5036a36b32",
     "semantic_hash": ""
   }
 }

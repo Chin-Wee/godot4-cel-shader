@@ -26,10 +26,12 @@
   "24": "Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.",
   "25": "NOTICE.md",
   "26": "MechAsset",
-  "27": "FollowLockAxis2D",
+  "27": "Balanced aerial thrust and directional braking",
   "28": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
   "29": "SOLID refactor",
   "30": "Q: refactor the codebase based on solid design principles.",
   "31": "check_godot.py",
-  "32": "Q: Where are Armored Core hover tap burst control timings and force handling defined?"
+  "32": "Q: Where are Armored Core hover tap burst control timings and force handling defined?",
+  "33": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+  "34": "FollowLockAxis2D"
 }

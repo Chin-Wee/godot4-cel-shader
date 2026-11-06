@@ -374,25 +374,6 @@
       "source_location": "L477"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
-      "label": "FollowLockAxis2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 27,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followlockaxis2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L20"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween_phantomcamera_easetype",
       "label": "EaseType",
       "_callable": true,
@@ -487,6 +468,25 @@
       "norm_label": "transitiontype",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs",
       "source_location": "L5"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
+      "label": "FollowLockAxis2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "followlockaxis2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L20"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameratweendirector_phantomcamera_tweendirector_methodname",
@@ -2093,7 +2093,7 @@
       "node_kind": "heading",
       "norm_label": "dynamic rotation requirements",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L83"
+      "source_location": "L93"
     },
     {
       "id": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
@@ -2117,7 +2117,7 @@
       "node_kind": "heading",
       "norm_label": "recommended architecture",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L52"
+      "source_location": "L62"
     },
     {
       "id": "demo_aerial_flight_animation_contract_required_behaviors",
@@ -2141,7 +2141,7 @@
       "node_kind": "heading",
       "norm_label": "research body-flight requirements",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L120"
+      "source_location": "L130"
     },
     {
       "id": "demo_aerial_flight_animation_contract_visual_acceptance",
@@ -2153,7 +2153,7 @@
       "node_kind": "heading",
       "norm_label": "visual acceptance",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L100"
+      "source_location": "L110"
     },
     {
       "id": "demo_aerial_poses_pose_design",
@@ -2177,7 +2177,7 @@
       "node_kind": "heading",
       "norm_label": "banks, rolls and somersaults",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L116"
+      "source_location": "L120"
     },
     {
       "id": "demo_aerial_poses_pose_design_flight_pose_design",
@@ -2225,7 +2225,7 @@
       "node_kind": "heading",
       "norm_label": "physical body-flight coupling",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L101"
+      "source_location": "L105"
     },
     {
       "id": "demo_aerial_poses_pose_design_research_adaptation_and_head_intent",
@@ -2237,7 +2237,7 @@
       "node_kind": "heading",
       "norm_label": "research adaptation and head intent",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L172"
+      "source_location": "L176"
     },
     {
       "id": "demo_aerial_poses_pose_design_verification_and_authoring",
@@ -2249,7 +2249,7 @@
       "node_kind": "heading",
       "norm_label": "verification and authoring",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L145"
+      "source_location": "L149"
     },
     {
       "id": "demo_aerial_readme",
@@ -2285,7 +2285,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L386"
+      "source_location": "L368"
     },
     {
       "id": "demo_aerial_readme_body_flight_control_checks",
@@ -2297,7 +2297,7 @@
       "node_kind": "heading",
       "norm_label": "body-flight control checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L720"
+      "source_location": "L704"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2309,7 +2309,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L473"
+      "source_location": "L455"
     },
     {
       "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
@@ -2321,7 +2321,7 @@
       "node_kind": "heading",
       "norm_label": "dynamic rotation and flip checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L743"
+      "source_location": "L727"
     },
     {
       "id": "demo_aerial_readme_flight_animation_contract_validation",
@@ -2333,7 +2333,7 @@
       "node_kind": "heading",
       "norm_label": "flight animation contract validation",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L686"
+      "source_location": "L670"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2345,7 +2345,7 @@
       "node_kind": "heading",
       "norm_label": "implementation and reference",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L64"
+      "source_location": "L67"
     },
     {
       "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
@@ -2357,7 +2357,7 @@
       "node_kind": "heading",
       "norm_label": "procedural pose ownership and tuning",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L401"
+      "source_location": "L383"
     },
     {
       "id": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
@@ -2369,7 +2369,7 @@
       "node_kind": "heading",
       "norm_label": "research mapped to the current behaviours",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L637"
+      "source_location": "L621"
     },
     {
       "id": "demo_aerial_readme_run_and_controls",
@@ -2393,7 +2393,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L775"
+      "source_location": "L759"
     },
     {
       "id": "readme",
@@ -5125,72 +5125,133 @@
       "source_location": "L38"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
-      "label": "None",
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f",
+      "label": "query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
       "_origin": "ast",
       "community": 27,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "frontmatter": {
+        "type": "query",
+        "date": "2026-11-06T17:31:39.603082+00:00",
+        "question": "How does aerial flight balance directional burst forces and minimize cold-gas use?",
+        "contributor": "graphify",
+        "outcome": "corrected",
+        "correction": "Joint hot/cold allocation and demand-driven fixed RCS replace the fixed 4x burst and recurring trim schedule.",
+        "source_nodes": "[&quot;demo_aerial_readme_run_and_controls&quot;, &quot;demo_aerial_flight_animation_contract_required_behaviors&quot;]"
       },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L22"
+      "node_kind": "page",
+      "norm_label": "query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
-      "label": "X",
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_answer",
+      "label": "Answer",
       "_origin": "ast",
       "community": 27,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "x",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L23"
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "answer",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L13"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
-      "label": "Xy",
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "label": "Balanced aerial thrust and directional braking",
       "_origin": "ast",
       "community": 27,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "xy",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "balanced aerial thrust and directional braking",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L15"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_directional_braking",
+      "label": "Directional braking",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "directional braking",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L31"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_force_allocation",
+      "label": "Force allocation",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "force allocation",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L19"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_fuel_and_hardware",
+      "label": "Fuel and hardware",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "fuel and hardware",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
       "source_location": "L25"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
-      "label": "Y",
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_outcome",
+      "label": "Outcome",
       "_origin": "ast",
       "community": 27,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "y",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L24"
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "outcome",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L41"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_q_how_does_aerial_flight_balance_directional_burst_forces_and_minimize_cold_gas_use",
+      "label": "Q: How does aerial flight balance directional burst forces and minimize cold-gas use?",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "q: how does aerial flight balance directional burst forces and minimize cold-gas use?",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L11"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_source_nodes",
+      "label": "Source Nodes",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "source nodes",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L46"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_verification_and_graph_limits",
+      "label": "Verification and graph limits",
+      "_origin": "ast",
+      "community": 27,
+      "community_name": "Balanced aerial thrust and directional braking",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "verification and graph limits",
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L35"
     },
     {
       "id": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a",
@@ -5844,6 +5905,142 @@
       "node_kind": "heading",
       "norm_label": "source nodes",
       "source_file": "graphify-out/memory/query_20261106_102146_54c4d695_where_are_armored_core_hover_tap_burst_control_tim.md",
+      "source_location": "L24"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f",
+      "label": "query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "file_type": "document",
+      "frontmatter": {
+        "type": "query",
+        "date": "2026-11-06T11:47:27.099779+00:00",
+        "question": "How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+        "contributor": "graphify",
+        "outcome": "useful",
+        "source_nodes": "[&quot;demo_aerial_readme_run_and_controls&quot;, &quot;demo_aerial_flight_animation_contract_required_behaviors&quot;]"
+      },
+      "node_kind": "page",
+      "norm_label": "query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_answer",
+      "label": "Answer",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "answer",
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L12"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_outcome",
+      "label": "Outcome",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "outcome",
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L22"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_q_how_does_flight_enforce_physical_hot_cold_nozzle_forces_and_finite_activation_restart_timing",
+      "label": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "q: how does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L10"
+    },
+    {
+      "id": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_source_nodes",
+      "label": "Source Nodes",
+      "_origin": "ast",
+      "community": 33,
+      "community_name": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "source nodes",
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L26"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
+      "label": "X",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "x",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L23"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
+      "label": "Xy",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "xy",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L25"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
+      "label": "Y",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "y",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
       "source_location": "L24"
     },
     {
@@ -12661,7 +12858,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L100",
+      "source_location": "L110",
       "weight": 1.0
     },
     {
@@ -12672,7 +12869,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L120",
+      "source_location": "L130",
       "weight": 1.0
     },
     {
@@ -12694,7 +12891,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L52",
+      "source_location": "L62",
       "weight": 1.0
     },
     {
@@ -12705,7 +12902,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L83",
+      "source_location": "L93",
       "weight": 1.0
     },
     {
@@ -12727,7 +12924,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L101",
+      "source_location": "L105",
       "weight": 1.0
     },
     {
@@ -12749,7 +12946,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L116",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -12760,7 +12957,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L145",
+      "source_location": "L149",
       "weight": 1.0
     },
     {
@@ -12771,7 +12968,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L172",
+      "source_location": "L176",
       "weight": 1.0
     },
     {
@@ -12804,7 +13001,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L386",
+      "source_location": "L368",
       "weight": 1.0
     },
     {
@@ -12815,7 +13012,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L401",
+      "source_location": "L383",
       "weight": 1.0
     },
     {
@@ -12826,7 +13023,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L473",
+      "source_location": "L455",
       "weight": 1.0
     },
     {
@@ -12837,7 +13034,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L64",
+      "source_location": "L67",
       "weight": 1.0
     },
     {
@@ -12859,7 +13056,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L775",
+      "source_location": "L759",
       "weight": 1.0
     },
     {
@@ -12870,7 +13067,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L637",
+      "source_location": "L621",
       "weight": 1.0
     },
     {
@@ -12881,7 +13078,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L686",
+      "source_location": "L670",
       "weight": 1.0
     },
     {
@@ -12892,7 +13089,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L720",
+      "source_location": "L704",
       "weight": 1.0
     },
     {
@@ -12903,7 +13100,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L743",
+      "source_location": "L727",
       "weight": 1.0
     },
     {
@@ -13113,6 +13310,149 @@
       "confidence_score": 1.0,
       "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
       "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f",
+      "target": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_q_how_does_flight_enforce_physical_hot_cold_nozzle_forces_and_finite_activation_restart_timing",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_q_how_does_flight_enforce_physical_hot_cold_nozzle_forces_and_finite_activation_restart_timing",
+      "target": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_answer",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_q_how_does_flight_enforce_physical_hot_cold_nozzle_forces_and_finite_activation_restart_timing",
+      "target": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_outcome",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L22",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_q_how_does_flight_enforce_physical_hot_cold_nozzle_forces_and_finite_activation_restart_timing",
+      "target": "graphify_out_memory_query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f_source_nodes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_114727_84565ae1_how_does_flight_enforce_physical_hot_cold_nozzle_f.md",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_q_how_does_aerial_flight_balance_directional_burst_forces_and_minimize_cold_gas_use",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L11",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L15",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_force_allocation",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L19",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_fuel_and_hardware",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L25",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_directional_braking",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L31",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_verification_and_graph_limits",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_outcome",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_balanced_aerial_thrust_and_directional_braking",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_source_nodes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L46",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_q_how_does_aerial_flight_balance_directional_burst_forces_and_minimize_cold_gas_use",
+      "target": "graphify_out_memory_query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f_answer",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_173139_827a43d6_how_does_aerial_flight_balance_directional_burst_f.md",
+      "source_location": "L13",
       "weight": 1.0
     },
     {
@@ -13882,7 +14222,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L174",
+      "source_location": "L178",
       "weight": 1.0
     },
     {
@@ -13904,7 +14244,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L403",
+      "source_location": "L385",
       "weight": 1.0
     },
     {
@@ -13944,5 +14284,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "9d823f4bc8ef8ab000cfae7c5f20c65a918b8b0f"
+  "built_at_commit": "437406fd3a54427d58789d02ff34627a529a54e3"
 }
