@@ -16,7 +16,7 @@
   "14": "Grass direction: Breath of the Wild",
   "15": "LimitTargetQueryResult",
   "16": "PhantomCamera3DExtensions",
-  "17": "Node2D",
+  "17": "PhantomCamera2D.cs",
   "18": "Node3D",
   "19": "StringName",
   "20": ".GetLimit",
@@ -26,9 +26,10 @@
   "24": "Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.",
   "25": "NOTICE.md",
   "26": "MechAsset",
-  "27": "PhantomCameraNoise2D",
+  "27": "FollowLockAxis2D",
   "28": "Aerial rendering study — DELIVERY MUST COMPLETE",
   "29": "SOLID refactor",
   "30": "Q: refactor the codebase based on solid design principles.",
-  "31": "check_godot.py"
+  "31": "check_godot.py",
+  "32": "Q: Where are Armored Core hover tap burst control timings and force handling defined?"
 }
