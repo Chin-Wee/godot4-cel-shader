@@ -8,6 +8,7 @@ func _flight(speed: Vector3, output := 2.0) -> void:
 	mech.quaternion = Quaternion(Vector3.RIGHT,-PI/2)
 	mech.linear_velocity = speed*fc.WORLD_UNITS_PER_METER
 	fc.engine_level = output
+	fc.thrust_level = output
 	fc.detent = 3 if output==2 else 4
 	fc.main_force = Vector3.FORWARD*mech.mass*fc.GRAVITY*output
 	fc.requested_main_force = fc.main_force
@@ -23,6 +24,7 @@ func _hover_departures() -> void:
 		_neutral()
 		mech.rig.reset()
 		fc.engine_level = 1
+		fc.thrust_level = 1
 		fc.detent = 2
 		fc.hover_assist = 1
 		await _ticks(120)
@@ -80,6 +82,7 @@ func _run() -> void:
 	assert(mech.rig.motion.prepare>0.3,"Throttle intent has no preparation before delivery")
 	assert(mech.rig.arms.hands[0].distance_to(cruise_hand)>0.1)
 	fc.engine_level = 4
+	fc.thrust_level = 4
 	fc.main_force = fc.requested_main_force
 	fc.local_acceleration = Vector3(0,25,0)
 	await _ticks(45)
@@ -112,6 +115,7 @@ func _run() -> void:
 	assert(mech.rig.lead_side==lead,"Near-zero velocity chatters the lead side")
 	fc.detent = 0
 	fc.engine_level = 0
+	fc.thrust_level = 0
 	fc.main_force = Vector3.ZERO
 	fc.requested_main_force = Vector3.ZERO
 	fc.local_acceleration = Vector3.ZERO

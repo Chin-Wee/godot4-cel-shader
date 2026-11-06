@@ -71,6 +71,7 @@ func _run() -> void:
 	mech.reset_flight(Vector3(175,3270,340),Quaternion.IDENTITY,Vector3(0,-8,0))
 	fc.detent = 0
 	fc.engine_level = 0
+	fc.thrust_level = 0
 	mech.freeze = false
 	var saw_preparation := false
 	var saw_impact := false
@@ -115,6 +116,7 @@ func _run() -> void:
 	mech.reset_flight(Vector3(175,3270,340),Quaternion(Vector3.BACK,deg_to_rad(25)),Vector3(0,-8,0))
 	fc.detent = 0
 	fc.engine_level = 0
+	fc.thrust_level = 0
 	mech.freeze = false
 	var slope_contact := false
 	for tick in 180:

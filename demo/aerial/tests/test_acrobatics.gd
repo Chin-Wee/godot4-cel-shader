@@ -76,6 +76,7 @@ func _run() -> void:
 	fc.maneuver_direction = Vector2.ZERO
 	fc.aero_authority = 1
 	fc.engine_level = 2
+	fc.thrust_level = 2
 	fc.g_load = 2
 	mech.quaternion = Quaternion(Vector3.FORWARD,0.7)*Quaternion(Vector3.RIGHT,-PI/2)
 	await _ticks(120)

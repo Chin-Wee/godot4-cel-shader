@@ -166,7 +166,7 @@ func _sample_effort(controller, delta: float) -> void:
 	var along := axis.dot(travel)
 	var opposition: float = motion.retro
 	var across := (axis-travel*along)*delivered*smoothstep(2,12,speed)
-	var specific: Vector3 = basis.inverse()*(thrust+controller.aero_force+controller.leg_force)/(controller.body.mass*controller.GRAVITY)
+	var specific: Vector3 = basis.inverse()*(thrust+controller.aero_force+controller.cold_force)/(controller.body.mass*controller.GRAVITY)
 	var acceleration: Vector3 = basis*controller.local_acceleration
 	var acceleration_load := smoothstep(2,18,acceleration.dot(axis))*smoothstep(0.8,1.8,controller.thrust_level)
 	var spool := clampf((output-controller.thrust_level-0.08)/2.0,0,1)
@@ -233,7 +233,7 @@ func _choose_posture(controller, delta: float) -> void:
 	hover = motion.hover*(1.0-landing-spread)
 	var stream: float = motion.track*maxf(0,1.0-landing-spread-hover)
 	posture_weights = PackedFloat32Array([hover,stream,spread,maxf(0,1.0-landing-spread-hover-stream),landing])
-	var pushing: bool = controller.leg_force.length()>1
+	var pushing: bool = controller.jump_remaining>0 and controller.thrust_level>1.0
 	launch.step(Vector3(float(pushing),0,0),delta,0.06 if pushing else 0.18)
 
 func _prepare_directional_pose(controller) -> void:

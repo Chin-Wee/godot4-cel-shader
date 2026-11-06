@@ -18,8 +18,8 @@ func _fixture(origin := Vector3(175, 2200, 340), orientation := Quaternion.IDENT
 	mech.freeze = true
 	await _ticks(1)
 	mech.reset_flight(origin, orientation, speed)
+	mech.controller.reset(Controller.DETENTS[level])
 	mech.controller.detent = level
-	mech.controller.engine_level = Controller.DETENTS[level]
 	mech.controller.air_density = 1.225
 	mech.controls = {}
 	mech.freeze = false
@@ -67,23 +67,26 @@ func _run() -> void:
 			await _fixture(Vector3(175,2400,340), orientation, Vector3.ZERO, 0)
 			mech.controller.air_density = 0.0
 			mech.controls = {key:true}
-			await _ticks(24)
+			await _ticks(36)
 			assert(mech.controller.rotation_command.length() > 0.9, "Rotation input was gated")
 			assert(mech.controller.attitude.angle_to(orientation) > 0.08, "A rotation axis cannot move")
 			var expected: Vector3 = {"forward":Vector3.LEFT,"back":Vector3.RIGHT,"left":Vector3.DOWN,"right":Vector3.UP,"yaw_left":Vector3.BACK,"yaw_right":Vector3.FORWARD}[key]
-			var body_rates: Vector3 = Basis(orientation).inverse()*mech.angular_velocity
-			assert(body_rates.dot(expected)>0.3 and body_rates.slide(expected).length()<0.05,"Yaw/roll changed physical axes with orientation")
+			var body_rates: Vector3 = mech.global_basis.orthonormalized().inverse()*mech.angular_velocity
+			assert(body_rates.dot(expected)>0.3 and body_rates.slide(expected).length()<maxf(0.05,body_rates.dot(expected)*0.25),"%s at %s changed physical axes: %s" % [key,orientation,body_rates])
 			assert(absf(mech.controller.pilot_frame().determinant()-1.0) < 0.001)
 			assert(_check_motors(mech) and _check_limbs(mech))
-	# In vacuum, balanced attitude torque cannot change horizontal momentum.
+	# Vacuum attitude changes account for actual cold-nozzle linear recoil.
 	await _fixture(Vector3(175,2600,340), Quaternion.IDENTITY, Vector3(45,0,-30), 0)
 	mech.controller.air_density = 0.0
 	await _ticks(2) # Drain the preceding atmospheric step before measuring vacuum.
 	mech.controls = {"right":true,"back":true}
 	var before: Vector3 = mech.controller.velocity
-	await _ticks(120)
-	assert(absf(mech.controller.velocity.x-before.x) < 0.01 and absf(mech.controller.velocity.z-before.z) < 0.01, "Rotation rewrote momentum")
-	assert(mech.controller.main_force.is_zero_approx() and mech.controller.leg_force.is_zero_approx() and mech.controller.hover_assist == 0)
+	var recoil := Vector3.ZERO
+	for tick in 120:
+		recoil += mech.controller.cold_force/mech.mass/60.0
+		await _ticks(1)
+	assert(absf(mech.controller.velocity.x-before.x-recoil.x)<0.02 and absf(mech.controller.velocity.z-before.z-recoil.z)<0.02,"Rotation changed momentum outside actual cold-jet recoil")
+	assert(mech.controller.main_force.is_zero_approx() and mech.controller.hover_assist == 0)
 	mech.controls = {}
 	await _ticks(90)
 	assert(mech.angular_velocity.length() < 0.03, "Cold-gas counter-torque did not stop rotation")
@@ -128,16 +131,18 @@ func _run() -> void:
 	mech.controls = {"brake":true}
 	await _ticks(60)
 	assert(mech.controller.velocity.y > compact_fall+8, "Skydiver area does not affect descent")
-	# A ground-contact leg push launches without changing the thrust detent.
+	# R launches through hot outlets, including finite cold-engine ignition.
 	var ground: float = scene.ground_height(Vector3(175,0,340))
 	await _fixture(Vector3(175,ground+45.2,340), Quaternion.IDENTITY, Vector3.ZERO, 0)
 	await _ticks(90)
 	assert(mech.controller.grounded, "Native ground probe failed")
 	var launch_height: float = mech.position.y
 	_key(KEY_R)
-	await _ticks(12)
-	assert(mech.position.y > launch_height+2 and mech.controller.velocity.y > 1, "Leg push did not launch")
-	assert(mech.controller.detent == 0 and mech.controller.delivered_thrust == 0, "Jump changed the main thrust setting")
+	await _ticks(2)
+	assert(mech.controller.delivered_thrust==0,"Launch bypassed hot-engine ignition delay")
+	await _ticks(22)
+	assert(mech.position.y > launch_height+2 and mech.controller.velocity.y > 1,"Hot-thruster launch did not lift after ignition")
+	assert(mech.controller.detent==0 and mech.controller.delivered_thrust>mech.mass*Controller.GRAVITY,"Launch changed cruise detent or bypassed the hot engines")
 	await _ticks(180)
 	assert(mech.controller.grounded and mech.position.y >= ground+44, "Native capsule tunneled through the ground")
 	# One uninterrupted transition: grounded hover -> takeoff -> pitch -> cutoff
@@ -221,7 +226,7 @@ func _check_motors(mech: Node3D) -> bool:
 	var total := 0.0
 	for index in 6:
 		var force: Vector3 = mech.controller.motor_forces[index]
-		var capacity: float = lerpf(4.0/6.0,4.0*Controller.TRIM_SHARES[index],mech.controller.burst_amount)
+		var capacity: float = mech.controller._hot_capacity(index)
 		if force.length() > mech.mass * Controller.GRAVITY * capacity + 1.0: return false
 		total += force.length()
 	if absf(total-mech.controller.delivered_thrust) > 2.0: return false

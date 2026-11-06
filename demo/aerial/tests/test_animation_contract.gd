@@ -32,6 +32,7 @@ func _ticks(count: int, mirror_request := true) -> void:
 func _neutral() -> void:
 	fc.hover_assist = 0
 	fc.engine_level = 0
+	fc.thrust_level = 0
 	fc.detent = 0
 	fc.aero_authority = 0
 	fc.brake_amount = 0
@@ -49,7 +50,7 @@ func _neutral() -> void:
 	fc.rcs_torque = Vector3.ZERO
 	fc.torque_fraction = 0
 	fc.local_airflow = Vector3.ZERO
-	fc.leg_force = Vector3.ZERO
+	fc.cold_force = Vector3.ZERO
 	fc.main_force = Vector3.ZERO
 	fc.g_load = 1
 	fc.air_density = 1.225
@@ -74,6 +75,7 @@ func _run() -> void:
 	fc = mech.controller
 	_neutral()
 	fc.engine_level = 1
+	fc.thrust_level = 1
 	fc.detent = 2
 	fc.hover_assist = 1
 	await _ticks(150)
@@ -87,10 +89,12 @@ func _run() -> void:
 	fc.rotation_request = Vector3.ZERO
 	await _ticks(60)
 	var resting_knee: float = mech.rig.legs[1].value.x
-	fc.leg_force = Vector3.UP*mech.mass*9.81*4
+	fc.jump_remaining = 0.5
+	fc.thrust_level = 4.0
 	await _ticks(14)
 	assert(mech.rig.motion.launch>0.95 and mech.rig.legs[1].value.x<resting_knee-0.15,"Ground push does not extend the legs")
-	fc.leg_force = Vector3.ZERO
+	fc.jump_remaining = 0.0
+	fc.thrust_level = 1.0
 	await _ticks(100)
 	assert(mech.rig.motion.launch<0.01,"Launch pose never recovers into support")
 	fc.rotation_command = Vector3(0,1,0)
@@ -100,6 +104,7 @@ func _run() -> void:
 	# Powered useful airflow: pose follows chassis orientation, including inversion.
 	_neutral()
 	fc.engine_level = 2
+	fc.thrust_level = 2
 	fc.detent = 3
 	fc.aero_authority = 1
 	fc.local_airflow = Vector3(0,-80,0)
@@ -116,6 +121,7 @@ func _run() -> void:
 	assert(mech.rig.arms.hands[0].distance_to(fighter_hand)<0.1 and mech.rig.legs[1].value.distance_to(fighter_knee)<0.1,"Neutral inverted flight changed its body-relative shape")
 	# Cutoff retains aerodynamic tracking; broadside lateral coast is not a fall.
 	fc.engine_level = 0
+	fc.thrust_level = 0
 	fc.detent = 0
 	await _ticks(150)
 	assert(mech.rig.behavior_weights[2]>0.99 and mech.rig.motion.box<0.01)
@@ -166,6 +172,7 @@ func _run() -> void:
 	# Fast powered misalignment receives independent control, never hover catch.
 	_neutral()
 	fc.engine_level = 2
+	fc.thrust_level = 2
 	fc.detent = 3
 	fc.local_airflow = Vector3(0,0,80)
 	fc.departure = 1

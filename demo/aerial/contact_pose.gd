@@ -91,7 +91,7 @@ func update(delta: float, controller) -> void:
 	var sk := skeleton
 	var upright := body.global_basis.y.dot(Vector3.UP) > 0.65
 	var walking: bool = not body.flying
-	var lifting: bool = controller.leg_force.length() > 1 or controller.velocity.y > 0.6
+	var lifting: bool = (controller.jump_remaining>0 and controller.thrust_level>1.0) or controller.velocity.y > 0.6
 	probe_count = 0
 	var near_ground: bool = upright and (walking or controller.grounded or (controller.time_to_impact < profile.landing_lead and controller.velocity.y < -0.5))
 	for side in 2:

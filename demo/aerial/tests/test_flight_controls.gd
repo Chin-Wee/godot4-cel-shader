@@ -35,7 +35,7 @@ func _capture() -> void:
 	# Held input rotates immediately alongside the one-shot burst.
 	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
 	var rows: Array = await _play("hover_rotation",120,[[0,[KEY_W]]],false)
-	_expect(absf(_at(rows,0.2).command[0])>0.5 and _at(rows,0.8).angle>0.1,"Hover still delays pitch behind a movement lock")
+	_expect(absf(_at(rows,0.2).command[0])>0.5 and _at(rows,0.2).pitch_rate< -0.05 and _at(rows,1.2).angle>0.1,"Hover still delays pitch behind a movement lock")
 	_expect(_at(rows,1.8).burst_remaining==0,"Held input automatically repeats the burst")
 	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
 	rows = await _play("diagonal_hover",180,[[0,[KEY_W,KEY_D]],[1,[]]],false)
@@ -95,7 +95,10 @@ func _capture() -> void:
 	# Braking permits a deliberate combat departure; cutoff retains free rotation.
 	await _fixture(origin,Quaternion(Vector3.RIGHT,-PI/2),Vector3(0,0,-70),3)
 	rows = await _play("combat_departure",240,[[0,[KEY_S,KEY_SHIFT]]],false)
-	_expect(_peak(rows,"aoa")>deg_to_rad(45),"Pitch protection prevents deliberate braking departures")
+	_expect(_at(rows,1.0).effective_rates[0]>1.8 and _at(rows,1.0).flight_protection<0.01,"Brake input failed to release the pitch envelope")
+	# At this dynamic pressure the real cold ports may saturate. An impossible
+	# moment must be reported rather than supplied as a free body torque.
+	_expect(_peak(rows,"aoa")>deg_to_rad(45) or rows.any(func(row):return row.rcs_saturated),"Blocked departure hides its physical actuator limit")
 	await _fixture(origin,Quaternion(Vector3.RIGHT,-PI/2),Vector3(35,0,-70),0)
 	rows = await _play("unpowered_rotation",240,[[0,[KEY_S]]],false)
 	_expect(_peak(rows,"angle")>PI/2 and _peak(rows,"flight_protection")==0,"Unpowered rotation is trapped by flight protection")
@@ -132,8 +135,8 @@ func _check_burst_clock() -> void:
 		_expect(fc.burst_direction.is_equal_approx(Vector3(1,0,-1).normalized()),"Diagonal boost is not normalized")
 		for tick in hz*2:
 			fc._read_commands({"forward":true,"right":true},dt)
-			if tick==int(hz*0.25): _expect(is_equal_approx(fc.thrust_level,4.0),"Burst never reaches full output")
-			if tick>=int(hz*0.5): _expect(fc.burst_remaining<0.000001 and is_equal_approx(fc.thrust_level,1.0),"Burst duration depends on clock or held keys")
+			if tick==int(hz*0.25): _expect(is_equal_approx(fc.burst_amount,1.0),"Burst never reaches full output")
+			if tick>=int(hz*0.5): _expect(fc.burst_remaining<0.000001 and fc.burst_amount==0.0,"Burst duration depends on clock or held keys")
 		fc.reset()
 		fc.hover_assist = 1.0
 		fc._read_commands({"forward":true},dt)

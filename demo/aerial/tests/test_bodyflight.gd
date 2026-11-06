@@ -7,6 +7,7 @@ func _surface_pose(request: Vector3) -> Vector3:
 	mech.quaternion = Quaternion(Vector3.RIGHT,-PI/2)
 	mech.linear_velocity = Vector3.FORWARD*700
 	fc.engine_level = 2
+	fc.thrust_level = 2
 	fc.detent = 3
 	fc.aero_authority = 1
 	fc.local_airflow = Vector3(0,-70,0)

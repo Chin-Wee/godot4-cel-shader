@@ -14,6 +14,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 	var fc = mech.controller
 	fc.detent = 0
 	fc.engine_level = 0
+	fc.thrust_level = 0
 	fc.main_force = Vector3.ZERO
 	fc.aero_force = Vector3.ZERO
 	fc.requested_main_force = Vector3.ZERO
@@ -30,6 +31,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 	fc.g_load = 0
 	if name=="hover" or name.begins_with("turn"):
 		fc.engine_level = 1
+		fc.thrust_level = 1
 		fc.detent = 2
 		fc.hover_assist = 1
 		fc.g_load = 1
@@ -40,6 +42,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 		fc.local_airflow = Vector3(0,0,60)
 	if name=="flare" or name=="drive" or name=="stream":
 		fc.engine_level = 2
+		fc.thrust_level = 2
 		fc.detent = 3
 		fc.main_force = Vector3.UP*mech.mass*9.81*2
 		mech.linear_velocity = Vector3.UP*600

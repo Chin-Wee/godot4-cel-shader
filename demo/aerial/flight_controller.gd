@@ -3,6 +3,7 @@ extends RefCounted
 # Behavioral references: DCS Su-27 envelope protection and Elite Dangerous
 # independent attitude/momentum. One native body owns motion; this supplies forces.
 const Spring = preload("res://aerial/pose_servo.gd")
+const Valve = preload("res://aerial/thruster_valve.gd")
 const DETENTS := [0.0, 0.5, 1.0, 2.0, 4.0]
 # Scene geometry is retained: 10 world units = 1 meter. Forces use N, torque N m.
 const WORLD_UNITS_PER_METER := 10.0
@@ -25,20 +26,26 @@ const HOVER_VECTOR_RESPONSE := 0.08 # AC VI directional boost reference: jets le
 const RCS_PULSE_HZ := 3.0
 const RCS_DEADBAND := 0.012 # Fraction of actuator capacity; tolerate quiet trim error.
 const RCS_TRIM_DUTY := 0.65 # Long, soft trim bursts with a visible coast interval.
-const RCS_CONTINUOUS_DEMAND := 0.35 # Larger attitude demands use a sustained burn.
+const RCS_CONTINUOUS_DEMAND := 0.10 # Larger attitude demands use a sustained burn.
 const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
 const HOVER_TRIM_GAIN := 1.0
 const HOVER_CANT_BIAS := 0.07
 # Armored Core VI Quick Boost reference; reuse the existing directional motors.
 const HOVER_BURST_TIME := 0.5
 const HOVER_BURST_COOLDOWN := 1.0 # Activation to activation; never auto-repeats.
-const HOVER_BURST_THRUST := 4.0 # Existing maximum collective, in hover multiples.
+const HOVER_BURST_THRUST := 4.0 # Burst collective request, in hover multiples.
 const HOVER_BURST_RAMP := 0.06
 const HOVER_TRANSLATE_G := 0.60
 const FLIGHT_PITCH_LIMIT := PI / 6.0
 const FLIGHT_PITCH_GAIN := 3.0
-const JUMP_PUSH_TIME := 0.22
-const JUMP_PEAK_G := 4.0
+const LAUNCH_TIME := 0.5
+# Fictional mech calibration, not a claim that all real engines share timings.
+const HOT_IGNITION := 0.06
+const HOT_RESTART := 0.12
+const HOT_RESPONSE := 0.06
+const HOT_MINIMUM_ON := 0.08
+const COLD_THRUST_G := 2.0
+const COLD_VECTOR_RESPONSE := 0.06
 # Cd stays positive in every pose. High-speed drag supplies a finite energy bound.
 const AERO_AREA_M2 := 80.0
 const BASE_DRAG_CD := 0.075
@@ -68,18 +75,19 @@ var aero_torque := Vector3.ZERO
 var aero_power := 0.0 # Passive air power including angular point velocity, watts.
 var aero_surface_forces: Array[Vector3] = []
 var aero_surfaces: Array = []
+var cold_force := Vector3.ZERO
 var rcs_torque := Vector3.ZERO
 var rcs_request := Vector3.ZERO # Bounded continuous demand for nozzle aiming.
+var rcs_continuous := false
 var rcs_load := 0.0 # Delivered pulse, shared by physical torque and exhaust.
 var control_torque := Vector3.ZERO # Desired total moment before actuator allocation.
-var torque_limits := Vector3.ZERO # Body-local cold-gas capacity, N m.
+var torque_limits := Vector3.ZERO # Inertia-scaled control reference, N m; outlets set actual capacity.
 var torque_fraction := 0.0
 var torque_saturated := false
 var motor_saturated := false
 var grounded := false
 var jump_requested := false
 var jump_remaining := 0.0
-var leg_force := Vector3.ZERO
 var hover_assist := 0.0
 var hover_gimbal_trim := Vector3.ZERO
 var brake_amount := 0.0
@@ -94,9 +102,8 @@ var burst_cooldown := 0.0
 var burst_direction := Vector3.ZERO
 var burst_amount := 0.0
 var last_move_buttons := 0
-# Cruise spool remains independent; a short boost cannot leave a long power tail.
-var thrust_level: float:
-	get: return maxf(engine_level, HOVER_BURST_THRUST * burst_amount)
+# Actual collective after per-outlet valve response, shared by physics and VFX.
+var thrust_level := 1.0
 var translation := Spring.new()
 var flight_protection := 0.0
 var requested_rates := Vector3.ZERO # World angular-rate request after protection.
@@ -132,6 +139,12 @@ var engine_shares := PackedFloat32Array(TRIM_SHARES)
 var motor_angles: Array[Vector3] = []
 var motor_forces: Array[Vector3] = []
 var motor_springs: Array = []
+var hot_valves: Array = []
+var cold_valves: Array = []
+var cold_requests: Array[Vector3] = []
+var cold_forces: Array[Vector3] = []
+var cold_angles: Array[Vector3] = []
+var cold_springs: Array = []
 var command := Spring.new()
 var brake := Spring.new()
 var accel := Spring.new()
@@ -146,10 +159,19 @@ func configure(owner_body: RigidBody3D, display_scale: float) -> void:
 		motor_springs.append(Spring.new())
 		motor_angles.append(Vector3.ZERO)
 		motor_forces.append(Vector3.ZERO)
+		hot_valves.append(Valve.new(HOT_IGNITION,HOT_RESTART,HOT_RESPONSE,HOT_RESPONSE,HOT_MINIMUM_ON))
+	for index in 4:
+		cold_valves.append(Valve.new())
+		cold_requests.append(Vector3.ZERO)
+		cold_forces.append(Vector3.ZERO)
+		cold_angles.append(Vector3.ZERO)
+		cold_springs.append(Spring.new())
+	reset()
 
-func reset() -> void:
+func reset(power := 1.0) -> void:
 	detent = 2
-	engine_level = 1.0
+	engine_level = power
+	thrust_level = power
 	jump_requested = false
 	jump_remaining = 0.0
 	brake_amount = 0.0
@@ -179,18 +201,32 @@ func reset() -> void:
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
 	aero_force = Vector3.ZERO
+	cold_force = Vector3.ZERO
 	rcs_torque = Vector3.ZERO
 	rcs_request = Vector3.ZERO
 	rcs_load = 0.0
+	rcs_continuous = false
 	control_torque = Vector3.ZERO
 	aero_torque = Vector3.ZERO
 	aero_power = 0.0
 	sampled = false
-	for spring in [command, brake, accel, translation] + motor_springs:
+	delivered_thrust = power*body.mass*GRAVITY if is_instance_valid(body) else 0.0
+	for index in hot_valves.size():
+		var share := minf(TRIM_SHARES[4],(4.0/6.0)/maxf(power,0.01))
+		share = share if index>=4 else (1.0-2.0*share)/4.0
+		hot_valves[index].reset(power*share/_hot_capacity(index))
+		motor_forces[index] = Vector3.ZERO
+		motor_angles[index] = Vector3.ZERO
+	for index in cold_valves.size():
+		cold_valves[index].reset()
+		cold_requests[index] = Vector3.ZERO
+		cold_forces[index] = Vector3.ZERO
+		cold_angles[index] = Vector3.ZERO
+	for spring in [command, brake, accel, translation] + motor_springs + cold_springs:
 		spring.value = Vector3.ZERO
 		spring.velocity = Vector3.ZERO
 
-func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array, on_ground: bool, leg_reach: bool, surfaces: Array, spread: float) -> void:
+func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array, cold_outlets: Array, on_ground: bool, leg_reach: bool, surfaces: Array, spread: float) -> void:
 	var dt := state.step
 	clock += dt
 	grounded = on_ground
@@ -203,16 +239,16 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	brake_spread = clampf(spread,0,1)
 	_calculate_aerodynamics(surfaces)
 	_calculate_attitude_demand(state)
+	_calculate_launch(leg_reach,dt)
 	_calculate_main_thrusters(outlets, frame, dt)
-	_calculate_rcs_torque(frame,dt)
-	_calculate_jump(leg_reach, dt)
+	_calculate_cold_thrusters(cold_outlets,frame,dt)
 	for index in 6:
 		state.apply_force(motor_forces[index] * WORLD_UNITS_PER_METER, outlets[index].position)
 	for index in aero_surfaces.size():
 		state.apply_force(aero_surface_forces[index]*WORLD_UNITS_PER_METER,aero_surfaces[index].position)
-	state.apply_central_force(leg_force * WORLD_UNITS_PER_METER)
-	state.apply_torque(rcs_torque * WORLD_UNITS_PER_METER * WORLD_UNITS_PER_METER)
-	required_force = (main_force + leg_force) / body.mass
+	for index in 4:
+		state.apply_force(cold_forces[index]*WORLD_UNITS_PER_METER,cold_outlets[index].position)
+	required_force = (main_force+cold_force)/body.mass
 
 func _measure_motion(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	var current_velocity := state.linear_velocity / WORLD_UNITS_PER_METER
@@ -243,7 +279,7 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	var planar := Vector3(-request.z, 0, request.x).limit_length(1.0)
 	# Altitude compensation can lower cruise output after a boost; eligibility
 	# depends on the remaining upright/low-speed support, not that spool dip.
-	var hover_ready := detent > 0 and hover_assist > 0.001 and hover_assist >= 0.5 * clampf(engine_level,0,1)
+	var hover_ready := detent > 0 and hover_assist > 0.001 and hover_assist >= 0.5 * clampf(minf(engine_level,thrust_level),0,1)
 	if pressed and not planar.is_zero_approx() and hover_ready and burst_cooldown <= 0.000001:
 		burst_direction = planar * precision
 		burst_remaining = HOVER_BURST_TIME
@@ -301,7 +337,7 @@ func _update_maneuvers(dt: float) -> void:
 
 func _calculate_hover(frame: Basis) -> void:
 	var tilt := acos(clampf(frame.y.dot(Vector3.UP), -1, 1))
-	var powered := clampf(engine_level, 0, 1) if detent > 0 else 0.0
+	var powered := clampf(minf(engine_level,thrust_level),0,1) if detent>0 else 0.0
 	hover_assist = powered * (1.0 - smoothstep(18, 45, air_velocity.length())) * (1.0 - smoothstep(deg_to_rad(30), deg_to_rad(60), tilt))
 
 func _calculate_aerodynamics(surfaces: Array) -> void:
@@ -375,23 +411,28 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		vertical_fraction += directions[index].y * engine_shares[index]
 	var target: float = DETENTS[detent]
 	if detent == 2 and vertical_fraction > 0.3:
-		var support := body.mass * (GRAVITY - motion.y * 1.8) - aero_force.y
+		var support := body.mass * (GRAVITY - motion.y * 1.8) - aero_force.y - cold_force.y
 		var compensated := clampf(support / (body.mass * GRAVITY * vertical_fraction), 0, 2)
 		target = lerpf(target, compensated, hover_assist)
-	requested_thrust = maxf(target, HOVER_BURST_THRUST * burst_amount) * body.mass * GRAVITY
-	requested_main_force = desired * requested_thrust
-	engine_level = move_toward(engine_level, target, dt * ENGINE_SPOOL_RATE)
-	delivered_thrust = thrust_level * body.mass * GRAVITY
+	var boost := HOVER_BURST_THRUST*maxf(burst_amount,float(jump_remaining>0))
+	requested_thrust = maxf(target,boost)*body.mass*GRAVITY
+	requested_main_force = desired*requested_thrust
+	engine_level = move_toward(engine_level,target,dt*ENGINE_SPOOL_RATE)
+	var collective := maxf(engine_level,boost)
+	delivered_thrust = 0.0
+	var outputs := []
+	for index in 6:
+		var heel_share := minf(TRIM_SHARES[4],(4.0/6.0)/maxf(engine_level,0.01))
+		heel_share = lerpf(heel_share,TRIM_SHARES[4],maxf(burst_amount,float(jump_remaining>0)))
+		var share: float = heel_share if index>=4 else (1.0-2.0*heel_share)/4.0
+		var capacity := _hot_capacity(index)*body.mass*GRAVITY
+		var output: float = hot_valves[index].step(collective*body.mass*GRAVITY*share/capacity,dt)*capacity
+		outputs.append(output)
+		delivered_thrust += output
+	thrust_level = delivered_thrust/(body.mass*GRAVITY)
+	for index in 6: engine_shares[index] = outputs[index]/maxf(delivered_thrust,0.000001)
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
-	for index in 6:
-		# Steerable heels carry hover. Redistribute as each reaches its common
-		# continuous capacity; all six equalize at sustained 4x.
-		var heel_share := minf(TRIM_SHARES[4],(4.0/6.0)/maxf(engine_level,0.01))
-		# Quick Boost briefly overdrives the steerable hover outlets. Loading
-		# canted calf barrels immediately would push opposite a reverse tap.
-		heel_share = lerpf(heel_share,TRIM_SHARES[4],burst_amount)
-		engine_shares[index] = heel_share if index>=4 else (1.0-2.0*heel_share)/4.0
 	_trim_main_moment(outlets,directions)
 	for index in 6:
 		var response := lerpf(0.16,HOVER_VECTOR_RESPONSE,minf(translation_request.length(),1.0))
@@ -405,7 +446,8 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		main_torque += lever.cross(motor_forces[index])
 
 func _motor_angle(basis: Basis, direction: Vector3) -> Vector3:
-	var local := basis.inverse()*-direction
+	if direction.is_zero_approx(): return Vector3.ZERO
+	var local := basis.inverse()*-direction.normalized()
 	var axis := Vector3.BACK.cross(local).normalized()
 	if axis.is_zero_approx(): axis = Vector3.RIGHT
 	return axis*minf(acos(clampf(local.z,-1,1)),VECTOR_LIMIT)
@@ -465,7 +507,8 @@ func _trim_main_moment(outlets: Array, directions: Array[Vector3]) -> void:
 	# Lift-supported flight can trade some resultant thrust for a balanced
 	# engine moment. Upright directional hover keeps its tighter force budget.
 	var flight_margin := aero_authority*(1.0-minf(hover_translation.length(),1.0))
-	var force_budget := lerpf(0.03,0.10,maxf(flight_margin,burst_amount))
+	var force_budget := lerpf(0.03,0.10,flight_margin)
+	force_budget = lerpf(force_budget,0.25,maxf(burst_amount,float(jump_remaining>0)))
 	var blend := minf(1.0,force_budget/maxf(delivered.distance_to(reference),0.00001))
 	for i in 6: directions[i] = original[i].lerp(directions[i],blend).normalized()
 
@@ -481,9 +524,9 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	# the chassis far faster than lift/thrust can bend it. No attitude/velocity snap.
 	# Brake or engine cutoff releases the protection for deliberate combat stalls.
 	var alignment := frame.y.dot(air_velocity.normalized())
-	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.05,0.45,engine_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
+	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.05,0.45,thrust_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
 	if flight_protection>0.0001:
-		var net_acceleration := (main_force+aero_force)/body.mass+Vector3.DOWN*GRAVITY
+		var net_acceleration := (main_force+cold_force+aero_force)/body.mass+Vector3.DOWN*GRAVITY
 		var path_rate := air_velocity.cross(net_acceleration).dot(pilot.x)/maxf(air_velocity.length_squared(),1.0)
 		var predicted := angle_of_attack+(state.angular_velocity.dot(pilot.x)-path_rate)*0.20
 		var protected_pitch := clampf(local_rates.x,path_rate+(-FLIGHT_PITCH_LIMIT-predicted)*FLIGHT_PITCH_GAIN,path_rate+(FLIGHT_PITCH_LIMIT-predicted)*FLIGHT_PITCH_GAIN)
@@ -502,41 +545,96 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	control_torque = frame*(inertia*local_accel)
 	torque_limits = Vector3(inertia.x.x,inertia.y.y,inertia.z.z)*MAX_ANGULAR_ACCELERATION
 
-func _calculate_rcs_torque(frame: Basis, dt: float) -> void:
-	var request := frame.inverse()*(control_torque-main_torque-aero_torque)
-	# ponytail: lumped three-axis cold-gas actuator; per-outlet allocation only
-	# if its fuel usage or force coupling becomes gameplay-relevant.
-	var applied := request.clamp(-torque_limits, torque_limits)
-	torque_fraction = maxf(absf(request.x) / maxf(torque_limits.x, 0.001), maxf(absf(request.y) / maxf(torque_limits.y, 0.001), absf(request.z) / maxf(torque_limits.z, 0.001)))
-	torque_saturated = torque_fraction > 1.0
-	rcs_request = frame*applied
-	var fractions := (applied/torque_limits.max(Vector3.ONE*0.001)).abs()
-	var demand := maxf(fractions.x,maxf(fractions.y,fractions.z))
-	rcs_load = 0.0
-	rcs_torque = Vector3.ZERO
-	if demand<=RCS_DEADBAND: return
-	# Low-demand correction is an actual bounded pulse, not a cosmetic flicker.
-	# A longer, softer burst avoids full-capacity kicks during quiet hover.
-	var duty := 1.0 if demand>=RCS_CONTINUOUS_DEMAND else RCS_TRIM_DUTY
-	# Integrate the on-window over this physics step, including a cycle wrap.
-	# This avoids rounding every short pulse up to an entire physics tick.
-	var end := clock*RCS_PULSE_HZ
-	var start := (clock-dt)*RCS_PULSE_HZ
-	var on_time := (floorf(end)-floorf(start))*duty+minf(fposmod(end,1.0),duty)-minf(fposmod(start,1.0),duty)
-	var fraction := clampf(on_time/maxf(dt*RCS_PULSE_HZ,0.000001),0,1)
-	rcs_torque = rcs_request*(fraction/duty)
-	rcs_load = demand*fraction/duty
+func _hot_capacity(index: int) -> float:
+	return maxf(4.0/6.0,HOVER_BURST_THRUST*TRIM_SHARES[index])
 
-func _calculate_jump(leg_reach: bool, dt: float) -> void:
+func _calculate_cold_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
+	# Kerbal Space Program / Star Citizen reference: placed nozzle forces create
+	# both translation and rotation. No free torque or recoil cancellation.
+	var request := control_torque-main_torque-aero_torque
+	var local := frame.inverse()*request
+	var fractions := local.abs()/torque_limits.max(Vector3.ONE*0.001)
+	var demand := maxf(fractions.x,maxf(fractions.y,fractions.z))
+	var desired := request
+	if demand<=RCS_DEADBAND: desired = Vector3.ZERO
+	var capacity := body.mass*GRAVITY*COLD_THRUST_G
+	# Equal angular-acceleration errors deserve equal priority; the long-axis
+	# inertia is smaller, so an unweighted torque fit would neglect roll arrest.
+	var reference_moment := torque_limits[torque_limits.max_axis_index()]
+	var weights := (Vector3.ONE*reference_moment/torque_limits.max(Vector3.ONE)).clamp(Vector3.ONE,Vector3.ONE*5.0)
+	var moment_weight := frame*Basis.from_scale(weights*weights)*frame.transposed()
+	# Reuse native 3x3 force/moment blocks and cone projection. A fixed-size
+	# projected coordinate solve prioritizes moment, then minimizes recoil.
+	# ponytail: four outlets / sixteen sweeps, not a general vehicle optimizer.
+	var length_scale := model_scale/WORLD_UNITS_PER_METER
+	var positions: Array[Vector3] = []
+	var steps: Array[float] = []
+	var force := Vector3.ZERO
+	var moment := Vector3.ZERO
+	for index in 4:
+		var r: Vector3 = outlets[index].position/(WORLD_UNITS_PER_METER*length_scale)
+		positions.append(r)
+		# A conservative Lipschitz step keeps cone projection descending even
+		# when the inertia-weighted torque metric is strongly anisotropic.
+		steps.append(1.0/(0.5001+r.length_squared()*pow(weights[weights.max_axis_index()],2)))
+		if desired.is_zero_approx(): cold_requests[index] = Vector3.ZERO
+		cold_requests[index] /= capacity
+		force += cold_requests[index]
+		moment += r.cross(cold_requests[index])
+	var target := desired/(capacity*length_scale)
+	for sweep in 16:
+		for index in 4:
+			var previous := cold_requests[index]
+			var gradient := force*0.5+(moment_weight*(moment-target)).cross(positions[index])+previous*0.0001
+			var candidate := previous-steps[index]*gradient
+			var direction := _motor_direction(outlets[index].basis,_motor_angle(outlets[index].basis,candidate))
+			var projected := direction*clampf(candidate.dot(direction),0,1)
+			cold_requests[index] = projected
+			var change := projected-previous
+			force += change
+			moment += positions[index].cross(change)
+	rcs_request = moment*capacity*length_scale
+	torque_saturated = (desired-rcs_request).length()>maxf(torque_limits.length()*0.05,desired.length()*0.1)
+	torque_fraction = 0.0
+	for planned in cold_requests: torque_fraction = maxf(torque_fraction,planned.length())
+	if torque_fraction>=RCS_CONTINUOUS_DEMAND: rcs_continuous = true
+	elif torque_fraction<RCS_CONTINUOUS_DEMAND*0.6: rcs_continuous = false
+	var duty := 1.0 if rcs_continuous else RCS_TRIM_DUTY
+	rcs_load = 0.0
+	cold_force = Vector3.ZERO
+	rcs_torque = Vector3.ZERO
+	for index in 4:
+		cold_requests[index] *= capacity
+		var commanded := cold_requests[index]
+		var angle: Vector3 = cold_springs[index].step(_motor_angle(outlets[index].basis,commanded),dt,COLD_VECTOR_RESPONSE).limit_length(VECTOR_LIMIT)
+		cold_springs[index].value = angle
+		cold_angles[index] = angle
+		var output := _cold_pulse(cold_valves[index],commanded.length()/capacity,dt,duty)
+		cold_forces[index] = _motor_direction(outlets[index].basis,angle)*output*capacity
+		cold_force += cold_forces[index]
+		rcs_torque += (outlets[index].position/WORLD_UNITS_PER_METER).cross(cold_forces[index])
+		rcs_load = maxf(rcs_load,output)
+
+func _cold_pulse(valve, request: float, dt: float, duty: float) -> float:
+	if duty>=1.0: return valve.step(request,dt)
+	var period := 1.0/RCS_PULSE_HZ
+	var cursor := fposmod(clock-dt,period)
+	var remaining := dt
+	var impulse := 0.0
+	while remaining>0.000000001:
+		var firing := cursor<period*duty-0.000000001
+		var boundary := period*duty if firing else period
+		var duration := minf(remaining,boundary-cursor)
+		impulse += valve.step(request if firing else 0.0,duration)*duration
+		remaining -= duration
+		cursor = fposmod(cursor+duration,period)
+	return impulse/dt
+
+func _calculate_launch(leg_reach: bool, dt: float) -> void:
+	jump_remaining = maxf(0.0,jump_remaining-dt)
 	if jump_requested:
-		if grounded and jump_remaining <= 0: jump_remaining = JUMP_PUSH_TIME
+		if grounded and leg_reach and jump_remaining<=0: jump_remaining = LAUNCH_TIME
 		jump_requested = false
-	leg_force = Vector3.ZERO
-	if jump_remaining > 0 and leg_reach:
-		# Finite stance extension, permitted only while the ground is in leg reach.
-		var extension := 1.0 - jump_remaining / JUMP_PUSH_TIME
-		leg_force = Vector3.UP * body.mass * GRAVITY * JUMP_PEAK_G * sin(PI * extension)
-	jump_remaining = maxf(0, jump_remaining - dt)
 
 func pilot_frame() -> Basis:
-	return Basis(attitude) * PILOT_AXES
+	return Basis(attitude)*PILOT_AXES

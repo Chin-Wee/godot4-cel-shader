@@ -47,7 +47,6 @@ var leg_reachable := false
 var prediction_clock := 0.0
 var collided := false
 var native_support := false
-var exhaust_throttle := 0.35
 var exhaust_phase := 0.0
 const VECTOR_LIMIT := PI/6.0
 # Measured centers of the actual barrel ends / recessed ports, in source bone space.
@@ -203,13 +202,9 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if freeze or not simulation_enabled or not flying or sockets.is_empty(): return
 	if absf(state.inverse_inertia_tensor.determinant()) < 1e-30: return
 	var contact := _ground_probe(state)
-	var outlets := []
-	for index in 6:
-		var bone := skeleton.find_bone(sockets[index].bone_name)
-		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
-		outlets.append({"position":transform * MOUNTS[index][2] - global_position,
-			"basis":(transform.basis * neutral_bases[index]).orthonormalized()})
-	controller.step(state, FlightInput.read_input() if player_controlled else controls, outlets, contact.grounded, contact.reachable, aerodynamic_surfaces(), rig.arms.brake_spread())
+	var outlets := _thruster_outlets(sockets,MOUNTS,0)
+	var cold_outlets := _thruster_outlets(gas_sockets,COLD_MOUNTS,6)
+	controller.step(state, FlightInput.read_input() if player_controlled else controls, outlets, cold_outlets, contact.grounded, contact.reachable, aerodynamic_surfaces(), rig.arms.brake_spread())
 	collided = state.get_contact_count() > 0
 	native_support = false
 	for index in state.get_contact_count():
@@ -219,7 +214,6 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if prediction_clock <= 0:
 		controller.time_to_impact = predict_impact()
 		prediction_clock = 0.1
-	_update_cold_gimbals(state.step)
 	update_animation(state.step)
 
 func aerodynamic_surfaces() -> Array:
@@ -235,19 +229,14 @@ func aerodynamic_surfaces() -> Array:
 		surfaces.append({"position":offset,"normal":rotation*Vector3.FORWARD,"forward":rotation*Vector3.UP,"fraction":profile.aero_fractions[index]})
 	return surfaces
 
-func _update_cold_gimbals(dt: float) -> void:
-	for index in 4:
-		var bone := skeleton.find_bone(gas_sockets[index].bone_name)
-		var transform: Transform3D = skeleton.global_transform * bone_poses[bone]
-		var neutral := (transform.basis * neutral_bases[index + 6]).orthonormalized()
-		var lever: Vector3 = transform * COLD_MOUNTS[index][2] - global_position
-		var force: Vector3 = controller.rcs_request.cross(lever).normalized()
-		var desired: Vector3 = neutral.inverse() * -force
-		var angle := minf(acos(clampf(desired.z, -1, 1)), VECTOR_LIMIT) if not force.is_zero_approx() else 0.0
-		var axis := Vector3.BACK.cross(desired).normalized()
-		if axis.is_zero_approx(): axis = Vector3.RIGHT
-		motor_springs[index + 6].step(axis * angle, dt, 0.16)
-		motor_springs[index + 6].value = motor_springs[index + 6].value.limit_length(VECTOR_LIMIT)
+func _thruster_outlets(attachments: Array, mounts: Array, offset: int) -> Array:
+	var outlets := []
+	for index in attachments.size():
+		var bone := skeleton.find_bone(attachments[index].bone_name)
+		var transform: Transform3D = skeleton.global_transform*bone_poses[bone]
+		outlets.append({"position":transform*mounts[index][2]-global_position,
+			"basis":(transform.basis*neutral_bases[index+offset]).orthonormalized()})
+	return outlets
 
 func _ground_probe(state: PhysicsDirectBodyState3D) -> Dictionary:
 	var reach := 0.9 * display_scale
@@ -311,6 +300,7 @@ func capture_pose() -> void:
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
 	rig.arms.sample_completed(skeleton,bone_poses)
 	for index in 6: motor_springs[index].value = controller.motor_angles[index]
+	for index in 4: motor_springs[index+6].value = controller.cold_angles[index]
 	_refresh_exhaust()
 
 func update_force_debug() -> void:
@@ -329,8 +319,8 @@ func update_force_debug() -> void:
 	force_lines.global_position = global_position
 	var lines := ImmediateMesh.new()
 	lines.surface_begin(Mesh.PRIMITIVE_LINES)
-	var vectors := [controller.main_force / mass, controller.aero_force / mass, controller.rcs_torque / (mass * 2.0), Vector3.DOWN * FlightController.GRAVITY]
-	var colors := [Color.ORANGE, Color.CYAN, Color.MAGENTA, Color.WHITE]
+	var vectors := [controller.main_force / mass, controller.cold_force / mass, controller.aero_force / mass, controller.rcs_torque / (mass * 2.0), Vector3.DOWN * FlightController.GRAVITY]
+	var colors := [Color.ORANGE, Color.SKY_BLUE, Color.CYAN, Color.MAGENTA, Color.WHITE]
 	for index in vectors.size():
 		var tip: Vector3 = vectors[index].limit_length(50.0) * 3.0
 		if tip.length() < 0.01: tip = Vector3.UP * 0.01
@@ -340,8 +330,7 @@ func update_force_debug() -> void:
 	lines.surface_end()
 	force_lines.mesh = lines
 
-func update_exhaust(throttle: float, phase: float) -> void:
-	exhaust_throttle = throttle
+func update_exhaust(phase: float) -> void:
 	exhaust_phase = phase
 	_refresh_exhaust()
 
@@ -353,20 +342,19 @@ func _refresh_exhaust() -> void:
 		all_gimbals[index].basis = neutral_bases[index]*rotation_basis
 	for index in flames.size():
 		var flame := flames[index]
-		flame.visible = flying and exhaust_throttle > 0.001
-		var load: float = controller.engine_shares[index] * 6.0
+		var output: float = controller.motor_forces[index].length()/(mass*FlightController.GRAVITY)
+		var throttle: float = clampf(output/controller._hot_capacity(index),0,1)
+		var load := output/(4.0/6.0)
+		flame.visible = flying and output>0.00001
 		flame.set_instance_shader_parameter("thrust_load",load)
-		flame.set_instance_shader_parameter("engine_throttle",exhaust_throttle)
+		flame.set_instance_shader_parameter("engine_throttle",throttle)
 		var beat := (exhaust_phase+float(flame.get_instance_shader_parameter("phase_offset")))*TAU
-		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,exhaust_throttle)*load*(1.0+sin(beat*4.0)*0.12))
+		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,throttle)*load*(1.0+sin(beat*4.0)*0.12))
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
-		# Present the delivered physical pulse, never an independent flash clock.
-		var demand := controller.rcs_load
-		var lever := gas_gimbals[index].global_position-global_position
-		var force: Vector3 = controller.rcs_torque.cross(lever)
-		var useful := not force.is_zero_approx() and (-gas_gimbals[index].global_basis.z).dot(force.normalized())>0.05
-		gas_jets[index].visible = flying and demand>0.001 and useful
+		# The same nozzle force drives the native body and its visible exhaust.
+		var demand: float = controller.cold_forces[index].length()/(mass*FlightController.GRAVITY*FlightController.COLD_THRUST_G)
+		gas_jets[index].visible = flying and demand>0.00001
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
-		gas_jets[index].set_instance_shader_parameter("thrust_load",0.6)
-		gas_jets[index].set_instance_shader_parameter("engine_throttle",1.0)
+		gas_jets[index].set_instance_shader_parameter("thrust_load",demand)
+		gas_jets[index].set_instance_shader_parameter("engine_throttle",demand)

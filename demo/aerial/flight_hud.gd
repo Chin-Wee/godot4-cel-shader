@@ -13,7 +13,7 @@ func _ready() -> void:
 	panel.offset_right = -20
 	panel.offset_top = 18
 	var label := Label.new()
-	label.text = "GUNDAM · PHYSICS FLIGHT\nW/S: pitch · A/D: bank / roll · Q/E: yaw\nHover direction tap: 4× burst / 0.5s · cooldown 1s · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: ground jump\nShift: brake / spread · Mouse: look\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
+	label.text = "GUNDAM · PHYSICS FLIGHT\nW/S: pitch · A/D: bank / roll · Q/E: yaw\nHover direction tap: 4× burst / 0.5s · cooldown 1s · Ctrl: precision\nSpace / C: thrust 0 → 0.5 → 1 → 2 → 4× · R: thruster launch\nShift: brake / spread · Mouse: look\nMMB / Tab: focus · Esc: release · Wheel: zoom · Home: camera reset\nP: pause · G: walk preview · F9: force vectors · 1/2: palette · 3/4: weather · F8: explosion"
 	label.add_theme_color_override("font_color",Color(1,0.93,0.82))
 	label.add_theme_font_size_override("font_size",15)
 	panel.add_child(label)
@@ -30,7 +30,7 @@ func update_status(mech: AerialMech) -> void:
 	if fc.time_to_impact < 2.4: warning = " · TERRAIN %.1fs%s"%[fc.time_to_impact," — PULL UP"]
 	flight_stats.text = "THRUST %.1f× · ENGINE %.2f× · %.0f m/s · HOVER %.0f%% · AERO %.0f%% · %.1f G%s\nREQUEST %.0f kN · DELIVERED %.0f kN · RCS %.0f%%%s%s" % [
 		fc.DETENTS[fc.detent], fc.thrust_level, fc.velocity.length(), fc.hover_assist * 100, fc.aero_authority * 100, fc.g_load, warning,
-		fc.requested_thrust / 1000, fc.delivered_thrust / 1000, fc.torque_fraction * 100,
+		fc.requested_thrust / 1000, fc.delivered_thrust / 1000, fc.rcs_load * 100,
 		" · TORQUE LIMIT" if fc.torque_saturated else "", " · GIMBAL LIMIT" if fc.motor_saturated else ""]
 	flight_stats.text += " · BOOST " + ("ACTIVE" if fc.burst_remaining > 0 else ("%.1fs" % fc.burst_cooldown if fc.burst_cooldown > 0 else "READY"))
 	if mech.debug_forces:

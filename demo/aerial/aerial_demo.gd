@@ -134,7 +134,7 @@ func _update_afterburners(delta := 0.0) -> void:
 	afterburner_flow_phase = fposmod(afterburner_flow_phase+delta*lerpf(0.35,1.8,throttle),100.0)
 	afterburner_material.set_shader_parameter("flow_phase",afterburner_flow_phase)
 	afterburner_material.set_shader_parameter("throttle",throttle)
-	for mech in [hero,wingman]: mech.update_exhaust(_flight_throttle(mech) if automatic_exhaust else throttle,afterburner_flow_phase)
+	for mech in [hero,wingman]: mech.update_exhaust(afterburner_flow_phase)
 
 func set_palette(daylight: bool) -> void:
 	lighting.set_palette(daylight)
@@ -167,7 +167,7 @@ func set_walk_mode(enabled: bool) -> void:
 	hero.flying = not enabled
 	hero.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF if enabled else Node.PHYSICS_INTERPOLATION_MODE_ON
 	if enabled: _update_walk_pose()
-	hero.controller.reset()
+	hero.controller.reset(0.0)
 	hero.update_animation(0.0)
 	hero.reset_physics_interpolation()
 	_update_afterburners()

@@ -12,8 +12,7 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **W/S:** pitch down/pull up. **A/D:** bank/roll. **Q/E:** yaw immediately,
-  including from hover. Aircraft axes stay fixed in space, plane flight and
+- **W/S:** pitch down/pull up. **A/D:** bank/roll. **Q/E:** yaw, including from hover. Aircraft axes stay fixed in space, plane flight and
   inversion: roll is around the mech's head-to-foot axis, yaw around its
   chest-to-back axis. The mouse remains independent of steering.
 - **Powered hover direction tap, WASD:** add a 0.5-second burst at 4× hover
@@ -24,7 +23,7 @@ godot --path demo res://aerial/aerial_demo.tscn
 - **Space / C:** step through **0, 0.5, 1, 2, 4 × hover**. Each press changes one
   detent; key repeat is ignored. Engines ramp toward the request.
 - **Shift held:** aerodynamic brake and spread posture; rotation remains available.
-- **R:** finite ground-contact leg jump, without changing the thrust detent.
+- **R:** ground-triggered hot-thruster launch, without changing the cruise detent.
 - **Ctrl held:** precision translation/rotation. **Mouse:** look only.
   **MMB / Tab:** camera focus/free look. Click captures the mouse.
 - **Wheel:** zoom. **Home:** reset camera. **Esc:** release mouse. **P:** pause.
@@ -87,8 +86,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   for independent attitude/momentum. No unpublished internals are assumed.
 - `flight_controller.gd` reads commands, measures motion/airflow, computes hover
   assistance, posed-surface aerodynamics, desired attitude moment, main-engine
-  trim, remaining RCS torque and leg push, then applies
-  them through native physics. Forces are newtons; torque is newton metres. Ten
+  trim and remaining cold-nozzle demand, then applies hot, cold and air forces
+  at their actual outlets/panels through native physics. There is no direct
+  torque, central launch force or live velocity/orientation override. Forces are newtons; torque is newton metres. Ten
   world units represent one metre: native forces multiply by 10, torque by 100,
   velocities divide by 10, and native inertia divides by 100. Native gravity is
   scaled consistently and never added twice.
@@ -120,8 +120,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   quiet hover below 1.5 m/s, preventing windup against an intentional slide.
 - One damped angular-rate controller uses native shape-derived inertia and finite
   cold-gas torque. Requested rates are 0.75/0.8/1.5 rad/s before precision scaling;
-  actuator limits correspond to 5 rad/s² per body axis. Main gimbals first trim
-  the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight or burst budget. Six
+  commanded angular acceleration is capped at 5 rad/s² per body axis. Main gimbals first trim
+  the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight budget, rising to 25% during burst/launch to reserve attitude authority. Six
   bounded native 3×3 correction sweeps project directions into the existing cones;
   finite gimbal motors still deliver the result. AC VI is the directional-boost
   presentation reference: upright hover requests steer the real nozzles, which
@@ -134,20 +134,33 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   bring the lower outlets toward the mass centre. Directional hover replaces
   that tuck; backward force sweeps the calves forward with ankle counter-rotation
   so their canted ports can contribute without exceeding the nozzle cones.
-  These are rig-profile calibrations; the cold-gas limit remains unchanged.
-  Cold gas is a lumped three-axis actuator: exact outlet allocation and fuel
-  are omitted. Low-demand trim now uses real 3 Hz bursts, with 65% on-time
-  and a coast interval, replacing the independent 6 Hz flash. Burst amplitude
-  preserves requested mean impulse; partial physics ticks integrate the active
-  time exactly. A 1.2% capacity dead zone leaves tiny residual corrections alone.
-  Above 35% demand the actuator burns continuously for strong steering/recovery.
-  Each delivered component still obeys the original torque ceiling. Small
-  rate ripple is intentional: full-power lateral checks permit up to 0.10 rad/s
-  yaw drift instead of the previous 0.04 rad/s near-perfect lock. No random
-  wobble or direct velocity change supplies the instability.
-  `RCS_PULSE_HZ`, `RCS_TRIM_DUTY`, `RCS_DEADBAND` and
-  `RCS_CONTINUOUS_DEMAND` in `flight_controller.gd` tune that tradeoff.
-  Fixed capsule inertia does not change with procedural limb motion.
+  These are rig-profile calibrations; physical cold-nozzle limits still apply.
+  Cold gas now uses four physical nozzle forces, including their net recoil.
+  A bounded projected force/moment fit prioritizes attitude error using native
+  inertia, then minimizes recoil; both hot and cold directions retain their
+  30-degree cones. Cold gimbals take 0.06 s to aim. There is no synthetic torque
+  ceiling or residual torque added to make a requested maneuver succeed.
+  The controller reports saturation when the available ports cannot supply it. High
+  dynamic pressure and a spread brake pose can prevent a requested flip; no free
+  torque forces the animation or body through an impossible maneuver.
+  Low-demand trim retains a 3 Hz / 65% schedule; steady countertorque switches
+  to continuous burn above 10% nozzle load, with 6% release hysteresis. Valve
+  dynamics integrate each pulse boundary; there is no fabricated mean impulse.
+  Native capsule inertia stays fixed while limbs articulate; propellant depletion
+  and articulated mass/inertia are outside this model.
+- `thruster_valve.gd` models each hot/cold outlet separately. Hot outlets have
+  0.06 s ignition, 0.12 s minimum closed time after decay, 0.06 s full-flow
+  rise/fall and a 0.08 s minimum burn. Cold outlets use 0.008 / 0.03 s ignition /
+  closed time, 0.012 / 0.014 s rise/fall and a 0.02 s minimum burn. Reversal or
+  re-press cannot bypass shutdown or restart. Integrated average thrust handles
+  sub-tick events without frame-dependent impulses. These are tunable fictional
+  mech calibrations, not universal hardware timings. Cold outlet capacity is
+  2× body weight per port; hot ports retain their continuous/burst ratings.
+  Production reference: [Star Citizen's published thrust-at-mount and actuator
+  response model](https://robertsspaceindustries.com/en/comm-link/engineering/13951-Flight-Model-And-Input-Controls),
+  alongside Kerbal Space Program's placed RCS behavior. Real valve data, such as
+  [Moog's cold-gas specifications](https://www.moog.com/products/propulsion/space-propulsion/spacecraft-propulsion/thrusters/cold-gas-thruster.html),
+  motivates finite response rather than an instantaneous torque actuator.
 - Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
   main power. It never depends on stall/attached-flow quality. Neutral pilot axes
   allow upright restoration. Directional hover requests 0.60 g (+20%); its
@@ -158,7 +171,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   one-second cooldown measured from activation. Normal rotation and flight-path
   protection remain active throughout. Holding cannot repeat it; early taps do
   not queue. The selected cruise detent and its spool are independent of boost
-  output, preventing a long power tail afterward. A 0.06-second force envelope
+  output. The command lasts 0.5 s; delivered thrust also obeys valve rise,
+  shutdown and restart rather than snapping to a requested value. A 0.06-second force envelope
   softens both ends on the fixed physics clock; nozzle and joint servos retain
   their existing smooth response. Poses, exhaust, force accounting and the HUD
   read the same delivered collective. Hover eligibility ignores temporary
@@ -193,12 +207,12 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Engines spool at 3 hover multiples/s. Shift preparation uses a 0.28 s critically damped response. The 1.8 extra Cd
   follows the displayed lateral arm projection, so the key cannot add drag
   before the limbs move. Natural broadside spreading exposes the same area.
-- R applies a 0.22-second sinusoidal contact-leg push with a 4 G peak only while
-  suitable ground remains within 0.8 m of leg reach. It never changes main power or writes velocity. Native
-  contact handles touchdown. This is one chassis capsule, not articulated limb
-  collision. Pause commits the displayed native pose and preserves velocities
-  for resume. G walking is an explicitly frozen preview, separate from normal
-  takeoff and landing.
+- R requests 0.5 seconds of hot launch thrust only from grounded support. It
+  changes neither the cruise detent nor velocity. The same hot outlets, ignition
+  delays and valve response produce liftoff; no leg/central force exists. Leg
+  extension is a visual launch response. Gravity and native contact remain real
+  external forces. Pause, reset/teleport and the frozen G walking preview are
+  explicitly outside live flight integration.
 - The physical root attitude leads the pose. The visual language combines
   Hathaway's deliberate combat silhouettes, skydiver relative-wind responses and
   Titanfall's mechanical weight. Directional slides, backward bracing and rotating
@@ -291,18 +305,16 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   point aft/down, and heel openings point down in the standing rest pose.
   Every main and cold-gas motor uses a spring-damped, 30-degree local cone.
   The existing force/moment allocator chooses main directions. Cold-gas
-  gimbals aim from requested torque and hold that direction between bursts.
+  gimbals aim from the allocated nozzle forces and slew on the physics clock.
   Desired exhaust is transformed into each local frame and clamped before the
   motor moves. Bone animation is never canceled to maintain a world-down axis;
   legs and feet carry their booster axes through the procedural pose. A saturated
   motor remains at its local limit even when the requested force is unreachable.
-  Requested thrust/G load sets the six main engines' visible power. Per-instance
-  power changes brightness and length without material copies. Shoulder/thigh
-  pulses show delivered RCS torque only, through ports pointing usefully into
-  the requested control couple. Main forces use actual motor directions;
-  the cold-gas control couple uses the lumped actuator described above. Final
-  modifier poses update attachment readbacks and local motor targets before
-  rendering. Trails record actual paths and stay hidden at rest or on foot.
+  Each plume's visibility, brightness and length use that outlet's delivered
+  force, including valve transients. A material-preview throttle cannot light a
+  physically inactive nozzle. The same sampled directions/forces drive the native
+  body and the rendered gimbals; final modifier poses update attachment readbacks
+  before rendering. Trails record actual paths and stay hidden at rest/on foot.
 - Cel exhaust follows [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
   tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
@@ -542,7 +554,7 @@ families, plus isolated landing, braking, retro-thrust, steering/roll and endura
 
 | Replay | Fixed input sequence and checks |
 | --- | --- |
-| `hover` | R leg push, two Space presses to 1×, short pitch/roll/yaw inputs, then neutral gyro/drift settling. |
+| `hover` | R hot-thruster launch, two Space presses to 1×, short pitch/roll/yaw inputs, then neutral gyro/drift settling. |
 | `fighter` / `inverted` | Powered bank rolls and pitch correction; separate inverted negative-AoA entry verifies upward lift. |
 | `coast` | Zero main thrust; pitch/roll/yaw and release while atmospheric forces account for every velocity change. |
 | `fall` | Unpowered descent, Shift spread/release/spread, then actual terrain contact. |
@@ -587,12 +599,12 @@ endurance records numeric telemetry without thousands of redundant screenshots.
 `--metrics-only` suppresses images when using a native renderer. Run at the
 project's existing 60 Hz physics rate; project settings are not modified.
 
-Measured 4× equilibrium is approximately 140 m/s in the reference straight-flight
-fixture. With 10,000 kg mass, 80 m² area and sea-level density, the minimum
-high-speed Cd gives a conservative any-orientation bound near 168 m/s under
-maximum thrust plus gravity. These are consequences of quadratic drag, not speed
-clamps. Main-off momentum remains subject to actual gravity/lift/drag; the separate
-vacuum check still proves that attitude torque cannot rewrite linear momentum.
+Measured 4× equilibrium is approximately 137 m/s in the reference straight-flight
+fixture. The replay's conservative steady-flight bound includes all hot outlet
+ratings, cold-gas recoil and gravity; it no longer assumes reaction jets cannot
+translate the body. No velocity clamp supplies the result. Main-off momentum is
+subject to gravity/lift/drag and real cold-nozzle recoil, all accounted for by the
+native force ledger.
 
 These are desktop observations, not a device benchmark. The mech capture uses a native offscreen viewport at fixed 960×600 resolution
 with its host window minimized. Captures explicitly request a native redraw so a frozen window
@@ -605,7 +617,7 @@ this path is verified on the current Mobile renderer.
 
 `test_thruster_control.gd` checks four directional hover inputs with the
 chassis upright, early force response, rendered/physical nozzle agreement,
-exact integrated 3 Hz impulse, dead-zone silence, sustained steering capacity,
+finite ignition/restart/minimum-burn timing across 30–240 Hz, nozzle-force moment sums,
 truthful cold-gas flashes and 30 seconds of bounded hover drift. The native
 version uses a low three-quarter view so the heel and calf redirection is visible.
 
@@ -633,7 +645,7 @@ silhouettes; these are calibrated mech adaptations, not footage-fitted motion.
 | --- | --- |
 | Leg jump / upright hover | Intent prepares head, shoulders and staggered knees before acceleration. Ground launch/contact retain priority; quiet hover has no idle swimming. |
 | Powered fighter flight | Effective commanded pitch/yaw/roll rates supply the start/hold/stop error, including protection and the 1.95 rad/s flip request. Air-loaded banks retain inside/outside limb roles. |
-| Engines-off coast | Air pressure remains available independently of engine output and attached-flow authority. Rotation still uses native torque; attitude never rewrites travel. Low air load favours compact articulation. |
+| Engines-off coast | Air pressure remains available independently of engine output and attached-flow authority. Rotation comes from nozzle point forces; recoil also affects travel. Low air load favours compact articulation. |
 | Atmospheric falling | Signed torso-relative wind separates belly arch/box from back-facing hip/knee gather and different arm/head presentation. Lengthwise airflow selects tracking. Useful body-flight support fades in over roughly 10–31 m/s at sea-level density. |
 | Shift braking / reverse thrust | Completed forearm/upper-arm lateral projection supplies extra drag. Existing knee/hand flare and reverse brace remain distinct. Release removes the requested flare; residual deceleration cannot keep its own braking pose latched. |
 | Full flips and transitions | Actual angular travel still supplies progress. Useful air pressure plus small effective-rate error blend toward an extended layout; weak support or high unmet rate demand gathers the body. Release/reversal immediately requests recovery through the same servos. |
@@ -733,8 +745,9 @@ recorded pre-change 70 m/s baseline. Native chase captures also check framing.
 Existing W/S and A/D remain pitch and roll. Powered, unbraked pitch keeps the
 soft airflow envelope. With main thrust selected off or Shift held, sustained
 pitch ramps toward 1.95 rad/s over 0.20–0.65 seconds of rotational intent; the
-existing 5 rad/s² actuator limit remains. A clean low-airload revolution takes
-about four seconds. Release arrests rotation; holding continues into another turn.
+5 rad/s² command limit remains. Clean low-airload revolutions include the finite
+actuator response; the clean-flip check allows 3.3–5.5 seconds.
+Release arrests rotation; holding continues into another turn.
 There is no maneuver button, attitude snap or automatic completion.
 
 The controller exposes signed `maneuver_travel`, `maneuver_strength` and

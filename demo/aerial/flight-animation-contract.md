@@ -4,10 +4,14 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
 
 ## Required behaviors
 
-1. Ground jump into upright, gyro-stabilized helicopter-like flight. Grounded
-   legs supply the push; powered low-speed support catches ascent. Animate pelvis,
+1. Ground-triggered hot-thruster launch into gyro-stabilized flight. All live
+   propulsion/rotation comes from hot/cold nozzle point forces and posed-surface
+   air forces; gravity/contact stay native. R uses the same delayed hot outlets,
+   with no leg push, central launch force or direct torque. Each outlet has finite
+   ignition, minimum burn, shutdown and restart timing. Animate pelvis,
    chest, both arms and legs, with feasible heel/calf/backpack thrust alignment.
-   Pitch/roll responds immediately. A powered hover direction tap adds a
+   Pitch/roll commands remain available throughout; actual rotation waits for
+   the physical actuators. A powered hover direction tap adds a
    0.5-second directional burst at 4× hover thrust, with a one-second cooldown
    from activation. Release retains the burst direction; held or early taps do
    not repeat or queue it. Engine cutoff cancels it through the short force fade. The selected cruise detent
@@ -34,7 +38,7 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
    through actual point forces. Main vectoring trims the combined moment before
    cold gas supplies the remainder; airspeed alone never disables attitude control.
 3. Main engines off: rotate freely while retaining existing travel. Cold-gas
-   attitude control supplies actual torque. Air-load/rate-error-dependent compact or extended preparation and arrest poses
+   attitude control supplies actual off-centre nozzle forces and recoil. Air-load/rate-error-dependent compact or extended preparation and arrest poses
    express the maneuver; neither pose nor orientation rewrites velocity. Gravity
    and atmospheric forces remain active.
 4. Atmospheric falling: depict skydiver body flight. Relative wind, broadside
