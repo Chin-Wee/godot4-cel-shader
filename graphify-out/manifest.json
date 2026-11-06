@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793991227.5327075,
-    "seen": 1793991484.00399,
-    "ast_hash": "1bcc1b753268636a60782cc08c09df5d",
+    "mtime": 1793992792.8921168,
+    "seen": 1793993065.1519868,
+    "ast_hash": "bcb492f1d9f3c522185e9ac0093bb5f8",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1455,6 +1455,12 @@
     "mtime": 1793991499.7647026,
     "seen": 1793991500.757302,
     "ast_hash": "c1aeed217228b6e33a0a91d99372bac7",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261106_192423_a70fcb6e_how_does_aerial_cold_jet_thrust_scale_with_speed_f.md": {
+    "mtime": 1793993063.9708753,
+    "seen": 1793993065.152003,
+    "ast_hash": "8ca1c1ff9e35deb907526dce9fc518aa",
     "semantic_hash": ""
   }
 }

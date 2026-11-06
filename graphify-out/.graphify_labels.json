@@ -34,5 +34,6 @@
   "32": "Q: Where are Armored Core hover tap burst control timings and force handling defined?",
   "33": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
   "34": "FollowLockAxis2D",
-  "35": "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?"
+  "35": "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?",
+  "36": "Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?"
 }

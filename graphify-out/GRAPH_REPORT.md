@@ -1,17 +1,17 @@
 # Graph Report - godot4-cel-shader  (2026-11-07)
 
 ## Corpus Check
-- 29 files · ~2,119,594 words
+- 30 files · ~2,120,047 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 1071 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 484 nodes · 546 edges · 36 communities (29 shown, 7 thin omitted)
+- 489 nodes · 550 edges · 37 communities (30 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `722313e4`
+- Built from commit: `278c64dd`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -51,6 +51,7 @@
 - Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?
 - FollowLockAxis2D
 - Q: How are aerial per-booster thrust caps and redundant opposing burns handled?
+- Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?
 
 ## God Nodes (most connected - your core abstractions)
 1. `PhantomCamera3D` - 70 edges
@@ -79,7 +80,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (36 total, 7 thin omitted)
+## Communities (37 total, 7 thin omitted)
 
 ### Community 0 - "Flight pose design"
 Cohesion: 0.06
@@ -197,22 +198,26 @@ Nodes (5): FollowLockAxis2D, None, X, Xy, Y
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How are aerial per-booster thrust caps and redundant opposing burns handled?, Source Nodes
 
+### Community 36 - "Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?"
+Cohesion: 0.40
+Nodes (4): Answer, Outcome, Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?, Source Nodes
+
 ## Knowledge Gaps
-- **271 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+266 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 340 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **274 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+269 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 344 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.268) - this node is a cross-community bridge._
+  _High betweenness centrality (0.263) - this node is a cross-community bridge._
 - **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `FollowLockAxis2D`, `PhantomCamera`, `PhantomCameraHost`, `FollowMode2D`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.209) - this node is a cross-community bridge._
+  _High betweenness centrality (0.204) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.175) - this node is a cross-community bridge._
+  _High betweenness centrality (0.171) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _271 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _274 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Flight pose design` be split into smaller, more focused modules?**
   _Cohesion score 0.05714285714285714 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
