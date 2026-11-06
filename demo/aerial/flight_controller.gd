@@ -26,8 +26,11 @@ const RCS_CONTINUOUS_DEMAND := 0.35 # Larger attitude demands use a sustained bu
 const HOVER_DRIFT_GAIN := 3.6 # Dampen the moving-port transient within the same force limit.
 const HOVER_TRIM_GAIN := 1.0
 const HOVER_CANT_BIAS := 0.07
-const HOVER_TRANSLATE_TIME := 3.0
-const HOVER_TILT_RAMP := 1.25
+# Armored Core VI Quick Boost reference; reuse the existing directional motors.
+const HOVER_BURST_TIME := 0.5
+const HOVER_BURST_COOLDOWN := 1.0 # Activation to activation; never auto-repeats.
+const HOVER_BURST_THRUST := 4.0 # Existing maximum collective, in hover multiples.
+const HOVER_BURST_RAMP := 0.06
 const HOVER_TRANSLATE_G := 0.60
 const FLIGHT_PITCH_LIMIT := PI / 6.0
 const FLIGHT_PITCH_GAIN := 3.0
@@ -83,9 +86,14 @@ var rotation_request := Vector3.ZERO # Animation intent before control smoothing
 var hover_translation := Vector3.ZERO # Heading-local force request, not velocity.
 var translation_request := Vector3.ZERO # Unfiltered intent for pose preparation.
 var hover_actuation := Vector3.ZERO # Planned heading-local acceleration for posing.
-var hover_hold := Vector2.ZERO # Pitch/roll hold duration; a reversal starts fresh.
-var hover_press_axes := Vector2.ZERO # This press began in powered upright hover.
-var last_direction := Vector2.ZERO
+var burst_remaining := 0.0
+var burst_cooldown := 0.0
+var burst_direction := Vector3.ZERO
+var burst_amount := 0.0
+var last_move_buttons := 0
+# Cruise spool remains independent; a short boost cannot leave a long power tail.
+var thrust_level: float:
+	get: return maxf(engine_level, HOVER_BURST_THRUST * burst_amount)
 var translation := Spring.new()
 var flight_protection := 0.0
 var requested_rates := Vector3.ZERO # World angular-rate request after protection.
@@ -160,9 +168,11 @@ func reset() -> void:
 	hover_translation = Vector3.ZERO
 	translation_request = Vector3.ZERO
 	hover_actuation = Vector3.ZERO
-	hover_hold = Vector2.ZERO
-	hover_press_axes = Vector2.ZERO
-	last_direction = Vector2.ZERO
+	burst_remaining = 0.0
+	burst_cooldown = 0.0
+	burst_direction = Vector3.ZERO
+	burst_amount = 0.0
+	last_move_buttons = 0
 	flight_protection = 0.0
 	requested_rates = Vector3.ZERO
 	effective_rates = Vector3.ZERO
@@ -226,24 +236,32 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	var request := Vector3(float(raw.get("back", false)) - float(raw.get("forward", false)),
 		float(raw.get("yaw_left", false)) - float(raw.get("yaw_right", false)),
 		float(raw.get("left", false)) - float(raw.get("right", false)))
-	var direction := Vector2(request.x,request.z)
-	var tilt := Vector2.ONE
-	for axis in 2:
-		if direction[axis]==0 or direction[axis]!=last_direction[axis]:
-			hover_hold[axis] = 0.0
-			hover_press_axes[axis] = float(direction[axis]!=0 and hover_assist>=0.5)
-		if detent==0: hover_press_axes[axis] = 0.0
-		if direction[axis]!=0: hover_hold[axis] += dt
-		# Keep the promised interval even if powered ascent increases airspeed.
-		# A new airborne press still rotates immediately; cutoff cancels the latch.
-		tilt[axis] = 1.0-hover_press_axes[axis]*(1.0-smoothstep(HOVER_TRANSLATE_TIME,HOVER_TRANSLATE_TIME+HOVER_TILT_RAMP,hover_hold[axis]))
-	last_direction = direction
-	var planar := Vector3(-request.z*(1.0-tilt.y),0,request.x*(1.0-tilt.x)).limit_length(1.0)*precision
-	translation_request = planar
-	hover_translation = translation.step(planar,dt,INPUT_RESPONSE)
-	rotation_request = request*Vector3(tilt.x,1,tilt.y)*precision
+	var buttons := 0
+	for index in 4:
+		if raw.get(["forward", "back", "left", "right"][index], false): buttons |= 1 << index
+	var pressed := (buttons & ~last_move_buttons) != 0
+	last_move_buttons = buttons
+	burst_remaining = maxf(0.0, burst_remaining - dt)
+	burst_cooldown = maxf(0.0, burst_cooldown - dt)
+	var planar := Vector3(-request.z, 0, request.x).limit_length(1.0)
+	# Altitude compensation can lower cruise output after a boost; eligibility
+	# depends on the remaining upright/low-speed support, not that spool dip.
+	var hover_ready := detent > 0 and hover_assist > 0.001 and hover_assist >= 0.5 * clampf(engine_level,0,1)
+	if pressed and not planar.is_zero_approx() and hover_ready and burst_cooldown <= 0.000001:
+		burst_direction = planar * precision
+		burst_remaining = HOVER_BURST_TIME
+		burst_cooldown = HOVER_BURST_COOLDOWN
+	if detent == 0: burst_remaining = minf(burst_remaining, HOVER_BURST_RAMP)
+	# Smooth the force envelope on the fixed clock, including a fractional last
+	# tick. Tap release cannot truncate the burst or queue another activation.
+	var active_time := minf(dt, burst_remaining)
+	var age := HOVER_BURST_TIME - burst_remaining
+	burst_amount = smoothstep(0.0, HOVER_BURST_RAMP, age) * smoothstep(0.0, HOVER_BURST_RAMP, burst_remaining) * active_time / dt
+	translation_request = burst_direction if burst_remaining > 0.0 else Vector3.ZERO
+	hover_translation = translation.step(translation_request, dt, HOVER_VECTOR_RESPONSE)
+	rotation_request = request * precision
 	released_axes = Vector3(1.0-absf(rotation_request.x),0,1.0-absf(rotation_request.z))
-	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,engine_level))
+	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,thrust_level))
 	rotation_command = command.step(rotation_request, dt, rotation_response)
 	brake_request = float(raw.get("brake", false))
 	brake_amount = clampf(brake.step(Vector3(brake_request, 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
@@ -350,9 +368,6 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		drift -= move.normalized()*along*minf(move.length(),1.0)
 	var correction := (-drift * HOVER_DRIFT_GAIN).limit_length(GRAVITY * 0.55) * hover_assist * neutral
 	correction += move*GRAVITY*HOVER_TRANSLATE_G
-	# Deliberate authority curve: stronger nominal slides without multiplying
-	# their lateral demand fourfold during maximum-power vertical ascent.
-	correction -= move*GRAVITY*HOVER_TRANSLATE_G*(1.0-1.0/sqrt(maxf(engine_level,1.0)))
 	# The pose prepares the actual push, including the opposite force on release.
 	# Animated ankles can then point real heel thrust into the braking direction.
 	hover_actuation = (frame.inverse()*correction/(GRAVITY*HOVER_TRANSLATE_G)).limit_length(1.0)
@@ -379,16 +394,19 @@ func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
 		var support := body.mass * (GRAVITY - motion.y * 1.8) - aero_force.y
 		var compensated := clampf(support / (body.mass * GRAVITY * vertical_fraction), 0, 2)
 		target = lerpf(target, compensated, hover_assist)
-	requested_thrust = target * body.mass * GRAVITY
+	requested_thrust = maxf(target, HOVER_BURST_THRUST * burst_amount) * body.mass * GRAVITY
 	requested_main_force = desired * requested_thrust
 	engine_level = move_toward(engine_level, target, dt * ENGINE_SPOOL_RATE)
-	delivered_thrust = engine_level * body.mass * GRAVITY
+	delivered_thrust = thrust_level * body.mass * GRAVITY
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
 	for index in 6:
 		# Steerable heels carry hover. Redistribute as each reaches its common
-		# capacity; all six equalize at 4x. Canted barrels cannot oppose every slide.
+		# continuous capacity; all six equalize at sustained 4x.
 		var heel_share := minf(TRIM_SHARES[4],(4.0/6.0)/maxf(engine_level,0.01))
+		# Quick Boost briefly overdrives the steerable hover outlets. Loading
+		# canted calf barrels immediately would push opposite a reverse tap.
+		heel_share = lerpf(heel_share,TRIM_SHARES[4],burst_amount)
 		engine_shares[index] = heel_share if index>=4 else (1.0-2.0*heel_share)/4.0
 	_trim_main_moment(outlets,directions)
 	for index in 6:
@@ -463,7 +481,7 @@ func _trim_main_moment(outlets: Array, directions: Array[Vector3]) -> void:
 	# Lift-supported flight can trade some resultant thrust for a balanced
 	# engine moment. Upright directional hover keeps its tighter force budget.
 	var flight_margin := aero_authority*(1.0-minf(hover_translation.length(),1.0))
-	var force_budget := lerpf(0.03,0.10,flight_margin)
+	var force_budget := lerpf(0.03,0.10,maxf(flight_margin,burst_amount))
 	var blend := minf(1.0,force_budget/maxf(delivered.distance_to(reference),0.00001))
 	for i in 6: directions[i] = original[i].lerp(directions[i],blend).normalized()
 
@@ -480,8 +498,6 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	# Brake or engine cutoff releases the protection for deliberate combat stalls.
 	var alignment := frame.y.dot(air_velocity.normalized())
 	flight_protection = smoothstep(18,35,air_velocity.length())*smoothstep(0.05,0.45,engine_level)*(1.0-smoothstep(deg_to_rad(35),deg_to_rad(60),acos(clampf(alignment,-1,1))))*(1.0-brake_amount)
-	# A latched upright thrust press must not acquire flight-path pitch commands.
-	flight_protection *= 1.0-hover_translation.length()
 	if flight_protection>0.0001:
 		var net_acceleration := (main_force+aero_force)/body.mass+Vector3.DOWN*GRAVITY
 		var path_rate := air_velocity.cross(net_acceleration).dot(pilot.x)/maxf(air_velocity.length_squared(),1.0)

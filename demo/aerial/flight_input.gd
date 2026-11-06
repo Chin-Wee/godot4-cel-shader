@@ -26,6 +26,9 @@ static func read_input() -> Dictionary:
 	var result := {}
 	for key in ["forward", "back", "left", "right", "yaw_left", "yaw_right", "brake", "precision"]:
 		result[key] = Input.is_action_pressed("flight_" + key)
+		# Keep taps that begin and end between physics samples.
+		if key in ["forward", "back", "left", "right"]:
+			result[key] = result[key] or Input.is_action_just_pressed("flight_" + key)
 	return result
 
 static func handle_input(event: InputEvent, controller: Controller) -> void:

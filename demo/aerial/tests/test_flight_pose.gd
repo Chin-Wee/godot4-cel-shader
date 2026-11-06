@@ -54,15 +54,13 @@ func _run() -> void:
 	assert(_check_limbs(mech) and _check_motors(mech))
 	await _ticks(420)
 	assert(mech.controller.velocity.length() < 0.3, "Long hover develops persistent drift")
-	# A new hover press translates first, including precision input. Its same
-	# held direction gradually starts tilt after the three-second interval.
+	# Hover taps boost while the same precision input rotates immediately.
 	mech.controls = {"forward":true,"precision":true}
-	await _ticks(30)
-	assert(absf(mech.angular_velocity.x)<0.02 and absf(mech.controller.rotation_request.x)<0.0001 and mech.controller.hover_translation.z< -0.3)
-	var before_tilt: float = mech.global_basis.y.z
-	await _ticks(180)
-	# Check actual forward travel: an instantaneous rate can sample a pulse's coast.
-	assert(mech.global_basis.y.z<before_tilt-0.002 and mech.controller.released_axes.x<1)
+	await _ticks(12)
+	assert(mech.controller.rotation_request.x< -0.3 and mech.controller.hover_translation.z< -0.3)
+	assert(is_equal_approx(mech.controller.thrust_level,4.0))
+	await _ticks(45)
+	assert(mech.controller.burst_remaining==0 and mech.controller.rotation_request.x< -0.3)
 	# Same six rotation commands at upright/prone/inverted/vertical-flight poses.
 	for orientation in [Quaternion.IDENTITY, Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.RIGHT,PI)]:
 		for key in ["forward","back","left","right","yaw_left","yaw_right"]:
@@ -188,6 +186,9 @@ func _run() -> void:
 	quit()
 
 func _check_inputs() -> void:
+	Input.action_press("flight_forward")
+	Input.action_release("flight_forward")
+	assert(FlightInput.read_input().forward,"A tap between physics samples was lost")
 	mech.controller.detent = 0
 	for expected in [1,2,3,4,4]:
 		_key(KEY_SPACE)
@@ -215,8 +216,10 @@ func _check_motors(mech: Node3D) -> bool:
 		var relative: Basis = mech.neutral_bases[index].inverse()*pivots[index].basis
 		if relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) > mech.VECTOR_LIMIT+0.001: return false
 	var total := 0.0
-	for force in mech.controller.motor_forces:
-		if force.length() > mech.mass * Controller.GRAVITY * 4.0 / 6.0 + 1.0: return false
+	for index in 6:
+		var force: Vector3 = mech.controller.motor_forces[index]
+		var capacity: float = lerpf(4.0/6.0,4.0*Controller.TRIM_SHARES[index],mech.controller.burst_amount)
+		if force.length() > mech.mass * Controller.GRAVITY * capacity + 1.0: return false
 		total += force.length()
 	if absf(total-mech.controller.delivered_thrust) > 2.0: return false
 	return true

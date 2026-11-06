@@ -7,8 +7,11 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
 1. Ground jump into upright, gyro-stabilized helicopter-like flight. Grounded
    legs supply the push; powered low-speed support catches ascent. Animate pelvis,
    chest, both arms and legs, with feasible heel/calf/backpack thrust alignment.
-   In powered hover, the first three seconds of each WASD press supply directional
-   thrust with the chassis upright; continued holding gradually introduces tilt.
+   Pitch/roll responds immediately. A powered hover direction tap adds a
+   0.5-second directional burst at 4× hover thrust, with a one-second cooldown
+   from activation. Release retains the burst direction; held or early taps do
+   not repeat or queue it. Engine cutoff cancels it through the short force fade. The selected cruise detent
+   remains independent; short force ramps and existing servos smooth delivery.
    Forward/backward/sideways slides and yaw use Armored Core VI as a visual
    reference, including complementary hand and leading/trailing leg roles.
    Directional intention starts body preparation before acceleration. One knee

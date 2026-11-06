@@ -20,71 +20,42 @@ func _capture() -> void:
 	var origin := Vector3(175,10000,340)
 	var directions := [["forward",KEY_W,Vector3.FORWARD],["back",KEY_S,Vector3.BACK],
 		["left",KEY_A,Vector3.LEFT],["right",KEY_D,Vector3.RIGHT]]
+	_check_burst_clock()
 	for entry in directions:
 		await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
-		var rows: Array = await _play("hover_"+entry[0],540,[[0,[entry[1]]],[240,[]]])
-		for row in rows:
-			if row.time<3.0:
-				_expect(row.upright>cos(deg_to_rad(3)),entry[0]+": first three seconds tilt instead of translate")
-				_expect(absf(row.command[0])+absf(row.command[2])<0.001,entry[0]+": early pitch/roll command")
-				_expect(row.torque<1,entry[0]+": translation pose overwhelms the attitude actuators")
-		var moving: Dictionary = _at(rows,2.5)
-		_expect(Vector3(moving.velocity[0],moving.velocity[1],moving.velocity[2]).dot(entry[2])>2.0,entry[0]+": thrust moves in the wrong direction")
-		_expect(Vector3(moving.main_force[0],moving.main_force[1],moving.main_force[2]).dot(entry[2])>scene.hero.mass,entry[0]+": no physical directional thrust")
-		_expect(_at(rows,3.8).angle>deg_to_rad(1),entry[0]+": sustained hold never starts gradual tilt")
-		_expect(rows[-1].upright>0.995 and rows[-1].speed<0.6,entry[0]+": release never catches drift upright")
+		var rows: Array = await _play("hover_"+entry[0],360,[[0,[entry[1]]],[1,[]]])
+		var moving: Dictionary = _at(rows,0.3)
+		var force := Vector3(moving.main_force[0],moving.main_force[1],moving.main_force[2])
+		_expect(absf(moving.engine-4.0)<0.001,entry[0]+": tap never reaches fourfold hover thrust")
+		_expect(force.dot(entry[2])>scene.hero.mass*Controller.GRAVITY*0.5,entry[0]+": burst produces no physical directional push")
+		_expect(_at(rows,0.7).burst_remaining==0 and _at(rows,0.7).engine<2,entry[0]+": boost leaks beyond half a second")
+		_expect(rows[-1].upright>0.98 and rows[-1].speed<0.8,entry[0]+": tap release never catches drift")
 		_expect(_peak(rows,"gimbal_peak")<=Controller.VECTOR_LIMIT+0.0001,entry[0]+": nozzle cone exceeded")
-		_expect(_peak(rows,"omega")<1.0,entry[0]+": tilt/recovery develops an uncontrolled spin")
-	var forward_hand: float = report.hover_forward.samples[25].hand_forward
-	var reverse_hand: float = report.hover_back.samples[25].hand_forward
-	_expect(reverse_hand>forward_hand+0.5,"Forward/reverse slides reuse the same hand pose")
-	var left_pose: Dictionary = report.hover_left.samples[25]
-	var right_pose: Dictionary = report.hover_right.samples[25]
-	_expect(left_pose.arm_asymmetry_size>0.5 and right_pose.arm_asymmetry_size>0.5,"Lateral slides have mirrored passive arms")
-	_expect(left_pose.knee_asymmetry*right_pose.knee_asymmetry<0,"Lateral slides do not exchange the leading leg")
-	# Release/reversal resets the three-second promise, not just the visual pose.
+		_expect(_peak(rows,"omega")<1.0,entry[0]+": burst develops an uncontrolled spin")
+	# Held input rotates immediately alongside the one-shot burst.
 	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
-	var rows: Array = await _play("hover_reversal",480,[[0,[KEY_W]],[120,[KEY_S]],[300,[]]],false)
-	for row in rows:
-		if row.time<5.0: _expect(row.upright>cos(deg_to_rad(3)),"Reversal inherits an old hold timer")
-	_expect(_at(rows,2.1).hover_hold[0]<0.2 and _at(rows,4.9).velocity[2]>1,"Reverse input does not restart directional thrust")
+	var rows: Array = await _play("hover_rotation",120,[[0,[KEY_W]]],false)
+	_expect(absf(_at(rows,0.2).command[0])>0.5 and _at(rows,0.8).angle>0.1,"Hover still delays pitch behind a movement lock")
+	_expect(_at(rows,1.8).burst_remaining==0,"Held input automatically repeats the burst")
 	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
-	rows = await _play("hover_repress",420,[[0,[KEY_W]],[120,[]],[121,[KEY_W]],[300,[]]],false)
+	rows = await _play("diagonal_hover",180,[[0,[KEY_W,KEY_D]],[1,[]]],false)
 	for row in rows:
-		if row.time<5.0: _expect(row.upright>cos(deg_to_rad(3)),"Re-press inherits the previous press's tilt time")
-	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
-	rows = await _play("diagonal_hover",180,[[0,[KEY_W,KEY_D]]],false)
-	for row in rows:
-		var planar := Vector3(row.hover_translation[0],0,row.hover_translation[2])
-		_expect(planar.length()<=1.0001 and row.upright>cos(deg_to_rad(3)),"Diagonal hover doubles thrust or starts premature tilt")
-	_expect(rows[-1].velocity[0]>2 and rows[-1].velocity[2]< -2,"Diagonal thrust does not combine the requested directions")
-	# The force direction follows the chassis heading, independently of mouse look.
+		_expect(Vector3(row.hover_translation[0],0,row.hover_translation[2]).length()<=1.0001,"Diagonal input doubles directional demand")
+	_expect(_at(rows,0.3).velocity[0]>0.2 and _at(rows,0.3).velocity[2]<-0.2,"Diagonal burst loses an input axis")
+	# Direction follows chassis heading, independently of mouse look.
 	await _fixture(origin,Quaternion(Vector3.UP,PI/2),Vector3.ZERO,2)
 	scene.camera.orbit(Vector2(500,-80))
-	rows = await _play("heading_relative",180,[[0,[KEY_W]]],false)
-	_expect(rows[-1].velocity[0]<-2 and absf(rows[-1].velocity[2])<1,"Hover translation follows world/camera axes")
-	# A powered climb crossing the old speed threshold cannot cancel this press.
-	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,3)
-	rows = await _play("powered_hover",180,[[0,[KEY_W]]],false)
-	for row in rows: _expect(row.upright>cos(deg_to_rad(3)),"Climb airspeed cuts short the translation interval")
-	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,1)
-	rows = await _play("half_power_hover",180,[[0,[KEY_W]]],false)
-	for row in rows: _expect(row.upright>cos(deg_to_rad(3)),"Half-power upright thrust tilts before three seconds")
-	_expect(rows[-1].velocity[2]<-1,"Half-power hover input supplies no directional force")
-	for entry in directions:
-		await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,4)
-		rows = await _play("full_power_hover_"+entry[0],180,[[0,[entry[1]]]],false)
-		for row in rows:
-			_expect(row.upright>cos(deg_to_rad(3)),"Full-power hover tilts before three seconds")
-			# Pulsed cold gas permits small rate ripple instead of perfect lock.
-			_expect(absf(row.yaw_rate)<0.1,entry[0]+": full-power translation develops uncommanded yaw")
-			_expect(row.torque<1,entry[0]+": full-power translation exceeds attitude actuator reserve")
-		var travel := Vector3(rows[-1].velocity[0],rows[-1].velocity[1],rows[-1].velocity[2])
-		_expect(travel.dot(entry[2])>1,entry[0]+": full-power upright thrust loses its requested direction")
-	# Initial lean inside the user's 30-degree margin still recovers upright.
-	await _fixture(origin,Quaternion(Vector3.RIGHT,-deg_to_rad(25)),Vector3.ZERO,2)
-	rows = await _play("tilted_hover",180,[[0,[KEY_W]]],false)
-	_expect(rows[-1].upright>cos(deg_to_rad(3)),"A modest initial lean falls out of hover support")
+	rows = await _play("heading_relative",180,[[0,[KEY_W]],[1,[]]],false)
+	_expect(_at(rows,0.3).velocity[0]<-0.5 and absf(_at(rows,0.3).velocity[2])<0.5,"Burst follows world/camera axes")
+	# Native hover compensation must not prevent reactivation at the cooldown.
+	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
+	rows = await _play("burst_retap",180,[[0,[KEY_W]],[1,[]],[45,[KEY_S]],[46,[]],[60,[KEY_S]],[61,[]]],false)
+	_expect(_at(rows,0.8).burst_remaining==0,"Early native tap bypasses cooldown")
+	_expect(absf(_at(rows,1.3).engine-4.0)<0.001 and _at(rows,1.3).hover_translation[2]>0.9,"One-second native re-tap does not reactivate in the new direction")
+	# Cutoff cancels a burst without altering the selected power or momentum.
+	await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
+	rows = await _play("burst_cutoff",180,[[0,[KEY_W]],[1,[]],[6,[KEY_C]],[7,[]],[8,[KEY_C]],[9,[]]],false)
+	_expect(_at(rows,0.3).burst_remaining==0 and rows[-1].engine==0,"Cutoff leaves boost power running")
 	# Every flight case holds real W/S for six seconds, well beyond the old stall.
 	for level in [1,2,3,4]:
 		for speed in [35.0,70.0,110.0]:
@@ -144,8 +115,50 @@ func _capture() -> void:
 	await process_frame
 	completed = true
 	if failures.is_empty():
-		print("Flight control checks passed: three-second force translation, reset/reversal, powered climb, lean recovery, flight W/S envelope, bank/inversion, deliberate departure, free cutoff rotation and directional full-body posing.")
+		print("Flight control checks passed: half-second fourfold directional bursts, tap/cooldown/reset semantics, immediate pitch/roll, physical nozzle limits, flight envelope, inversion, departures and free cutoff rotation.")
 		quit()
 	else:
 		for failure in failures: push_error(failure)
 		quit(1)
+
+func _check_burst_clock() -> void:
+	for hz in [30,60,144,240]:
+		var fc = Controller.new()
+		fc.hover_assist = 1.0
+		var dt: float = 1.0/hz
+		fc._read_commands({"forward":true,"right":true},dt)
+		_expect(fc.rotation_request.is_equal_approx(Vector3(-1,0,-1)),"Tap locks normal pitch/roll")
+		_expect(fc.burst_direction.is_equal_approx(Vector3(1,0,-1).normalized()),"Diagonal boost is not normalized")
+		for tick in hz*2:
+			fc._read_commands({"forward":true,"right":true},dt)
+			if tick==int(hz*0.25): _expect(is_equal_approx(fc.thrust_level,4.0),"Burst never reaches full output")
+			if tick>=int(hz*0.5): _expect(fc.burst_remaining<0.000001 and is_equal_approx(fc.thrust_level,1.0),"Burst duration depends on clock or held keys")
+		fc.reset()
+		fc.hover_assist = 1.0
+		fc._read_commands({"forward":true},dt)
+		for tick in hz-1: fc._read_commands({},dt)
+		fc._read_commands({"back":true},dt)
+		_expect(is_equal_approx(fc.burst_remaining,0.5) and fc.burst_direction==Vector3.BACK,"Ready re-tap fails to choose the new direction")
+		# An early tap is discarded, never queued for cooldown expiry.
+		for tick in int(hz*0.6): fc._read_commands({},dt)
+		fc._read_commands({"left":true},dt)
+		_expect(fc.burst_remaining<0.000001,"Early tap bypasses cooldown")
+		for tick in hz: fc._read_commands({"left":true},dt)
+		_expect(fc.burst_remaining==0,"Cooldown expiry repeats a held/rejected tap")
+		fc._read_commands({},dt)
+		fc._read_commands({"left":true,"precision":true},dt)
+		_expect(fc.burst_direction.is_equal_approx(Vector3.LEFT*0.35),"Precision does not scale directional intention")
+		fc.detent = 0
+		fc._read_commands({},dt)
+		_expect(fc.burst_remaining<=Controller.HOVER_BURST_RAMP,"Cutoff does not begin burst cancellation")
+		for tick in ceili(hz*Controller.HOVER_BURST_RAMP): fc._read_commands({},dt)
+		_expect(fc.burst_remaining==0 and fc.burst_amount==0,"Cutoff cannot finish cancelling the burst")
+		fc.reset()
+		_expect(fc.burst_remaining==0 and fc.burst_cooldown==0 and fc.burst_direction==Vector3.ZERO,"Reset leaves a stale burst")
+	# Flight, cutoff and yaw cannot arm the hover-only boost.
+	var fc = Controller.new()
+	fc._read_commands({"forward":true},1.0/60)
+	_expect(fc.burst_remaining==0 and fc.rotation_request.x== -1,"Flight tap either boosts or loses pitch")
+	fc.hover_assist = 1.0
+	fc._read_commands({"yaw_left":true},1.0/60)
+	_expect(fc.burst_remaining==0 and fc.rotation_request.y==1,"Yaw incorrectly arms directional boost")

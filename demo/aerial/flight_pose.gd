@@ -115,8 +115,8 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	# or a velocity rewrite. Gravity and aerodynamic braking stay independent.
 	var thrust_direction: Vector3 = controller.main_force.normalized() if controller.main_force.length_squared()>1 else basis.y
 	# Prepare while the requested engines spool, then follow their delivered force.
-	var next_output: float = move_toward(controller.engine_level,controller.DETENTS[controller.detent],controller.ENGINE_SPOOL_RATE*0.15)
-	var retro: float = maxf(0,-thrust_direction.dot(controller.velocity.normalized()))*smoothstep(2,12,speed)*smoothstep(0.1,0.8,maxf(controller.engine_level,next_output))
+	var next_output: float = move_toward(controller.thrust_level,controller.DETENTS[controller.detent],controller.ENGINE_SPOOL_RATE*0.15)
+	var retro: float = maxf(0,-thrust_direction.dot(controller.velocity.normalized()))*smoothstep(2,12,speed)*smoothstep(0.1,0.8,maxf(controller.thrust_level,next_output))
 	var brake_rate := clampf((controller.brake_amount-last_brake)/delta,-3,3) if delta>0 else 0.0
 	last_brake = controller.brake_amount
 	var roll_stop := clampf(pilot_rates.z/controller.MAX_RATE.z-intent.z,-1,1)*(1.0-absf(intent.z))
@@ -162,14 +162,14 @@ func _sample_effort(controller, delta: float) -> void:
 	var velocity: Vector3 = controller.velocity
 	var speed := velocity.length()
 	var travel := velocity/maxf(speed,0.001)
-	var delivered: float = smoothstep(0.1,0.8,controller.engine_level)
+	var delivered: float = smoothstep(0.1,0.8,controller.thrust_level)
 	var along := axis.dot(travel)
 	var opposition: float = motion.retro
 	var across := (axis-travel*along)*delivered*smoothstep(2,12,speed)
 	var specific: Vector3 = basis.inverse()*(thrust+controller.aero_force+controller.leg_force)/(controller.body.mass*controller.GRAVITY)
 	var acceleration: Vector3 = basis*controller.local_acceleration
-	var acceleration_load := smoothstep(2,18,acceleration.dot(axis))*smoothstep(0.8,1.8,controller.engine_level)
-	var spool := clampf((output-controller.engine_level-0.08)/2.0,0,1)
+	var acceleration_load := smoothstep(2,18,acceleration.dot(axis))*smoothstep(0.8,1.8,controller.thrust_level)
+	var spool := clampf((output-controller.thrust_level-0.08)/2.0,0,1)
 	var prepare := spool
 	prepare = maxf(prepare,maxf(0,-request_axis.dot(travel)-opposition)*delivered*0.35)
 	var drive := maxf(spool*0.85,acceleration_load)*(1.0-opposition)
@@ -209,7 +209,7 @@ func _choose_posture(controller, delta: float) -> void:
 	# Useful body-flight support develops by about 31 m/s at sea level.
 	# Geometry braking lowers terminal descent below the old 41 m/s threshold.
 	var airload := smoothstep(0.02,0.20,motion.pressure)
-	var powered := smoothstep(0.1,0.95,controller.engine_level)
+	var powered := smoothstep(0.1,0.95,controller.thrust_level)
 	var hover: float = clampf(controller.hover_assist,0,1)
 	var fighter: float = controller.aero_authority*powered*(1.0-hover)
 	var downward: float = maxf(0,controller.velocity.dot(Vector3.DOWN))
@@ -246,7 +246,7 @@ func _prepare_directional_pose(controller) -> void:
 	var side: float = signf(reach.x) if absf(reach.x)>0.1 else lead_side
 	# A loaded engine magnifies moving-hardpoint moments. Preserve a readable
 	# stagger while reserving the existing finite cold-gas pitch authority.
-	var loaded_scale: float = lerpf(1.0,0.45,smoothstep(2,4,controller.engine_level))
+	var loaded_scale: float = lerpf(1.0,0.45,smoothstep(2,4,controller.thrust_level))
 	var knees := Vector2(profile.slide_knees.x,profile.slide_knees.y) if side>0 else Vector2(profile.slide_knees.y,profile.slide_knees.x)
 	knees *= strength
 	# Bank gathers the inside leg strongly; yaw uses a smaller twisting stagger.
@@ -359,16 +359,16 @@ func _update_legs(delta: float, controller) -> void:
 	var compression: float = motion.compression*0.35*(1.0-motion.launch)
 	# Preserve feasible calibrated anchors. When physical vectoring is already
 	# at its cone, reduce extra load/airflow articulation rather than bend jets.
-	var articulation := lerpf(1.0,0.35,clampf(controller.engine_level,0,1)*float(controller.motor_saturated))
+	var articulation := lerpf(1.0,0.35,clampf(controller.thrust_level,0,1)*float(controller.motor_saturated))
 	var move: Vector3 = motion.get("translate",Vector3.ZERO)
 	# Full-power streaming otherwise leaves the heel outlets behind the mass
 	# center and overwhelms pitch authority. Paired hip/knee flexion moves the
 	# actual outlets forward without changing the lower-leg thrust heading.
-	var thrust_tuck: float = smoothstep(2,4,controller.engine_level)*profile.high_thrust_tuck
+	var thrust_tuck: float = smoothstep(2,4,controller.thrust_level)*profile.high_thrust_tuck
 	thrust_tuck *= 1.0-maxf(maxf(motion.flare,motion.retro),maxf(motion.land,motion.launch))
 	thrust_tuck *= 1.0-move.length()
 	# Reverse hover sweeps the calves forward; ankles counter-rotate for heel aim.
-	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,controller.engine_level)
+	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,controller.thrust_level)
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
 		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*(0.45+motion.hover*0.20)+motion.lead*motion.asymmetry*0.3+move.x*0.55+motion.get("bank_gesture",0.0)*0.3)*(1.0-motion.land)

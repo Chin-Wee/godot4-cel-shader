@@ -66,11 +66,11 @@ func _capture() -> void:
 	for entry in [["forward",KEY_W,Vector3.FORWARD],["back",KEY_S,Vector3.BACK],
 		["left",KEY_A,Vector3.LEFT],["right",KEY_D,Vector3.RIGHT]]:
 		await _fixture(origin,Quaternion.IDENTITY,Vector3.ZERO,2)
-		var rows: Array = await _play("vector_"+entry[0],180,[[0,[entry[1]]]])
+		var rows: Array = await _play("vector_"+entry[0],180,[[0,[entry[1]]],[1,[]]])
 		var early: Dictionary = _at(rows,0.3)
 		var force := Vector3(early.main_force[0],early.main_force[1],early.main_force[2])
 		_expect(force.dot(entry[2])>scene.hero.mass*Controller.GRAVITY*0.25,entry[0]+": nozzles wait for the body to tilt")
-		for row in rows: _expect(row.upright>cos(deg_to_rad(4)),entry[0]+": hover steers by tilting the chassis")
+		for row in rows: _expect(row.upright>cos(deg_to_rad(5)),entry[0]+": tap release loses gyro support")
 		for index in 6:
 			var actual: Vector3 = scene.hero.controller.motor_forces[index].normalized()
 			var shown: Vector3 = -scene.hero.gimbals[index].global_basis.z.normalized()

@@ -12,11 +12,13 @@ Open `aerial_demo.tscn` and press F6, or run from the repository root:
 godot --path demo res://aerial/aerial_demo.tscn
 ```
 
-- **Upright powered hover, WASD:** directional thrust for the first three seconds
-  of each press. Continue holding to ramp into pitch/bank over 1.25 seconds.
-  Release or reverse direction to restart that interval. Diagonals are normalized.
-- **Forward flight / unpowered, W/S:** pitch down/pull up. **A/D:** bank/roll.
-  **Q/E:** yaw immediately. The mouse remains independent of steering.
+- **W/S:** pitch down/pull up. **A/D:** bank/roll. **Q/E:** yaw immediately,
+  including from hover. The mouse remains independent of steering.
+- **Powered hover direction tap, WASD:** add a 0.5-second burst at 4× hover
+  thrust while normal pitch/roll continues. The burst keeps the tapped direction
+  after release; diagonals are normalized. Tap again after the one-second
+  activation-to-activation cooldown. Holding does not repeat, and early taps are
+  discarded. Engine cutoff cancels the burst through the same short force fade.
 - **Space / C:** step through **0, 0.5, 1, 2, 4 × hover**. Each press changes one
   detent; key repeat is ignored. Engines ramp toward the request.
 - **Shift held:** aerodynamic brake and spread posture; rotation remains available.
@@ -30,10 +32,10 @@ godot --path demo res://aerial/aerial_demo.tscn
   **F8:** explosion.
 
 Flight starts at nominal 1× hover. Low-speed, near-upright powered flight receives
-bounded upright/drift correction and 1× tilt compensation. Hold W and select 2×:
-the first three seconds push forward upright, then continued holding pitches
-into forward flight. Powered aligned flight softens pitch near 30 degrees of
-airflow misalignment instead of outrunning the curving trajectory. Shift braking
+bounded upright/drift correction and 1× tilt compensation. W pitches toward
+forward flight immediately; its initial hover tap also fires the short directional
+boost. There is no three-second control lock. Powered aligned flight softens
+pitch near 30 degrees of airflow misalignment instead of outrunning the curving trajectory. Shift braking
 permits an intentional combat departure; large misalignment and engine cutoff
 retain independent attitude and travel. Thrust, lift, drag and gravity produce the path;
 there is no cruise mode or velocity replacement. C down to zero removes main
@@ -103,8 +105,12 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   equal shares caused forward drift because the calf ports cannot vector upright
   within their 30-degree cones. Low-power shares are 46% per steerable heel and
   2% per remaining motor. Each heel's share falls as it reaches the common engine
-  capacity; the remainder is shared by the other four. All six reach one-sixth
-  at maximum power. This permits backward hover force without demanding that the
+  continuous capacity; the remainder is shared by the other four. All six reach
+  one-sixth at sustained maximum power. Quick Boost temporarily retains the
+  46%/46% heel allocation at up to 4× total hover thrust, overdriving these
+  steerable outlets for half a second instead of immediately loading the canted
+  calf barrels in the wrong direction. The same 30-degree cones still apply.
+  This permits backward hover force without demanding that the
   canted barrels point outside their cones. Bounded hover gimbal trim removes
   residual bias; it moves physical motors and cannot create extra force. Port-cant
   feed-forward is body-relative so yaw cannot leave stale world trim fighting the
@@ -113,7 +119,7 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
 - One damped angular-rate controller uses native shape-derived inertia and finite
   cold-gas torque. Requested rates are 0.75/0.8/1.5 rad/s before precision scaling;
   actuator limits correspond to 5 rad/s² per body axis. Main gimbals first trim
-  the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight budget. Six
+  the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight or burst budget. Six
   bounded native 3×3 correction sweeps project directions into the existing cones;
   finite gimbal motors still deliver the result. AC VI is the directional-boost
   presentation reference: upright hover requests steer the real nozzles, which
@@ -146,11 +152,16 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   drift catch permits 0.55 g. Reverse ankle preparation exposes enough actual
   heel authority for the stronger push. Normal pitch is 0.75 rad/s (−25%),
   roll 1.50 rad/s (+25%), and yaw remains 0.80 rad/s. A press beginning in
-  powered hover keeps its first three seconds of directional thrust even if
-  climb airspeed then increases. Flight-path pitch protection fades out during
-  that upright translation interval.
-  Per-axis hold times reset on release/reversal; afterward the same input ramps
-  from translation into rotation. Unpowered presses rotate immediately. Only nominal 1× receives
+  powered hover starts a half-second Quick Boost at 4× hover thrust, with a
+  one-second cooldown measured from activation. Normal rotation and flight-path
+  protection remain active throughout. Holding cannot repeat it; early taps do
+  not queue. The selected cruise detent and its spool are independent of boost
+  output, preventing a long power tail afterward. A 0.06-second force envelope
+  softens both ends on the fixed physics clock; nozzle and joint servos retain
+  their existing smooth response. Poses, exhaust, force accounting and the HUD
+  read the same delivered collective. Hover eligibility ignores temporary
+  altitude-compensation spool reductions, so a ready re-tap still works.
+  Unpowered and flight presses rotate immediately without hover boost. Only nominal 1× receives
   vertical thrust compensation, capped at 2×. Other detents retain their collective
   intent. Requested zero disables hover trim; spool reaches exact zero and no
   recovery/translation force is injected afterward. Cold-gas torque remains.
@@ -455,10 +466,12 @@ It renders the four demo wrappers plus the distributable and height-mapped
 template configurations. `REFACTOR_PLAN.md` records ownership decisions and the
 refactor's verification scope.
 
-`test_flight_controls.gd` runs 44 real-input sequences, including 24 sustained
-W/S pulls across all four powered levels at 35, 70 and 110 m/s. It checks signed
-travel/rotation, actuator reserve, release arrest, the hover hold interval and
-distinct completed limb geometry. Native captures use the same timelines and solver.
+`test_flight_controls.gd` runs real-input sequences, including 24 sustained W/S
+pulls across all four powered levels at 35, 70 and 110 m/s. It checks signed
+travel/rotation, immediate hover steering, four-way tap bursts, exact cooldown
+reactivation, cutoff and diagonal normalization. Controller-clock checks cover
+30/60/144/240 Hz. Every replay verifies motor ratings and the delivered thrust
+ledger. Native captures use the same timelines and solver.
 
 ```sh
 godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_mech.gd -- /tmp/aerial-mech
@@ -542,7 +555,9 @@ Fixtures set initial conditions once per replay. Timed inputs never rewrite
 position, attitude or velocity. Each native physics tick checks finite state,
 non-positive total aerodynamic power (including angular point velocity) and
 the applied-force momentum budget. Regressions
-also limit jump/brake acceleration jerk and residual hover drift. Contact impulses are
+also limit jump/brake acceleration jerk and residual hover drift. Intentional
+boost ramps have a separate jerk bound derived from their force envelope; normal
+handoff checks exclude that burst and its 0.1-second physics response. Contact impulses are
 excluded from flight smoothness limits. All reports include input timelines,
 controller/driver hashes, sampled numeric telemetry, peaks and failures.
 
@@ -596,10 +611,9 @@ godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_thr
 godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/test_thruster_control.gd -- /tmp/thruster-control-native
 ```
 
-`test_handling_speeds.gd` replays four-direction hover pushes and release, then
-measures actual powered pitch, unpowered flip, roll and yaw rates in vacuum.
-It checks improved travel against the pre-tuning 2.5-second baseline, upright
-support, nozzle cones, actuator reserve and release arrest:
+`test_handling_speeds.gd` measures actual powered pitch, unpowered flip, roll and
+yaw rates in vacuum, including release arrest. Directional boost/release checks
+live in `test_flight_controls.gd`:
 
 ```sh
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_handling_speeds.gd -- /tmp/handling-speeds
@@ -690,8 +704,9 @@ thrust, retains aerodynamic coasting, then re-ignites without a fixture reset.
 
 ### Body-flight control checks
 
-Directional hover uses 0.50 g command authority with a bounded high-output curve,
-20–25 degree visual lean, leading/trailing knees and complementary hands. Opposing
+Directional hover steers a 0.60 g vector request through real nozzles. Quick Boost
+briefly raises collective to 4× hover, with leading/trailing knees and
+complementary hands. Opposing
 input catches the old momentum before accelerating outward; it never assigns
 velocity. The chase spring compensates constant-velocity lag so fast climbs stay
 framed. F9 reports main-engine, aerodynamic and cold-gas moments separately.

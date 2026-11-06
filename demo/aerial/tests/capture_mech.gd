@@ -138,7 +138,7 @@ func _hover() -> void:
 		[120,[KEY_W]],[150,[]],[240,[KEY_D,KEY_CTRL]],[270,[]],[330,[KEY_Q]],[360,[]]])
 	_expect(_peak(rows,"leg") > 0,"hover: R never produced a contact-leg push")
 	_expect(_peak(rows,"height") > (ground+48.0)/10.0,"hover: jump never cleared the ground")
-	_expect(report.hover.max_jerk < 700,"hover: jump or catch force arrived too abruptly")
+	_expect(report.hover.max_unboosted_jerk < 700,"hover: jump or catch force arrived too abruptly")
 	_expect(rows[-1].speed < 0.5 and rows[-1].upright > 0.99,"hover: neutral flight failed to settle upright")
 
 func _fighter() -> void:
@@ -229,17 +229,16 @@ func _bodyflight() -> void:
 
 func _transitions() -> void:
 	await _fixture(Vector3(175,7000,340),Quaternion.IDENTITY,Vector3.ZERO,2)
-	# The hover entry now spends three seconds translating before tilt ramps in.
-	# Brake while pulling upright; shorter departure holds reflect the new
-	# 2.6 rad/s somersault authority. Align the coast before re-ignition.
-	var rows: Array = await _play("transitions",1800,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[462,[]],
-		[660,[KEY_C,KEY_S,KEY_SHIFT]],[661,[KEY_S,KEY_SHIFT]],[724,[KEY_SHIFT]],[771,[]],
+	# Immediate pitch needs a shorter departure than the former hover lock.
+	# Brake while pulling upright; align the coast before re-ignition.
+	var rows: Array = await _play("transitions",1800,[[0,[]],[120,[KEY_SPACE,KEY_W]],[121,[KEY_W]],[258,[]],
+		[570,[KEY_C,KEY_S,KEY_SHIFT]],[571,[KEY_S,KEY_SHIFT]],[634,[KEY_SHIFT]],[681,[]],
 		[870,[KEY_C]],[871,[]],[872,[KEY_C]],[873,[]],[900,[KEY_S]],[936,[]],[1020,[KEY_W]],[1089,[]],
 		[1320,[KEY_SPACE]],[1321,[]],[1322,[KEY_SPACE]],[1323,[]],[1324,[KEY_SPACE]],[1325,[]]])
-	_expect(report.transitions.max_jerk < 250,"transitions: brake or thrust handoff arrived too abruptly")
+	_expect(report.transitions.max_unboosted_jerk < 250,"transitions: brake or thrust handoff arrived too abruptly")
 	_expect(_at(rows,9.0).forward > 0.9 and _at(rows,9.0).speed > 35,"transitions: hover-to-jet did not establish forward flight")
-	_expect(_at(rows,13.5).upright > 0.9,"transitions: combat slide never became upright")
-	_expect(_at(rows,13.0).speed > 10,"transitions: upright rotation erased the slide")
+	_expect(_at(rows,12.0).upright > 0.9,"transitions: combat slide never became upright")
+	_expect(_at(rows,12.0).speed > 10,"transitions: upright rotation erased the slide")
 	_expect(_at(rows,15.5).engine == 0,"transitions: C cutoff did not reach zero")
 	_expect(rows[-1].engine > 1.9 and rows[-1].forward > 0.85 and rows[-1].speed > 35,"transitions: re-ignition never recovered forward flight")
 
@@ -264,6 +263,8 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 	var event_index := 0
 	var max_speed := 0.0
 	var max_jerk := 0.0
+	var max_unboosted_jerk := 0.0
+	var burst_recovery := 0.0
 	var max_residual := 0.0
 	var last_acceleration := Vector3.ZERO
 	var initial: Quaternion = mech.quaternion
@@ -281,10 +282,22 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 		var residual: float = (fc.velocity-before-(force/mech.mass+Vector3.DOWN*Controller.GRAVITY)/HZ).length()
 		if tick > 2 and not mech.collided:
 			max_jerk = maxf(max_jerk,jerk)
+			# The requested short boost has a higher finite jerk budget than
+			# ordinary jump/brake handoffs; include its native force latency.
+			burst_recovery = 0.1 if fc.burst_remaining>0 else maxf(0.0,burst_recovery-1.0/HZ)
+			if burst_recovery==0.0: max_unboosted_jerk = maxf(max_unboosted_jerk,jerk)
+			else: _expect(jerk<Controller.HOVER_BURST_THRUST*Controller.GRAVITY*1.5/Controller.HOVER_BURST_RAMP+250.0,name+": burst force exceeds its smooth-envelope jerk budget")
 			max_residual = maxf(max_residual,residual)
 		max_speed = maxf(max_speed,fc.velocity.length())
 		_expect(fc.velocity.is_finite() and mech.position.is_finite(),name+": non-finite physics state")
 		_expect(fc.aero_power <= 1.0,name+": passive surfaces added translation/rotation energy")
+		var collective := 0.0
+		for index in 6:
+			var motor_thrust: float = fc.motor_forces[index].length()
+			var rating: float = lerpf(4.0/6.0,4.0*Controller.TRIM_SHARES[index],fc.burst_amount)
+			_expect(motor_thrust<=mech.mass*Controller.GRAVITY*rating+1.0,name+": motor exceeds continuous/burst rating")
+			collective += motor_thrust
+		_expect(absf(collective-fc.delivered_thrust)<2.0,name+": reported thrust differs from physical motors")
 		if tick%6 == 0:
 			var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
 			var knees := []
@@ -304,9 +317,9 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			var lift: Vector3 = fc.aero_force.slide(fc.air_velocity.normalized()) if fc.air_velocity.length_squared()>0.00001 else Vector3.ZERO
 			rows.append({"time":float(tick)/HZ,"speed":fc.velocity.length(),"height":mech.position.y/10.0,
 				"velocity":_array(fc.velocity),"command":_array(fc.rotation_command),"acceleration":_array(acceleration),"omega":fc.angular_velocity.length(),
-				"alpha":fc.angular_acceleration.length(),"engine":fc.engine_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
+				"alpha":fc.angular_acceleration.length(),"engine":fc.thrust_level,"hover":fc.hover_assist,"aero":fc.aero_authority,
 				"aoa":fc.angle_of_attack,"slip":fc.sideslip,"attached_flow":fc.attached_flow,"flight_protection":fc.flight_protection,
-				"hover_translation":_array(fc.hover_translation),"hover_hold":[fc.hover_hold.x,fc.hover_hold.y],"requested_rates":_array(fc.requested_rates),
+				"hover_translation":_array(fc.hover_translation),"burst_remaining":fc.burst_remaining,"burst_cooldown":fc.burst_cooldown,"burst_amount":fc.burst_amount,"thrust":fc.delivered_thrust,"requested_rates":_array(fc.requested_rates),
 				"move_intent":_array(mech.rig.motion.move_intent),"reach":_array(mech.rig.motion.reach),"gather":[mech.rig.motion.gather.x,mech.rig.motion.gather.y],
 				"belly":mech.rig.motion.belly,"back":mech.rig.motion.back,"air_control":mech.rig.motion.air_control,"layout":mech.rig.motion.layout,
 				"brake_spread":fc.brake_spread,"head":_array(mech.rig.head.value),"effective_rates":_array(fc.effective_rates),"steer_error":_array(mech.rig.motion.target_rates-mech.rig.motion.pilot_rates),
@@ -351,7 +364,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			# Finish queued camera/text updates before drawing, within this frame.
 			call_deferred("_save",output.path_join("%s-%04d.png"%[name,tick/4]))
 	_keys([])
-	report[name] = {"inputs":events,"samples":rows,"max_speed":max_speed,"max_jerk":max_jerk,"max_motion_residual":max_residual}
+	report[name] = {"inputs":events,"samples":rows,"max_speed":max_speed,"max_jerk":max_jerk,"max_unboosted_jerk":max_unboosted_jerk,"max_motion_residual":max_residual}
 	_expect(max_residual < 0.3,name+": velocity changed outside the applied force budget")
 	print("SCENARIO ",name," max_speed=",snappedf(max_speed,0.01)," final_speed=",snappedf(rows[-1].speed,0.01)," jerk=",snappedf(max_jerk,0.1)," residual=",snappedf(max_residual,0.001))
 	return rows

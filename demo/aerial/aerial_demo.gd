@@ -141,7 +141,7 @@ func set_palette(daylight: bool) -> void:
 	if is_instance_valid(explosion): lighting.apply_materials(explosion.materials)
 
 func _flight_throttle(mech: Node3D) -> float:
-	return clampf(mech.controller.engine_level / 4.0, 0.0, 1.0) if mech.simulation_enabled else 0.0
+	return clampf(mech.controller.thrust_level / 4.0, 0.0, 1.0) if mech.simulation_enabled else 0.0
 
 func _make_ground() -> void:
 	walk_ground = StaticBody3D.new()
