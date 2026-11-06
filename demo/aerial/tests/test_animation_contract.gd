@@ -129,7 +129,7 @@ func _run() -> void:
 	fc.rotation_command = Vector3(0,1,0)
 	await _ticks(30)
 	var start := _asymmetry()
-	assert(absf(start)>1.0 and hover_stroke>0.35 and mech.rig.chest.value.y>0.08,"Held aerial yaw has no active asymmetric stroke")
+	assert(absf(start)>1.0 and hover_stroke>0.35 and mech.rig.chest.value.z< -0.08,"Aircraft yaw has no active asymmetric stroke around the chest-to-back axis")
 	mech.angular_velocity = fc.pilot_frame()*Vector3(0,fc.MAX_RATE.y,0)
 	await _ticks(30)
 	assert(_asymmetry()*start>0 and absf(_asymmetry())>0.5 and absf(_asymmetry())<absf(start)*0.95,"Held turn loses its readable asymmetric posture")

@@ -70,6 +70,9 @@ func _run() -> void:
 			await _ticks(24)
 			assert(mech.controller.rotation_command.length() > 0.9, "Rotation input was gated")
 			assert(mech.controller.attitude.angle_to(orientation) > 0.08, "A rotation axis cannot move")
+			var expected: Vector3 = {"forward":Vector3.LEFT,"back":Vector3.RIGHT,"left":Vector3.DOWN,"right":Vector3.UP,"yaw_left":Vector3.BACK,"yaw_right":Vector3.FORWARD}[key]
+			var body_rates: Vector3 = Basis(orientation).inverse()*mech.angular_velocity
+			assert(body_rates.dot(expected)>0.3 and body_rates.slide(expected).length()<0.05,"Yaw/roll changed physical axes with orientation")
 			assert(absf(mech.controller.pilot_frame().determinant()-1.0) < 0.001)
 			assert(_check_motors(mech) and _check_limbs(mech))
 	# In vacuum, balanced attitude torque cannot change horizontal momentum.

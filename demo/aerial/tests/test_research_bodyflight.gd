@@ -24,8 +24,9 @@ func _run() -> void:
 	await _ticks(15,false)
 	assert(mech.rig.motion.steer.x< -0.8,"Release omits its rate-error counterstroke")
 	_neutral()
-	# Head anticipates a turn before the chassis moves; it never rings at rest.
-	fc.rotation_request = Vector3(0,1,0)
+	# Head anticipates longitudinal aircraft roll before the chassis moves;
+	# this is rotation around the torso's Y axis, independent of flight mode.
+	fc.rotation_request = Vector3(0,0,-1)
 	await _ticks(9,false)
 	assert(mech.rig.head.value.y>0.06 and mech.angular_velocity.is_zero_approx(),"Head waits for body rotation instead of leading intention")
 	fc.rotation_request = Vector3.ZERO
@@ -77,7 +78,6 @@ func _run() -> void:
 	_neutral()
 	mech.quaternion = Quaternion(Vector3.FORWARD,0.7)*Quaternion(Vector3.RIGHT,-PI/2)
 	mech.linear_velocity = Vector3.FORWARD*800
-	fc.control_blend = 1
 	fc.aero_authority = 1
 	fc.local_airflow = Vector3(0,-80,0)
 	fc.g_load = 2

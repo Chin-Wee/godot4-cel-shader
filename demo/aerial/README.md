@@ -13,7 +13,9 @@ godot --path demo res://aerial/aerial_demo.tscn
 ```
 
 - **W/S:** pitch down/pull up. **A/D:** bank/roll. **Q/E:** yaw immediately,
-  including from hover. The mouse remains independent of steering.
+  including from hover. Aircraft axes stay fixed in space, plane flight and
+  inversion: roll is around the mech's head-to-foot axis, yaw around its
+  chest-to-back axis. The mouse remains independent of steering.
 - **Powered hover direction tap, WASD:** add a 0.5-second burst at 4× hover
   thrust while normal pitch/roll continues. The burst keeps the tapped direction
   after release; diagonals are normalized. Tap again after the one-second
@@ -165,10 +167,11 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   vertical thrust compensation, capped at 2×. Other detents retain their collective
   intent. Requested zero disables hover trim; spool reaches exact zero and no
   recovery/translation force is injected afterward. Cold-gas torque remains.
-- `pilot_frame()` isolates chest-forward hover/head-first flight coordinates. A
-  bank-independent pitch projection and vertical-flow contribution blend its
-  reference smoothly. The flight W/S pitch axis remains consistent through bank
-  and inversion. A small DCS Su-27-inspired pitch envelope uses the measured angle
+- `pilot_frame()` uses one fixed head-first aircraft frame, following the
+  Elite Dangerous reference for consistent ship axes with or without flight
+  assistance. A/D always commands longitudinal roll; Q/E always commands yaw.
+  Posture, airspeed, power and inversion cannot blend or swap those axes.
+  Hover restoration yields on the same commanded axes, including yaw. A small DCS Su-27-inspired pitch envelope uses the measured angle
   of attack, the force-derived trajectory turn rate and 0.2 seconds of prediction
   to keep sustained powered pulls near ±30 degrees. It fades over 35–60 degrees
   of total misalignment and with Shift braking, so it cannot pull a deliberate

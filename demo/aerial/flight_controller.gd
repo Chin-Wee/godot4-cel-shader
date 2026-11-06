@@ -10,6 +10,9 @@ const GRAVITY := 9.81
 const TRIM_SHARES := [0.02, 0.02, 0.02, 0.02, 0.46, 0.46]
 const VECTOR_LIMIT := PI / 6.0
 const MAX_RATE := Vector3(0.75, 0.8, 1.5)
+# Elite Dangerous reference: fixed ship axes with or without flight assistance.
+# This mech flies head-first: pitch = body X, yaw = body Z, roll = body -Y.
+const PILOT_AXES := Basis(Vector3.RIGHT, PI / 2.0)
 const FLIP_RATE := 1.95 # Motor-assisted somersault; fixed capsule inertia is retained.
 const RATE_GAIN := 6.0
 const MAX_ANGULAR_ACCELERATION := 5.0
@@ -100,9 +103,7 @@ var requested_rates := Vector3.ZERO # World angular-rate request after protectio
 var effective_rates := Vector3.ZERO # Pilot-local rate after protection and flip scaling.
 var gaze_direction := Vector3.ZERO # Optional world-space vision target; no force authority.
 var brake_spread := 0.0 # Completed limb projection, independent of the brake command.
-var released_axes := Vector3(1, 0, 1)
-var control_blend := 0.0
-var control_target := 0.0
+var released_axes := Vector3.ONE
 # Pitch/roll channels, measured in the current pilot frame. Signed, unwrapped
 # travel is telemetry, never an integrated replacement for native attitude.
 var maneuver_travel := Vector2.ZERO
@@ -110,7 +111,6 @@ var maneuver_strength := Vector2.ZERO
 var maneuver_recovery := Vector2.ZERO
 var maneuver_direction := Vector2.ZERO
 var maneuver_hold := Vector2.ZERO
-var roll_frame_locked := false
 var acceleration := Vector3.ZERO
 var angular_acceleration := Vector3.ZERO
 var local_acceleration := Vector3.ZERO
@@ -155,14 +155,11 @@ func reset() -> void:
 	brake_amount = 0.0
 	brake_request = 0.0
 	hover_gimbal_trim = Vector3.ZERO
-	control_blend = 0.0
-	control_target = 0.0
 	maneuver_travel = Vector2.ZERO
 	maneuver_strength = Vector2.ZERO
 	maneuver_recovery = Vector2.ZERO
 	maneuver_direction = Vector2.ZERO
 	maneuver_hold = Vector2.ZERO
-	roll_frame_locked = false
 	clock = 0.0
 	rotation_request = Vector3.ZERO
 	hover_translation = Vector3.ZERO
@@ -198,7 +195,7 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	clock += dt
 	grounded = on_ground
 	_measure_motion(state, dt)
-	_measure_airflow(state.transform.basis.orthonormalized(), dt)
+	_measure_airflow(state.transform.basis.orthonormalized())
 	var frame := state.transform.basis.orthonormalized()
 	_calculate_hover(frame)
 	_read_commands(controls, dt)
@@ -260,35 +257,23 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	translation_request = burst_direction if burst_remaining > 0.0 else Vector3.ZERO
 	hover_translation = translation.step(translation_request, dt, HOVER_VECTOR_RESPONSE)
 	rotation_request = request * precision
-	released_axes = Vector3(1.0-absf(rotation_request.x),0,1.0-absf(rotation_request.z))
+	released_axes = Vector3.ONE-rotation_request.abs()
 	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,thrust_level))
 	rotation_command = command.step(rotation_request, dt, rotation_response)
 	brake_request = float(raw.get("brake", false))
 	brake_amount = clampf(brake.step(Vector3(brake_request, 0, 0), dt, BRAKE_RESPONSE).x, 0, 1)
 
-func _measure_airflow(frame: Basis, dt: float) -> void:
+func _measure_airflow(frame: Basis) -> void:
 	var speed := air_velocity.length()
-	var flight_frame := frame * Basis(Vector3.RIGHT, PI / 2.0) # Head-first flight.
+	var flight_frame := frame * PILOT_AXES
 	var local := flight_frame.inverse() * air_velocity
 	angle_of_attack = atan2(-local.y, -local.z) if speed > 0.1 else 0.0
 	sideslip = atan2(local.x, maxf(0.01, absf(local.z))) if speed > 0.1 else 0.0
 	attached_flow = (1.0 - smoothstep(FLIGHT_PITCH_LIMIT, deg_to_rad(65), absf(angle_of_attack))) * (1.0 - smoothstep(0.3, 1.2, absf(sideslip)))
 	aero_authority = smoothstep(20, 70, speed) * attached_flow
 	departure = smoothstep(20, 60, speed) * (1.0 - attached_flow)
-	# One explicit coordinate conversion: chest-forward hover to head-first flight.
-	# Absolute pitch projection excludes bank, so inverted rolls cannot swap axes.
-	var projection := Vector2(frame.y.y, frame.z.y)
-	var posture := control_blend if projection.length() < 0.15 else atan2(absf(projection.y), absf(projection.x)) / (PI / 2.0)
-	var vertical_flight := smoothstep(20, 50, speed) * absf(frame.y.dot(air_velocity.normalized()))
-	control_target = maxf(posture, vertical_flight)
-	if not roll_frame_locked:
-		control_blend = lerpf(control_blend, control_target, 1.0 - exp(-dt / 0.20))
 
 func _update_maneuvers(dt: float) -> void:
-	# Capture the intended convention, not a partially filtered transition
-	# from a reset/hover entry that would turn a lengthwise roll into yaw.
-	if not roll_frame_locked and absf(rotation_request.z)>0.1 and not grounded and jump_remaining<=0.0:
-		control_blend = control_target
 	var rates := pilot_frame().inverse()*angular_velocity
 	var request := Vector2(rotation_request.x,rotation_request.z)
 	var measured := Vector2(rates.x,rates.z)
@@ -313,7 +298,6 @@ func _update_maneuvers(dt: float) -> void:
 		if not active and absf(measured[axis])<0.15 and maneuver_strength[axis]<0.01:
 			maneuver_travel[axis] = 0.0
 			maneuver_direction[axis] = 0.0
-	roll_frame_locked = airborne and (absf(request.y)>0.1 or absf(measured.y)>=0.15)
 
 func _calculate_hover(frame: Basis) -> void:
 	var tilt := acos(clampf(frame.y.dot(Vector3.UP), -1, 1))
@@ -352,7 +336,7 @@ func _calculate_aerodynamics(surfaces: Array) -> void:
 		aero_power += force.dot(flow)
 
 func _calculate_main_thrusters(outlets: Array, frame: Basis, dt: float) -> void:
-	var neutral := minf(released_axes.x, released_axes.z)
+	var neutral := minf(released_axes.x, released_axes.y)
 	var motion := air_velocity + wind
 	var horizontal := Vector3(motion.x, 0, motion.z)
 	var back := frame.z.slide(Vector3.UP).normalized()
@@ -487,7 +471,7 @@ func _trim_main_moment(outlets: Array, directions: Array[Vector3]) -> void:
 
 func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	var frame := state.transform.basis.orthonormalized()
-	var pilot := frame * Basis(Vector3.RIGHT, PI / 2.0 * control_blend)
+	var pilot := frame * PILOT_AXES
 	var local_rates := rotation_command*MAX_RATE
 	# Existing coast/brake departure only. Ordinary powered W/S keeps the
 	# DCS-style envelope below; acceleration remains finite actuator torque.
@@ -555,4 +539,4 @@ func _calculate_jump(leg_reach: bool, dt: float) -> void:
 	jump_remaining = maxf(0, jump_remaining - dt)
 
 func pilot_frame() -> Basis:
-	return Basis(attitude) * Basis(Vector3.RIGHT, PI / 2.0 * control_blend)
+	return Basis(attitude) * PILOT_AXES

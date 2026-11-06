@@ -28,16 +28,20 @@ func _run() -> void:
 	mech.angular_velocity = Vector3.ZERO
 	for tick in 180: fc._update_maneuvers(1.0/60)
 	assert(fc.maneuver_travel.is_zero_approx() and fc.maneuver_strength.length()<0.001)
-	fc.control_blend = 0.1
-	fc.control_target = 1.0
-	fc.rotation_request = Vector3(0,0,1)
-	fc._update_maneuvers(1.0/60)
-	assert(fc.control_blend==1.0 and fc.roll_frame_locked,"Roll captured an unfinished hover/flight frame blend")
-	fc._measure_airflow(Basis.IDENTITY,1.0/60)
-	assert(fc.control_blend==1.0,"Active roll changed its control convention")
-	fc.rotation_request = Vector3.ZERO
-	fc._update_maneuvers(1.0/60)
-	assert(not fc.roll_frame_locked)
+	# Upright space motion, transition, plane, bank and inversion all retain
+	# the aircraft's physical axes. Airspeed cannot exchange yaw and roll.
+	for orientation in [Quaternion.IDENTITY, Quaternion(Vector3.RIGHT,-PI/4), Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2)]:
+		mech.quaternion = orientation
+		var body_frame := Basis(orientation)
+		for velocity in [Vector3.ZERO,Vector3.UP*60,body_frame.y*80]:
+			fc.air_velocity = velocity
+			fc._measure_airflow(body_frame)
+			var pilot: Basis = fc.pilot_frame()
+			assert(pilot.x.is_equal_approx(body_frame.x),"Pitch axis changed with flight regime")
+			assert(pilot.y.is_equal_approx(body_frame.z),"Yaw swapped to the roll axis")
+			assert(pilot.z.is_equal_approx(-body_frame.y),"Roll swapped to the yaw axis")
+	fc.reset()
+	_neutral()
 	# The authoring curve is continuous at complete revolutions, including 720°.
 	var profile = mech.rig.profile
 	assert(profile.maneuver_shape(TAU-0.0001).distance_to(profile.maneuver_shape(0))<0.001)
@@ -73,7 +77,6 @@ func _run() -> void:
 	fc.aero_authority = 1
 	fc.engine_level = 2
 	fc.g_load = 2
-	fc.control_blend = 1
 	mech.quaternion = Quaternion(Vector3.FORWARD,0.7)*Quaternion(Vector3.RIGHT,-PI/2)
 	await _ticks(120)
 	assert(absf(mech.rig.motion.bank_gesture)>0.2,"Captured bank becomes a neutral flat pose")

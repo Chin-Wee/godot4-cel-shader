@@ -21,7 +21,10 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
 2. Powered fighter-like flight in any orientation. The chassis provides lift;
    streamlined posture follows useful airflow, not world-up. Bank, pitch and yaw
    have deliberate full-body initiation, sustained effort and recovery.
-   W pitches down and S pulls up through bank/inversion. Powered aligned pulls
+   W pitches down and S pulls up through bank/inversion. A/D always commands
+   longitudinal aircraft roll; Q/E always commands aircraft yaw. Upright space
+   motion and plane flight share those same body-relative axes, without an
+   automatic posture/airspeed remapping (Elite Dangerous reference). Powered aligned pulls
    receive soft ±30-degree airflow pitch protection. Shift permits an intentional
    departure; large misalignment cannot trigger forced trajectory alignment.
    The guard covers all powered detents; it does not provide stall immunity when

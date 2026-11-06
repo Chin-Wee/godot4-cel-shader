@@ -49,9 +49,9 @@ func _capture() -> void:
 			rows = await _play("roll_"+entry[0],540,[[0,[entry[1]]],[390,[]]])
 			var turn: float = rows.map(func(r):return absf(r.maneuver_travel[1])).max()
 			_expect(turn>TAU and rows[-1].omega<0.08,"Full roll cannot pass 360° or recover")
-			var blend: float = _at(rows,0.3).control_blend
 			for row in rows:
-				if row.time>0.3 and row.time<6.5: _expect(absf(row.control_blend-blend)<0.001,"Roll axes drift through inversion")
+				if row.time>0.5 and row.time<6.5:
+					_expect(absf(row.roll_rate)>row.omega*0.8,"Roll becomes yaw through inversion")
 		for entry in [["early_cancel",[[0,[KEY_S]],[25,[]]]],["inverted_cancel",[[0,[KEY_W]],[133,[]]]],
 			["reverse",[[0,[KEY_S]],[120,[KEY_W]],[280,[]]]],
 			["compound",[[0,[KEY_S,KEY_D]],[150,[]]]],
