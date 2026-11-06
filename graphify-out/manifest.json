@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793961122.9750752,
-    "seen": 1793961198.212678,
-    "ast_hash": "f023b7e447450b1393781e23761f8847",
+    "mtime": 1793965308.4683933,
+    "seen": 1793965458.926018,
+    "ast_hash": "fd2b9b85888ad5058ba968adfbb7943b",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1392,9 +1392,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/flight-animation-contract.md": {
-    "mtime": 1793961122.9753747,
-    "seen": 1793961198.2126799,
-    "ast_hash": "5bb7b6aa4b61ed54c4257e1cc8d3ed2a",
+    "mtime": 1793965308.469957,
+    "seen": 1793965458.926021,
+    "ast_hash": "0aa5260cfa40a4217380b41682b13a5f",
     "semantic_hash": ""
   },
   "demo/aerial/poses/POSE_DESIGN.md": {
@@ -1431,6 +1431,12 @@
     "mtime": 1793960506.9037488,
     "seen": 1793961198.212689,
     "ast_hash": "e1b08fe1e4412c0f516319c9551147de",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md": {
+    "mtime": 1793961245.030321,
+    "seen": 1793965458.9260318,
+    "ast_hash": "3539f0e5fca3e94d958d261cb0bc9e50",
     "semantic_hash": ""
   }
 }

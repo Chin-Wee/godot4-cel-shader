@@ -2093,7 +2093,7 @@
       "node_kind": "heading",
       "norm_label": "dynamic rotation requirements",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L79"
+      "source_location": "L83"
     },
     {
       "id": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
@@ -2117,7 +2117,7 @@
       "node_kind": "heading",
       "norm_label": "recommended architecture",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L48"
+      "source_location": "L52"
     },
     {
       "id": "demo_aerial_flight_animation_contract_required_behaviors",
@@ -2141,7 +2141,7 @@
       "node_kind": "heading",
       "norm_label": "research body-flight requirements",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L116"
+      "source_location": "L120"
     },
     {
       "id": "demo_aerial_flight_animation_contract_visual_acceptance",
@@ -2153,7 +2153,7 @@
       "node_kind": "heading",
       "norm_label": "visual acceptance",
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L96"
+      "source_location": "L100"
     },
     {
       "id": "demo_aerial_poses_pose_design",
@@ -2262,6 +2262,138 @@
       "norm_label": "aerial/readme.md",
       "source_file": "demo/aerial/README.md",
       "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
+      "label": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "aerial rendering study \u2014 delivery must complete",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_readme_asset_selection",
+      "label": "Asset selection",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "asset selection",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L386"
+    },
+    {
+      "id": "demo_aerial_readme_body_flight_control_checks",
+      "label": "Body-flight control checks",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "body-flight control checks",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L720"
+    },
+    {
+      "id": "demo_aerial_readme_checks_and_comparison_captures",
+      "label": "Checks and comparison captures",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "checks and comparison captures",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L473"
+    },
+    {
+      "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
+      "label": "Dynamic rotation and flip checks",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "dynamic rotation and flip checks",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L743"
+    },
+    {
+      "id": "demo_aerial_readme_flight_animation_contract_validation",
+      "label": "Flight animation contract validation",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "flight animation contract validation",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L686"
+    },
+    {
+      "id": "demo_aerial_readme_implementation_and_reference",
+      "label": "Implementation and reference",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "implementation and reference",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L64"
+    },
+    {
+      "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
+      "label": "Procedural pose ownership and tuning",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "procedural pose ownership and tuning",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L401"
+    },
+    {
+      "id": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
+      "label": "Research mapped to the current behaviours",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "research mapped to the current behaviours",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L637"
+    },
+    {
+      "id": "demo_aerial_readme_run_and_controls",
+      "label": "Run and controls",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "run and controls",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L7"
+    },
+    {
+      "id": "demo_aerial_readme_visual_review_and_remaining_goal",
+      "label": "Visual review and remaining goal",
+      "_origin": "ast",
+      "community": 0,
+      "community_name": "Flight pose design",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "visual review and remaining goal",
+      "source_file": "demo/aerial/README.md",
+      "source_location": "L775"
     },
     {
       "id": "readme",
@@ -5061,136 +5193,72 @@
       "source_location": "L24"
     },
     {
-      "id": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
-      "label": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "id": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a",
+      "label": "query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
       "_origin": "ast",
       "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
       "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "aerial rendering study \u2014 delivery must complete",
-      "source_file": "demo/aerial/README.md",
+      "frontmatter": {
+        "type": "query",
+        "date": "2026-11-06T10:34:05.029787+00:00",
+        "question": "Why do A/D and Q/E keep their axes between space and plane flight?",
+        "contributor": "graphify",
+        "outcome": "useful",
+        "source_nodes": "[&quot;demo_aerial_readme_run_and_controls&quot;, &quot;demo_aerial_flight_animation_contract_required_behaviors&quot;]"
+      },
+      "node_kind": "page",
+      "norm_label": "query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
       "source_location": "L1"
     },
     {
-      "id": "demo_aerial_readme_asset_selection",
-      "label": "Asset selection",
+      "id": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_answer",
+      "label": "Answer",
       "_origin": "ast",
       "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "asset selection",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L374"
+      "norm_label": "answer",
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L12"
     },
     {
-      "id": "demo_aerial_readme_body_flight_control_checks",
-      "label": "Body-flight control checks",
+      "id": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_outcome",
+      "label": "Outcome",
       "_origin": "ast",
       "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "body-flight control checks",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L708"
+      "norm_label": "outcome",
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L20"
     },
     {
-      "id": "demo_aerial_readme_checks_and_comparison_captures",
-      "label": "Checks and comparison captures",
+      "id": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_q_why_do_a_d_and_q_e_keep_their_axes_between_space_and_plane_flight",
+      "label": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
       "_origin": "ast",
       "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "checks and comparison captures",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L461"
+      "norm_label": "q: why do a/d and q/e keep their axes between space and plane flight?",
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L10"
     },
     {
-      "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
-      "label": "Dynamic rotation and flip checks",
+      "id": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_source_nodes",
+      "label": "Source Nodes",
       "_origin": "ast",
       "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
+      "community_name": "Q: Why do A/D and Q/E keep their axes between space and plane flight?",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "dynamic rotation and flip checks",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L731"
-    },
-    {
-      "id": "demo_aerial_readme_flight_animation_contract_validation",
-      "label": "Flight animation contract validation",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "flight animation contract validation",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L674"
-    },
-    {
-      "id": "demo_aerial_readme_implementation_and_reference",
-      "label": "Implementation and reference",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "implementation and reference",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L65"
-    },
-    {
-      "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
-      "label": "Procedural pose ownership and tuning",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "procedural pose ownership and tuning",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L389"
-    },
-    {
-      "id": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
-      "label": "Research mapped to the current behaviours",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "research mapped to the current behaviours",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L625"
-    },
-    {
-      "id": "demo_aerial_readme_run_and_controls",
-      "label": "Run and controls",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "run and controls",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L7"
-    },
-    {
-      "id": "demo_aerial_readme_visual_review_and_remaining_goal",
-      "label": "Visual review and remaining goal",
-      "_origin": "ast",
-      "community": 28,
-      "community_name": "Aerial rendering study \u2014 DELIVERY MUST COMPLETE",
-      "file_type": "document",
-      "node_kind": "heading",
-      "norm_label": "visual review and remaining goal",
-      "source_file": "demo/aerial/README.md",
-      "source_location": "L762"
+      "norm_label": "source nodes",
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L24"
     },
     {
       "id": "refactor_plan",
@@ -6741,22 +6809,6 @@
       "source_location": ""
     },
     {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "PhantomCameraHost",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -6947,6 +6999,22 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
+    },
+    {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "FollowLockAxis3D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -12587,24 +12655,24 @@
     },
     {
       "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_visual_acceptance",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L100",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
       "target": "demo_aerial_flight_animation_contract_research_body_flight_requirements",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L116",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
-      "target": "demo_aerial_flight_animation_contract_recommended_architecture",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L48",
+      "source_location": "L120",
       "weight": 1.0
     },
     {
@@ -12620,24 +12688,24 @@
     },
     {
       "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
+      "target": "demo_aerial_flight_animation_contract_recommended_architecture",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/flight-animation-contract.md",
+      "source_location": "L52",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
       "target": "demo_aerial_flight_animation_contract_dynamic_rotation_requirements",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L79",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_flight_animation_contract_mech_flight_animation_contract",
-      "target": "demo_aerial_flight_animation_contract_visual_acceptance",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/flight-animation-contract.md",
-      "source_location": "L96",
+      "source_location": "L83",
       "weight": 1.0
     },
     {
@@ -12736,7 +12804,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L374",
+      "source_location": "L386",
       "weight": 1.0
     },
     {
@@ -12747,7 +12815,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L389",
+      "source_location": "L401",
       "weight": 1.0
     },
     {
@@ -12758,7 +12826,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L461",
+      "source_location": "L473",
       "weight": 1.0
     },
     {
@@ -12769,7 +12837,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L65",
+      "source_location": "L64",
       "weight": 1.0
     },
     {
@@ -12791,7 +12859,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L762",
+      "source_location": "L775",
       "weight": 1.0
     },
     {
@@ -12802,7 +12870,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L625",
+      "source_location": "L637",
       "weight": 1.0
     },
     {
@@ -12813,7 +12881,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L674",
+      "source_location": "L686",
       "weight": 1.0
     },
     {
@@ -12824,7 +12892,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L708",
+      "source_location": "L720",
       "weight": 1.0
     },
     {
@@ -12835,7 +12903,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L731",
+      "source_location": "L743",
       "weight": 1.0
     },
     {
@@ -13000,6 +13068,50 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "graphify-out/memory/query_20261106_102146_54c4d695_where_are_armored_core_hover_tap_burst_control_tim.md",
+      "source_location": "L24",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a",
+      "target": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_q_why_do_a_d_and_q_e_keep_their_axes_between_space_and_plane_flight",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L10",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_q_why_do_a_d_and_q_e_keep_their_axes_between_space_and_plane_flight",
+      "target": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_answer",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_q_why_do_a_d_and_q_e_keep_their_axes_between_space_and_plane_flight",
+      "target": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_outcome",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_q_why_do_a_d_and_q_e_keep_their_axes_between_space_and_plane_flight",
+      "target": "graphify_out_memory_query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a_source_nodes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "graphify-out/memory/query_20261106_103405_b329a358_why_do_a_d_and_q_e_keep_their_axes_between_space_a.md",
       "source_location": "L24",
       "weight": 1.0
     },
@@ -13792,7 +13904,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L391",
+      "source_location": "L403",
       "weight": 1.0
     },
     {
@@ -13832,5 +13944,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "7b556b783fa4b1287f1a5dc44cbcf55ff049ad23"
+  "built_at_commit": "9d823f4bc8ef8ab000cfae7c5f20c65a918b8b0f"
 }

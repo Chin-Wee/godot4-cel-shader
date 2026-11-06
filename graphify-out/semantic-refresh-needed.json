@@ -7,7 +7,7 @@
     "README.md",
     "REFACTOR_PLAN.md"
   ],
-  "source_revision": "7b556b783fa4b1287f1a5dc44cbcf55ff049ad23",
+  "source_revision": "9d823f4bc8ef8ab000cfae7c5f20c65a918b8b0f",
   "code_graph_updated": true,
   "backend": "opencode-go",
   "reason": "Semantic extraction was previously rejected with MissingSessionID by the configured provider. This code/structural update does not retry that unsupported adapter. Re-run semantic extraction with a supported session adapter. Source remains authoritative.",
