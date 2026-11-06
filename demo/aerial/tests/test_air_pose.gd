@@ -40,7 +40,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 		mech.quaternion = Quaternion(Vector3.RIGHT,-PI/2) # Actual belly-to-earth orientation.
 		mech.linear_velocity = Vector3.DOWN*600
 		fc.local_airflow = Vector3(0,0,60)
-	if name=="flare" or name=="drive" or name=="stream":
+	if name=="flare" or name=="drive" or name=="stream" or name.begins_with("flight_"):
 		fc.engine_level = 2
 		fc.thrust_level = 2
 		fc.detent = 3
@@ -53,6 +53,9 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 		fc.brake_amount = 1
 		fc.local_acceleration = Vector3(0,-18,0)
 	if name=="drive": fc.local_acceleration = Vector3(0,20,0)
+	if "tight" in name:
+		fc.brake_request = 1
+		fc.brake_amount = 1
 	# Sustained rotation, not merely a short start pulse.
 	mech.angular_velocity = fc.pilot_frame()*(controls*fc.MAX_RATE)
 	for tick in 150:
@@ -63,6 +66,7 @@ func _pose(name: String, controls := Vector3.ZERO) -> Dictionary:
 	var ti: Transform3D = mech.bone_poses[mech.skeleton.find_bone("Torso")].affine_inverse()
 	for side in 2: result.knees.append(ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.knee_bones[side])].origin)
 	for side in 2: result.feet.append(ti*mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.foot_bones[side])].origin)
+	result["brake_spread"] = mech.rig.arms.brake_spread()
 	result["flex"] = []
 	for side in 2:
 		var hip: Vector3 = mech.bone_poses[mech.skeleton.find_bone(mech.rig.profile.thigh_bones[side])].origin
@@ -169,6 +173,20 @@ func _run() -> void:
 	assert(falling_turn.hands[0].distance_to(falling_turn.hands[1]*Vector3(-1,1,1))>1)
 	assert(falling_turn.knees[0].distance_to(falling_turn.knees[1]*Vector3(-1,1,1))>0.5,"Freefall overwrote its directional legs")
 	assert(absf(falling_turn.flex[0]-falling_turn.flex[1])>0.08,"Freefall turn knees bend identically")
+	# Same input and airflow, with/without Shift. All six signed turns retain
+	# distinct inside/outside armor roles while normal flight stays compact.
+	for axis in 3:
+		var poses := []
+		for sign in [-1.0,1.0]:
+			var request := Vector3.ZERO
+			request[axis] = sign
+			var clean: Dictionary = await _pose("flight_clean_%s_%s"%[axis,sign],request)
+			var tight: Dictionary = await _pose("flight_tight_%s_%s"%[axis,sign],request)
+			assert(clean.brake_spread<0.1,"Normal steering opens the aerodynamic brake")
+			assert(tight.brake_spread>0.35,"Shift turn lacks projected braking armor")
+			assert(clean.hands[0].distance_to(tight.hands[0])+clean.hands[1].distance_to(tight.hands[1])>1.0,"Shift does not change the turn pose")
+			poses.append(tight)
+		assert(poses[0].hands[0].distance_to(poses[1].hands[0])+poses[0].hands[1].distance_to(poses[1].hands[1])>0.8,"Opposite Shift inputs share a braking pose")
 	var modifiers: Array = mech.skeleton.get_children().filter(func(n): return n is SkeletonModifier3D)
 	assert(modifiers.size()==4 and not mech.rig.contacts.solvers[0].active and not mech.rig.contacts.solvers[1].active,"Unexpected airborne post-processing pass")
 	print("Applied air pose checks passed: natural elbows, held yaw/roll limb asymmetry, freefall box, squat/hand flare, aft acceleration and settled cruise; one airborne pose author.")

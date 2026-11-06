@@ -67,7 +67,11 @@ limits rather than stretching the skeleton.
   External shoulder rotation establishes the elbow hinge plane; simply raising
   the upper arms produces the wrong silhouette. Directional corrections survive
   base/freefall blends. Lengthwise flow permits a tracking shape.
-- Air braking: Shift or loaded deceleration during braking/reverse thrust drives one shared flare value.
+- Air braking: Shift changes armor incidence according to pitch, yaw and roll
+  input. The outside arm opens while the inside arm gathers; pitch presents both
+  forearms and changes chest/knee incidence. Without Shift, powered steering
+  keeps compact weight transfer and shallow panels below the braking projection
+  threshold. Shift or loaded deceleration during braking/reverse thrust drives one shared flare value.
   Knees squat while hands spread outside the shoulders. Flare wins over reverse
   bracing, which previously consumed its blend weight. The G-load gate excludes
   ballistic gravity from the deceleration response. The raw Shift request starts
@@ -106,7 +110,7 @@ point forces; local airflow includes angular velocity. This follows Microsoft
 Flight Simulator 2020's distributed-surface principle at a deliberately small
 proxy scale. Corrected skeleton-axis conversion makes a pull-up prepare into the
 turn. Opposing forearm pressure and differential calf incidence supply signed
-yaw/roll moments. The controller trims main engines first, then asks cold gas
+yaw/roll moments. The controller tries a balanced hot-only allocation first, then asks cold gas
 for the remaining moment; air control does not merely hide RCS effects.
 
 The profile exposes panel fractions/incidence and slide lean for calibration.

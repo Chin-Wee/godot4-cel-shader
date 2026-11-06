@@ -54,6 +54,8 @@ func update(delta: float, frame: Dictionary) -> void:
 	# Forearm pressure opposes the desired rotation at the moving side: the
 	# resulting air force supplies the turn, rather than flaring against it.
 	var steer: Vector3 = frame.steer*Vector3(1,-1,-1)
+	var clean: float = frame.fighter*(1.0-frame.get("flare",frame.brake))*(1.0-maxf(frame.get("drive",0.0),frame.retro))
+	var turn: Vector3 = frame.get("brake_turn",Vector3.ZERO)*Vector3(1,-1,-1)
 	var slip: Vector3 = frame.get("slip",Vector3.ZERO)
 	var flare: float = frame.get("flare",frame.brake)
 	var balance: Vector3 = frame.acceleration*Vector3(-1,1,-1)*clampf(frame.g_load,0,1)
@@ -61,9 +63,14 @@ func update(delta: float, frame: Dictionary) -> void:
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		var bias: float = sx*frame.get("lead",1.0)*(0.06+frame.get("asymmetry",0.0)*0.18)*(1-frame.land)
-		var swing: float = pose.x+sx*steer.y*0.52-steer.x*0.28+slip.x*sx*0.12
-		var spread: float = pose.y-sx*steer.z*0.36+bias
-		var flex: float = pose.z+sx*steer.y*0.34+sx*steer.z*0.45-bias
+		var swing: float = pose.x+(sx*steer.y*0.52-steer.x*0.28+slip.x*sx*0.12)*lerpf(1.0,0.25,clean)
+		var spread: float = pose.y-sx*steer.z*lerpf(0.36,0.08,clean)+bias*(1.0-clean*0.7)
+		var flex: float = pose.z+(sx*steer.y*0.34+sx*steer.z*0.45-bias)*lerpf(1.0,0.3,clean)
+		# Armored Core VI directional combat-turn silhouette: the outside armor
+		# catches wind while the inside arm gathers. Pitch presents both panels.
+		swing += turn.x*0.55+sx*turn.y*0.40
+		spread += sx*turn.z*0.50-sx*turn.y*0.50-sx*steer.y*0.10*clean
+		flex += -turn.x*0.35-sx*turn.z*0.45-sx*turn.y*0.35
 		# AC VI-style directional slides: arms trail forward thrust, catch reverse
 		# thrust and take different inside/outside roles during lateral movement.
 		swing += move.z*0.42+sx*move.x*0.26
@@ -87,14 +94,14 @@ func update(delta: float, frame: Dictionary) -> void:
 		swing += bank*0.16
 		spread += bank*0.12
 		flex += bank*0.20
-		var turn: float = sx*signs.y
+		var roll_side: float = sx*signs.y
 		var pitch_weight: float = acro.x*lerpf(1.0,0.65,flare)
 		swing = swing*(1.0-pitch_weight)+flip_swing*pitch_weight
 		spread = spread*(1.0-pitch_weight)+flip_spread*pitch_weight
 		flex = flex*(1.0-pitch_weight)+flip_flex*pitch_weight
-		swing += acro.y*(turn*0.35*roll.x-turn*0.25*roll.y-turn*0.20*roll.z)
-		spread += acro.y*(-0.22*roll.y+turn*0.30*roll.x+0.45*roll.z)
-		flex += acro.y*(0.65*roll.y+turn*0.25*(roll.x-roll.z))
+		swing += acro.y*(roll_side*0.35*roll.x-roll_side*0.25*roll.y-roll_side*0.20*roll.z)
+		spread += acro.y*(-0.22*roll.y+roll_side*0.30*roll.x+0.45*roll.z)
+		flex += acro.y*(0.65*roll.y+roll_side*0.25*(roll.x-roll.z))
 		swing -= steer.x*0.28*acro.x # Keep active air-control pressure through flips.
 		swing += acro.x*sx*frame.get("lead",1.0)*0.10*(flip.x+flip.z)
 		flex += acro.x*sx*frame.get("lead",1.0)*0.12*flip.x
@@ -104,6 +111,7 @@ func update(delta: float, frame: Dictionary) -> void:
 		# External rotation bends the forearms toward the head. Raising the whole
 		# arm instead creates a straight scarecrow silhouette with forward hands.
 		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.get("belly",frame.box)-sx*profile.arm_back_twist*frame.get("back",0.0)
+		spread = lerpf(spread,minf(spread,0.28),clean)
 		upper[side].step(Vector3(clampf(swing,-0.8,1.1),twist,sx*clampf(spread,0.18,2.15)),delta,0.30,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.34,profile.arm_speed)
 		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18+acro.x*(-0.12*flip.x+0.08*flip.y-0.16*flip.z),0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.24,1.0)

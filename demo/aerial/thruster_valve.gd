@@ -75,3 +75,26 @@ func step(request: float, dt: float) -> float:
 		level = next
 		remaining = maxf(0.0,remaining-duration)
 	return impulse/dt
+
+# Allocation predicts delivered impulse without advancing the real valve clock.
+func preview(request: float, dt: float) -> float:
+	var saved := [level,running,ignition_remaining,restart_remaining,minimum_remaining,latched_request]
+	var output := step(request,dt)
+	level = saved[0]
+	running = saved[1]
+	ignition_remaining = saved[2]
+	restart_remaining = saved[3]
+	minimum_remaining = saved[4]
+	latched_request = saved[5]
+	return output
+
+func command_for(output: float, dt: float, minimum := 0.000001) -> float:
+	var off := preview(0,dt)
+	var low := minimum
+	var high := 1.0
+	for iteration in 14:
+		var middle := (low+high)*0.5
+		if preview(middle,dt)<output: low = middle
+		else: high = middle
+	var command := (low+high)*0.5
+	return 0.0 if absf(off-output)<=absf(preview(command,dt)-output)+0.000001 else command

@@ -17,7 +17,7 @@ extends Resource
 @export var aero_incidence := PackedFloat32Array([0.04,0.15,0.15,0.12,0.12]) # Neutral stream calibration, radians.
 # Thigh, knee, ankle offsets in skeleton axes. Mirror Z for the right leg.
 # Retain the calibrated hover anchor: physical heel/calf outlets move with it.
-@export var hover_pose := PackedVector3Array([Vector3(-0.25,0,0.12), Vector3(0.42,0,0), Vector3.ZERO])
+@export var hover_pose := PackedVector3Array([Vector3(-1.0,0,0.12), Vector3(1.17,0,0), Vector3.ZERO])
 @export var stream_pose := PackedVector3Array([Vector3.ZERO, Vector3(0.12,0,0), Vector3(0.32,0,0)])
 @export var spread_pose := PackedVector3Array([Vector3(-0.88,0,0.46), Vector3(1.07,0,0), Vector3(-0.24,0,0)])
 @export var fall_pose := PackedVector3Array([Vector3(0.08,0,0.28),Vector3(1.30,0,0),Vector3(-0.20,0,0)])
@@ -43,7 +43,7 @@ extends Resource
 @export var arm_prepare := Vector3(-0.10,0.6,1.0)
 @export var effort_response := Vector3(0.07,0.13,0.20) # Prepare, reverse load, acceleration.
 @export var role_stagger := 0.24 # Coupled thigh/knee offset, radians.
-@export var slide_knees := Vector2(0.50,-0.18) # Gathering and extended leg offsets, radians.
+@export var slide_knees := Vector2(0.50,-0.36) # Gathering and extended leg offsets, radians.
 @export var slide_lean := Vector2(0.38,0.42) # Forward/back and lateral chest lean, radians.
 @export var slide_response := 0.22 # Knee commitment; normal recovery uses leg_response.
 @export var high_thrust_tuck := 0.65 # Draw leg outlets forward under full engine load.

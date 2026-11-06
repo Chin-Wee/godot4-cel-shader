@@ -250,7 +250,7 @@ func _endurance() -> void:
 	# Even the least-drag orientation must dissipate more power than maximum
 	# thrust plus gravity can supply above this speed. This is not a speed clamp.
 	var drag_scale: float = 0.5 * scene.hero.controller.air_density * Controller.AERO_AREA_M2 * (Controller.BASE_DRAG_CD + Controller.HIGH_SPEED_DRAG_CD)
-	var maximum_propulsion := 4.0*Controller.COLD_THRUST_G
+	var maximum_propulsion: float = scene.hero.COLD_MOUNTS.size()*Controller.COLD_THRUST_G
 	for index in 6: maximum_propulsion += scene.hero.controller._hot_capacity(index)
 	var bound := sqrt((maximum_propulsion+1.0)*scene.hero.mass*Controller.GRAVITY/drag_scale)
 	report.endurance["physical_speed_bound"] = bound
@@ -291,7 +291,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 			# ordinary jump/brake handoffs; include its native force latency.
 			burst_recovery = 0.1 if fc.burst_remaining>0 else maxf(0.0,burst_recovery-1.0/HZ)
 			if burst_recovery==0.0: max_unboosted_jerk = maxf(max_unboosted_jerk,jerk)
-			else: _expect(jerk<Controller.HOVER_BURST_THRUST*Controller.GRAVITY*1.5/Controller.HOVER_BURST_RAMP+250.0,name+": burst force exceeds its smooth-envelope jerk budget")
+			else: _expect(jerk<Controller.HOVER_BURST_ACCELERATION*Controller.GRAVITY*1.5/Controller.HOVER_BURST_RAMP+250.0,name+": burst force exceeds its smooth-envelope jerk budget")
 			max_residual = maxf(max_residual,residual)
 		last_air = fc.aero_force/mech.mass
 		max_speed = maxf(max_speed,fc.velocity.length())

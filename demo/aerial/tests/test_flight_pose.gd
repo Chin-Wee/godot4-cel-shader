@@ -44,7 +44,7 @@ func _run() -> void:
 	await _ticks(2)
 	assert(mech is RigidBody3D and mech.scale.is_equal_approx(Vector3.ONE))
 	assert(mech.actor.get_node("CollisionShape3D").disabled)
-	assert(mech.flames.size() == 6 and mech.gas_jets.size() == 4)
+	assert(mech.flames.size() == 6 and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
 	assert(_check_mount_surfaces(mech))
 	_check_inputs()
 	await _fixture()
@@ -58,7 +58,7 @@ func _run() -> void:
 	mech.controls = {"forward":true,"precision":true}
 	await _ticks(12)
 	assert(mech.controller.rotation_request.x< -0.3 and mech.controller.hover_translation.z< -0.3)
-	assert(is_equal_approx(mech.controller.thrust_level,4.0))
+	assert(mech.controller.requested_main_force.dot(Vector3.FORWARD)>mech.mass*Controller.GRAVITY*0.2)
 	await _ticks(45)
 	assert(mech.controller.burst_remaining==0 and mech.controller.rotation_request.x< -0.3)
 	# Same six rotation commands at upright/prone/inverted/vertical-flight poses.
@@ -96,11 +96,11 @@ func _run() -> void:
 	await _ticks(45)
 	assert(mech.controller.velocity.x > 35 and mech.controller.velocity.z < -5, "Sideways thrust replaced the previous trajectory")
 	assert(mech.controller.hover_assist < 0.01)
-	# Maximum detent reaches the old 4× level with equal, capacity-limited engines.
+	# Maximum detent reaches its force request through capacity-limited engines.
 	await _fixture(Vector3(175,2600,340), Quaternion(Vector3.RIGHT,-PI/2), Vector3(0,0,-70), 4)
 	await _ticks(60)
 	assert(is_equal_approx(mech.controller.engine_level,4.0) and _check_motors(mech))
-	for share in mech.controller.engine_shares: assert(absf(share-1.0/6.0) < 0.0001)
+	assert(mech.controller.main_force.length()>mech.mass*Controller.GRAVITY*2.0, "Full power failed to produce capacity-limited thrust")
 	# High-speed departure must never enable hover correction or disable controls.
 	await _fixture(Vector3(175,2600,340), Quaternion.IDENTITY, Vector3(0,0,-80))
 	mech.controls = {"back":true,"brake":true}

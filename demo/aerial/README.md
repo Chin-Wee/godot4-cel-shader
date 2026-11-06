@@ -15,14 +15,17 @@ godot --path demo res://aerial/aerial_demo.tscn
 - **W/S:** pitch down/pull up. **A/D:** bank/roll. **Q/E:** yaw, including from hover. Aircraft axes stay fixed in space, plane flight and
   inversion: roll is around the mech's head-to-foot axis, yaw around its
   chest-to-back axis. The mouse remains independent of steering.
-- **Powered hover direction tap, WASD:** add a 0.5-second burst at 4× hover
-  thrust while normal pitch/roll continues. The burst keeps the tapped direction
+- **Powered hover direction tap, WASD:** add a 0.5-second balanced directional
+  force request while normal pitch/roll continues. Its magnitude is computed from
+  available hot/cold thrust, moment balance and actuator response, not a fixed 4×. The burst keeps the tapped direction
   after release; diagonals are normalized. Tap again after the one-second
   activation-to-activation cooldown. Holding does not repeat, and early taps are
   discarded. Engine cutoff cancels the burst through the same short force fade.
 - **Space / C:** step through **0, 0.5, 1, 2, 4 × hover**. Each press changes one
   detent; key repeat is ignored. Engines ramp toward the request.
-- **Shift held:** aerodynamic brake and spread posture; rotation remains available.
+- **Shift + direction:** directional armor/limb braking for a tighter turn and speed bleed.
+  Without Shift, compact weight-transfer poses use shallow aerodynamic corrections
+  without opening the airbrake. Shift alone retains a symmetric braking flare.
 - **R:** ground-triggered hot-thruster launch, without changing the cruise detent.
 - **Ctrl held:** precision translation/rotation. **Mouse:** look only.
   **MMB / Tab:** camera focus/free look. Click captures the mouse.
@@ -85,8 +88,8 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   [Elite Dangerous](https://d1wv0x2frmpnh.cloudfront.net/elite/website/assets/English-PlayersGuide_v2.00-Horizons.pdf)
   for independent attitude/momentum. No unpublished internals are assumed.
 - `flight_controller.gd` reads commands, measures motion/airflow, computes hover
-  assistance, posed-surface aerodynamics, desired attitude moment, main-engine
-  trim and remaining cold-nozzle demand, then applies hot, cold and air forces
+  assistance, posed-surface aerodynamics, desired attitude moment and one joint
+  hot/cold force/moment allocation, then applies hot, cold and air forces
   at their actual outlets/panels through native physics. There is no direct
   torque, central launch force or live velocity/orientation override. Forces are newtons; torque is newton metres. Ten
   world units represent one metre: native forces multiply by 10, torque by 100,
@@ -103,51 +106,44 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Camera settings are native Camera3D properties. Atmosphere strengths are exported
   on `Lighting`; pose tuning remains in the existing rig-profile Resource.
 - Main forces use actual physics-tick gimbal directions and animated attachment
-  positions. Off-centre application generates the actual engine moment. Measured
-  equal shares caused forward drift because the calf ports cannot vector upright
-  within their 30-degree cones. Low-power shares are 46% per steerable heel and
-  2% per remaining motor. Each heel's share falls as it reaches the common engine
-  continuous capacity; the remainder is shared by the other four. All six reach
-  one-sixth at sustained maximum power. Quick Boost temporarily retains the
-  46%/46% heel allocation at up to 4× total hover thrust, overdriving these
-  steerable outlets for half a second instead of immediately loading the canted
-  calf barrels in the wrong direction. The same 30-degree cones still apply.
-  This permits backward hover force without demanding that the
-  canted barrels point outside their cones. Bounded hover gimbal trim removes
-  residual bias; it moves physical motors and cannot create extra force. Port-cant
-  feed-forward is body-relative so yaw cannot leave stale world trim fighting the
-  motors. Velocity feedback is 3.6/s; residual integral trim learns only during
-  quiet hover below 1.5 m/s, preventing windup against an intentional slide.
-- One damped angular-rate controller uses native shape-derived inertia and finite
-  cold-gas torque. Requested rates are 0.75/0.8/1.5 rad/s before precision scaling;
-  commanded angular acceleration is capped at 5 rad/s² per body axis. Main gimbals first trim
-  the engine/air moment toward the requested total moment, preserving resultant thrust within a 3% hover / 10% flight budget, rising to 25% during burst/launch to reserve attitude authority. Six
-  bounded native 3×3 correction sweeps project directions into the existing cones;
-  finite gimbal motors still deliver the result. AC VI is the directional-boost
-  presentation reference: upright hover requests steer the real nozzles, which
-  ease toward their target over 0.08 s instead of the ordinary 0.16 s. Jets
-  redirect before body lean; the rendered bells/flames use those same motor
-  angles and retain their seated mounts and 30-degree cones.
-  Cold gas supplies only the remaining moment; its capacity never fades with airspeed. Saturation is
-  displayed instead of erased by a velocity clamp. Rotation requests ease in over 0.14 s at up to 2×, rising to 0.28 s at
-  4× while loaded joints settle. Full-power streaming tucks paired hips/knees to
-  bring the lower outlets toward the mass centre. Directional hover replaces
-  that tuck; backward force sweeps the calves forward with ankle counter-rotation
-  so their canted ports can contribute without exceeding the nozzle cones.
-  These are rig-profile calibrations; physical cold-nozzle limits still apply.
-  Cold gas now uses four physical nozzle forces, including their net recoil.
-  A bounded projected force/moment fit prioritizes attitude error using native
-  inertia, then minimizes recoil; both hot and cold directions retain their
-  30-degree cones. Cold gimbals take 0.06 s to aim. There is no synthetic torque
-  ceiling or residual torque added to make a requested maneuver succeed.
-  The controller reports saturation when the available ports cannot supply it. High
-  dynamic pressure and a spread brake pose can prevent a requested flip; no free
-  torque forces the animation or body through an impossible maneuver.
-  Low-demand trim retains a 3 Hz / 65% schedule; steady countertorque switches
-  to continuous burn above 10% nozzle load, with 6% release hysteresis. Valve
-  dynamics integrate each pulse boundary; there is no fabricated mean impulse.
-  Native capsule inertia stays fixed while limbs articulate; propellant depletion
-  and articulated mass/inertia are outside this model.
+  positions. Back, calf and heel outlets participate in the same solve as cold
+  ports. Their magnitudes are allocated, not fixed shares. Each back/calf outlet
+  is rated at 2/3 body weight and each heel at 1.84 body weights. The selected
+  4× detent is a collective request; Quick Boost is not a 4× collective command.
+  The hover leg anchor brings the heel thrust lines under the mass center so
+  quiet support does not require a permanent opposing cold-gas burn.
+- `thruster_allocator.gd` reuses native 3×3 force/moment blocks with bounded
+  projection sweeps. The horizon solve considers actual port positions, capacity
+  and hot gimbal cones. It reduces directional acceleration before sacrificing
+  cross-axis force or attitude control. Gravity and current panel forces are
+  included in the net-acceleration target. A finite complete-force slew and a
+  shutdown reserve shape the half-second burst instead of adding an impulse.
+  The next-tick solve includes predicted average valve output and reachable
+  gimbal angles. The same predicted commands are executed against the real
+  valves and servos; only their delivered point forces move the body.
+- Cold gas has fuel priority: first try hot vectoring and unavoidable shutdown
+  tails; open cold valves only when the force/moment residual exceeds the trim
+  tolerance. The horizon also penalizes total cold flow. A small minimum useful
+  flow and angular/force deadbands permit coast intervals instead of a recurring
+  3 Hz schedule. Quiet-hover correction uses angular-rate/tilt hysteresis;
+  motion must leave the coast band before another correction window opens. Required
+  ports remain open through a continuing request so a minimum-burn tail cannot
+  disguise a pending restart gap. Sustained rotation requests can require an acquisition/arrest
+  burn; quiet hover and rate-matched coasting do not require perpetual jets.
+  This is a bounded allocator, not a claim of a globally optimal fuel solution.
+- Twelve fixed cold nozzles form opposed upper/lower triads on torso/backpack
+  armor. Shared rigid axes prevent leg articulation from rotating one member
+  of an opposed pair. Vertical separation provides pitch leverage; lateral
+  separation provides yaw/roll leverage. Fixed nozzles have pressure authority
+  only; the matrix includes that one-dimensional constraint. Hot outlets retain
+  their 30-degree cones and finite gimbal response. All six signed rotation
+  axes are checked with native body motion and with summed outlet moments.
+- One angular-rate controller uses native capsule inertia. Requests remain
+  0.75/0.8/1.5 rad/s before precision scaling, with a 5 rad/s² demand ceiling.
+  Available nozzle moments, rather than a free torque channel, determine actual
+  acceleration. Saturation is reported. Poses shift real hardpoints and air
+  panels; capsule mass/inertia remain fixed. Articulated inertia and propellant
+  depletion are outside this model.
 - `thruster_valve.gd` models each hot/cold outlet separately. Hot outlets have
   0.06 s ignition, 0.12 s minimum closed time after decay, 0.06 s full-flow
   rise/fall and a 0.08 s minimum burn. Cold outlets use 0.008 / 0.03 s ignition /
@@ -155,32 +151,24 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   re-press cannot bypass shutdown or restart. Integrated average thrust handles
   sub-tick events without frame-dependent impulses. These are tunable fictional
   mech calibrations, not universal hardware timings. Cold outlet capacity is
-  2× body weight per port; hot ports retain their continuous/burst ratings.
+  0.9× body weight per port. Powered hot engines retain 1% pilot flow, including
+  its real thrust, to avoid shutdown/restart cycling during a maneuver. Cutoff
+  closes them through the normal finite valve response.
   Production reference: [Star Citizen's published thrust-at-mount and actuator
   response model](https://robertsspaceindustries.com/en/comm-link/engineering/13951-Flight-Model-And-Input-Controls),
   alongside Kerbal Space Program's placed RCS behavior. Real valve data, such as
   [Moog's cold-gas specifications](https://www.moog.com/products/propulsion/space-propulsion/spacecraft-propulsion/thrusters/cold-gas-thruster.html),
   motivates finite response rather than an instantaneous torque actuator.
-- Hover fades over 18–45 m/s airspeed and 30–60 degrees from upright, and requires
-  main power. It never depends on stall/attached-flow quality. Neutral pilot axes
-  allow upright restoration. Directional hover requests 0.60 g (+20%); its
-  drift catch permits 0.55 g. Reverse ankle preparation exposes enough actual
-  heel authority for the stronger push. Normal pitch is 0.75 rad/s (−25%),
-  roll 1.50 rad/s (+25%), and yaw remains 0.80 rad/s. A press beginning in
-  powered hover starts a half-second Quick Boost at 4× hover thrust, with a
-  one-second cooldown measured from activation. Normal rotation and flight-path
-  protection remain active throughout. Holding cannot repeat it; early taps do
-  not queue. The selected cruise detent and its spool are independent of boost
-  output. The command lasts 0.5 s; delivered thrust also obeys valve rise,
-  shutdown and restart rather than snapping to a requested value. A 0.06-second force envelope
-  softens both ends on the fixed physics clock; nozzle and joint servos retain
-  their existing smooth response. Poses, exhaust, force accounting and the HUD
-  read the same delivered collective. Hover eligibility ignores temporary
-  altitude-compensation spool reductions, so a ready re-tap still works.
-  Unpowered and flight presses rotate immediately without hover boost. Only nominal 1× receives
-  vertical thrust compensation, capped at 2×. Other detents retain their collective
-  intent. Requested zero disables hover trim; spool reaches exact zero and no
-  recovery/translation force is injected afterward. Cold-gas torque remains.
+- Hover fades over 18–45 m/s and 30–60 degrees from upright, and requires
+  selected main power. A heading-local directional tap requests up to 2.4 g;
+  actual magnitude is limited by balanced actuator capacity and the remaining
+  shutdown time. The complete propulsion reference slews at 6 g/s. Its command
+  lasts 0.5 s with a 0.16 s envelope and a one-second activation-to-activation
+  cooldown. Holding does not repeat and early taps do not queue. Normal rotation
+  and flight-path protection remain active. Drift catch is bounded at 0.30 g;
+  nominal 1× also compensates vertical motion and measured air forces. Other
+  detents retain their collective intent. Cutoff never asks cold gas to replace
+  removed lift: only unavoidable hot decay and real attitude demands remain.
 - `pilot_frame()` uses one fixed head-first aircraft frame, following the
   Elite Dangerous reference for consistent ship axes with or without flight
   assistance. A/D always commands longitudinal roll; Q/E always commands yaw.
@@ -295,21 +283,15 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   simulation framework, so pause and deterministic seeking remain available.
   Live bursts choose a fresh seed; captures can pass a seed for reproducibility.
   Transient effects are freed without retaining palette references.
-- Each mech has six equal-size main boosters: two in the backpack's paired lower
-  barrel caps, one in each calf recess, and one in each heel inlay. Four smaller
-  cold-gas outlets occupy the shoulder and thigh recesses. There are no hand,
-  forearm or upper-arm boosters. Mount centers were projected onto source mesh
-  triangles; seated ball joints connect vectoring bells to the modeled ports.
-  Each port's measured opening normal defines its neutral orientation in its
-  attachment bone's space. Backpack barrel normals point down/aft, calf recesses
-  point aft/down, and heel openings point down in the standing rest pose.
-  Every main and cold-gas motor uses a spring-damped, 30-degree local cone.
-  The existing force/moment allocator chooses main directions. Cold-gas
-  gimbals aim from the allocated nozzle forces and slew on the physics clock.
-  Desired exhaust is transformed into each local frame and clamped before the
-  motor moves. Bone animation is never canceled to maintain a world-down axis;
-  legs and feet carry their booster axes through the procedural pose. A saturated
-  motor remains at its local limit even when the requested force is unreachable.
+- Each mech has six main boosters: paired lower backpack barrel caps, calf
+  recesses and heel inlays. Twelve smaller fixed cold ports occupy inspected
+  chest and upper/lower backpack armor surfaces. The existing source GLB was
+  retained after inspecting torso, shin, foot and backpack geometry. Rigid torso
+  mounts were selected for predictable opposed-jet axes and useful lever arms;
+  all centers were projected onto source triangles. There are no hand boosters.
+  Hot bells vector within their spring-damped 30-degree local cones; cold
+  housings remain fixed to the armor. Limb animation carries the hot calf/heel
+  mounts through the actual pose, and the allocator measures those moving points.
   Each plume's visibility, brightness and length use that outlet's delivered
   force, including valve transients. A material-preview throttle cannot light a
   physically inactive nozzle. The same sampled directions/forces drive the native
@@ -599,7 +581,7 @@ endurance records numeric telemetry without thousands of redundant screenshots.
 `--metrics-only` suppresses images when using a native renderer. Run at the
 project's existing 60 Hz physics rate; project settings are not modified.
 
-Measured 4× equilibrium is approximately 137 m/s in the reference straight-flight
+The maximum-detent equilibrium is measured by the current reference straight-flight
 fixture. The replay's conservative steady-flight bound includes all hot outlet
 ratings, cold-gas recoil and gravity; it no longer assumes reaction jets cannot
 translate the body. No velocity clamp supplies the result. Main-off momentum is
@@ -615,10 +597,12 @@ renders two intersecting spheres and checks that the enabled material fades at
 the floor while retaining the rest of its mesh. It saves `/tmp/dmc-soft-depth-probe.png`;
 this path is verified on the current Mobile renderer.
 
-`test_thruster_control.gd` checks four directional hover inputs with the
+`test_thruster_control.gd` checks cardinal, diagonal and heading-relative hover inputs with the
 chassis upright, early force response, rendered/physical nozzle agreement,
 finite ignition/restart/minimum-burn timing across 30–240 Hz, nozzle-force moment sums,
-truthful cold-gas flashes and 30 seconds of bounded hover drift. The native
+truthful cold-gas flashes, burst jerk below 80 m/s³, cross-axis acceleration below 0.5 m/s²,
+chassis tilt below one degree, and 30 seconds
+of quiet hover with cold valves closed for most ticks. The native
 version uses a low three-quarter view so the heel and calf redirection is visible.
 
 ```sh
@@ -719,9 +703,9 @@ thrust, retains aerodynamic coasting, then re-ignites without a fixture reset.
 
 ### Body-flight control checks
 
-Directional hover steers a 0.60 g vector request through real nozzles. Quick Boost
-briefly raises collective to 4× hover, with leading/trailing knees and
-complementary hands. Opposing
+Directional hover calculates one balanced net force through the real back,
+calf, heel and cold outlets. Quick Boost reduces its magnitude to preserve
+attitude and cross-axis force, with leading/trailing knees and complementary hands. Opposing
 input catches the old momentum before accelerating outward; it never assigns
 velocity. The chase spring compensates constant-velocity lag so fast climbs stay
 framed. F9 reports main-engine, aerodynamic and cold-gas moments separately.
@@ -736,7 +720,7 @@ The isolated check verifies five shared-area panels, signed limb-generated
 pitch/yaw/roll, angular airflow, passive power, zero flow and vacuum. Thirteen
 input sequences run in both body and chase views: 35/70/110 m/s staged bank →
 release → pull-up → release at 2×/4×, overlapping/cancelled maneuvers, four hover
-directions and 4× sideways movement. Gates cover yaw, torque reserve, angle of
+directions and capacity-limited sideways movement. Gates cover yaw, torque reserve, angle of
 attack, recovery, visual lean, drift and reduced cold-gas demand against the
 recorded pre-change 70 m/s baseline. Native chase captures also check framing.
 
