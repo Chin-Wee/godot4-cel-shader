@@ -1,7 +1,7 @@
 extends "res://aerial/tests/test_animation_contract.gd"
 
 # Use completed native geometry to isolate air control from engine/RCS torque.
-func _surface_pose(request: Vector3) -> Vector3:
+func _surface_pose(request: Vector3, braking := false) -> Vector3:
 	mech.reset_flight(Vector3(175,9000,340))
 	_neutral()
 	mech.quaternion = Quaternion(Vector3.RIGHT,-PI/2)
@@ -15,7 +15,10 @@ func _surface_pose(request: Vector3) -> Vector3:
 	fc.main_force = Vector3.FORWARD*mech.mass*fc.GRAVITY*2
 	fc.requested_main_force = fc.main_force
 	fc.rotation_command = request
+	fc.brake_request = float(braking)
+	fc.brake_amount = float(braking)
 	await _ticks(180)
+	fc.brake_spread = mech.rig.arms.brake_spread()
 	fc._calculate_aerodynamics(mech.aerodynamic_surfaces())
 	assert(fc.aero_power<0,"Passive panels add mechanical energy")
 	assert(fc.aero_surface_forces.size()==5)
@@ -36,12 +39,19 @@ func _run() -> void:
 	for fraction in mech.rig.profile.aero_fractions: total += fraction
 	assert(absf(total-1)<0.0001,"Proxy panels duplicate the original total area")
 	var neutral: Vector3 = await _surface_pose(Vector3.ZERO)
+	var braking_neutral: Vector3 = await _surface_pose(Vector3.ZERO,true)
 	for axis in 3:
 		for sign in [-1.0,1.0]:
 			var request := Vector3.ZERO
 			request[axis] = sign
 			var moment: Vector3 = await _surface_pose(request)
-			assert((moment[axis]-neutral[axis])*sign>5000,"Limb pressure opposes the requested flight rotation")
+			var clean_moment: float = (moment[axis]-neutral[axis])*sign
+			var clean_power: float = fc.aero_power
+			var tight: Vector3 = await _surface_pose(request,true)
+			var tight_moment: float = (tight[axis]-braking_neutral[axis])*sign
+			assert(clean_moment>1000,"Clean steering armor opposes the requested rotation")
+			assert(tight_moment>clean_moment*1.2,"Shift does not increase directional aerodynamic turn effort")
+			assert(fc.aero_power<clean_power*1.3,"Shift turn does not bleed more speed through air forces")
 	fc.air_density = 0
 	fc._calculate_aerodynamics(mech.aerodynamic_surfaces())
 	assert(fc.aero_force.is_zero_approx() and fc.aero_torque.is_zero_approx() and fc.aero_power==0,"Vacuum retains aerodynamic control")

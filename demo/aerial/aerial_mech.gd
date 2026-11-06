@@ -59,11 +59,22 @@ const MOUNTS := [
  ["HeelL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
  ["HeelR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
 ]
+# Fixed opposed triads, seated on inspected torso/backpack armor triangles. The
+# upper/lower separation supplies pitch; lateral separation supplies yaw/roll.
+# Shared rigid torso axes keep opposed jets balanced while the legs articulate.
 const COLD_MOUNTS := [
- ["ShoulderL",&"Shoulder.L",Vector3(-0.63559,0.002,-0.047),Vector3(-1,0,0)],
- ["ShoulderR",&"Shoulder.R",Vector3(0.63559,0.002,-0.047),Vector3(1,0,0)],
- ["ThighL",&"Thigh.L",Vector3(-0.47860,2.339,-0.187),Vector3(-1,0,0)],
- ["ThighR",&"Thigh.R",Vector3(0.47860,2.339,-0.187),Vector3(1,0,0)],
+ ["UpperLSide",&"Torso",Vector3(1.596664,1.112213,0.25),Vector3.RIGHT],
+ ["UpperLFore",&"Torso",Vector3(0.822496,1.353148,1.307773),Vector3.BACK],
+ ["UpperLAft",&"Torso",Vector3(1.077153,1.250922,-3.557281),Vector3.FORWARD],
+ ["UpperRSide",&"Torso",Vector3(-1.596657,1.112215,0.25),Vector3.LEFT],
+ ["UpperRFore",&"Torso",Vector3(-0.822495,1.353148,1.307774),Vector3.BACK],
+ ["UpperRAft",&"Torso",Vector3(-1.077152,1.250921,-3.557281),Vector3.FORWARD],
+ ["LowerLSide",&"Torso",Vector3(1.246701,-2.183311,-3.406221),Vector3.RIGHT],
+ ["LowerLFore",&"Torso",Vector3(0.734726,0.163116,1.28089),Vector3.BACK],
+ ["LowerLAft",&"Torso",Vector3(1.335068,-2.64238,-4.471244),Vector3.FORWARD],
+ ["LowerRSide",&"Torso",Vector3(-1.246699,-2.183311,-3.406221),Vector3.LEFT],
+ ["LowerRFore",&"Torso",Vector3(-0.734725,0.163116,1.280891),Vector3.BACK],
+ ["LowerRAft",&"Torso",Vector3(-1.335067,-2.642381,-4.471244),Vector3.FORWARD],
 ]
 var palette_materials: Array[ShaderMaterial] = []
 var flying := true:
@@ -97,7 +108,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	capsule.height = 1.8 * display_scale
 	hull.shape = capsule
 	add_child(hull)
-	controller.configure(self, display_scale)
+	controller.configure(self, display_scale, COLD_MOUNTS.size())
 	actor.set_physics_process(false)
 	actor.collision_layer = 0
 	actor.collision_mask = 0
@@ -160,7 +171,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		neutral_bases.append(neutral)
 		motor_springs.append(FlightPose.Spring.new())
 		gimbal.basis = neutral
-		var radius := (0.10 if str(mount[0]).begins_with("Shoulder") else 0.065) if cold else 0.18
+		var radius := 0.085 if cold else 0.18
 		# A seated ball joint connects the vectoring bell to its modeled recess.
 		var collar := SphereMesh.new()
 		collar.radius = radius
@@ -300,7 +311,7 @@ func capture_pose() -> void:
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
 	rig.arms.sample_completed(skeleton,bone_poses)
 	for index in 6: motor_springs[index].value = controller.motor_angles[index]
-	for index in 4: motor_springs[index+6].value = controller.cold_angles[index]
+	for index in gas_gimbals.size(): motor_springs[index+6].value = controller.cold_angles[index]
 	_refresh_exhaust()
 
 func update_force_debug() -> void:

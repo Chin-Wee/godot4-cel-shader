@@ -12,10 +12,13 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
    chest, both arms and legs, with feasible heel/calf/backpack thrust alignment.
    Pitch/roll commands remain available throughout; actual rotation waits for
    the physical actuators. A powered hover direction tap adds a
-   0.5-second directional burst at 4× hover thrust, with a one-second cooldown
+   0.5-second directional force request, with a one-second cooldown
    from activation. Release retains the burst direction; held or early taps do
    not repeat or queue it. Engine cutoff cancels it through the short force fade. The selected cruise detent
-   remains independent; short force ramps and existing servos smooth delivery.
+   remains independent. One joint allocation uses back, calf, heel and fixed cold
+   nozzles to balance the requested net force and moment. Magnitude yields to
+   available thrust and finite response instead of assuming a fixed 4×. Force
+   slew, shutdown reserve and existing servos smooth delivery.
    Forward/backward/sideways slides and yaw use Armored Core VI as a visual
    reference, including complementary hand and leading/trailing leg roles.
    Directional intention starts body preparation before acceleration. One knee
@@ -35,10 +38,17 @@ Status: implementation contract, 3 November 2026. Runtime evidence and commands 
    an underpowered climb loses airspeed. Full-output leg posture keeps actual
    engine moments within the existing cold-gas capacity. Completed torso/limb
    poses must also generate correctly signed aerodynamic pitch, yaw and roll
-   through actual point forces. Main vectoring trims the combined moment before
-   cold gas supplies the remainder; airspeed alone never disables attitude control.
+   through actual point forces. Normal steering retains compact weight transfer
+   and shallow aerodynamic corrections without opening the airbrake. Shift changes
+   chest, arm and leg incidence for each signed input to increase turning effort
+   and bleed speed. Hot vectoring is tried before fuel-penalized cold assistance;
+   airspeed alone never disables attitude control.
 3. Main engines off: rotate freely while retaining existing travel. Cold-gas
-   attitude control supplies actual off-centre nozzle forces and recoil. Air-load/rate-error-dependent compact or extended preparation and arrest poses
+   attitude control supplies actual off-centre nozzle forces and recoil. Twelve
+   opposed fixed ports on rigid torso/backpack armor provide all signed rotation
+   axes. Small errors coast; valves fire for acquisition, correction or arrest
+   with finite ignition, minimum impulse and restart times. There is no permanent
+   trim clock and no artificial recoil cancellation. Air-load/rate-error-dependent compact or extended preparation and arrest poses
    express the maneuver; neither pose nor orientation rewrites velocity. Gravity
    and atmospheric forces remain active.
 4. Atmospheric falling: depict skydiver body flight. Relative wind, broadside

@@ -229,6 +229,7 @@ func _choose_posture(controller, delta: float) -> void:
 	motion["back"] = motion.box-motion.belly
 	motion["brake"] = maxf(controller.brake_request,controller.brake_amount)*lerpf(0.2,1,airload)*(1.0-landing)
 	motion["flare"] = maxf(motion.brake,motion.deceleration)*(1.0-landing)
+	motion["brake_turn"] = controller.rotation_request*Vector3(1,-1,1)*motion.brake
 	var spread: float = maxf(motion.flare,motion.box)
 	hover = motion.hover*(1.0-landing-spread)
 	var stream: float = motion.track*maxf(0,1.0-landing-spread-hover)
@@ -294,11 +295,16 @@ func _update_body(delta: float) -> void:
 	var intent: Vector3 = motion.body_steer
 	var lag := Vector3(omega.x*0.025+alpha.x*0.002,omega.y*0.015,omega.z*0.025+alpha.z*0.002)
 	lag += Vector3(acceleration.z*0.001,-acceleration.x*0.0005,-acceleration.x*0.001)
-	var brace := Vector3(motion.brake*0.12+motion.retro*0.16,0,motion.side_load*0.06)
+	var brace: Vector3 = motion.body_steer*Vector3(0.50,0.22,-0.20)*motion.brake
+	brace += Vector3(motion.brake*0.12+motion.retro*0.16,0,motion.side_load*0.06)
 	brace += Vector3(motion.drive*0.07, motion.lead*motion.asymmetry*0.04,motion.load_direction.x*0.025)*(1.0-motion.hover)
+	# Present the chest into yawing airflow; this calibrates armor incidence,
+	# while the controller retains its fixed pilot axes.
+	intent.z *= lerpf(1.0,-1.0,motion.fighter)
 	var intent_gain: float = motion.hover*0.5+motion.fighter*0.75+motion.coast+motion.fall*0.9
 	var powered: float = motion.hover+motion.fighter
 	var anticipation := intent*Vector3(0.22,0.24,0.28).lerp(Vector3(0.15,0.14,0.16),powered)*intent_gain
+	anticipation.x *= lerpf(1.0,0.4,motion.fighter*(1.0-motion.brake))
 	# Armored Core VI slide language: a small committed lean over staggered legs,
 	# while the physical hover chassis stays upright and the hands balance it.
 	var move: Vector3 = motion.reach
@@ -385,7 +391,7 @@ func _update_legs(delta: float, controller) -> void:
 		extras[1] += Vector3(-steer*0.65+motion.brake_rate*0.04,0,0)
 		# A small calf-panel incidence difference rolls lengthwise body flight.
 		# Actual calf nozzles move with it and retain their vectoring limits.
-		extras[1].x -= sx*motion.steer.z*0.12*motion.track
+		extras[1].x -= sx*motion.steer.z*lerpf(0.035,0.18,motion.brake)*motion.track
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
 		extras[2].x += move.z*(0.36 if move.z<0 else 0.18) # Reverse brace presents the heel outlets farther aft.
 		var targets: Array[Vector3] = []
@@ -401,7 +407,13 @@ func _update_legs(delta: float, controller) -> void:
 			var falling: Vector3 = profile.fall_pose[joint]*Vector3(1,1,sx)+extras[joint]*articulation
 			target = target.lerp(falling,motion.get("belly",motion.box)*(1.0-motion.brake))
 			target = target.lerp(profile.back_fall_pose[joint]*Vector3(1,1,sx)+extras[joint]*articulation,motion.get("back",0.0)*(1.0-motion.brake))
-			target = target.lerp(profile.spread_pose[joint]*Vector3(1,1,sx),motion.flare*(1.0-motion.land))
+			var braking: Vector3 = profile.spread_pose[joint]*Vector3(1,1,sx)
+			# Directional armor incidence bleeds energy on the requested turn.
+			# Neutral steering retains compact weight transfer and shallow panels.
+			var turn: Vector3 = motion.brake_turn
+			if joint==0: braking += Vector3(turn.x*0.25+sx*turn.z*0.18,turn.y*0.22,sx*absf(turn.x)*0.12)
+			if joint==1: braking.x += -turn.x*0.20+sx*(turn.z*0.32+turn.y*0.18)
+			target = target.lerp(braking,motion.flare*(1.0-motion.land))
 			var extension: Vector3 = profile.launch_pose[joint]*Vector3(1,1,sx)
 			target = target.lerp(extension,motion.launch)
 			if joint==0: target.x += reverse_slide

@@ -42,7 +42,7 @@ def main() -> int:
             log = output / f"{name}.log"
             with log.open("w") as stream:
                 try:
-                    result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT, timeout=120)
+                    result = subprocess.run(command, stdout=stream, stderr=subprocess.STDOUT, timeout=180)
                 except subprocess.TimeoutExpired:
                     failures.append(f"{name}: timed out; {log}")
                     print(f"FAIL {name}", flush=True)

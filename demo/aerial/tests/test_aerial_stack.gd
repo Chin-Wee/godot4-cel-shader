@@ -189,7 +189,7 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(not mech.actor.is_physics_processing() and not mech.actor.actor_camera.current)
 		assert(not mech.actor.animation_player.is_playing(),"Flight still plays an authored clip")
 		assert(not mech.actor.animation_player.has_animation(&"Airborne"),"Static flight hold remains")
-		assert(mech.sockets.size() == 6 and mech.gas_jets.size() == 4)
+		assert(mech.sockets.size() == 6 and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
 		for name in ["GUN","Cube_001"]: assert(not mech.skeleton.find_child(name,false,false).visible,"Detached weapon geometry survived gun removal")
 		assert(mech.skeleton.find_child("Cube",false,false).visible,"Backpack was hidden with the weapon")
 		for name in [&"Walk",&"Fall"]:
