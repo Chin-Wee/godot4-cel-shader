@@ -58,6 +58,10 @@ const MOUNTS := [
  ["CalfR",&"Shin.R",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
  ["HeelL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
  ["HeelR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
+ ["ToeLInner",&"Feet.L",Vector3(-0.375359,0.8,0.15),Vector3(-0.2,0.05,-0.978)],
+ ["ToeLOuter",&"Feet.L",Vector3(0.374634,0.8,0.15),Vector3(0.2,0.05,-0.978)],
+ ["ToeRInner",&"Feet.R",Vector3(0.375374,0.8,0.15),Vector3(0.2,0.05,-0.978)],
+ ["ToeROuter",&"Feet.R",Vector3(-0.374634,0.8,0.15),Vector3(-0.2,0.05,-0.978)],
 ]
 # Fixed opposed triads, seated on inspected torso/backpack armor triangles. The
 # upper/lower separation supplies pitch; lateral separation supplies yaw/roll.
@@ -108,7 +112,10 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	capsule.height = 1.8 * display_scale
 	hull.shape = capsule
 	add_child(hull)
-	controller.configure(self, display_scale, COLD_MOUNTS.size())
+	rig = FlightPose.new()
+	assert(MOUNTS.size()==rig.profile.main_booster_max_thrust.size())
+	assert(COLD_MOUNTS.size()==rig.profile.cold_booster_max_thrust.size())
+	controller.configure(self, display_scale, rig.profile)
 	actor.set_physics_process(false)
 	actor.collision_layer = 0
 	actor.collision_mask = 0
@@ -137,7 +144,6 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	# Mesh inspection: both are weapon geometry weighted solely to Hands.R;
 	# Cube is the Torso-weighted backpack and must remain visible.
 	for name in ["GUN","Cube_001"]: skeleton.find_child(name,false,false).visible = false
-	rig = FlightPose.new()
 	rig.name = "SpringFlightPose"
 	skeleton.add_child(rig)
 	rig.configure(actor.animation_player,self)
@@ -214,7 +220,7 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if absf(state.inverse_inertia_tensor.determinant()) < 1e-30: return
 	var contact := _ground_probe(state)
 	var outlets := _thruster_outlets(sockets,MOUNTS,0)
-	var cold_outlets := _thruster_outlets(gas_sockets,COLD_MOUNTS,6)
+	var cold_outlets := _thruster_outlets(gas_sockets,COLD_MOUNTS,MOUNTS.size())
 	controller.step(state, FlightInput.read_input() if player_controlled else controls, outlets, cold_outlets, contact.grounded, contact.reachable, aerodynamic_surfaces(), rig.arms.brake_spread())
 	collided = state.get_contact_count() > 0
 	native_support = false
@@ -310,8 +316,8 @@ func capture_pose() -> void:
 	# No chain of modifier-completion signals and no restored-rest pose reads.
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
 	rig.arms.sample_completed(skeleton,bone_poses)
-	for index in 6: motor_springs[index].value = controller.motor_angles[index]
-	for index in gas_gimbals.size(): motor_springs[index+6].value = controller.cold_angles[index]
+	for index in MOUNTS.size(): motor_springs[index].value = controller.motor_angles[index]
+	for index in gas_gimbals.size(): motor_springs[index+MOUNTS.size()].value = controller.cold_angles[index]
 	_refresh_exhaust()
 
 func update_force_debug() -> void:
@@ -353,9 +359,9 @@ func _refresh_exhaust() -> void:
 		all_gimbals[index].basis = neutral_bases[index]*rotation_basis
 	for index in flames.size():
 		var flame := flames[index]
-		var output: float = controller.motor_forces[index].length()/(mass*FlightController.GRAVITY)
-		var throttle: float = clampf(output/controller._hot_capacity(index),0,1)
-		var load := output/(4.0/6.0)
+		var output: float = controller.motor_forces[index].length()
+		var throttle: float = clampf(output/maxf(controller.hot_max_thrust(index),0.000001),0,1)
+		var load := throttle
 		flame.visible = flying and output>0.00001
 		flame.set_instance_shader_parameter("thrust_load",load)
 		flame.set_instance_shader_parameter("engine_throttle",throttle)
@@ -364,7 +370,7 @@ func _refresh_exhaust() -> void:
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
 		# The same nozzle force drives the native body and its visible exhaust.
-		var demand: float = controller.cold_forces[index].length()/(mass*FlightController.GRAVITY*FlightController.COLD_THRUST_G)
+		var demand: float = controller.cold_forces[index].length()/maxf(controller.cold_max_thrust(index),0.000001)
 		gas_jets[index].visible = flying and demand>0.00001
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
 		gas_jets[index].set_instance_shader_parameter("thrust_load",demand)

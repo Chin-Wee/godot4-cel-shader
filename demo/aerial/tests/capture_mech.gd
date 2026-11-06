@@ -250,8 +250,9 @@ func _endurance() -> void:
 	# Even the least-drag orientation must dissipate more power than maximum
 	# thrust plus gravity can supply above this speed. This is not a speed clamp.
 	var drag_scale: float = 0.5 * scene.hero.controller.air_density * Controller.AERO_AREA_M2 * (Controller.BASE_DRAG_CD + Controller.HIGH_SPEED_DRAG_CD)
-	var maximum_propulsion: float = scene.hero.COLD_MOUNTS.size()*Controller.COLD_THRUST_G
-	for index in 6: maximum_propulsion += scene.hero.controller._hot_capacity(index)
+	var maximum_propulsion: float = 0.0
+	for index in scene.hero.COLD_MOUNTS.size(): maximum_propulsion += scene.hero.controller._cold_capacity(index)
+	for index in scene.hero.MOUNTS.size(): maximum_propulsion += scene.hero.controller._hot_capacity(index)
 	var bound := sqrt((maximum_propulsion+1.0)*scene.hero.mass*Controller.GRAVITY/drag_scale)
 	report.endurance["physical_speed_bound"] = bound
 	_expect(_peak(rows,"speed") < bound*1.03,"endurance: full thrust exceeded the physical drag ceiling")
@@ -298,7 +299,7 @@ func _play(name: String, count: int, events: Array, capture := true) -> Array:
 		_expect(fc.velocity.is_finite() and mech.position.is_finite(),name+": non-finite physics state")
 		_expect(fc.aero_power <= 1.0,name+": passive surfaces added translation/rotation energy")
 		var collective := 0.0
-		for index in 6:
+		for index in scene.hero.MOUNTS.size():
 			var motor_thrust: float = fc.motor_forces[index].length()
 			var rating: float = fc._hot_capacity(index)
 			_expect(motor_thrust<=mech.mass*Controller.GRAVITY*rating+1.0,name+": motor exceeds continuous/burst rating")

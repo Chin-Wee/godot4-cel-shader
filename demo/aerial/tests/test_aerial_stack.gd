@@ -138,7 +138,7 @@ func _check_afterburners(scene: Node3D) -> void:
 			var bounds: AABB = flame.mesh.get_aabb()
 			assert(is_zero_approx(bounds.position.z) and is_equal_approx(bounds.end.z,1.0),"Exhaust is not normalized from nozzle to tip")
 			assert(flame.get_parent() in mech.gimbals and flame.position.z > 0.0,"Exhaust is detached from its vectoring pivot")
-	assert(flames.size() == 12,"Each mech must have exactly six main thrusters")
+	assert(flames.size() == scene.hero.MOUNTS.size()*2,"Each mech must have exhaust for every main thruster")
 	# Frozen render fixture supplies delivered forces; a material preview slider
 	# must never fabricate a lit engine independently of these outlet outputs.
 	var saved_forces := [scene.hero.controller.motor_forces.duplicate(),scene.wingman.controller.motor_forces.duplicate()]
@@ -148,7 +148,7 @@ func _check_afterburners(scene: Node3D) -> void:
 	var previous_length := -1.0
 	for throttle in [0.0,0.35,1.0]:
 		for mech in [scene.hero,scene.wingman]:
-			for index in 6: mech.controller.motor_forces[index] = -mech.gimbals[index].global_basis.z*mech.mass*9.81*4.0/6.0*throttle
+			for index in mech.MOUNTS.size(): mech.controller.motor_forces[index] = -mech.gimbals[index].global_basis.z.normalized()*mech.controller.hot_max_thrust(index)*throttle
 		scene.set_afterburner_throttle(throttle)
 		assert(scene.afterburner_material.get_shader_parameter("throttle") == throttle,"Mesh and shader throttle differ")
 		assert(flames[0].scale.z > previous_length,"Exhaust did not elongate with throttle")
@@ -189,7 +189,7 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(not mech.actor.is_physics_processing() and not mech.actor.actor_camera.current)
 		assert(not mech.actor.animation_player.is_playing(),"Flight still plays an authored clip")
 		assert(not mech.actor.animation_player.has_animation(&"Airborne"),"Static flight hold remains")
-		assert(mech.sockets.size() == 6 and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
+		assert(mech.sockets.size() == mech.MOUNTS.size() and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
 		for name in ["GUN","Cube_001"]: assert(not mech.skeleton.find_child(name,false,false).visible,"Detached weapon geometry survived gun removal")
 		assert(mech.skeleton.find_child("Cube",false,false).visible,"Backpack was hidden with the weapon")
 		for name in [&"Walk",&"Fall"]:

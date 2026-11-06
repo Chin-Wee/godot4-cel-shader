@@ -2,6 +2,9 @@ extends Resource
 
 # MechAsset's measured skeleton frame is +Z forward. Behavior stays in body/SI
 # coordinates; this resource owns asset calibration and mechanical limits.
+# Newton ratings, in aerial_mech MOUNTS / COLD_MOUNTS order. Same housing, same cap.
+@export var main_booster_max_thrust := PackedFloat32Array([65000,65000,65000,65000,65000,65000,65000,65000,65000,65000])
+@export var cold_booster_max_thrust := PackedFloat32Array([90000,90000,90000,90000,90000,90000,90000,90000,90000,90000,90000,90000])
 @export var torso_bones := PackedStringArray(["PelvisBase", "Low_Waist", "Torso_WaistConnect", "Torso"])
 @export var torso_weights := PackedFloat32Array([0.14, 0.24, 0.30, 0.32])
 @export var thigh_bones := PackedStringArray(["Thigh.L", "Thigh.R"])
