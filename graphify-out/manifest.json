@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793985564.2494025,
-    "seen": 1793986108.9250402,
-    "ast_hash": "5d5f16c6bebeff9c1c43ee81386a76da",
+    "mtime": 1793991227.5327075,
+    "seen": 1793991484.00399,
+    "ast_hash": "1bcc1b753268636a60782cc08c09df5d",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1449,6 +1449,12 @@
     "mtime": 1793986299.6035395,
     "seen": 1793986300.602986,
     "ast_hash": "20638f0cafeebc0c16853b5036a36b32",
+    "semantic_hash": ""
+  },
+  "graphify-out/memory/query_20261106_185819_e22bcec3_how_are_aerial_per_booster_thrust_caps_and_redunda.md": {
+    "mtime": 1793991499.7647026,
+    "seen": 1793991500.757302,
+    "ast_hash": "c1aeed217228b6e33a0a91d99372bac7",
     "semantic_hash": ""
   }
 }

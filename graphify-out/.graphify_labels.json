@@ -33,5 +33,6 @@
   "31": "check_godot.py",
   "32": "Q: Where are Armored Core hover tap burst control timings and force handling defined?",
   "33": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
-  "34": "FollowLockAxis2D"
+  "34": "FollowLockAxis2D",
+  "35": "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?"
 }
