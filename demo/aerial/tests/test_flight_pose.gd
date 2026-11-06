@@ -61,10 +61,10 @@ func _run() -> void:
 	assert(mech.controller.requested_main_force.dot(Vector3.FORWARD)>mech.mass*Controller.GRAVITY*0.2)
 	await _ticks(45)
 	assert(mech.controller.burst_remaining==0 and mech.controller.rotation_request.x< -0.3)
-	# Same six rotation commands at upright/prone/inverted/vertical-flight poses.
+	# Full-authority six-axis rotation at/above the 40 m/s cold-jet threshold.
 	for orientation in [Quaternion.IDENTITY, Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2), Quaternion(Vector3.RIGHT,PI)]:
 		for key in ["forward","back","left","right","yaw_left","yaw_right"]:
-			await _fixture(Vector3(175,2400,340), orientation, Vector3.ZERO, 0)
+			await _fixture(Vector3(175,2400,340), orientation, Vector3.RIGHT*45.0, 0)
 			mech.controller.air_density = 0.0
 			mech.controls = {key:true}
 			await _ticks(36)

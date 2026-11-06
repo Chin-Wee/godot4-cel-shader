@@ -28,11 +28,14 @@ func _ticks(count: int) -> void:
 		var visible: bool = scene.hero.gas_jets.any(func(jet):return jet.visible)
 		if visible and sample_pulses: visible_ticks += 1
 		_expect(visible==firing,"Cold exhaust differs from delivered nozzle force")
+		var shown_load := 0.0
 		for index in fc.cold_forces.size():
 			if fc.cold_forces[index].length()>1.0:
 				var shown: Vector3 = -scene.hero.gas_gimbals[index].global_basis.z.normalized()
 				_expect(shown.angle_to(fc.cold_forces[index].normalized())<0.08,"Rendered cold nozzle differs from its applied force direction")
-			_expect(fc.cold_forces[index].length()<=fc.cold_max_thrust(index)+1.0,"Cold outlet exceeds its physical thrust capacity")
+			_expect(fc.cold_forces[index].length()<=fc.cold_thrust_limit(index)+1.0,"Cold outlet exceeds its physical thrust capacity")
+			shown_load = maxf(shown_load,fc.cold_forces[index].length()/maxf(fc.cold_max_thrust(index),0.000001))
+		_expect(is_equal_approx(fc.rcs_load,shown_load),"Cold HUD load ignores the speed cap")
 
 func _capture() -> void:
 	create_timer(120).timeout.connect(func():
@@ -127,6 +130,8 @@ func _check_valves() -> void:
 
 func _check_nozzle_allocation() -> void:
 	_check_booster_caps()
+	var original_velocity: Vector3 = scene.hero.linear_velocity
+	scene.hero.linear_velocity = Vector3.RIGHT*40.0*Controller.WORLD_UNITS_PER_METER
 	var fc = Controller.new()
 	fc.configure(scene.hero,50.0,scene.hero.rig.profile)
 	var hot: Array = scene.hero._thruster_outlets(scene.hero.sockets,scene.hero.MOUNTS,0)
@@ -164,6 +169,7 @@ func _check_nozzle_allocation() -> void:
 	for outlet in outlets: outlet.position = Vector3.ZERO
 	for tick in 30: fc._calculate_thrusters(hot,outlets,Basis.IDENTITY,1.0/60)
 	_expect(fc.rcs_torque.is_zero_approx(),"Cold gas invents torque without a physical moment arm")
+	scene.hero.linear_velocity = original_velocity
 	var source := FileAccess.get_file_as_string("res://aerial/flight_controller.gd")
 	_expect(not source.contains("apply_torque(") and not source.contains("apply_central_force("),"Flight dynamics reintroduced a force/torque bypass")
 
@@ -184,6 +190,14 @@ func _check_booster_caps() -> void:
 		outlet.basis = Basis.looking_at(Vector3.DOWN,Vector3.BACK)
 		outlet.position = Vector3.ZERO
 	var original_mass: float = scene.hero.mass
+	var original_velocity: Vector3 = scene.hero.linear_velocity
+	for entry in [[0.0,0.15],[10.0,0.3625],[20.0,0.575],[40.0,1.0],[80.0,1.0]]:
+		for direction in [Vector3.RIGHT,Vector3.DOWN,Vector3(-1,2,3).normalized()]:
+			scene.hero.linear_velocity = direction*entry[0]*Controller.WORLD_UNITS_PER_METER
+			_expect(is_equal_approx(fc.cold_thrust_limit(0),5000.0*entry[1]),"Cold cap does not linearly follow native speed")
+			_expect(fc.cold_thrust_limit(1)==0,"Speed scaling enables a disabled cold nozzle")
+	# The existing full-rating saturation and torque checks run at full authority.
+	scene.hero.linear_velocity = Vector3.RIGHT*40.0*Controller.WORLD_UNITS_PER_METER
 	var peak := 0.0
 	for mass_multiplier in [1.0,2.0]:
 		scene.hero.mass = original_mass*mass_multiplier
@@ -202,8 +216,9 @@ func _check_booster_caps() -> void:
 			for index in hot.size():
 				_expect(fc.motor_forces[index].is_finite() and fc.motor_forces[index].length()<=fc.hot_max_thrust(index)+0.1,"Hot outlet exceeds individual Newton cap")
 			for index in cold.size():
-				_expect(fc.cold_forces[index].is_finite() and fc.cold_forces[index].length()<=fc.cold_max_thrust(index)+0.1,"Cold outlet exceeds individual Newton cap")
+				_expect(fc.cold_forces[index].is_finite() and fc.cold_forces[index].length()<=fc.cold_thrust_limit(index)+0.1,"Cold outlet exceeds individual Newton cap")
 			peak = maxf(peak,fc.motor_forces[0].length())
 			_expect(fc.motor_forces[1].is_zero_approx() and fc.cold_forces[1].is_zero_approx(),"Disabled booster produces force")
 	scene.hero.mass = original_mass
+	scene.hero.linear_velocity = original_velocity
 	_expect(peak>9900,"Cap check never loads the reduced-rating booster")
