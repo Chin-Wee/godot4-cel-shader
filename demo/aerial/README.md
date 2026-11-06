@@ -110,6 +110,11 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   ports. Each of the ten main boosters is capped at 65,000 N; each of twelve cold
   jets at 90,000 N. Individual Newton ratings live in the rig profile, independent
   of body mass, throttle detent or burst request; zero disables that booster.
+  Cold-jet authority scales linearly with native body speed: 15% of each rating
+  at rest, 57.5% at 20 m/s, and 100% at/above 40 m/s, including vertical motion.
+  The same speed cap constrains planning and actual delivered point forces.
+  Low-speed propulsion ramps more gently and reserves an earlier burst shutdown
+  so reduced cold authority can keep the combined thrust balanced.
   Forefoot pods sit on the inspected Feet.L/R mesh sidewalls (y=0.8, z=0.15),
   clear of the measured sole, to balance aft engines without overdriving heels.
   MechAsset.glb remains the source mesh; both armor and inner foot meshes were

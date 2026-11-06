@@ -396,7 +396,9 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 	var drift := horizontal
 	if burst_amount>0.0001: drift -= move.normalized()*horizontal.dot(move.normalized())
 	var catch_force := (-drift*HOVER_DRIFT_GAIN).limit_length(GRAVITY*0.30)*minf(released_axes.x,released_axes.z)
-	var boost := minf(HOVER_BURST_ACCELERATION*burst_amount,FORCE_SLEW_G*maxf(0,burst_remaining-HOT_RESPONSE))
+	# Reduced trim authority needs a gentler force ramp and earlier shutdown.
+	var force_slew := FORCE_SLEW_G*sqrt(cold_power_fraction())
+	var boost := minf(HOVER_BURST_ACCELERATION*burst_amount,force_slew*maxf(0,burst_remaining-HOT_RESPONSE))
 	var requested := move*GRAVITY*boost+catch_force*(1.0-burst_amount)
 	requested.y = clampf(-velocity.y*1.8,-GRAVITY*0.5,GRAVITY*0.5)
 	# Reserve shutdown time before the burst ends. Only point forces move the body.
@@ -439,7 +441,7 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 	# Anchor slew to delivered force, not an unreachable previous request:
 	# delayed valves must not accumulate a catch-up jump in the reference.
 	var previous_force := force_reference if clock<=dt+0.000001 else (main_force+cold_force)/weight
-	force_reference = previous_force.move_toward(feasible_force,(12.0 if jump_remaining>0 else FORCE_SLEW_G)*dt)
+	force_reference = previous_force.move_toward(feasible_force,(12.0 if jump_remaining>0 else force_slew)*dt)
 	force_target = force_reference
 	along = Vector3.ZERO
 	var seed: Array[Vector3] = []
@@ -552,7 +554,7 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 			cold_forces[i-hot_count] = actual
 			cold_force += actual
 			rcs_torque += moment
-			rcs_load = maxf(rcs_load,output)
+			rcs_load = maxf(rcs_load,actual.length()/maxf(cold_max_thrust(i-hot_count),0.000001))
 			torque_fraction = maxf(torque_fraction,plan[i].length()/capacity if capacity>0 else 0.0)
 	thrust_level = delivered_thrust/weight
 	for i in hot_count: engine_shares[i] = motor_forces[i].length()/maxf(delivered_thrust,0.000001)
@@ -608,8 +610,16 @@ func cold_max_thrust(index: int) -> float:
 func _hot_capacity(index: int) -> float:
 	return hot_max_thrust(index)/(body.mass*GRAVITY)
 
+func cold_power_fraction() -> float:
+	return lerpf(0.15,1.0,clampf(velocity.length()/40.0,0.0,1.0))
+
+func cold_thrust_limit(index: int) -> float:
+	# Speed in m/s from the native body, including vertical motion. Keep the
+	# hardware rating fixed; both allocation and delivered force share this cap.
+	return cold_max_thrust(index)*cold_power_fraction()
+
 func _cold_capacity(index: int) -> float:
-	return cold_max_thrust(index)/(body.mass*GRAVITY)
+	return cold_thrust_limit(index)/(body.mass*GRAVITY)
 
 func _calculate_launch(leg_reach: bool, dt: float) -> void:
 	jump_remaining = maxf(0.0,jump_remaining-dt)
