@@ -44,7 +44,7 @@ func _run() -> void:
 	await _ticks(2)
 	assert(mech is RigidBody3D and mech.scale.is_equal_approx(Vector3.ONE))
 	assert(mech.actor.get_node("CollisionShape3D").disabled)
-	assert(mech.flames.size() == 6 and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
+	assert(mech.flames.size() == mech.MOUNTS.size() and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
 	assert(_check_mount_surfaces(mech))
 	_check_inputs()
 	await _fixture()
@@ -224,7 +224,7 @@ func _check_motors(mech: Node3D) -> bool:
 		var relative: Basis = mech.neutral_bases[index].inverse()*pivots[index].basis
 		if relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) > mech.VECTOR_LIMIT+0.001: return false
 	var total := 0.0
-	for index in 6:
+	for index in mech.MOUNTS.size():
 		var force: Vector3 = mech.controller.motor_forces[index]
 		var capacity: float = mech.controller._hot_capacity(index)
 		if force.length() > mech.mass * Controller.GRAVITY * capacity + 1.0: return false

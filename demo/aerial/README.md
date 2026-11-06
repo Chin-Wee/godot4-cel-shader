@@ -106,9 +106,14 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Camera settings are native Camera3D properties. Atmosphere strengths are exported
   on `Lighting`; pose tuning remains in the existing rig-profile Resource.
 - Main forces use actual physics-tick gimbal directions and animated attachment
-  positions. Back, calf and heel outlets participate in the same solve as cold
-  ports. Their magnitudes are allocated, not fixed shares. Each back/calf outlet
-  is rated at 2/3 body weight and each heel at 1.84 body weights. The selected
+  positions. Back, calf, heel and four forefoot outlets share the solve with cold
+  ports. Each of the ten main boosters is capped at 65,000 N; each of twelve cold
+  jets at 90,000 N. Individual Newton ratings live in the rig profile, independent
+  of body mass, throttle detent or burst request; zero disables that booster.
+  Forefoot pods sit on the inspected Feet.L/R mesh sidewalls (y=0.8, z=0.15),
+  clear of the measured sole, to balance aft engines without overdriving heels.
+  MechAsset.glb remains the source mesh; both armor and inner foot meshes were
+  inspected before selecting the exposed inner-foot surfaces. The selected
   4× detent is a collective request; Quick Boost is not a 4× collective command.
   The hover leg anchor brings the heel thrust lines under the mass center so
   quiet support does not require a permanent opposing cold-gas burn.
@@ -119,8 +124,10 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   included in the net-acceleration target. A finite complete-force slew and a
   shutdown reserve shape the half-second burst instead of adding an impulse.
   The next-tick solve includes predicted average valve output and reachable
-  gimbal angles. The same predicted commands are executed against the real
-  valves and servos; only their delivered point forces move the body.
+  gimbal angles. Cold ports retain a fuel cost in this reachable solve and do
+  not track redundant horizon flow; necessary torque couples and unavoidable
+  valve shutdown tails remain physical. The same predicted commands are executed
+  against the real valves and servos; only their delivered point forces move the body.
 - Cold gas has fuel priority: first try hot vectoring and unavoidable shutdown
   tails; open cold valves only when the force/moment residual exceeds the trim
   tolerance. The horizon also penalizes total cold flow. A small minimum useful

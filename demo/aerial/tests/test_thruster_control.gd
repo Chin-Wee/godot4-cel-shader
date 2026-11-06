@@ -18,7 +18,7 @@ func _ticks(count: int) -> void:
 	for tick in count:
 		await super._ticks(1)
 		var fc = scene.hero.controller
-		var firing: bool = fc.cold_forces.any(func(force):return force.length()>scene.hero.mass*Controller.GRAVITY*Controller.COLD_THRUST_G*0.00001)
+		var firing: bool = fc.cold_forces.any(func(force):return force.length()>0.01)
 		if sample_pulses:
 			if firing:
 				pulse_ticks += 1
@@ -32,7 +32,7 @@ func _ticks(count: int) -> void:
 			if fc.cold_forces[index].length()>1.0:
 				var shown: Vector3 = -scene.hero.gas_gimbals[index].global_basis.z.normalized()
 				_expect(shown.angle_to(fc.cold_forces[index].normalized())<0.08,"Rendered cold nozzle differs from its applied force direction")
-			_expect(fc.cold_forces[index].length()<=scene.hero.mass*Controller.GRAVITY*Controller.COLD_THRUST_G+1.0,"Cold outlet exceeds its physical thrust capacity")
+			_expect(fc.cold_forces[index].length()<=fc.cold_max_thrust(index)+1.0,"Cold outlet exceeds its physical thrust capacity")
 
 func _capture() -> void:
 	create_timer(120).timeout.connect(func():
@@ -62,7 +62,7 @@ func _capture() -> void:
 				var net: Vector3 = Vector3(row.main_force[0]+row.cold_force[0]+row.aero_force[0],row.main_force[1]+row.cold_force[1]+row.aero_force[1],row.main_force[2]+row.cold_force[2]+row.aero_force[2])/scene.hero.mass+Vector3.DOWN*Controller.GRAVITY
 				_expect(net.slide(entry[2]).length()<0.5,entry[0]+": total force leaves the target direction")
 		_expect(report["vector_"+entry[0]].max_jerk<80,entry[0]+": abrupt burst force change")
-		for index in 6:
+		for index in scene.hero.controller.motor_forces.size():
 			var actual: Vector3 = scene.hero.controller.motor_forces[index].normalized()
 			var shown: Vector3 = -scene.hero.gimbals[index].global_basis.z.normalized()
 			_expect(actual.angle_to(shown)<0.08,"Rendered nozzle does not follow the force-producing motor")
@@ -126,10 +126,11 @@ func _check_valves() -> void:
 		_expect(valve.step(0.0,timings[0]+timings[4])>0,"Accepted short command bypasses minimum impulse time")
 
 func _check_nozzle_allocation() -> void:
+	_check_booster_caps()
 	var fc = Controller.new()
-	fc.configure(scene.hero,50.0,scene.hero.COLD_MOUNTS.size())
+	fc.configure(scene.hero,50.0,scene.hero.rig.profile)
 	var hot: Array = scene.hero._thruster_outlets(scene.hero.sockets,scene.hero.MOUNTS,0)
-	var outlets: Array = scene.hero._thruster_outlets(scene.hero.gas_sockets,scene.hero.COLD_MOUNTS,6)
+	var outlets: Array = scene.hero._thruster_outlets(scene.hero.gas_sockets,scene.hero.COLD_MOUNTS,scene.hero.MOUNTS.size())
 	for axis in 3:
 		for sign in [-1.0,1.0]:
 			fc.reset(0.0)
@@ -165,3 +166,44 @@ func _check_nozzle_allocation() -> void:
 	_expect(fc.rcs_torque.is_zero_approx(),"Cold gas invents torque without a physical moment arm")
 	var source := FileAccess.get_file_as_string("res://aerial/flight_controller.gd")
 	_expect(not source.contains("apply_torque(") and not source.contains("apply_central_force("),"Flight dynamics reintroduced a force/torque bypass")
+
+func _check_booster_caps() -> void:
+	var profile = scene.hero.rig.profile.duplicate()
+	profile.main_booster_max_thrust = profile.main_booster_max_thrust.duplicate()
+	profile.cold_booster_max_thrust = profile.cold_booster_max_thrust.duplicate()
+	profile.main_booster_max_thrust[0] = 10000
+	profile.main_booster_max_thrust[1] = 0
+	profile.cold_booster_max_thrust[0] = 5000
+	profile.cold_booster_max_thrust[1] = 0
+	var fc = Controller.new()
+	fc.configure(scene.hero,50.0,profile)
+	var hot: Array = scene.hero._thruster_outlets(scene.hero.sockets,scene.hero.MOUNTS,0)
+	var cold: Array = scene.hero._thruster_outlets(scene.hero.gas_sockets,scene.hero.COLD_MOUNTS,scene.hero.MOUNTS.size())
+	# Parallel, centered hot outlets make saturation independent of pose trim.
+	for outlet in hot:
+		outlet.basis = Basis.looking_at(Vector3.DOWN,Vector3.BACK)
+		outlet.position = Vector3.ZERO
+	var original_mass: float = scene.hero.mass
+	var peak := 0.0
+	for mass_multiplier in [1.0,2.0]:
+		scene.hero.mass = original_mass*mass_multiplier
+		_expect(is_equal_approx(fc._hot_capacity(0)*scene.hero.mass*Controller.GRAVITY,10000),"Hot rating scales with body mass")
+		_expect(is_equal_approx(fc._cold_capacity(0)*scene.hero.mass*Controller.GRAVITY,5000),"Cold rating scales with body mass")
+		fc.reset(4.0)
+		fc.detent = 4
+		fc.control_torque = Vector3.ZERO
+		fc.burst_direction = Vector3.RIGHT
+		fc.burst_amount = 1.0
+		fc.burst_remaining = 0.5
+		for tick in 45:
+			if tick==20: fc.control_torque = Vector3.ONE*10000000
+			fc.clock += 1.0/60
+			fc._calculate_thrusters(hot,cold,Basis.IDENTITY,1.0/60)
+			for index in hot.size():
+				_expect(fc.motor_forces[index].is_finite() and fc.motor_forces[index].length()<=fc.hot_max_thrust(index)+0.1,"Hot outlet exceeds individual Newton cap")
+			for index in cold.size():
+				_expect(fc.cold_forces[index].is_finite() and fc.cold_forces[index].length()<=fc.cold_max_thrust(index)+0.1,"Cold outlet exceeds individual Newton cap")
+			peak = maxf(peak,fc.motor_forces[0].length())
+			_expect(fc.motor_forces[1].is_zero_approx() and fc.cold_forces[1].is_zero_approx(),"Disabled booster produces force")
+	scene.hero.mass = original_mass
+	_expect(peak>9900,"Cap check never loads the reduced-rating booster")
