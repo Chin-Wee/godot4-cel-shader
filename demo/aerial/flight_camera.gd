@@ -49,7 +49,7 @@ func reset_view() -> void:
 func update_view(delta: float) -> void:
 	if not follow_enabled or not is_instance_valid(subject): return
 	# Read the same transform the renderer uses, never the latest physics tick.
-	var hero_position: Vector3 = subject.get_global_transform_interpolated().origin if subject.flying else subject.global_position
+	var hero_position: Vector3 = subject.get_global_transform_interpolated().origin
 	var center: Vector3 = hero_position+Vector3.UP*subject.display_scale*0.35
 	var snap: bool = delta <= 0.0 or camera_target.global_position.distance_to(center) > subject.display_scale*20.0
 	camera_target.global_position = center

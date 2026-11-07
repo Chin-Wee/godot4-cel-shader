@@ -63,15 +63,10 @@ func _run() -> void:
 	var frozen: Transform3D = scene.camera.global_transform
 	scene.camera.update_view(1.0/144)
 	assert(scene.camera.global_transform == frozen,"Camera overwrote a fixed capture view")
-	scene.camera.follow_enabled = true
-	scene.set_walk_mode(true)
-	assert(not scene.hero.is_physics_interpolated_and_enabled(),"Render-driven walk is being interpolated")
-	scene.set_walk_mode(false)
-	assert(scene.hero.is_physics_interpolated_and_enabled())
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Phantom Camera checks passed: fast follow, sub-tick sampling, focus, orbit, zoom, reset, teleport, walk and fixed capture views.")
+	print("Phantom Camera checks passed: fast follow, sub-tick sampling, focus, orbit, zoom, reset, teleport and fixed capture views.")
 	quit()
 
 func _fast_motion(speed: Vector3) -> bool:

@@ -120,19 +120,19 @@ func update(delta: float, frame: Dictionary) -> void:
 		curl = lerpf(curl,0.20+0.35*roll.y,acro.y)
 		finger_curl[side] = move_toward(finger_curl[side],curl,delta*2.0)
 
-func apply(sk: Skeleton3D, rotate: Callable, weight := 1.0) -> void:
+func apply(sk: Skeleton3D, rotate: Callable) -> void:
 	for side in 2:
 		var angles: Vector3 = upper[side].value
 		rotate.call(profile.arm_roots[side],Vector3(angles.x,0,angles.z))
 		# Twist about the actual humerus, after positioning the upper arm. A
 		# skeleton-space yaw would move the elbow instead of changing its hinge.
 		var shoulder: int = sk.find_bone(profile.arm_roots[side])
-		sk.set_bone_pose_rotation(shoulder,(sk.get_bone_pose_rotation(shoulder)*Quaternion(Vector3.UP,angles.y*weight)).normalized())
+		sk.set_bone_pose_rotation(shoulder,(sk.get_bone_pose_rotation(shoulder)*Quaternion(Vector3.UP,angles.y)).normalized())
 		rotate.call(profile.arm_middles[side],elbows[side].value)
 		rotate.call(profile.arm_ends[side],wrists[side].value)
 	for index in finger_poses:
 		var side := 1 if ".R" in sk.get_bone_name(index) else 0
-		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl[side]*weight))
+		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl[side]))
 
 func sample_completed(sk: Skeleton3D, completed: Dictionary) -> void:
 	var torso: Transform3D = completed[sk.find_bone("Torso")].affine_inverse()

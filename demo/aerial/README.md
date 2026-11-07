@@ -32,7 +32,7 @@ godot --path demo res://aerial/aerial_demo.tscn
 - **Wheel:** zoom. **Home:** reset camera. **Esc:** release mouse. **P:** pause.
 - **F9:** diagnostics: orange propulsion, cyan aerodynamics, magenta RCS torque,
   white gravity. Vectors use separate display scales, not common units.
-- **G:** isolated walk preview. **1 / 2:** palette. **3 / 4:** weather.
+- **1 / 2:** palette. **3 / 4:** weather.
   **F8:** explosion.
 
 Flight starts at nominal 1× hover. Low-speed, near-upright powered flight receives
@@ -211,8 +211,7 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   changes neither the cruise detent nor velocity. The same hot outlets, ignition
   delays and valve response produce liftoff; no leg/central force exists. Leg
   extension is a visual launch response. Gravity and native contact remain real
-  external forces. Pause, reset/teleport and the frozen G walking preview are
-  explicitly outside live flight integration.
+  external forces. Pause and reset/teleport are outside live flight integration.
 - The physical root attitude leads the pose. The visual language combines
   Hathaway's deliberate combat silhouettes, skydiver relative-wind responses and
   Titanfall's mechanical weight. Directional slides, backward bracing and rotating
@@ -242,10 +241,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   release counterbalances the remaining spin. Braking opens both arms; reverse
   thrust gathers them forward. Bounded critically damped joint servos preserve
   continuity without idle swimming or a torso oscillator.
-  No flight/hover/stall clips play. Imported clips remain for Animation dock
-  preview and walking. Body/arm influence fades for walking; foot contact remains
-  active. This model has no independently rigged binders. Movement, motors, pose
-  and VFX pause together.
+  Imported clips remain available in the Animation dock. Live flight uses the
+  procedural pose pass, and physical support activates foot IK. This model has
+  no independently rigged binders. Movement, motors, pose and VFX pause together.
 - Terrain owns world-height/slope coloring and broad strata. Mechs, terrain,
   clouds and mesh VFX share distance haze and palette controls. Sky/sun now belong
   to the aerial stack instead of relying on the old third-party sky material.
@@ -415,10 +413,8 @@ visual principles; no unpublished game implementation is assumed.
 
 Four native modifiers remain: full-body pose/ground-target preparation, two
 support-only foot solvers, and final sole alignment/cache. In free flight only
-the full-body pass authors limb poses; the foot solvers are inactive. The
-full-body node keeps ground-target preparation running while its airborne pose
-weight fades out over the retained walking animation. No native influence-zero
-optimization can silently stop the walking target update.
+the full-body pass authors limb poses. At touchdown it prepares ground targets
+for the foot solvers.
 
 Natural elbow clearance is authored directly. The upper arm opens away from the
 ribs and the elbow flexes forward; an IK pole cannot force it behind the torso.
@@ -455,7 +451,7 @@ There are no hand boosters, weapon aiming, ragdoll bodies or velocity rewrites.
 `test_air_pose.gd` measures displayed shoulders, elbows, hands and knees from the
 completed skeleton, including held rotations and freefall. With a native renderer
 it captures every fixture in three views and rejects blank renders. The contact
-check covers landing, platforms, slopes and retained walking. Real input replays
+check covers landing, platforms and slopes. Real input replays
 include `flare_exit`: high-speed braking into a squat/wide-hand flare, then a
 powered acceleration stroke and aerodynamic recovery in both review and gameplay
 cameras. See [pose design and capture commands](poses/POSE_DESIGN.md).
@@ -506,9 +502,8 @@ godot --path demo --script res://aerial/tests/capture_soft_depth.gd --resolution
 
 The functional check uses native terrain raycasts at the river vertices to
 reject a missing floor or terrain clipping through the water. It also covers
-white-model selection, root displacement removal, stride-based walking, supplied
-procedural flight, animation pause, bone attachment, static/live pose
-agreement, cloud coverage and entry/exit, storm rain activation, fixed world-space
+white-model selection, procedural flight, animation pause, bone attachment,
+cloud coverage and entry/exit, storm rain activation, fixed world-space
 history, bounded trail allocation, teleport handling, palette changes and effect
 expiry. A watchdog makes assertion failures terminate instead of hanging the check.
 Afterburner checks cover normalized bounds, nozzle contact, throttle/visibility,
@@ -540,7 +535,7 @@ commands in upright/prone/inverted poses, settled hover, vacuum momentum while
 rotating, transverse thrust, fast departure, unpowered lift, Shift braking,
 skydiver drag, ground jump/contact, uninterrupted takeoff/cutoff/reorientation/
 re-ignition, capsule collision, source-triangle thruster seating, gimbal limits,
-completed arm geometry, free-hand motion, gun removal, pause and retained walking. Fixtures
+completed arm geometry, free-hand motion, gun removal and pause. Fixtures
 alone may reset transforms/velocities; ordinary flight never does.
 
 `capture_mech.gd` contains fixed native-key timelines for five flight behavior
@@ -696,7 +691,7 @@ force-driven launch and recovery, quiet hover versus independent steering,
 inverted fighter shape, thrust-cutoff continuity, start/coast/stop strokes,
 vacuum exclusion, completed wrist articulation, box/arch, tracking, flare and
 fast-stall exclusion. Existing flight/contact checks still validate the real body,
-nozzle geometry, momentum budget, landing and retained walking.
+nozzle geometry, momentum budget and landing.
 
 Capture the five acceptance families in both close-up body-relative and the real
 independent-look chase camera:

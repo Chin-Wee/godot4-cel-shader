@@ -72,7 +72,6 @@ extends Resource
 @export var impact_sink := 0.10
 @export var foot_response := 0.10
 @export var landing_lead := 0.8
-@export var walk_stance_fraction := 0.55
 @export var sole_tilt_limit := 0.5
 
 func leg_target(weights: PackedFloat32Array, side: int, joint: int) -> Vector3:

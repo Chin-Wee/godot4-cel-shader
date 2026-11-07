@@ -129,30 +129,8 @@ func _run() -> void:
 	mech.freeze = true
 	platform.queue_free()
 	await process_frame
-	# Retained authored walk supplies stride; the contact layer owns stance locks.
-	scene.set_walk_mode(true)
-	var stance_ticks := [0,0]
-	var swing_ticks := [0,0]
-	for tick in 240:
-		await _pose_ticks(1)
-		for side in 2:
-			if mech.rig.contacts.planted[side]: stance_ticks[side] += 1
-			else: swing_ticks[side] += 1
-			# Check settled authored walking after the flight-pose crossfade.
-			if mech.rig.air_weight<0.001 and mech.rig.contacts.planted[side] and mech.rig.contacts.weights[side].value.x>0.99:
-				var bone: int = mech.skeleton.find_bone(mech.rig.profile.foot_bones[side])
-				var sole: Vector3 = mech.skeleton.global_transform*(mech.bone_poses[bone]*mech.rig.profile.sole_offset)
-				var actual_end: Vector3 = mech.skeleton.global_transform*mech.bone_poses[bone].origin
-				var target_end: Vector3 = mech.rig.contacts.targets[side].global_position
-				assert(actual_end.distance_to(target_end)<0.8,"Ground IK did not reach its constrained endpoint")
-				var requested_end: Vector3 = mech.rig.contacts.plant_position(side)+mech.rig.contacts.plant_normal(side)*0.04-mech.rig.contacts.foot_basis(side)*mech.rig.profile.sole_offset*mech.skeleton.global_basis.get_scale().x
-				# Mechanical reach limits may intentionally prevent an exact floor lock.
-				if target_end.distance_to(requested_end)<0.2:
-					assert(sole.distance_to(mech.rig.contacts.plant_position(side))<1.0,"Reachable walking sole left its stance plant")
-
-	for side in 2: assert(stance_ticks[side]>20 and swing_ticks[side]>20,"Walk did not alternate stance and swing")
 	completed = true
-	print("Procedural pose checks passed: servo bounds, no ringing, landing preparation/impact, one touchdown, actual grounded soles, moving platforms, contact release, slope normals and retained walking.")
+	print("Procedural pose checks passed: servo bounds, no ringing, landing preparation/impact, one touchdown, actual grounded soles, moving platforms, contact release, and slope normals.")
 	scene.queue_free()
 	await process_frame
 	quit()
