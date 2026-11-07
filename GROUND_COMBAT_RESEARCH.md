@@ -169,7 +169,7 @@ Regardless of 4.1A or 4.1B, replace constant planar speed (`controls.gd`) with a
 How do we achieve ILM's non-mocap mechanical inertia, Sunrise's heavy silhouettes, and *Ghost of Tsushima*'s responsive cancel windows on `MechAsset.glb`?
 
 #### Option 4.2A — Procedural Gait + Asymmetric Servo Vocabulary (Extend `flight_pose.gd` & `pose_studio.tscn`)
-Keep the existing **four-modifier architecture** (`SpringFlightPose` full-body writer + two `TwoBoneIK3D` foot solvers + `SoleAlignmentAndPoseComplete`). Replace the imported `Walk`/`Run` clip dependency with a procedural stride-phase generator and compact key poses authored in `pose_studio.tscn` (heavy guard, shield-brace, rifle shoulder-fire, thruster-hop tuck, braking-slide squat, saber wind-up/thrust, stagger reel). To get ILM's *"slow start $\rightarrow$ fast reactor surge $\rightarrow$ hydraulic clamp"* instead of uniform critically damped smoothing, extend `pose_servo.gd` (or wrap it) with:
+Keep the existing **four-modifier architecture** (`SpringFlightPose` full-body writer + two `TwoBoneIK3D` foot solvers + `SoleAlignmentAndPoseComplete`). Build ground movement from a procedural stride-phase generator and compact key poses authored in `pose_studio.tscn` (heavy guard, shield-brace, rifle shoulder-fire, thruster-hop tuck, braking-slide squat, saber wind-up/thrust, stagger reel). To get ILM's *"slow start $\rightarrow$ fast reactor surge $\rightarrow$ hydraulic clamp"* instead of uniform critically damped smoothing, extend `pose_servo.gd` (or wrap it) with:
 - **Slew-rate initiation lag + asymmetric arrest:** Separate acceleration limit vs. hard-stop clamp at joint targets, with zero underdamped ringing.
 - **Proximal-to-distal lead/lag:** Pelvis yaw/lean updates immediately on pre-commit input, torso follows `+40–70 ms`, shoulder/shield/rifle lags `+80–120 ms` during swing and whips into a clamped lock.
 
@@ -180,7 +180,7 @@ Keep the existing **four-modifier architecture** (`SpringFlightPose` full-body w
 Author dedicated heavy mech clips in Blender (or baked via `bake_pose_library.gd`) using stepped/clamped mechanical F-curves, driven by an `AnimationTree` state machine with **explicit frame-metadata tracks** for *Ghost of Tsushima* cancel windows (`can_shield_cancel`, `committed`, `can_hop_cancel`, `foot_plant_lock`), while `contact_pose.gd` (`TwoBoneIK3D` + pelvis sink) and additive upper-body recoil/hit-twitch run as post-modifiers.
 
 - **Best for:** Heroic bespoke choreography, weapon-draw animations, and synchronized two-mech takedowns (*Titanfall* Terminations / Gustav Karl backstab).
-- **Trade-offs:** Higher authoring burden; imported `Shin` intermediate-bone bending must still yield to `contact_pose.gd` during stance (already solved in `contact_pose.gd:178`).
+- **Trade-offs:** Higher authoring burden; during stance, intermediate `Shin` animation must respect the two-bone IK chain.
 
 #### Option 4.2C — Hybrid Split: Procedural Lower-Body/Slides/Aiming + Authored High-Commitment Upper-Body/CQC Beats
 Use Option 4.2A for locomotion, pivot steps, thruster-hop landings, braking slides, shield angling, and recoil, while reserving short authored clips in `pose_studio.tscn` for high-commitment melee thrusts, tackles, and catastrophic stagger/shutdown collapses.

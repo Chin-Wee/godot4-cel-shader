@@ -28,9 +28,7 @@ var explosion_clock := 0.0
 @export_range(0.0,1.0,0.01) var afterburner_throttle := 0.35
 var afterburner_material: ShaderMaterial
 var afterburner_flow_phase := 0.0
-var walking_time := 0.0
 var automatic_exhaust := true
-var walk_ground: StaticBody3D
 
 func _ready() -> void:
 	# Only the physics-driven mechs interpolate; scenery/VFX use the render clock.
@@ -144,35 +142,18 @@ func _flight_throttle(mech: Node3D) -> float:
 	return clampf(mech.controller.thrust_level / 4.0, 0.0, 1.0) if mech.simulation_enabled else 0.0
 
 func _make_ground() -> void:
-	walk_ground = StaticBody3D.new()
-	walk_ground.collision_layer = 2
-	walk_ground.collision_mask = 0
+	var ground := StaticBody3D.new()
+	ground.collision_layer = 2
+	ground.collision_mask = 0
 	var shape := CollisionShape3D.new()
 	shape.shape = get_node("Terrain").mesh.create_trimesh_shape()
-	walk_ground.add_child(shape)
-	add_child(walk_ground)
+	ground.add_child(shape)
+	add_child(ground)
 
 func ground_height(point: Vector3) -> float:
 	var ray := PhysicsRayQueryParameters3D.create(Vector3(point.x,4000,point.z),Vector3(point.x,-1000,point.z),2)
 	var hit := get_world_3d().direct_space_state.intersect_ray(ray)
 	return float(hit.position.y) if not hit.is_empty() else 0.0
-
-func _update_walk_pose() -> void:
-	var angle: float = walking_time*hero.walk_speed*hero.display_scale/100.0
-	hero.position = Vector3(650.0+sin(angle)*100.0,0,120.0+cos(angle)*100.0)
-	hero.position.y = ground_height(hero.position)+0.9*hero.display_scale+0.1
-	hero.rotation = Vector3(0,-PI/2.0+angle,0)
-
-func set_walk_mode(enabled: bool) -> void:
-	hero.flying = not enabled
-	hero.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF if enabled else Node.PHYSICS_INTERPOLATION_MODE_ON
-	if enabled: _update_walk_pose()
-	hero.controller.reset(0.0)
-	hero.update_animation(0.0)
-	hero.reset_physics_interpolation()
-	_update_afterburners()
-	camera.reset_view()
-	trails[0].visible = not enabled and hero.controller.velocity.length() > 1.5
 
 func missile_position(time: float) -> Vector3:
 	return Vector3(175.0-sin(time*0.065)*940.0,600.0+sin(time*0.35)*35.0,-600.0+cos(time*0.065)*940.0)+Vector3(-120.0+cos(time*0.6)*80.0,50.0+sin(time*0.6)*50.0,-200.0-sin(time*0.6)*100.0)
@@ -240,12 +221,7 @@ func _process(delta: float) -> void:
 	if not is_instance_valid(camera): return
 	if animate:
 		elapsed += delta
-		if hero.flying:
-			hero.update_force_debug()
-		else:
-			walking_time += delta
-			_update_walk_pose()
-			hero.update_animation(delta)
+		hero.update_force_debug()
 		_update_afterburners(delta)
 		camera.update_view(delta)
 		hud.update_status(hero)
@@ -257,13 +233,13 @@ func _process(delta: float) -> void:
 			trigger_explosion()
 		clouds.position.x = sin(elapsed*0.015)*50.0
 	for index in trails.size():
-		trails[index].set_process(animate and (hero.flying or index > 0))
-		if index < 2: trails[index].visible = (hero if index == 0 else wingman).controller.velocity.length() > 1.5 and (hero.flying or index > 0)
+		trails[index].set_process(animate)
+		if index < 2: trails[index].visible = (hero if index == 0 else wingman).controller.velocity.length() > 1.5
 	if is_instance_valid(explosion): explosion.set_process(animate)
 	lighting.update_weather(camera,clouds,elapsed)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if animate and hero.flying: FlightInput.handle_input(event,hero.controller)
+	if animate: FlightInput.handle_input(event,hero.controller)
 	camera.handle_input(event)
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.physical_keycode:
@@ -273,7 +249,6 @@ func _unhandled_input(event: InputEvent) -> void:
 				lighting.storm = not lighting.storm
 				set_palette(lighting.daylight_palette)
 			KEY_4: clouds.set_coverage(0.4 if clouds.coverage > 0.5 else 1.0)
-			KEY_G: set_walk_mode(hero.flying)
 			KEY_P: animate = not animate
 			KEY_F8: trigger_explosion()
 			KEY_F9: hero.debug_forces = not hero.debug_forces; hero.update_force_debug()

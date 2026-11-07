@@ -7,7 +7,6 @@ const Spring = preload("res://aerial/pose_servo.gd")
 const ArmPose = preload("res://aerial/arm_pose.gd")
 const ContactPose = preload("res://aerial/contact_pose.gd")
 @export var profile: RigProfile = preload("res://aerial/mech_rig_profile.tres")
-var blend := Spring.new()
 var chest := Spring.new()
 var hips := Spring.new()
 var head := Spring.new()
@@ -20,7 +19,6 @@ var contacts: RefCounted
 var bones := {}
 var clock := 0.0 # Shared exhaust clock; not a pose oscillator.
 var root_angles := Vector3.ZERO
-var air_weight := 1.0
 # hover, streamlined, spread, coast, landing; normalized, never flight modes.
 var posture_weights := PackedFloat32Array([1,0,0,0,0])
 # Upright support, powered aerodynamic flight, independent coast, falling.
@@ -50,7 +48,6 @@ func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 
 func reset() -> void:
 	for spring in [chest,hips,head,com]: spring.reset()
-	blend.reset(Vector3(1,0,0))
 	regimes.reset(Vector3(1,0,0))
 	launch.reset()
 	behavior_weights = PackedFloat32Array([1,0,0,0])
@@ -64,13 +61,6 @@ func reset() -> void:
 	lead_time = 0.0
 	layout = 0.0
 	contacts.reset()
-
-func set_weight(weight: float) -> void:
-	air_weight = clampf(weight,0,1)
-	# Keep target preparation running over authored walking too. No native
-	# influence-zero optimization may silently disable the ground target pass.
-	active = true
-	influence = 1.0
 
 func update(delta: float, controller) -> void:
 	clock = controller.clock
@@ -457,7 +447,6 @@ func _update_legs(delta: float, controller) -> void:
 			servo.value = profile.limit_joint(servo.value,side,joint)
 
 func _rotate(bone: String, angles: Vector3) -> void:
-	angles *= air_weight
 	var sk := get_skeleton()
 	var index: int = bones[bone]
 	var rest := sk.get_bone_global_rest(index).basis.orthonormalized()
@@ -465,13 +454,12 @@ func _rotate(bone: String, angles: Vector3) -> void:
 	sk.set_bone_pose_rotation(index,(sk.get_bone_pose_rotation(index)*offset.get_rotation_quaternion()).normalized())
 
 func _process_modification() -> void:
-	if air_weight>0.0001:
-		var difference := chest.value-hips.value
-		for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
-		_rotate("Neck",head.value)
-		for side in 2:
-			_rotate(profile.thigh_bones[side],legs[side*3].value)
-			_rotate(profile.knee_bones[side],legs[side*3+1].value)
-			_rotate(profile.foot_bones[side],legs[side*3+2].value)
-		arms.apply(get_skeleton(),_rotate,air_weight)
+	var difference := chest.value-hips.value
+	for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
+	_rotate("Neck",head.value)
+	for side in 2:
+		_rotate(profile.thigh_bones[side],legs[side*3].value)
+		_rotate(profile.knee_bones[side],legs[side*3+1].value)
+		_rotate(profile.foot_bones[side],legs[side*3+2].value)
+	arms.apply(get_skeleton(),_rotate)
 	contacts.prepare_targets()

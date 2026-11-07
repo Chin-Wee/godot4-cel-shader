@@ -163,7 +163,7 @@ func _run() -> void:
 	await _ticks(30)
 	assert(mech.controller.velocity.is_finite() and mech.position.is_finite())
 	assert(_check_motors(mech) and _check_limbs(mech))
-	# Free arms, independent camera look, pause and retained walk preview.
+	# Free arms, independent camera look, and pause.
 	var paused_velocity: Vector3 = mech.linear_velocity
 	scene.animate = false
 	var frozen: Transform3D = mech.global_transform
@@ -181,12 +181,6 @@ func _run() -> void:
 	assert(not mech.skeleton.find_child("GUN",false,false).visible)
 	assert(not scene.has_method("fire_weapon"),"Gun aiming/firing still owns the flight arms")
 
-	scene.set_walk_mode(true)
-	mech.update_animation(0.3)
-	assert(mech.actor.animation_player.is_playing() and mech.freeze)
-	scene.set_walk_mode(false)
-	mech.update_animation(0.3)
-	assert(not mech.actor.animation_player.is_playing())
 	completed = true
 	print("Rigid flight checks passed: detents, six-axis rotation, hover, unpowered momentum, redirected thrust, brake, lift, skydiving, jump/contact, continuous transitions, IK, thrusters and pause.")
 	scene.queue_free()

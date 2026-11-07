@@ -37,7 +37,7 @@ var simulation_enabled := true:
 			# Commit the displayed pose, including when a physics sync is pending.
 			PhysicsServer3D.body_set_state(get_rid(), PhysicsServer3D.BODY_STATE_TRANSFORM, global_transform)
 		else:
-			freeze = not flying
+			freeze = false
 			linear_velocity = paused_linear_velocity
 			angular_velocity = paused_angular_velocity
 var debug_forces := false
@@ -81,11 +81,6 @@ const COLD_MOUNTS := [
  ["LowerRAft",&"Torso",Vector3(-1.335067,-2.642381,-4.471244),Vector3.FORWARD],
 ]
 var palette_materials: Array[ShaderMaterial] = []
-var flying := true:
-	set(value):
-		flying = value
-		freeze = not simulation_enabled or not value
-var walk_speed := 0.0
 
 func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	actor = Actor.instantiate()
@@ -121,8 +116,6 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	actor.collision_mask = 0
 	actor.get_node("CameraPivot").process_mode = Node.PROCESS_MODE_DISABLED
 	actor.animation_player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
-	actor.animation_player.speed_scale = actor.NON_JUMP_ANIMATION_RATE_SCALE
-	walk_speed = actor.locomotion_stride_distances[&"Walk"] * actor.visual_scale / actor.animation_player.get_animation(&"Walk").length * actor.NON_JUMP_ANIMATION_RATE_SCALE
 	var colors := {}
 	for mesh in actor.find_children("*", "MeshInstance3D", true, false):
 		for index in mesh.mesh.get_surface_count():
@@ -135,8 +128,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 				colors[color] = material
 				palette_materials.append(material)
 			mesh.set_surface_override_material(index, colors[color])
-	# Flight starts from the skeleton rest pose. Imported clips are retained only
-	# for asset preview and the dynamic ground-walk option; no idle/boost hold plays.
+	# Flight starts from the skeleton rest pose.
 	actor.animation_player.stop()
 	actor.current_animation = &""
 	skeleton = actor.find_child("Skeleton3D",true,false)
@@ -216,7 +208,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 # Physics consumes one previous-tick pose for hardpoints. The new pose is then
 # advanced on this same fixed clock; rendering never runs the motor simulation.
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
-	if freeze or not simulation_enabled or not flying or sockets.is_empty(): return
+	if freeze or not simulation_enabled or sockets.is_empty(): return
 	if absf(state.inverse_inertia_tensor.determinant()) < 1e-30: return
 	var contact := _ground_probe(state)
 	var outlets := _thruster_outlets(sockets,MOUNTS,0)
@@ -298,17 +290,11 @@ func predict_impact() -> float:
 
 func update_animation(delta: float) -> void:
 	rig.update(delta,controller)
-	var mix: float = rig.blend.step(Vector3(1 if flying else 0,0,0),delta,0.16).x
-	if flying:
-		actor.animation_player.stop()
-		actor.current_animation = &""
-		skeleton.reset_bone_poses()
-	else:
-		actor._play_animation(&"Walk")
-		actor.animation_player.advance(delta)
-	rig.set_weight(mix)
-	actor.rotation = rig.root_angles*mix
-	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value*mix+rig.contacts.pelvis.value) * display_scale
+	actor.animation_player.stop()
+	actor.current_animation = &""
+	skeleton.reset_bone_poses()
+	actor.rotation = rig.root_angles
+	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value+rig.contacts.pelvis.value) * display_scale
 	skeleton.advance(delta)
 
 func capture_pose() -> void:
@@ -362,7 +348,7 @@ func _refresh_exhaust() -> void:
 		var output: float = controller.motor_forces[index].length()
 		var throttle: float = clampf(output/maxf(controller.hot_max_thrust(index),0.000001),0,1)
 		var load := throttle
-		flame.visible = flying and output>0.00001
+		flame.visible = output>0.00001
 		flame.set_instance_shader_parameter("thrust_load",load)
 		flame.set_instance_shader_parameter("engine_throttle",throttle)
 		var beat := (exhaust_phase+float(flame.get_instance_shader_parameter("phase_offset")))*TAU
@@ -371,7 +357,7 @@ func _refresh_exhaust() -> void:
 	for index in gas_jets.size():
 		# The same nozzle force drives the native body and its visible exhaust.
 		var demand: float = controller.cold_forces[index].length()/maxf(controller.cold_max_thrust(index),0.000001)
-		gas_jets[index].visible = flying and demand>0.00001
+		gas_jets[index].visible = demand>0.00001
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
 		gas_jets[index].set_instance_shader_parameter("thrust_load",demand)
 		gas_jets[index].set_instance_shader_parameter("engine_throttle",demand)

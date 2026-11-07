@@ -121,7 +121,6 @@ func _bake() -> void:
 			rig.arms.update(1.0/60,frame)
 			rig.contacts.pelvis.value = Vector3(0,-0.24*frame.land,0)
 			sk.reset_bone_poses()
-			rig.set_weight(1)
 			mech.actor.rotation = rig.root_angles
 			mech.actor.position = (-(Basis.from_euler(rig.root_angles)*Vector3(0,0.9,0))+rig.com.value+rig.contacts.pelvis.value)*mech.display_scale
 			sk.advance(1.0/60)

@@ -90,10 +90,9 @@ func update(delta: float, controller) -> void:
 	if delta <= 0: return
 	var sk := skeleton
 	var upright := body.global_basis.y.dot(Vector3.UP) > 0.65
-	var walking: bool = not body.flying
 	var lifting: bool = (controller.jump_remaining>0 and controller.thrust_level>1.0) or controller.velocity.y > 0.6
 	probe_count = 0
-	var near_ground: bool = upright and (walking or controller.grounded or (controller.time_to_impact < profile.landing_lead and controller.velocity.y < -0.5))
+	var near_ground: bool = upright and (controller.grounded or (controller.time_to_impact < profile.landing_lead and controller.velocity.y < -0.5))
 	for side in 2:
 		hits[side] = {}
 		if not near_ground: continue
@@ -105,9 +104,8 @@ func update(delta: float, controller) -> void:
 		var hit := body.get_world_3d().direct_space_state.intersect_ray(ray)
 		probe_count += 1
 		if not hit.is_empty() and hit.normal.dot(Vector3.UP) > 0.65: hits[side] = hit
-	# Ray hits alone can never claim support in flight. The walk demo is an
-	# explicitly frozen preview; its feet may use the validated floor samples.
-	var support: bool = upright and not lifting and (body.native_support or walking) and (not hits[0].is_empty() or not hits[1].is_empty())
+	# A floor sample locates the foot. Native contact confirms body support.
+	var support: bool = upright and not lifting and body.native_support and (not hits[0].is_empty() or not hits[1].is_empty())
 	unsupported_time = 0.0 if support else unsupported_time+delta
 	var next: int = Support.GROUNDED if support or (state == Support.GROUNDED and unsupported_time < 0.05 and not lifting) else Support.AIRBORNE
 	if initialized and body.collided and not had_contact:
@@ -120,18 +118,8 @@ func update(delta: float, controller) -> void:
 	impact *= exp(-delta/0.24)
 	preparation = (1.0-smoothstep(0.10,profile.landing_lead,controller.time_to_impact)) if near_ground and not support and (not hits[0].is_empty() or not hits[1].is_empty()) else 0.0
 	if state == Support.GROUNDED: preparation = 1.0
-	var phase := 0.0
-	if walking:
-		var player: AnimationPlayer = body.actor.animation_player
-		phase = fposmod(player.current_animation_position/maxf(player.current_animation_length,0.001),1.0)
 	for side in 2:
-		var stance: bool = not walking or fposmod(phase+side*0.5,1.0) < profile.walk_stance_fraction
-		var desired: bool = support and stance and not hits[side].is_empty()
-		if walking and desired and not planted[side]:
-			var foot: Transform3D = body.bone_poses[sk.find_bone(profile.foot_bones[side])]
-			var sole: Vector3 = sk.global_transform*(foot*profile.sole_offset)
-			# A ray under a raised swing foot is not a reachable stance plant.
-			desired = sole.distance_to(hits[side].position)<body.display_scale*0.08
+		var desired: bool = support and not hits[side].is_empty()
 		if desired and not planted[side]: _plant(side,hits[side])
 		if not desired: planted[side] = false
 		weights[side].step(Vector3(float(desired),0,0),delta,0.055 if lifting else profile.foot_response)
@@ -172,11 +160,6 @@ func prepare_targets() -> void:
 	var sk := skeleton
 	for side in 2:
 		if not solvers[side].active: continue
-		# The imported Walk bends Shin as well as Knee. Native two-bone IK
-		# treats Knee→Feet as one virtual segment, so its intermediate Shin must
-		# return to rest during stance. Leave the authored swing pose untouched.
-		var shin := sk.find_bone("Shin.L" if side==0 else "Shin.R")
-		sk.set_bone_pose_rotation(shin,sk.get_bone_pose_rotation(shin).slerp(sk.get_bone_rest(shin).basis.get_rotation_quaternion(),weights[side].value.x))
 		var target: Vector3 = plant_position(side)+plant_normal(side)*0.04-foot_basis(side)*profile.sole_offset*sk.global_basis.get_scale().x
 		var local := sk.to_local(target)
 		var hip := sk.get_bone_global_pose(sk.find_bone(profile.thigh_bones[side])).origin

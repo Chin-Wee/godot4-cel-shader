@@ -18,17 +18,10 @@ are radians: aft swing, outward elevation and elbow flexion. The separate box
 twist rotates the humerus about its own longitudinal axis after arm placement;
 skeleton-space yaw cannot substitute for this external rotation.
 
-Two native foot solvers remain for real support and the walking preview. Ground
-target preparation runs in the full-body pass even after the airborne weight
-fades to zero. Final sole alignment captures the completed bones directly while
-they exist; no chain of modifier signals or restored-rest readbacks is involved.
-There are four native modifiers, compared with the previous eight.
-
-The imported Walk also animates the intermediate Shin bone. During stance this
-returns toward rest because native two-bone IK represents Knee-to-Feet as one
-virtual segment. Swing animation remains authored. A ray under a raised swing
-foot cannot create a new plant. Unreachable foot targets retain mechanical reach
-limits rather than stretching the skeleton.
+Two native foot solvers run when the body has support. The full-body pass
+prepares their targets and clamps them to mechanical reach. Final sole alignment
+captures the completed bones directly while they exist. There are four native
+modifiers, compared with the previous eight.
 
 ## Motion language
 

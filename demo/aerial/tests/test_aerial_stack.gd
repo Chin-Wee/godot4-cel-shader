@@ -1,6 +1,5 @@
 extends SceneTree
 
-const MechAssets = preload("res://actors/mechs/mech_assets.gd")
 var completed := false
 
 func _initialize() -> void:
@@ -15,9 +14,7 @@ func _run() -> void:
 	await process_frame
 	await _check_river_clearance(scene)
 	_check_afterburners(scene)
-	await _check_mechs(scene)
-	var frozen_pose: Transform3D = scene.hero.transform
-	assert(scene.hero.transform.is_equal_approx(frozen_pose),"Frozen and live mech poses disagree")
+	_check_mechs(scene)
 	var clouds = scene.clouds
 	assert(clouds.batches.size() == 4,"Cloud silhouette variants were not instanced")
 	var vertices_by_shape := []
@@ -106,7 +103,7 @@ func _run() -> void:
 	scene.queue_free()
 	await process_frame
 	completed = true
-	print("Aerial checks passed: white mechs, walk/hover/boost mapping, torso exhaust, consistent pose, cloud coverage, storm entry rain, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
+	print("Aerial checks passed: white mechs, hover/boost mapping, torso exhaust, consistent pose, cloud coverage, storm entry rain, fixed world trails, bounded storage, teleport handling, VFX palette and expiry.")
 	quit()
 
 func _check_river_clearance(scene: Node3D) -> void:
@@ -192,40 +189,9 @@ func _check_mechs(scene: Node3D) -> void:
 		assert(mech.sockets.size() == mech.MOUNTS.size() and mech.gas_jets.size() == mech.COLD_MOUNTS.size())
 		for name in ["GUN","Cube_001"]: assert(not mech.skeleton.find_child(name,false,false).visible,"Detached weapon geometry survived gun removal")
 		assert(mech.skeleton.find_child("Cube",false,false).visible,"Backpack was hidden with the weapon")
-		for name in [&"Walk",&"Fall"]:
-			var clip: Animation = mech.actor.animation_player.get_animation(name)
-			var track: int = MechAssets.find_position_track(clip,&"Root")
-			var origin: Vector3 = clip.track_get_key_value(track,0)
-			for key in clip.track_get_key_count(track): assert(origin.is_equal_approx(clip.track_get_key_value(track,key)),"Walk root displacement was restored")
 		for material in mech.palette_materials:
 			if material.shader == preload("res://shaders/aerial/aircraft.gdshader"):
 				assert(material.get_shader_parameter("highlight_mask") == 0.0)
-	scene.set_walk_mode(true)
-	await physics_frame
-	scene._update_walk_pose()
-	assert(absf(scene.hero.position.y-45.1-scene.ground_height(scene.hero.position)) < 0.01,"Walk preview lost grounding")
-	scene.hero.update_animation(0.9)
-	assert(scene.hero.actor.current_animation == &"Walk")
-	var sk: Skeleton3D = scene.hero.skeleton
-	var pose := sk.get_bone_pose_rotation(sk.find_bone("Thigh.L"))
-	scene.hero.update_animation(0.3)
-	assert(not pose.is_equal_approx(sk.get_bone_pose_rotation(sk.find_bone("Thigh.L"))),"Walking is static")
-	for flame in scene.hero.flames: assert(not flame.visible)
-	scene.animate = true
-	var start: Vector3 = scene.hero.position
-	scene._process(0.1)
-	assert(scene.hero.position.distance_to(start) > 1.0)
-	var movement: Vector3 = scene.hero.position-start
-	movement.y = 0.0
-	assert((-scene.hero.basis.z).dot(movement.normalized()) > 0.999)
-	scene.animate = false
-	var frozen: float = scene.hero.actor.animation_player.current_animation_position
-	scene._process(0.1)
-	assert(is_equal_approx(scene.hero.actor.animation_player.current_animation_position,frozen))
-	scene.set_walk_mode(false)
-	scene.hero.update_animation(0.9)
-	assert(not scene.hero.actor.animation_player.is_playing() and scene.camera.current)
-	scene.elapsed = 0.0
 
 func _checks_timeout() -> void:
 	if not completed:
