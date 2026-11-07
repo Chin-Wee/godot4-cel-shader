@@ -2,7 +2,7 @@
 
 ## 1. Scope, Target Reference, and Evidence Standard
 
-**Status:** Research and architectural options only (no code or asset changes).
+**Status:** Research and architectural options. The playable slice has its own [Ground Mode v1 spec](demo/ground/GROUND_MODE_SPEC.md).
 
 The target experience is **Universal Century mass-production ("grunt") mobile suit ground combat** as depicted in *Mobile Suit Gundam Hathaway* (*Senkō no Hathaway*, 2021) and the opening ground-warfare sequence of *Mobile Suit Gundam Hathaway: The Sorcery of Nymph Circe* (2026). Specifically, two canonical reference sequences anchor every design option in this document:
 

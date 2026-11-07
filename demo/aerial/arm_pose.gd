@@ -63,9 +63,12 @@ func update(delta: float, frame: Dictionary) -> void:
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		var bias: float = sx*frame.get("lead",1.0)*(0.06+frame.get("asymmetry",0.0)*0.18)*(1-frame.land)
+		var ground_guard: float = frame.get("ground_guard",0.0)
 		var swing: float = pose.x+(sx*steer.y*0.52-steer.x*0.28+slip.x*sx*0.12)*lerpf(1.0,0.25,clean)
 		var spread: float = pose.y-sx*steer.z*lerpf(0.36,0.08,clean)+bias*(1.0-clean*0.7)
 		var flex: float = pose.z+(sx*steer.y*0.34+sx*steer.z*0.45-bias)*lerpf(1.0,0.3,clean)
+		swing += ground_guard*(-0.52 if side==0 else 0.16)
+		flex += ground_guard*(0.32 if side==0 else 0.14)
 		# Armored Core VI directional combat-turn silhouette: the outside armor
 		# catches wind while the inside arm gathers. Pitch presents both panels.
 		swing += turn.x*0.55+sx*turn.y*0.40
