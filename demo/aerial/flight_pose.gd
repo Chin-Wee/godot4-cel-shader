@@ -32,6 +32,7 @@ var effort := Vector3.ZERO # Prepare, opposing thrust, outgoing acceleration.
 var lead_side := 1.0
 var lead_time := 0.0
 var layout := 0.0 # Air-supported extended-body alternative to compact actuator flips.
+var ground_animation_active := false
 
 func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 	var sk := get_skeleton()
@@ -60,6 +61,7 @@ func reset() -> void:
 	lead_side = 1.0
 	lead_time = 0.0
 	layout = 0.0
+	ground_animation_active = false
 	contacts.reset()
 
 func update(delta: float, controller) -> void:
@@ -84,6 +86,9 @@ func update(delta: float, controller) -> void:
 	_update_body(delta)
 	_update_legs(delta,controller)
 	arms.update(delta,motion)
+	if ground_animation_active:
+		root_angles = Vector3.ZERO
+		com.reset()
 
 func _sample_motion(controller, delta: float) -> Dictionary:
 	var basis := Basis(controller.attitude)
@@ -462,6 +467,9 @@ func _rotate(bone: String, angles: Vector3) -> void:
 	sk.set_bone_pose_rotation(index,(sk.get_bone_pose_rotation(index)*offset.get_rotation_quaternion()).normalized())
 
 func _process_modification() -> void:
+	if ground_animation_active:
+		contacts.prepare_targets()
+		return
 	var difference := chest.value-hips.value
 	for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
 	_rotate("Neck",head.value)

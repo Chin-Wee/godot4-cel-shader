@@ -139,7 +139,8 @@ func _update_ground_targets(delta: float, ground) -> void:
 	impact = ground.landing_load
 	for side in 2:
 		planted[side] = ground.loaded[side]
-		var weight: float = weights[side].step(Vector3(ground.ik_weight,0,0),delta,0.055).x
+		var target_weight: float = ground.ik_weight if ground.loaded[side] else ground.ik_weight*ground.swing_ik_weight
+		var weight: float = weights[side].step(Vector3(target_weight,0,0),delta,0.055).x
 		solvers[side].influence = weight
 		solvers[side].active = weight > 0.001
 	pelvis.step(ground.pelvis_offset(),delta,0.085,2.4)

@@ -20,6 +20,11 @@ var camera_has_sample := false
 var max_camera_motion := 0.0
 var camera_position := Vector3.ZERO
 var max_camera_step := 0.0
+var saw_walk_animation := false
+var saw_airborne_animation_stop := false
+var minimum_swing_ik := 1.0
+var minimum_stance_ik := 1.0
+var maximum_swing_ik := 0.0
 
 func _initialize() -> void:
 	call_deferred("_run")
@@ -33,6 +38,18 @@ func _sample() -> void:
 	var mu := Motion.SKID if motion.slip>0.0 else Motion.GRIP
 	for force in motion.traction:
 		_check(force.length()<=motion.load_budget*mu/maxi(1,loaded)+1.0,"Traction exceeds support budget")
+	if motion.supported and motion.step_time >= 0.0:
+		saw_walk_animation = saw_walk_animation or mech.actor.current_animation == &"Walk"
+		var gait_phase := clampf((motion.step_time-Motion.LOAD)/(Motion.STEP-Motion.LOAD),0.0,1.0)
+		var swing_weight: float = mech.rig.contacts.weights[motion.swing].value.x
+		var stance_weight: float = mech.rig.contacts.weights[1-motion.swing].value.x
+		if gait_phase < 0.55:
+			minimum_swing_ik = minf(minimum_swing_ik,swing_weight)
+			minimum_stance_ik = minf(minimum_stance_ik,stance_weight)
+		if gait_phase > 0.70:
+			maximum_swing_ik = maxf(maximum_swing_ik,swing_weight)
+	if not motion.supported and saw_walk_animation:
+		saw_airborne_animation_stop = saw_airborne_animation_stop or (not mech.rig.ground_animation_active and not mech.actor.animation_player.is_playing())
 	var fc = mech.controller
 	for index in fc.motor_forces.size():
 		_check(fc.motor_forces[index].length()<=fc.hot_max_thrust(index)+1.0,"Hot outlet exceeds rating")
@@ -124,6 +141,8 @@ func _run() -> void:
 		else: RenderingServer.frame_pre_draw.connect(_sample_camera)
 	await _ticks(90)
 	_check(motion.supported and mech.controller.velocity.length()<=0.10,"Unstable initial stance")
+	_check(mech.rig.ground_animation_active and mech.actor.current_animation==&"Idle","Ground idle animation was not selected")
+	_check(motion.pelvis_offset().y > -0.06,"Neutral support pelvis remains excessively lowered")
 	var toe := false
 	var heel := false
 	var start: Vector3 = mech.position
@@ -136,8 +155,13 @@ func _run() -> void:
 			heel = true
 			await _shot("02-heel-catch")
 	_check(motion.steps==2 and toe and heel and (start.z-mech.position.z)/U>1.0,"Forward stride sequence failed")
+	_check(saw_walk_animation,"Ground Walk animation was not played")
+	_check(minimum_swing_ik<0.25,"Swing foot IK did not yield to the authored arc")
+	_check(minimum_stance_ik>0.95,"Stance foot IK lost contact authority")
+	_check(maximum_swing_ik>0.95,"Swing foot IK did not reacquire the contact before touchdown")
 	await _ticks(110)
 	_check(mech.controller.velocity.length()<=0.10,"Walk release did not settle")
+	_check(mech.rig.ground_animation_active and mech.actor.current_animation==&"Idle","Walk did not return to the grounded idle pose")
 	var before: Vector3 = motion.heading
 	await _ticks(340,{"turn":1})
 	var yaw := rad_to_deg(before.signed_angle_to(motion.heading,Vector3.UP))
@@ -176,10 +200,12 @@ func _run() -> void:
 			await _shot("06-skid")
 	var rise := (highest-launch_origin.y)/U
 	_check(motion.launches==1 and had_air and catch and slid and motion.cushions==1,"Hop, cushion, one-foot catch or skid missing")
+	_check(saw_airborne_animation_stop,"Ground animation continued into flight")
 	_check(rise>=0.8 and rise<=1.6 and traveled>=3.0 and traveled<=6.0,"Hop outside height or travel target")
 	await _ticks(36,{"guard":true})
 	await _shot("07-guard")
 	_check(motion.guard and motion.supported and mech.controller.velocity.length()<=0.10,"Guard did not settle")
+	_check(not mech.rig.ground_animation_active and motion.pelvis_offset().y < -0.10,"Guard did not select the lower procedural stance")
 	_check(max_tilt<8.0,"Chassis tipped during flat replay")
 	if observe_plants:
 		_check(samples>40 and max_plant_error<=0.10 and max_heading_error<=3.0,"Planted boot drift exceeds limit")

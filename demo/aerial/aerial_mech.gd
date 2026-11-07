@@ -50,6 +50,8 @@ var collided := false
 var native_support := false
 var exhaust_phase := 0.0
 const VECTOR_LIMIT := PI/6.0
+const GROUND_ANIMATION_BLEND := 0.12
+const GROUND_WALK_STEPS_PER_CYCLE := 2.0
 # Measured centers of the actual barrel ends / recessed ports, in source bone space.
 # The paired lower backpack barrels are angled down and aft; use their inset caps.
 const MOUNTS := [
@@ -296,13 +298,45 @@ func predict_impact() -> float:
 	return INF
 
 func update_animation(delta: float) -> void:
+	var ground_animation := _ground_animation_name()
+	rig.ground_animation_active = not ground_animation.is_empty()
 	rig.update(delta,controller)
-	actor.animation_player.stop()
-	actor.current_animation = &""
 	skeleton.reset_bone_poses()
+	if ground_animation.is_empty():
+		actor.animation_player.stop()
+		actor.animation_player.speed_scale = 1.0
+		actor.current_animation = &""
+	else:
+		if actor.current_animation != ground_animation or not actor.animation_player.is_playing():
+			actor.animation_player.play(ground_animation,GROUND_ANIMATION_BLEND)
+			actor.current_animation = ground_animation
+		if ground_animation == &"Idle":
+			actor.animation_player.speed_scale = 1.0
+			actor.animation_player.seek(0.0,true)
+		else:
+			var animation := actor.animation_player.get_animation(ground_animation)
+			var cycle_duration := ground_motion.step_duration*GROUND_WALK_STEPS_PER_CYCLE
+			actor.animation_player.speed_scale = animation.length/maxf(cycle_duration,0.01)
+			actor.animation_player.advance(delta)
 	actor.rotation = rig.root_angles
 	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value+rig.contacts.pelvis.value) * display_scale
 	skeleton.advance(delta)
+
+
+func _ground_animation_name() -> StringName:
+	if ground_motion == null or not ground_motion.supported:
+		return &""
+	if (
+		ground_motion.guard or ground_motion.braking or ground_motion.skidding
+		or ground_motion.pivot_steps > 0 or ground_motion.hop_load > 0.0
+		or ground_motion.catch_time > 0.0 or ground_motion.recovery > 0.0
+		or ground_motion.hot_enabled
+	):
+		return &""
+	if not actor.animation_player.has_animation(&"Idle") or not actor.animation_player.has_animation(&"Walk"):
+		return &""
+	var planar_speed: float = ground_motion.velocity.slide(ground_motion.support_normal).length()
+	return &"Walk" if ground_motion.step_time >= 0.0 or planar_speed > 0.10 else &"Idle"
 
 func capture_pose() -> void:
 	# Called inside the final native modifier, while the completed pose exists.

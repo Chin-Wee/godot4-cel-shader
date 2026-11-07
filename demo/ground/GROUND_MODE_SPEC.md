@@ -32,6 +32,10 @@ The capsule and pads use frictionless native contact. A reachable boot sample mu
 
 Ground control submits SI force and moment requests to the existing allocator. Hot and cold nozzles retain their gimbals, finite valves, per-port caps, and speed-scaled cold limits. The body applies nozzle, aero, and sole forces once per physics tick. Ground mode supplies pose phase, foot anchors and headings, slip, and landing load to the full-body rig, followed by the two leg IK solves, sole alignment, and hardpoint capture. The loaded heel or toe stays in terrain space through rollover.
 
+## Ground animation
+
+Normal supported stance and walking use the supplied MechAsset `Idle` and `Walk` clips. The AnimationPlayer advances manually on the physics clock, with the imported root track held at its rest position so the `RigidBody3D` remains the sole movement authority. The full-body flight modifier preserves the ground clip while the two native foot solvers retain full stance authority and fade the swing-foot correction back in before contact. Hop, landing recovery, guard, pivot and skid continue through the existing procedural pose path. The supplied Walk clip is an interim rig-calibration base; its two-step cycle assumption needs visual calibration. Dedicated run, crouch-travel and moving-cut clips still require authoring on the same skeleton.
+
 ## Replay and checks
 
 Run `python3 tools/check_godot.py` from the repository root. The ground replay checks **≤0.10 m** planted drift, **≤3°** planted yaw drift, and **≤0.10 m/s** settled speed. It also checks the pivot and hop ranges, ramp support, blocked steps, contact loss, failed cushion ignition, hard landing, and the traction and nozzle caps.

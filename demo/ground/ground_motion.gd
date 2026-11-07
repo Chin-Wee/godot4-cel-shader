@@ -34,6 +34,7 @@ var hot_enabled := false
 var landing_pose := 0.0
 var landing_load := 0.0
 var ik_weight := 0.0
+var swing_ik_weight := 0.0
 var slip := 0.0
 var guard := false
 var touchdowns := 0
@@ -54,6 +55,7 @@ var pre_contact_velocity := Vector3.ZERO
 var desired_velocity := Vector3.ZERO
 var yaw_accel := 0.0
 var step_time := -1.0
+var step_duration := STEP
 var swing := 0
 var swing_start := Vector3.ZERO
 var swing_goal := Vector3.ZERO
@@ -100,6 +102,7 @@ func _seed_feet(state: PhysicsDirectBodyState3D) -> void:
 		foot_normals[side] = hit.get("normal",Vector3.UP)
 		foot_headings[side] = heading
 		rock[side] = 0.0
+	swing_ik_weight = 0.0
 
 func prepare(state: PhysicsDirectBodyState3D, input: Dictionary) -> void:
 	var dt := state.step
@@ -161,6 +164,7 @@ func prepare(state: PhysicsDirectBodyState3D, input: Dictionary) -> void:
 		pivot_steps = 0
 		hop_load = 0.0
 		skidding = false
+		swing_ik_weight = 0.0
 
 	if supported and hop_edge and hop_load<=0.0 and clock>=next_hop and recovery<=0.0 and pivot_steps==0 and not braking and (loaded[0] or loaded[1]):
 		hop_direction = move_world.normalized() if move_world.length_squared()>0.01 else heading
@@ -282,14 +286,18 @@ func _start_step(state: PhysicsDirectBodyState3D, side: int, move: Vector3, forw
 	swing_normal = hit.normal
 	step_direction = move.slide(support_normal)*speed
 	step_time = 0.0
+	swing_ik_weight = 1.0
 
 func _advance_step(state: PhysicsDirectBodyState3D) -> void:
 	step_time += state.step
-	var phase := clampf((step_time-LOAD)/(STEP-LOAD),0.0,1.0)
+	var phase := clampf((step_time-LOAD)/(step_duration-LOAD),0.0,1.0)
 	if step_time<LOAD:
+		swing_ik_weight = 1.0
 		rock[swing] = -deg_to_rad(14.0)*smoothstep(0.0,LOAD,step_time)
 		return
 	loaded[swing] = false
+	# The authored clip owns early swing; physical IK reclaims the boot before contact.
+	swing_ik_weight = smoothstep(0.55,0.88,phase)
 	var curve := smoothstep(0.0,1.0,phase)
 	feet[swing] = swing_start.lerp(swing_goal,curve)+Vector3.UP*sin(PI*phase)*0.28*U
 	foot_headings[swing] = foot_headings[swing].slerp(swing_heading,curve).normalized()
@@ -306,6 +314,7 @@ func _advance_step(state: PhysicsDirectBodyState3D) -> void:
 		foot_headings[swing] = swing_heading
 		steps += 1
 	step_time = -1.0
+	swing_ik_weight = 0.0
 	swing = 1-swing
 	if pivot_steps>0:
 		pivot_steps -= 1
@@ -391,6 +400,9 @@ func sole_position(side: int) -> Vector3:
 
 func pelvis_offset() -> Vector3:
 	var side := -1.0 if swing==1 else 1.0
-	var shift := side*0.075*sin(PI*clampf(step_time/STEP,0.0,1.0)) if step_time>=0 else 0.0
-	var load := 0.10 if hop_load>0.0 else 0.0
-	return Vector3(shift,-0.16*ik_weight-landing_load*0.13-load-slip*0.013,0.0)
+	var shift := side*0.075*sin(PI*clampf(step_time/step_duration,0.0,1.0)) if step_time>=0 else 0.0
+	var support_sink := 0.035*ik_weight
+	var crouch_sink := 0.10 if guard else 0.0
+	var step_sink := 0.045*(1.0-smoothstep(0.0,LOAD,step_time)) if step_time>=0.0 else 0.0
+	var hop_sink := 0.10 if hop_load>0.0 else 0.0
+	return Vector3(shift,-support_sink-crouch_sink-step_sink-landing_load*0.13-hop_sink-slip*0.013,0.0)
