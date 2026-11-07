@@ -20,7 +20,7 @@ remain outstanding.
 
 The **9 m, 10 t** mech should walk with purpose, run shoulder-first under fire, and crouch into a lower guard. At a sharp input change it should visibly take weight, push off into the new lane, then bring its body around. Judge the motion in the existing chase and pedestrian views with a clear view of both boots.
 
-In the current replay, the knees stay bent, the arms hang wide, and each stride follows the same slow lift and set-down. The source has one 0.70 s swing template and adds ground cues to the flight pose. The existing pivot also turns the chassis before stepping and waits for near-idle to begin. Replace those behaviors with authored movement and a separate moving cut. [Current gait and pivot](ground_motion.gd) · [Current full-body pose](../aerial/flight_pose.gd)
+The supplied Walk base still has a 0.70 s step and needs visual calibration for its foot arc and arm swing. Runtime shoulder run and crouch now use 0.42 s and 0.80 s steps with additive pose corrections; they do not yet have dedicated authored clips. The existing pivot still turns the chassis before stepping and waits for near-idle to begin. Replace that behavior with a separate moving cut. [Current gait and pivot](ground_motion.gd) · [Current full-body pose](../aerial/flight_pose.gd)
 
 ## Production and biomechanics references
 

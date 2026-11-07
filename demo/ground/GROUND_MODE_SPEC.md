@@ -39,7 +39,7 @@ Normal supported stance and walking use the supplied MechAsset `Idle` and `Walk`
 
 ## Replay and checks
 
-Run `python3 tools/check_godot.py` from the repository root. The ground replay checks **≤0.10 m** planted drift, **≤3°** planted yaw drift, and **≤0.10 m/s** settled speed. It also checks the pivot and hop ranges, ramp support, blocked steps, contact loss, failed cushion ignition, hard landing, and the traction and nozzle caps.
+Run `python3 tools/check_godot.py` from the repository root. The ground replay checks walk/run/crouch step cadence, run speed, guard pelvis loading, planted drift (**≤0.10 m**), planted yaw drift (**≤3°**) and settled speed (**≤0.10 m/s**). It also checks the pivot and hop ranges, ramp support, blocked steps, contact loss, failed cushion ignition, hard landing, and the traction and nozzle caps.
 
 Capture the same 60 Hz input timeline at **30** and **144** render FPS. Each run exports chase and pedestrian frames in both light presets at toe-off, heel catch, pivot, ignition, apex, catch, skid, and guard.
 

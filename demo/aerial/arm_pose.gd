@@ -75,7 +75,7 @@ func update(delta: float, frame: Dictionary) -> void:
 		flex += ground_guard*(0.32 if side==0 else 0.14)
 		var ground_swing: int = int(frame.get("ground_swing",0))
 		var run_role := 1.0 if side != ground_swing else -1.0
-		swing += ground_run*run_role*sin(float(frame.get("ground_phase",0.0))*TAU)*0.16
+		swing += ground_run*run_role*sin(float(frame.get("ground_phase",0.0))*PI)*0.16
 		# Armored Core VI directional combat-turn silhouette: the outside armor
 		# catches wind while the inside arm gathers. Pitch presents both panels.
 		swing += turn.x*0.55+sx*turn.y*0.40
