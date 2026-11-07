@@ -7,6 +7,10 @@ const Flight = preload("res://aerial/flight_controller.gd")
 const U := Flight.WORLD_UNITS_PER_METER
 const G := Flight.GRAVITY
 const STEP := 0.70
+const RUN_STEP := 0.42
+const GUARD_STEP := 0.80
+const RUN_SPEED := 4.0
+const GUARD_SPEED := 1.25
 const LOAD := 0.13
 const HOP_TIME := 0.50
 const GRIP := 0.70
@@ -37,6 +41,8 @@ var ik_weight := 0.0
 var swing_ik_weight := 0.0
 var slip := 0.0
 var guard := false
+var running := false
+var step_running := false
 var touchdowns := 0
 var steps := 0
 var pivots := 0
@@ -102,6 +108,7 @@ func _seed_feet(state: PhysicsDirectBodyState3D) -> void:
 		foot_normals[side] = hit.get("normal",Vector3.UP)
 		foot_headings[side] = heading
 		rock[side] = 0.0
+	step_running = false
 	swing_ik_weight = 0.0
 
 func prepare(state: PhysicsDirectBodyState3D, input: Dictionary) -> void:
@@ -131,6 +138,7 @@ func prepare(state: PhysicsDirectBodyState3D, input: Dictionary) -> void:
 	var hop: bool = input.get("hop",false)
 	braking = input.get("brake",false)
 	guard = input.get("guard",false)
+	running = input.get("run",false) and movement.y > 0.1 and not guard and not braking
 	var hop_edge := hop and not previous_hop
 	var turn_edge := turn != 0 and turn != previous_turn
 	previous_hop = hop
@@ -163,6 +171,7 @@ func prepare(state: PhysicsDirectBodyState3D, input: Dictionary) -> void:
 		step_time = -1.0
 		pivot_steps = 0
 		hop_load = 0.0
+		step_running = false
 		skidding = false
 		swing_ik_weight = 0.0
 
@@ -170,6 +179,8 @@ func prepare(state: PhysicsDirectBodyState3D, input: Dictionary) -> void:
 		hop_direction = move_world.normalized() if move_world.length_squared()>0.01 else heading
 		hop_load = LOAD
 	if hop_load>0.0:
+		step_running = false
+		running = false
 		hop_load = maxf(0.0,hop_load-dt)
 		if hop_load==0.0:
 			hop_elapsed = 0.0
@@ -270,13 +281,18 @@ func _ground_step(state: PhysicsDirectBodyState3D, move: Vector3, turn: int) -> 
 
 func _start_step(state: PhysicsDirectBodyState3D, side: int, move: Vector3, forward: Vector3) -> void:
 	var forward_amount := maxf(0.0,move.dot(heading))
-	var speed := lerpf(1.25,2.5,forward_amount) if not guard else 1.25
-	var target := _stance(side,forward)+move*speed*0.76*U
+	step_running = running and forward_amount > 0.5
+	var speed := RUN_SPEED if step_running else GUARD_SPEED if guard else lerpf(1.25,2.5,forward_amount)
+	step_duration = RUN_STEP if step_running else GUARD_STEP if guard else STEP
+	var stride_time := step_duration if step_running else 0.76
+	var target := _stance(side,forward)+move*speed*stride_time*U
 	var hit := _floor(state,target,1.1)
 	# Floor rays alone are insufficient. Reject a swing through a solid wall.
 	var ray := PhysicsRayQueryParameters3D.create(origin,target+Vector3.UP*0.7*U,4)
 	ray.exclude = [body.get_rid()]
 	if hit.is_empty() or absf(hit.position.y-target.y)>0.55*U or not state.get_space_state().intersect_ray(ray).is_empty():
+		step_running = false
+		step_duration = STEP
 		if pivot_steps>0: pivot_steps = 0
 		return
 	swing = side
@@ -314,6 +330,7 @@ func _advance_step(state: PhysicsDirectBodyState3D) -> void:
 		foot_headings[swing] = swing_heading
 		steps += 1
 	step_time = -1.0
+	step_running = false
 	swing_ik_weight = 0.0
 	swing = 1-swing
 	if pivot_steps>0:
@@ -360,7 +377,7 @@ func apply_traction(state: PhysicsDirectBodyState3D, delivered: Vector3) -> void
 	if count==0: return
 	load_budget = clampf(body.mass*G*support_normal.y-delivered.dot(support_normal),0.0,body.mass*G)
 	var planar := velocity.slide(support_normal)
-	var limit := 6.8 if braking else 1.85
+	var limit := 6.8 if braking else 4.0 if step_running else 1.85
 	var accel := ((desired_velocity-planar)*4.0).limit_length(limit)
 	if skidding: accel = (-planar/state.step).limit_length(3.0)
 	var total := (accel+Vector3.UP.slide(support_normal)*G)*body.mass
@@ -402,7 +419,7 @@ func pelvis_offset() -> Vector3:
 	var side := -1.0 if swing==1 else 1.0
 	var shift := side*0.075*sin(PI*clampf(step_time/step_duration,0.0,1.0)) if step_time>=0 else 0.0
 	var support_sink := 0.035*ik_weight
-	var crouch_sink := 0.10 if guard else 0.0
+	var crouch_sink := 0.10 if guard and supported else 0.0
 	var step_sink := 0.045*(1.0-smoothstep(0.0,LOAD,step_time)) if step_time>=0.0 else 0.0
 	var hop_sink := 0.10 if hop_load>0.0 else 0.0
 	return Vector3(shift,-support_sink-crouch_sink-step_sink-landing_load*0.13-hop_sink-slip*0.013,0.0)

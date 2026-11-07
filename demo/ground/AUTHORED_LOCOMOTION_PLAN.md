@@ -1,5 +1,23 @@
 # Ground Mode v2 · Gustav Karl locomotion
 
+## Implementation status
+
+The grounded-animation integration branch supplies physics-clock `Idle`/`Walk`
+playback with independent stance/swing IK. The locomotion v2 implementation adds:
+
+- `Alt + W` shoulder running at a 4.0 m/s target with 0.42 s steps and additive
+  torso, arm and leg articulation.
+- `Ctrl` crouched guard with a lower pelvis, increased knee flexion and an
+  asymmetric forearm pose.
+- Crouch travel using the existing Walk clip as its base, with a slower step cadence.
+- Automatic use of an imported `Run` clip if one becomes available.
+
+The supplied GLB still has no dedicated Run, Crouch or MovingCut clips. These
+procedural pose layers are an interim runtime implementation, not final authored
+animation. The predictive moving-cut/contact-placement controller and its replay
+remain outstanding.
+
+
 The **9 m, 10 t** mech should walk with purpose, run shoulder-first under fire, and crouch into a lower guard. At a sharp input change it should visibly take weight, push off into the new lane, then bring its body around. Judge the motion in the existing chase and pedestrian views with a clear view of both boots.
 
 In the current replay, the knees stay bent, the arms hang wide, and each stride follows the same slow lift and set-down. The source has one 0.70 s swing template and adds ground cues to the flight pose. The existing pivot also turns the chassis before stepping and waits for near-idle to begin. Replace those behaviors with authored movement and a separate moving cut. [Current gait and pivot](ground_motion.gd) · [Current full-body pose](../aerial/flight_pose.gd)

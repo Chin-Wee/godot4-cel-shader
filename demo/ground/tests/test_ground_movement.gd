@@ -21,6 +21,11 @@ var max_camera_motion := 0.0
 var camera_position := Vector3.ZERO
 var max_camera_step := 0.0
 var saw_walk_animation := false
+var saw_run_pose := false
+var saw_run_animation := false
+var saw_guard_pose := false
+var saw_crouch_walk := false
+var peak_run_speed := 0.0
 var saw_airborne_animation_stop := false
 var minimum_swing_ik := 1.0
 var minimum_stance_ik := 1.0
@@ -38,9 +43,19 @@ func _sample() -> void:
 	var mu := Motion.SKID if motion.slip>0.0 else Motion.GRIP
 	for force in motion.traction:
 		_check(force.length()<=motion.load_budget*mu/maxi(1,loaded)+1.0,"Traction exceeds support budget")
+	var ground_run_weight: float = mech.rig.motion.get("ground_run",0.0)
+	var ground_guard_weight: float = mech.rig.motion.get("ground_guard",0.0)
+	saw_run_pose = saw_run_pose or ground_run_weight > 0.5
+	saw_guard_pose = saw_guard_pose or ground_guard_weight > 0.5
+	if motion.step_running:
+		peak_run_speed = maxf(peak_run_speed,motion.velocity.slide(motion.support_normal).length())
+		var expected_run: StringName = &"Run" if mech.actor.animation_player.has_animation(&"Run") else &"Walk"
+		saw_run_animation = saw_run_animation or mech.actor.current_animation == expected_run
+	if motion.guard and motion.step_time>=0.0:
+		saw_crouch_walk = saw_crouch_walk or (ground_guard_weight>0.5 and mech.actor.current_animation==&"Walk")
 	if motion.supported and motion.step_time >= 0.0:
 		saw_walk_animation = saw_walk_animation or mech.actor.current_animation == &"Walk"
-		var gait_phase := clampf((motion.step_time-Motion.LOAD)/(Motion.STEP-Motion.LOAD),0.0,1.0)
+		var gait_phase := clampf((motion.step_time-Motion.LOAD)/(motion.step_duration-Motion.LOAD),0.0,1.0)
 		var swing_weight: float = mech.rig.contacts.weights[motion.swing].value.x
 		var stance_weight: float = mech.rig.contacts.weights[1-motion.swing].value.x
 		if gait_phase < 0.55:
@@ -162,6 +177,24 @@ func _run() -> void:
 	await _ticks(110)
 	_check(mech.controller.velocity.length()<=0.10,"Walk release did not settle")
 	_check(mech.rig.ground_animation_active and mech.actor.current_animation==&"Idle","Walk did not return to the grounded idle pose")
+	var run_steps_before: int = motion.steps
+	for tick in 120:
+		await _step({"move":Vector2(0,1),"run":true})
+	_check(saw_run_pose and saw_run_animation and motion.steps>=run_steps_before+2,"Shoulder run did not produce its pose, animation base and repeated steps")
+	_check(peak_run_speed>=3.0 and peak_run_speed<=4.8,"Shoulder run speed fell outside the 4 m/s target envelope")
+	_check(absf(motion.step_duration-Motion.RUN_STEP)<0.001,"Run step cadence was not selected")
+	await _ticks(180)
+	_check(mech.controller.velocity.length()<=0.10,"Run release did not settle")
+	await _ticks(30,{"guard":true})
+	_check(motion.guard and motion.pelvis_offset().y<=-0.10 and saw_guard_pose,"Crouched guard did not lower the pelvis and apply its pose")
+	var guard_steps_before: int = motion.steps
+	for tick in 100:
+		await _step({"move":Vector2(0,1),"guard":true})
+	_check(motion.steps>=guard_steps_before+1 and saw_crouch_walk,"Crouch travel did not complete a supported authored-base step")
+	_check(absf(motion.step_duration-Motion.GUARD_STEP)<0.001,"Crouch travel cadence was not selected")
+	_check(mech.rig.ground_animation_active and mech.actor.current_animation==&"Walk","Crouch travel did not retain the authored gait base")
+	await _ticks(110)
+	_check(mech.controller.velocity.length()<=0.10,"Crouch travel release did not settle")
 	var before: Vector3 = motion.heading
 	await _ticks(340,{"turn":1})
 	var yaw := rad_to_deg(before.signed_angle_to(motion.heading,Vector3.UP))

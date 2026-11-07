@@ -5,7 +5,7 @@ const Motion = preload("res://ground/ground_motion.gd")
 const U := Motion.U
 const KEYS := {
 	"left": KEY_A, "right": KEY_D, "forward": KEY_W, "back": KEY_S,
-	"turn_left": KEY_Q, "turn_right": KEY_E, "hop": KEY_R, "brake": KEY_SHIFT, "guard": KEY_CTRL,
+	"turn_left": KEY_Q, "turn_right": KEY_E, "hop": KEY_R, "run": KEY_ALT, "brake": KEY_SHIFT, "guard": KEY_CTRL,
 }
 
 @onready var lighting = $Lighting
@@ -210,7 +210,7 @@ func _physics_process(_dt: float) -> void:
 	mech.controls = {
 		"move": Vector2(float(_pressed("right"))-float(_pressed("left")),float(_pressed("forward"))-float(_pressed("back"))),
 		"turn": int(_pressed("turn_left"))-int(_pressed("turn_right")),
-		"hop": _pressed("hop"), "brake": _pressed("brake"), "guard": _pressed("guard"),
+		"hop": _pressed("hop"), "run": _pressed("run"), "brake": _pressed("brake"), "guard": _pressed("guard"),
 	}
 
 func _process(dt: float) -> void:
@@ -230,8 +230,8 @@ func _process(dt: float) -> void:
 	last_touchdown = motion.touchdowns
 	skid_dust.global_position = motion.feet[0]+Vector3.UP
 	skid_dust.emitting = motion.slip>0.4
-	var mode := "Airborne" if not motion.supported else "Skid" if motion.slip>0.25 else "Guard" if motion.guard else "Support"
-	label.text = "GROUND TRIAL    %s    %.1f m/s\nWASD step   Q/E pivot   R hop   Shift brake   Ctrl guard\nP pause   F6 light   F7 witness   Backspace reset" % [mode,mech.controller.velocity.length()]
+	var mode := "Airborne" if not motion.supported else "Skid" if motion.slip>0.25 else "Guard" if motion.guard else "Run" if motion.step_running or motion.running else "Support"
+	label.text = "GROUND TRIAL    %s    %.1f m/s\nWASD walk   Alt run   Ctrl crouch   Q/E pivot   R hop   Shift brake\nP pause   F6 light   F7 witness   Backspace reset" % [mode,mech.controller.velocity.length()]
 
 func _unhandled_input(event: InputEvent) -> void:
 	camera.handle_input(event)

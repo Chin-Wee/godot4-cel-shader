@@ -2,7 +2,7 @@
 
 Open [Ground Trial](ground_demo.tscn) in the demo project. Use **F6** to switch between dusk and daylight, **F7** to switch between chase and witness, and **Backspace** to reset. **P** pauses the simulation. Mouse orbit and wheel zoom work in chase.
 
-The acceptance sequence is **two steps → 90° pivot → powered hop → one-foot catch → skid → guard**. The current **9 m, 10 t** chassis should visibly load a foot, push off, commit to the move, and recover its weight. Armored Core VI is the shipped-game reference for short powered repositioning and landing recovery. Hathaway supplies the sole mechanics, posing, and street-level staging. [Armored Core VI movement](https://www.armoredcore.net/article/230911_1.html) · [Gustav Karl ankle rig](https://area.autodesk.jp/case/animation/hathaway-the-witch-of-circe/) · [Hathaway production and camera](https://febri.jp/topics/gundam_hathaway_chap2_3_1/)
+The acceptance sequence is **two walk steps → shoulder run → crouched guard → 90° pivot → powered hop → one-foot catch → skid**. The current **9 m, 10 t** chassis should visibly load a foot, push off, commit to the move, and recover its weight. Armored Core VI is the shipped-game reference for short powered repositioning and landing recovery. Hathaway supplies the sole mechanics, posing, and street-level staging. [Armored Core VI movement](https://www.armoredcore.net/article/230911_1.html) · [Gustav Karl ankle rig](https://area.autodesk.jp/case/animation/hathaway-the-witch-of-circe/) · [Hathaway production and camera](https://febri.jp/topics/gundam_hathaway_chap2_3_1/)
 
 The proposed follow-up is documented in the [authored locomotion plan](AUTHORED_LOCOMOTION_PLAN.md).
 
@@ -10,13 +10,14 @@ The proposed follow-up is documented in the [authored locomotion plan](AUTHORED_
 
 | Input or event | Required behavior and tuning targets |
 |---|---|
-| **W/S, A/D** | Body-relative steps. Show a weight shift, then alternate heel catch, flat support, and toe-off. Target **2.5 m/s** forward and **1.25 m/s** reverse or sideways with **0.6–0.85 s** steps. The current gait uses **0.70 s** steps with **0.13 s** of load. Finish the committed plant before reversing. Settle when the next plant is blocked or unreachable. |
+| **W/S, A/D** | Body-relative steps. Show a weight shift, then alternate heel catch, flat support, and toe-off. Target **2.5 m/s** forward and **1.25 m/s** reverse or sideways with **0.60–0.85 s** steps. Finish the committed plant before reversing. Settle when the next plant is blocked or unreachable. |
+| **Alt + W** | Shoulder run. Target **4.0 m/s** with **0.42 s** steps, a forward-loaded torso and tucked arms. The imported Walk clip remains the interim gait base with additive run articulation. |
+| **Ctrl** | Crouched guard and short-step travel at **1.25 m/s**. Lower the pelvis by approximately **0.5 m** relative to ready stance, flex the knees and bring the forearms forward. Collision height stays fixed. |
 | **Q/E tap** | Load the inside foot, pivot through two placements, and settle within **5°** of the **90°** target. Holding the key produces one pivot. |
 | **R tap** | From support, load the legs and request a **0.50 s** hot burst. Capture the held direction at acceptance and use forward when neutral. Start a **1 s** cooldown at the beginning of the request. Reject held, airborne, and cooldown repeats. From rest, target **0.8–1.6 m** rise and **3–6 m** to touchdown. |
 | **Ascent and descent** | Tuck on ascent and reach during descent. Request one short cushion when time to contact and valve readiness allow it. |
 | **Touchdown** | Catch on the lead boot, compress the legs, and settle the torso. Preserve contact momentum. A sink speed of **5 m/s** or more takes **0.45 s** to recover before another hop. |
 | **Shift** | Brake against support. Slide above grip with the feet following measured motion, then replant. |
-| **Ctrl** | Hold an asymmetric guard pose. Cap the step target at reverse speed. Release movement to settle into idle. |
 
 ## Visual targets
 
@@ -34,7 +35,7 @@ Ground control submits SI force and moment requests to the existing allocator. H
 
 ## Ground animation
 
-Normal supported stance and walking use the supplied MechAsset `Idle` and `Walk` clips. The AnimationPlayer advances manually on the physics clock, with the imported root track held at its rest position so the `RigidBody3D` remains the sole movement authority. The full-body flight modifier preserves the ground clip while the two native foot solvers retain full stance authority and fade the swing-foot correction back in before contact. Hop, landing recovery, guard, pivot and skid continue through the existing procedural pose path. The supplied Walk clip is an interim rig-calibration base; its two-step cycle assumption needs visual calibration. Dedicated run, crouch-travel and moving-cut clips still require authoring on the same skeleton.
+Normal supported stance and walking use the supplied MechAsset `Idle` and `Walk` clips. The AnimationPlayer advances manually on the physics clock, with the imported root track held at its rest position so the `RigidBody3D` remains the sole movement authority. The full-body modifier preserves the ground clip while the two native foot solvers retain full stance authority and fade the swing-foot correction back in before contact. Alt run uses a **0.42 s** step and a procedural **0.34 rad** torso lean with tucked arms; it selects a dedicated `Run` clip automatically if one is later imported, otherwise it uses `Walk`. Ctrl guard lowers the pelvis and adds knee/forearm corrections; moving guard retains the Walk cycle as its base. These are runtime pose layers, not substitutes for the dedicated Blender-authored Run and Crouch clips. The 90-degree moving cut and its predictive contact-placement controller remain outstanding.
 
 ## Replay and checks
 

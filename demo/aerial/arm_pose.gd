@@ -51,6 +51,10 @@ func update(delta: float, frame: Dictionary) -> void:
 	# of blend weight. Steering is applied afterward, including during freefall.
 	pose = pose.lerp(profile.arm_brake,frame.get("flare",frame.brake))
 	pose = pose.lerp(profile.arm_land,frame.land)
+	var ground_run: float = frame.get("ground_run",0.0)
+	var ground_guard: float = frame.get("ground_guard",0.0)
+	pose = pose.lerp(Vector3(0.28,0.22,0.95),ground_run)
+	pose = pose.lerp(Vector3(0.18,0.42,1.25),ground_guard)
 	# Forearm pressure opposes the desired rotation at the moving side: the
 	# resulting air force supplies the turn, rather than flaring against it.
 	var steer: Vector3 = frame.steer*Vector3(1,-1,-1)
@@ -69,6 +73,9 @@ func update(delta: float, frame: Dictionary) -> void:
 		var flex: float = pose.z+(sx*steer.y*0.34+sx*steer.z*0.45-bias)*lerpf(1.0,0.3,clean)
 		swing += ground_guard*(-0.52 if side==0 else 0.16)
 		flex += ground_guard*(0.32 if side==0 else 0.14)
+		var ground_swing: int = int(frame.get("ground_swing",0))
+		var run_role := 1.0 if side != ground_swing else -1.0
+		swing += ground_run*run_role*sin(float(frame.get("ground_phase",0.0))*TAU)*0.16
 		# Armored Core VI directional combat-turn silhouette: the outside armor
 		# catches wind while the inside arm gathers. Pitch presents both panels.
 		swing += turn.x*0.55+sx*turn.y*0.40

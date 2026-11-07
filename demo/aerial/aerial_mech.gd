@@ -327,7 +327,7 @@ func _ground_animation_name() -> StringName:
 	if ground_motion == null or not ground_motion.supported:
 		return &""
 	if (
-		ground_motion.guard or ground_motion.braking or ground_motion.skidding
+		ground_motion.braking or ground_motion.skidding
 		or ground_motion.pivot_steps > 0 or ground_motion.hop_load > 0.0
 		or ground_motion.catch_time > 0.0 or ground_motion.recovery > 0.0
 		or ground_motion.hot_enabled
@@ -336,7 +336,14 @@ func _ground_animation_name() -> StringName:
 	if not actor.animation_player.has_animation(&"Idle") or not actor.animation_player.has_animation(&"Walk"):
 		return &""
 	var planar_speed: float = ground_motion.velocity.slide(ground_motion.support_normal).length()
-	return &"Walk" if ground_motion.step_time >= 0.0 or planar_speed > 0.10 else &"Idle"
+	var moving: bool = ground_motion.step_time >= 0.0 or planar_speed > 0.10
+	# Until dedicated clips are imported, the calibrated Walk loop is the base
+	# for shoulder running and crouched travel; the full-body modifier adds pose.
+	if ground_motion.guard:
+		return &"Walk" if moving else &""
+	if (ground_motion.step_running or ground_motion.running) and actor.animation_player.has_animation(&"Run"):
+		return &"Run"
+	return &"Walk" if moving else &"Idle"
 
 func capture_pose() -> void:
 	# Called inside the final native modifier, while the completed pose exists.
