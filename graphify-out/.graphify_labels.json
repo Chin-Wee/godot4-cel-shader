@@ -14,9 +14,9 @@
   "12": "PhantomCameraNoiseEmitter2D",
   "13": "PhantomCameraNoiseEmitter3D",
   "14": "Grass direction: Breath of the Wild",
-  "15": "FollowMode2D",
+  "15": "LimitTargetQueryResult",
   "16": "PhantomCamera3DExtensions",
-  "17": "Node2D",
+  "17": "PhantomCamera2D.cs",
   "18": "Node3D",
   "19": "StringName",
   "20": ".GetLimit",
@@ -35,5 +35,7 @@
   "33": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
   "34": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
   "35": "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?",
-  "36": "Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?"
+  "36": "Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?",
+  "37": "FollowMode2D",
+  "38": "FollowLockAxis2D"
 }

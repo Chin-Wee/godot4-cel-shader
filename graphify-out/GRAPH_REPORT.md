@@ -1,17 +1,17 @@
 # Graph Report - godot4-cel-shader  (2026-11-07)
 
 ## Corpus Check
-- 31 files · ~2,125,165 words
+- 32 files · ~2,126,140 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1071 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- Unclassified: 1078 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 525 nodes · 585 edges · 37 communities (30 shown, 7 thin omitted)
+- 532 nodes · 593 edges · 39 communities (32 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3ab72622`
+- Built from commit: `db69596d`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -31,9 +31,9 @@
 - PhantomCameraNoiseEmitter2D
 - PhantomCameraNoiseEmitter3D
 - Grass direction: Breath of the Wild
-- FollowMode2D
+- LimitTargetQueryResult
 - PhantomCamera3DExtensions
-- Node2D
+- PhantomCamera2D.cs
 - Node3D
 - StringName
 - .GetLimit
@@ -52,6 +52,8 @@
 - Ground Combat Direction: Gundam Hathaway Grunt MS Study
 - Q: How are aerial per-booster thrust caps and redundant opposing burns handled?
 - Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?
+- FollowMode2D
+- FollowLockAxis2D
 
 ## God Nodes (most connected - your core abstractions)
 1. `PhantomCamera3D` - 70 edges
@@ -80,11 +82,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (37 total, 7 thin omitted)
+## Communities (39 total, 7 thin omitted)
 
 ### Community 0 - "Flight pose design"
-Cohesion: 0.06
-Nodes (32): Dynamic rotation requirements, Mech flight animation contract, Recommended architecture, Required behaviors, Research body-flight requirements, Visual acceptance, Banks, rolls and somersaults, Flight pose design (+24 more)
+Cohesion: 0.08
+Nodes (24): Dynamic rotation requirements, Mech flight animation contract, Recommended architecture, Required behaviors, Research body-flight requirements, Visual acceptance, Banks, rolls and somersaults, Flight pose design (+16 more)
 
 ### Community 1 - "PhantomCamera3D"
 Cohesion: 0.04
@@ -132,7 +134,7 @@ Nodes (12): PhantomCamera.Manager, GodotObject, PhantomCamera2D, PhantomCamera3D
 
 ### Community 12 - "PhantomCameraNoiseEmitter2D"
 Cohesion: 0.06
-Nodes (25): GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime, Duration (+17 more)
+Nodes (26): PhantomCamera.Noise, GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime (+18 more)
 
 ### Community 13 - "PhantomCameraNoiseEmitter3D"
 Cohesion: 0.12
@@ -142,9 +144,9 @@ Nodes (11): GodotObject, Node3D, StringName, MethodName, PhantomCameraNoiseEmitt
 Cohesion: 0.29
 Nodes (6): Grass direction: Breath of the Wild, Local checks, Recommended implementation order, Scope and evidence, Sources and what each supports, Why this scene looks like panels
 
-### Community 15 - "FollowMode2D"
-Cohesion: 0.07
-Nodes (19): CollisionShape2D, PhantomCamera.Noise, GodotObject, FollowLockAxis2D, None, X, Xy, Y (+11 more)
+### Community 15 - "LimitTargetQueryResult"
+Cohesion: 0.22
+Nodes (6): CollisionShape2D, GodotObject, LimitTargetQueryResult, IsCollisionShape2D, IsTileMapLayer, TileMapLayer
 
 ### Community 16 - "PhantomCamera3DExtensions"
 Cohesion: 0.25
@@ -191,8 +193,8 @@ Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?, Source Nodes
 
 ### Community 34 - "Ground Combat Direction: Gundam Hathaway Grunt MS Study"
-Cohesion: 0.13
-Nodes (14): 1. Scope, Target Reference, and Evidence Standard, 2. Anatomy of the Hathaway Target Scenes, 3.1 Sunrise (Bandai Namco Filmworks Studio 1 / D.I.D., Sublimation & YAMATOWORKS) — *Gundam Hathaway*, 3.2 Industrial Light & Magic (ILM) — *Pacific Rim*, 3.3 Respawn Entertainment — *Titanfall* & *Titanfall 2*, 3.4 Sucker Punch Productions — *Ghost of Tsushima*, 3. Underlying Techniques of the Four Reference Productions, 5. Recommended Option Stack & Phased Path (+6 more)
+Cohesion: 0.06
+Nodes (28): Ground Mode v1 · Hathaway Movement Slice, Integration, Movement, Replay and checks, Visual targets, 1. Scope, Target Reference, and Evidence Standard, 2. Anatomy of the Hathaway Target Scenes, 3.1 Sunrise (Bandai Namco Filmworks Studio 1 / D.I.D., Sublimation & YAMATOWORKS) — *Gundam Hathaway* (+20 more)
 
 ### Community 35 - "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?"
 Cohesion: 0.40
@@ -202,24 +204,32 @@ Nodes (4): Answer, Outcome, Q: How are aerial per-booster thrust caps and redund
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?, Source Nodes
 
+### Community 37 - "FollowMode2D"
+Cohesion: 0.29
+Nodes (7): FollowMode2D, Framed, Glued, Group, None, Path, Simple
+
+### Community 38 - "FollowLockAxis2D"
+Cohesion: 0.40
+Nodes (5): FollowLockAxis2D, None, X, Xy, Y
+
 ## Knowledge Gaps
-- **299 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+294 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 370 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **304 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+299 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 374 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.228) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `FollowMode2D`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.177) - this node is a cross-community bridge._
+  _High betweenness centrality (0.222) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `FollowMode2D`, `FollowLockAxis2D`, `PhantomCameraHost`, `PhantomCamera`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
+  _High betweenness centrality (0.173) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.148) - this node is a cross-community bridge._
+  _High betweenness centrality (0.145) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _299 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _304 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Flight pose design` be split into smaller, more focused modules?**
-  _Cohesion score 0.05714285714285714 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
   _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera2D` be split into smaller, more focused modules?**

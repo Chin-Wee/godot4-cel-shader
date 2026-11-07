@@ -1,8 +1,8 @@
 {
   "README.md": {
-    "mtime": 1793877995.0601318,
-    "seen": 1793878129.749307,
-    "ast_hash": "b3e37a4d23e7fa570c133450d96cff9c",
+    "mtime": 1794037156.9152362,
+    "seen": 1794037186.450309,
+    "ast_hash": "d99994090f62081211497e6dd361d612",
     "semantic_hash": ""
   },
   "demo/models/kenney_factory-kit_3.0/License.txt": {
@@ -1410,9 +1410,9 @@
     "semantic_hash": ""
   },
   "tools/check_godot.py": {
-    "mtime": 1793985564.2570007,
-    "seen": 1793986108.925035,
-    "ast_hash": "18ab1821ba31813e9dbd246a5b7f7b4d",
+    "mtime": 1794037156.922583,
+    "seen": 1794037186.450305,
+    "ast_hash": "47da74733d677c5df1ef859d5965c461",
     "semantic_hash": ""
   },
   "REFACTOR_PLAN.md": {
@@ -1464,9 +1464,15 @@
     "semantic_hash": ""
   },
   "GROUND_COMBAT_RESEARCH.md": {
-    "mtime": 1794028150.7491584,
-    "seen": 1794028424.065825,
-    "ast_hash": "49df5c0e59f1b799d808e8d59a0c4557",
+    "mtime": 1794037156.9139585,
+    "seen": 1794037186.450308,
+    "ast_hash": "41dfaaf92493a38a9c60ea73a679fa18",
+    "semantic_hash": ""
+  },
+  "demo/ground/GROUND_MODE_SPEC.md": {
+    "mtime": 1794037156.9200618,
+    "seen": 1794037186.4503171,
+    "ast_hash": "5add465174b403e55befb5a73867125e",
     "semantic_hash": ""
   }
 }
