@@ -1,17 +1,17 @@
 # Graph Report - godot4-cel-shader  (2026-11-07)
 
 ## Corpus Check
-- 32 files · ~2,126,140 words
+- 33 files · ~2,128,272 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 1078 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 532 nodes · 593 edges · 39 communities (32 shown, 7 thin omitted)
+- 540 nodes · 602 edges · 39 communities (32 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `db69596d`
+- Built from commit: `13bddf03`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -41,7 +41,7 @@
 - .EmitNoise
 - .EmitNoise
 - Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.
-- MechAsset
+- Ground Mode v2 · Gustav Karl locomotion
 - Balanced aerial thrust and directional braking
 - Q: Why do A/D and Q/E keep their axes between space and plane flight?
 - SOLID refactor
@@ -114,11 +114,11 @@ Nodes (23): KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMas
 
 ### Community 7 - "PhantomCameraHost"
 Cohesion: 0.10
-Nodes (19): Callable, PhantomCamera, StringName, InterpolationMode, Auto, Idle, Manual, Physics (+11 more)
+Nodes (18): Callable, StringName, InterpolationMode, Auto, Idle, Manual, Physics, MethodName (+10 more)
 
 ### Community 8 - "FollowLockAxis3D"
-Cohesion: 0.09
-Nodes (22): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+14 more)
+Cohesion: 0.08
+Nodes (23): PhantomCamera, FollowLockAxis3D, None, X, XY, XYZ, XZ, Y (+15 more)
 
 ### Community 9 - "4. Architectural Options for This Project (Godot 4.7)"
 Cohesion: 0.10
@@ -164,9 +164,9 @@ Nodes (3): StringName, MethodName, SignalName
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff., Source Nodes
 
-### Community 26 - "MechAsset"
-Cohesion: 0.50
-Nodes (3): Controls and animations, MechAsset, Validation
+### Community 26 - "Ground Mode v2 · Gustav Karl locomotion"
+Cohesion: 0.17
+Nodes (10): A fast right cut, one contact at a time, Acceptance replay, Authoring and delivery, Ground Mode v2 · Gustav Karl locomotion, Movement and silhouette, Production and biomechanics references, Runtime architecture, Controls and animations (+2 more)
 
 ### Community 27 - "Balanced aerial thrust and directional braking"
 Cohesion: 0.20
@@ -213,21 +213,21 @@ Cohesion: 0.40
 Nodes (5): FollowLockAxis2D, None, X, Xy, Y
 
 ## Knowledge Gaps
-- **304 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+299 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 374 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **309 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+304 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 378 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.222) - this node is a cross-community bridge._
+  _High betweenness centrality (0.215) - this node is a cross-community bridge._
 - **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `FollowMode2D`, `FollowLockAxis2D`, `PhantomCameraHost`, `PhantomCamera`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.173) - this node is a cross-community bridge._
+  _High betweenness centrality (0.168) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.145) - this node is a cross-community bridge._
+  _High betweenness centrality (0.140) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _304 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _309 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Flight pose design` be split into smaller, more focused modules?**
   _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**

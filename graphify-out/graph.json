@@ -4969,11 +4969,107 @@
       "source_location": "L1"
     },
     {
+      "id": "demo_ground_authored_locomotion_plan",
+      "label": "AUTHORED_LOCOMOTION_PLAN.md",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "authored_locomotion_plan.md",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_a_fast_right_cut_one_contact_at_a_time",
+      "label": "A fast right cut, one contact at a time",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "a fast right cut, one contact at a time",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L35"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_acceptance_replay",
+      "label": "Acceptance replay",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "acceptance replay",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L50"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_authoring_and_delivery",
+      "label": "Authoring and delivery",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "authoring and delivery",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L43"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "label": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "ground mode v2 \u00b7 gustav karl locomotion",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_movement_and_silhouette",
+      "label": "Movement and silhouette",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "movement and silhouette",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L14"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_production_and_biomechanics_references",
+      "label": "Production and biomechanics references",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "production and biomechanics references",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L7"
+    },
+    {
+      "id": "demo_ground_authored_locomotion_plan_runtime_architecture",
+      "label": "Runtime architecture",
+      "_origin": "ast",
+      "community": 26,
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "runtime architecture",
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L26"
+    },
+    {
       "id": "demo_models_mechasset_readme",
       "label": "MechAsset/README.md",
       "_origin": "ast",
       "community": 26,
-      "community_name": "MechAsset",
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
       "file_type": "document",
       "node_kind": "page",
       "norm_label": "mechasset/readme.md",
@@ -4985,7 +5081,7 @@
       "label": "Controls and animations",
       "_origin": "ast",
       "community": 26,
-      "community_name": "MechAsset",
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "controls and animations",
@@ -4997,7 +5093,7 @@
       "label": "MechAsset",
       "_origin": "ast",
       "community": 26,
-      "community_name": "MechAsset",
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "mechasset",
@@ -5009,7 +5105,7 @@
       "label": "Validation",
       "_origin": "ast",
       "community": 26,
-      "community_name": "MechAsset",
+      "community_name": "Ground Mode v2 \u00b7 Gustav Karl locomotion",
       "file_type": "document",
       "node_kind": "heading",
       "norm_label": "validation",
@@ -5901,7 +5997,7 @@
       "node_kind": "heading",
       "norm_label": "integration",
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L25"
+      "source_location": "L27"
     },
     {
       "id": "demo_ground_ground_mode_spec_movement",
@@ -5913,7 +6009,7 @@
       "node_kind": "heading",
       "norm_label": "movement",
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L7"
+      "source_location": "L9"
     },
     {
       "id": "demo_ground_ground_mode_spec_replay_and_checks",
@@ -5925,7 +6021,7 @@
       "node_kind": "heading",
       "norm_label": "replay and checks",
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L33"
+      "source_location": "L35"
     },
     {
       "id": "demo_ground_ground_mode_spec_visual_targets",
@@ -5937,7 +6033,7 @@
       "node_kind": "heading",
       "norm_label": "visual targets",
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L19"
+      "source_location": "L21"
     },
     {
       "id": "ground_combat_research",
@@ -7510,22 +7606,6 @@
       "source_location": ""
     },
     {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 7,
-      "community_name": "PhantomCameraHost",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -7716,6 +7796,22 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
+    },
+    {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 8,
+      "community_name": "FollowLockAxis3D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -13758,6 +13854,83 @@
       "weight": 1.0
     },
     {
+      "source": "demo_ground_authored_locomotion_plan",
+      "target": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "target": "demo_ground_authored_locomotion_plan_movement_and_silhouette",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L14",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "target": "demo_ground_authored_locomotion_plan_runtime_architecture",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "target": "demo_ground_authored_locomotion_plan_authoring_and_delivery",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L43",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "target": "demo_ground_authored_locomotion_plan_acceptance_replay",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L50",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan_ground_mode_v2_gustav_karl_locomotion",
+      "target": "demo_ground_authored_locomotion_plan_production_and_biomechanics_references",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L7",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan_runtime_architecture",
+      "target": "demo_ground_authored_locomotion_plan_a_fast_right_cut_one_contact_at_a_time",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
       "source": "demo_ground_ground_mode_spec",
       "target": "demo_ground_ground_mode_spec_ground_mode_v1_hathaway_movement_slice",
       "relation": "contains",
@@ -13776,7 +13949,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L19",
+      "source_location": "L21",
       "weight": 1.0
     },
     {
@@ -13787,7 +13960,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L25",
+      "source_location": "L27",
       "weight": 1.0
     },
     {
@@ -13798,7 +13971,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L33",
+      "source_location": "L35",
       "weight": 1.0
     },
     {
@@ -13809,7 +13982,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/ground/GROUND_MODE_SPEC.md",
-      "source_location": "L7",
+      "source_location": "L9",
       "weight": 1.0
     },
     {
@@ -15441,6 +15614,28 @@
       "weight": 1.0
     },
     {
+      "source": "demo_ground_authored_locomotion_plan",
+      "target": "demo_models_mechasset_readme",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_ground_authored_locomotion_plan",
+      "target": "demo_ground_ground_mode_spec",
+      "relation": "references",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/ground/AUTHORED_LOCOMOTION_PLAN.md",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
       "source": "ground_combat_research",
       "target": "demo_ground_ground_mode_spec",
       "relation": "references",
@@ -15499,5 +15694,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "db69596d901fee3fc04885ed8ecec19eebf3c9b2"
+  "built_at_commit": "13bddf03c5fa9979cbb7b08ccec64ae6f1bd4ef8"
 }

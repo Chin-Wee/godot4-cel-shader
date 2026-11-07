@@ -1470,9 +1470,15 @@
     "semantic_hash": ""
   },
   "demo/ground/GROUND_MODE_SPEC.md": {
-    "mtime": 1794037156.9200618,
-    "seen": 1794037186.4503171,
-    "ast_hash": "5add465174b403e55befb5a73867125e",
+    "mtime": 1794038120.0361798,
+    "seen": 1794038121.731725,
+    "ast_hash": "2c0ae271caec7af01eb92abf96bd9c98",
+    "semantic_hash": ""
+  },
+  "demo/ground/AUTHORED_LOCOMOTION_PLAN.md": {
+    "mtime": 1794038120.0359282,
+    "seen": 1794038121.731723,
+    "ast_hash": "72bd6dbc7aa3c2fe00e77f376503bb2d",
     "semantic_hash": ""
   }
 }
