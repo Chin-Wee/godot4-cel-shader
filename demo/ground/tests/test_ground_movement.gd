@@ -195,10 +195,11 @@ func _run() -> void:
 	_check(mech.rig.ground_animation_active and mech.actor.current_animation==&"Walk","Crouch travel did not retain the authored gait base")
 	await _ticks(110)
 	_check(mech.controller.velocity.length()<=0.10,"Crouch travel release did not settle")
+	var steps_before_pivot: int = motion.steps
 	var before: Vector3 = motion.heading
 	await _ticks(340,{"turn":1})
 	var yaw := rad_to_deg(before.signed_angle_to(motion.heading,Vector3.UP))
-	_check(motion.pivots==1 and motion.steps==4 and absf(yaw-90.0)<=5.0,"Pivot did not complete two steps within 5 degrees")
+	_check(motion.pivots==1 and motion.steps==steps_before_pivot+2 and absf(yaw-90.0)<=5.0,"Pivot did not complete two steps within 5 degrees")
 	await _shot("03-pivot")
 	var launch_origin: Vector3 = mech.position
 	var highest := launch_origin.y
