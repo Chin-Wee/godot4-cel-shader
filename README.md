@@ -81,3 +81,8 @@ Shader, demo and assets by me, [Rafael Bordoni](https://github.com/eldskald). Th
 
 A Delivery Must Complete rendering study is available in `demo/aerial/aerial_demo.tscn`.
 See [controls, implementation, comparison checks and remaining fidelity work](demo/aerial/README.md).
+
+## Ground movement study
+
+Open [Ground Trial](demo/ground/ground_demo.tscn) for the 9 m mech street trial.
+See the [movement spec and replay commands](demo/ground/GROUND_MODE_SPEC.md).

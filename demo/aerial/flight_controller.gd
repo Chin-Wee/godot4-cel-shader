@@ -254,6 +254,25 @@ func step(state: PhysicsDirectBodyState3D, controls: Dictionary, outlets: Array,
 	_calculate_attitude_demand(state)
 	_calculate_launch(leg_reach,dt)
 	_calculate_thrusters(outlets,cold_outlets,frame,dt)
+	_apply_actuator_forces(state,outlets,cold_outlets)
+
+func step_ground(state: PhysicsDirectBodyState3D, outlets: Array, cold_outlets: Array, surfaces: Array,
+		supported: bool, force_n: Vector3, moment_nm: Vector3, hot_enabled: bool) -> void:
+	clock += state.step
+	grounded = supported
+	var frame := state.transform.basis.orthonormalized()
+	_measure_motion(state,state.step)
+	_measure_airflow(frame)
+	_calculate_aerodynamics(surfaces)
+	control_torque = moment_nm
+	var weight := body.mass*GRAVITY
+	torque_limits = Vector3.ONE*weight*model_scale/WORLD_UNITS_PER_METER
+	var lever_scale := model_scale/WORLD_UNITS_PER_METER
+	_solve_thrusters(outlets,cold_outlets,frame,state.step,force_n/weight,
+		(control_torque-aero_torque)/(weight*lever_scale),Vector3.ZERO,hot_enabled,12.0,true,false)
+	_apply_actuator_forces(state,outlets,cold_outlets)
+
+func _apply_actuator_forces(state: PhysicsDirectBodyState3D, outlets: Array, cold_outlets: Array) -> void:
 	for index in hot_valves.size():
 		state.apply_force(motor_forces[index] * WORLD_UNITS_PER_METER, outlets[index].position)
 	for index in aero_surfaces.size():
@@ -384,7 +403,6 @@ func _calculate_aerodynamics(surfaces: Array) -> void:
 		aero_power += force.dot(flow)
 
 func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: float) -> void:
-	var hot_count := outlets.size()
 	var weight := body.mass*GRAVITY
 	var length_scale := model_scale/WORLD_UNITS_PER_METER
 	var target: float = DETENTS[detent]
@@ -413,6 +431,17 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 	var force_target := (specific*body.mass-aero_force*hover_assist)/weight
 	var moment_target := (control_torque-aero_torque)/(weight*length_scale)
 	var along := move.normalized() if burst_amount>0.0001 else Vector3.ZERO
+	var translating := burst_amount>0.0001 or rotation_request.length()>0.1
+	var quiet_hover := hover_assist>0.5 and rotation_request.length()<0.1 and burst_remaining<=0 and jump_remaining<=0 and horizontal.length()<0.6
+	_solve_thrusters(outlets,cold_outlets,frame,dt,force_target,moment_target,along,
+		hot_enabled,12.0 if jump_remaining>0 else force_slew,translating,quiet_hover)
+
+func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: float,
+		force_target: Vector3, moment_target: Vector3, along: Vector3, hot_enabled: bool,
+		force_slew: float, translating: bool, quiet_hover: bool) -> void:
+	var hot_count := outlets.size()
+	var weight := body.mass*GRAVITY
+	var length_scale := model_scale/WORLD_UNITS_PER_METER
 	requested_main_force = force_target*weight
 	requested_thrust = requested_main_force.length()
 	var ports := []
@@ -441,7 +470,7 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 	# Anchor slew to delivered force, not an unreachable previous request:
 	# delayed valves must not accumulate a catch-up jump in the reference.
 	var previous_force := force_reference if clock<=dt+0.000001 else (main_force+cold_force)/weight
-	force_reference = previous_force.move_toward(feasible_force,(12.0 if jump_remaining>0 else force_slew)*dt)
+	force_reference = previous_force.move_toward(feasible_force,force_slew*dt)
 	force_target = force_reference
 	along = Vector3.ZERO
 	var seed: Array[Vector3] = []
@@ -488,7 +517,6 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 		residual_force += plan[i]
 		residual_moment += ports[i].lever.cross(plan[i])
 	var force_error := residual_force
-	var translating := burst_amount>0.0001 or rotation_request.length()>0.1
 	var cold_needed := force_error.length()>(0.025 if translating else 0.04) or residual_moment.length()>(0.005 if translating else 0.02)
 	# Shutdown impulse can briefly disguise a continuing need. Do not close a
 	# required jet just because its minimum burn covers this one physics tick.
@@ -499,7 +527,6 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 		cold_needed = cold_needed or needed
 	# Real motion, not a trim clock, opens a quiet-hover correction window.
 	# Hysteresis lets the body coast through small errors without valve chatter.
-	var quiet_hover := hover_assist>0.5 and rotation_request.length()<0.1 and burst_remaining<=0 and jump_remaining<=0 and horizontal.length()<0.6
 	if quiet_hover:
 		var tilt := acos(clampf(frame.y.y,-1,1))
 		if angular_velocity.length()>0.025 or tilt>deg_to_rad(0.75): hover_cold_correction = true

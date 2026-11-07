@@ -88,6 +88,9 @@ func reset() -> void:
 
 func update(delta: float, controller) -> void:
 	if delta <= 0: return
+	if body.ground_motion:
+		_update_ground_targets(delta,body.ground_motion)
+		return
 	var sk := skeleton
 	var upright := body.global_basis.y.dot(Vector3.UP) > 0.65
 	var lifting: bool = (controller.jump_remaining>0 and controller.thrust_level>1.0) or controller.velocity.y > 0.6
@@ -129,6 +132,18 @@ func update(delta: float, controller) -> void:
 	var supported: float = maxf(weights[0].value.x,weights[1].value.x)
 	pelvis.step(Vector3(0,-profile.ground_sink*supported-profile.impact_sink*impact,0),delta,0.14,1.5)
 
+func _update_ground_targets(delta: float, ground) -> void:
+	state = Support.GROUNDED if ground.supported else Support.AIRBORNE
+	touchdown_count = ground.touchdowns
+	preparation = ground.landing_pose
+	impact = ground.landing_load
+	for side in 2:
+		planted[side] = ground.loaded[side]
+		var weight: float = weights[side].step(Vector3(ground.ik_weight,0,0),delta,0.055).x
+		solvers[side].influence = weight
+		solvers[side].active = weight > 0.001
+	pelvis.step(ground.pelvis_offset(),delta,0.085,2.4)
+
 func _plant(side: int, hit: Dictionary) -> void:
 	planted[side] = true
 	var collider = hit.collider
@@ -139,16 +154,19 @@ func _plant(side: int, hit: Dictionary) -> void:
 	normals[side] = collider.global_basis.orthonormalized().inverse()*hit.normal if collider is Node3D else hit.normal
 
 func plant_position(side: int) -> Vector3:
+	if body.ground_motion: return body.ground_motion.sole_position(side)
 	var platform = platforms[side].get_ref() if platforms[side] != null else null
 	if is_instance_valid(platform): last_world_plants[side] = platform.to_global(plants[side])
 	return last_world_plants[side]
 
 func plant_normal(side: int) -> Vector3:
+	if body.ground_motion: return body.ground_motion.foot_normals[side]
 	var platform = platforms[side].get_ref() if platforms[side] != null else null
 	if is_instance_valid(platform): last_world_normals[side] = (platform.global_basis.orthonormalized()*normals[side]).normalized()
 	return last_world_normals[side]
 
 func foot_basis(side: int) -> Basis:
+	if body.ground_motion: return body.ground_motion.foot_basis(side)
 	var normal := plant_normal(side)
 	var angle := acos(clampf(normal.dot(Vector3.UP),-1,1))
 	if angle>profile.sole_tilt_limit: normal = Vector3.UP.slerp(normal,profile.sole_tilt_limit/angle)

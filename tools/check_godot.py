@@ -31,6 +31,7 @@ def main() -> int:
         if canonical != copied:
             failures.append(f"Distributable/demo copy differs: {relative}")
     tests = sorted((root / "demo").glob("aerial/tests/test_*.gd"))
+    tests += sorted((root / "demo").glob("ground/tests/test_*.gd"))
     tests += sorted((root / "demo").glob("actors/mechs/tests/test_*.gd"))
     tests += sorted((root / "demo").glob("scripts/tests/test_*.gd"))
     for test in tests:

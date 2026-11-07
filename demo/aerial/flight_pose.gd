@@ -74,6 +74,12 @@ func update(delta: float, controller) -> void:
 	motion["land"] = contacts.preparation
 	_prepare_directional_pose(controller)
 	_prepare_maneuver_pose(controller,delta)
+	var ground = contacts.body.ground_motion
+	if ground:
+		motion["ground_guard"] = float(ground.guard and ground.supported)
+		motion["ground_load"] = float(ground.hop_load>0.0) + ground.landing_load
+		motion["ground_skid"] = clampf(ground.slip/4.0,0,1)
+		motion["ground_tuck"] = float(not ground.supported and not ground.hot_enabled)*smoothstep(0.0,2.0,ground.velocity.y)
 	motion.make_read_only()
 	_update_body(delta)
 	_update_legs(delta,controller)
@@ -324,6 +330,7 @@ func _update_body(delta: float) -> void:
 	# secondary so the upper body looks piloted rather than pulled by inertia.
 	var arch := Vector3(-0.16*motion.get("belly",motion.box)+0.12*motion.get("back",0.0)+0.04*motion.track-motion.launch*0.06,0,0)
 	arch.x += motion.land*(0.10+motion.compression*0.08)
+	arch.x += motion.get("ground_load",0.0)*0.15+motion.get("ground_skid",0.0)*0.18
 	arch += motion.gyro*Vector3(0.018,0.012,0.018)*motion.hover
 	# Critically damped powered articulation: commit, decelerate, hold. No spring
 	# overshoot through the torso after a command stops (Titanfall Titan reference).
@@ -406,6 +413,7 @@ func _update_legs(delta: float, controller) -> void:
 			target = target.lerp(braking,motion.flare*(1.0-motion.land))
 			var extension: Vector3 = profile.launch_pose[joint]*Vector3(1,1,sx)
 			target = target.lerp(extension,motion.launch)
+			target = target.lerp(profile.hover_pose[joint]*Vector3(1,1,sx),motion.get("ground_tuck",0.0))
 			if joint==0: target.x += reverse_slide
 			if joint==2: target.x -= reverse_slide
 			var acro: Vector2 = motion.get("acro",Vector2.ZERO)

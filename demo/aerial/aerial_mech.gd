@@ -23,6 +23,7 @@ var motor_springs: Array = []
 var neutral_bases: Array[Basis] = []
 var display_scale := 50.0
 var controls := {}
+var ground_motion: RefCounted
 var player_controlled := false
 var paused_linear_velocity := Vector3.ZERO
 var paused_angular_velocity := Vector3.ZERO
@@ -210,15 +211,21 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 	if freeze or not simulation_enabled or sockets.is_empty(): return
 	if absf(state.inverse_inertia_tensor.determinant()) < 1e-30: return
-	var contact := _ground_probe(state)
 	var outlets := _thruster_outlets(sockets,MOUNTS,0)
 	var cold_outlets := _thruster_outlets(gas_sockets,COLD_MOUNTS,MOUNTS.size())
-	controller.step(state, FlightInput.read_input() if player_controlled else controls, outlets, cold_outlets, contact.grounded, contact.reachable, aerodynamic_surfaces(), rig.arms.brake_spread())
 	collided = state.get_contact_count() > 0
 	native_support = false
 	for index in state.get_contact_count():
 		# Godot labels the body side "local", but returns this vector in world axes.
 		if state.get_contact_local_normal(index).dot(Vector3.UP)>0.65: native_support = true
+	if ground_motion:
+		ground_motion.prepare(state, controls)
+		controller.step_ground(state,outlets,cold_outlets,aerodynamic_surfaces(),
+			ground_motion.supported,ground_motion.jet_force,ground_motion.jet_moment,ground_motion.hot_enabled)
+		ground_motion.apply_traction(state,controller.main_force+controller.cold_force+controller.aero_force)
+	else:
+		var contact := _ground_probe(state)
+		controller.step(state, FlightInput.read_input() if player_controlled else controls, outlets, cold_outlets, contact.grounded, contact.reachable, aerodynamic_surfaces(), rig.arms.brake_spread())
 	prediction_clock -= state.step
 	if prediction_clock <= 0:
 		controller.time_to_impact = predict_impact()
