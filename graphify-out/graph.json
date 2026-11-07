@@ -218,13 +218,51 @@
       "source_location": "L5"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
+      "label": "FollowLockAxis2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "followlockaxis2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L20"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d",
+      "label": "FollowMode2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "followmode2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L10"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult",
       "label": "LimitTargetQueryResult",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -262,7 +300,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -468,25 +506,6 @@
       "norm_label": "transitiontype",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs",
       "source_location": "L5"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
-      "label": "FollowLockAxis2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 34,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followlockaxis2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L20"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameratweendirector_phantomcamera_tweendirector_methodname",
@@ -935,25 +954,6 @@
       "source_location": "L11"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d",
-      "label": "FollowMode2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followmode2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L10"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3d_setcollisionmaskvalue",
       "label": ".SetCollisionMaskValue()",
       "_callable": true,
@@ -1355,7 +1355,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1373,7 +1373,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1391,7 +1391,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1409,7 +1409,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1567,7 +1567,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1585,7 +1585,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1603,7 +1603,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1621,7 +1621,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1639,7 +1639,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -2177,7 +2177,7 @@
       "node_kind": "heading",
       "norm_label": "banks, rolls and somersaults",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L120"
+      "source_location": "L113"
     },
     {
       "id": "demo_aerial_poses_pose_design_flight_pose_design",
@@ -2201,7 +2201,7 @@
       "node_kind": "heading",
       "norm_label": "motion language",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L33"
+      "source_location": "L26"
     },
     {
       "id": "demo_aerial_poses_pose_design_ownership",
@@ -2225,7 +2225,7 @@
       "node_kind": "heading",
       "norm_label": "physical body-flight coupling",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L105"
+      "source_location": "L98"
     },
     {
       "id": "demo_aerial_poses_pose_design_research_adaptation_and_head_intent",
@@ -2237,7 +2237,7 @@
       "node_kind": "heading",
       "norm_label": "research adaptation and head intent",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L176"
+      "source_location": "L169"
     },
     {
       "id": "demo_aerial_poses_pose_design_verification_and_authoring",
@@ -2249,7 +2249,7 @@
       "node_kind": "heading",
       "norm_label": "verification and authoring",
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L149"
+      "source_location": "L142"
     },
     {
       "id": "demo_aerial_readme",
@@ -2285,7 +2285,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L380"
+      "source_location": "L378"
     },
     {
       "id": "demo_aerial_readme_body_flight_control_checks",
@@ -2297,7 +2297,7 @@
       "node_kind": "heading",
       "norm_label": "body-flight control checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L716"
+      "source_location": "L711"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2309,7 +2309,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L467"
+      "source_location": "L463"
     },
     {
       "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
@@ -2321,7 +2321,7 @@
       "node_kind": "heading",
       "norm_label": "dynamic rotation and flip checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L739"
+      "source_location": "L734"
     },
     {
       "id": "demo_aerial_readme_flight_animation_contract_validation",
@@ -2333,7 +2333,7 @@
       "node_kind": "heading",
       "norm_label": "flight animation contract validation",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L682"
+      "source_location": "L677"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2357,7 +2357,7 @@
       "node_kind": "heading",
       "norm_label": "procedural pose ownership and tuning",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L395"
+      "source_location": "L393"
     },
     {
       "id": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
@@ -2369,7 +2369,7 @@
       "node_kind": "heading",
       "norm_label": "research mapped to the current behaviours",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L633"
+      "source_location": "L628"
     },
     {
       "id": "demo_aerial_readme_run_and_controls",
@@ -2393,7 +2393,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L771"
+      "source_location": "L766"
     },
     {
       "id": "readme",
@@ -3609,33 +3609,6 @@
       "source_location": "L22"
     },
     {
-      "id": "csharp_namespace:c24975ad28b7b1df",
-      "label": "PhantomCamera.Noise",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "PhantomCameraNoiseEmitter2D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera.Noise"
-      },
-      "norm_label": "phantomcamera.noise",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
-      "source_location": "L3",
-      "type": "namespace"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
-      "label": "PhantomCameraNoiseEmitter2D.cs",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "PhantomCameraNoiseEmitter2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoiseemitter2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d_cs_godotobject",
       "label": "GodotObject",
       "_origin": "ast",
@@ -3769,28 +3742,6 @@
       "norm_label": "noiseemitterlayer",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
       "source_location": "L39"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d",
-      "label": "PhantomCameraNoiseEmitter3D.cs",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "PhantomCameraNoiseEmitter2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoiseemitter3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d",
-      "label": "PhantomCameraNoise2D.cs",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "PhantomCameraNoiseEmitter2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoise2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L1"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_gdscript",
@@ -3977,17 +3928,6 @@
       "norm_label": "rotationalnoise",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
       "source_location": "L33"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d",
-      "label": "PhantomCameraNoise3D.cs",
-      "_origin": "ast",
-      "community": 12,
-      "community_name": "PhantomCameraNoiseEmitter2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoise3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
-      "source_location": "L1"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_godotobject",
@@ -4213,29 +4153,226 @@
       "label": "CollisionShape2D",
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "norm_label": "collisionshape2d",
       "source_file": "",
       "source_location": ""
     },
     {
+      "id": "csharp_namespace:c24975ad28b7b1df",
+      "label": "PhantomCamera.Noise",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera.Noise"
+      },
+      "norm_label": "phantomcamera.noise",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
+      "source_location": "L3",
+      "type": "namespace"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d",
+      "label": "PhantomCamera2D.cs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "norm_label": "phantomcamera2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_cs_godotobject",
       "label": "GodotObject",
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "norm_label": "godotobject",
       "source_file": "",
       "source_location": ""
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
+      "label": "X",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "x",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L23"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
+      "label": "Xy",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "xy",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L25"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
+      "label": "Y",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "y",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L24"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_framed",
+      "label": "Framed",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "framed",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L17"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_glued",
+      "label": "Glued",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "glued",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L13"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_group",
+      "label": "Group",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "group",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L15"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L12"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_path",
+      "label": "Path",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "path",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L16"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_simple",
+      "label": "Simple",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "simple",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L14"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_iscollisionshape2d",
       "label": "IsCollisionShape2D",
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4252,7 +4389,7 @@
       "label": "IsTileMapLayer",
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4265,11 +4402,55 @@
       "source_location": "L366"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
+      "label": "PhantomCameraNoiseEmitter2D.cs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoiseemitter2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d",
+      "label": "PhantomCameraNoiseEmitter3D.cs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoiseemitter3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d",
+      "label": "PhantomCameraNoise2D.cs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoise2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d",
+      "label": "PhantomCameraNoise3D.cs",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoise3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "tilemaplayer",
       "label": "TileMapLayer",
       "_origin": "ast",
       "community": 15,
-      "community_name": "LimitTargetQueryResult",
+      "community_name": "FollowMode2D",
       "file_type": "code",
       "norm_label": "tilemaplayer",
       "source_file": "",
@@ -4315,22 +4496,11 @@
       "source_location": ""
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d",
-      "label": "PhantomCamera2D.cs",
-      "_origin": "ast",
-      "community": 17,
-      "community_name": "PhantomCamera2D.cs",
-      "file_type": "code",
-      "norm_label": "phantomcamera2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_node2d",
       "label": "Node2D",
       "_origin": "ast",
       "community": 17,
-      "community_name": "PhantomCamera2D.cs",
+      "community_name": "Node2D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -5976,72 +6146,184 @@
       "source_location": "L26"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
-      "label": "None",
+      "id": "ground_combat_research",
+      "label": "GROUND_COMBAT_RESEARCH.md",
       "_origin": "ast",
       "community": 34,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L22"
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "ground_combat_research.md",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
-      "label": "X",
+      "id": "ground_combat_research_1_scope_target_reference_and_evidence_standard",
+      "label": "1. Scope, Target Reference, and Evidence Standard",
       "_origin": "ast",
       "community": 34,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "x",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L23"
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "1. scope, target reference, and evidence standard",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L3"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
-      "label": "Xy",
+      "id": "ground_combat_research_2_anatomy_of_the_hathaway_target_scenes",
+      "label": "2. Anatomy of the Hathaway Target Scenes",
       "_origin": "ast",
       "community": 34,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "xy",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L25"
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "2. anatomy of the hathaway target scenes",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L26"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
-      "label": "Y",
+      "id": "ground_combat_research_3_1_sunrise_bandai_namco_filmworks_studio_1_d_i_d_sublimation_yamatoworks_gundam_hathaway",
+      "label": "3.1 Sunrise (Bandai Namco Filmworks Studio 1 / D.I.D., Sublimation & YAMATOWORKS) \u2014 *Gundam Hathaway*",
       "_origin": "ast",
       "community": 34,
-      "community_name": "FollowLockAxis2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "y",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L24"
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3.1 sunrise (bandai namco filmworks studio 1 / d.i.d., sublimation & yamatoworks) \u2014 *gundam hathaway*",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L43"
+    },
+    {
+      "id": "ground_combat_research_3_2_industrial_light_magic_ilm_pacific_rim",
+      "label": "3.2 Industrial Light & Magic (ILM) \u2014 *Pacific Rim*",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3.2 industrial light & magic (ilm) \u2014 *pacific rim*",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L56"
+    },
+    {
+      "id": "ground_combat_research_3_3_respawn_entertainment_titanfall_titanfall_2",
+      "label": "3.3 Respawn Entertainment \u2014 *Titanfall* & *Titanfall 2*",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3.3 respawn entertainment \u2014 *titanfall* & *titanfall 2*",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L72"
+    },
+    {
+      "id": "ground_combat_research_3_4_sucker_punch_productions_ghost_of_tsushima",
+      "label": "3.4 Sucker Punch Productions \u2014 *Ghost of Tsushima*",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3.4 sucker punch productions \u2014 *ghost of tsushima*",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L85"
+    },
+    {
+      "id": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "label": "3. Underlying Techniques of the Four Reference Productions",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "3. underlying techniques of the four reference productions",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L41"
+    },
+    {
+      "id": "ground_combat_research_5_recommended_option_stack_phased_path",
+      "label": "5. Recommended Option Stack & Phased Path",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "5. recommended option stack & phased path",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L265"
+    },
+    {
+      "id": "ground_combat_research_6_sources_and_what_each_supports",
+      "label": "6. Sources and What Each Supports",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "6. sources and what each supports",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L286"
+    },
+    {
+      "id": "ground_combat_research_cross_production_synthesis",
+      "label": "Cross-Production Synthesis",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "cross-production synthesis",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L101"
+    },
+    {
+      "id": "ground_combat_research_evidence_standard",
+      "label": "Evidence Standard",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "evidence standard",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L20"
+    },
+    {
+      "id": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "label": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "ground combat direction: gundam hathaway grunt ms study",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "ground_combat_research_suggested_prototyping_verification_order_future_work",
+      "label": "Suggested Prototyping & Verification Order (Future Work)",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "suggested prototyping & verification order (future work)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L277"
+    },
+    {
+      "id": "ground_combat_research_why_grunt_ms_combat_differs_from_ace_flight_combat",
+      "label": "Why Grunt MS Combat Differs from Ace Flight Combat",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "Ground Combat Direction: Gundam Hathaway Grunt MS Study",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "why grunt ms combat differs from ace flight combat",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L12"
     },
     {
       "id": "graphify_out_memory_query_20261106_185819_e22bcec3_how_are_aerial_per_booster_thrust_caps_and_redunda",
@@ -7144,6 +7426,22 @@
       "source_location": ""
     },
     {
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
+      "_origin": "ast",
+      "community": 7,
+      "community_name": "PhantomCameraHost",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_host_phantomcamerahost",
       "label": "PhantomCameraHost.cs",
       "_origin": "ast",
@@ -7334,22 +7632,6 @@
       "norm_label": "triggerphantomcameratween",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera_host/PhantomCameraHost.cs",
       "source_location": "L66"
-    },
-    {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
@@ -7686,106 +7968,256 @@
       "source_location": "L15"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_framed",
-      "label": "Framed",
+      "id": "ground_combat_research_4_1_ground_locomotion_physics_authority",
+      "label": "4.1 Ground Locomotion & Physics Authority",
       "_origin": "ast",
       "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "framed",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L17"
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4.1 ground locomotion & physics authority",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L139"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_glued",
-      "label": "Glued",
+      "id": "ground_combat_research_4_2_skeletal_animation_mechanical_weight",
+      "label": "4.2 Skeletal Animation & Mechanical Weight",
       "_origin": "ast",
       "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "glued",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L13"
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4.2 skeletal animation & mechanical weight",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L167"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_group",
-      "label": "Group",
+      "id": "ground_combat_research_4_3_combat_loop_lethality_and_subsystem_damage",
+      "label": "4.3 Combat Loop, Lethality, and Subsystem Damage",
       "_origin": "ast",
       "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "group",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L15"
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4.3 combat loop, lethality, and subsystem damage",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L190"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_none",
-      "label": "None",
+      "id": "ground_combat_research_4_4_camera_scale_framing_and_readability",
+      "label": "4.4 Camera, Scale Framing, and Readability",
       "_origin": "ast",
       "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L12"
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4.4 camera, scale framing, and readability",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L216"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_path",
-      "label": "Path",
+      "id": "ground_combat_research_4_5_cel_lighting_atmosphere_and_systemic_scale_ruler_vfx",
+      "label": "4.5 Cel Lighting, Atmosphere, and Systemic \"Scale Ruler\" VFX",
       "_origin": "ast",
       "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "path",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L16"
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4.5 cel lighting, atmosphere, and systemic \"scale ruler\" vfx",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L238"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_simple",
-      "label": "Simple",
+      "id": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "label": "4. Architectural Options for This Project (Godot 4.7)",
       "_origin": "ast",
       "community": 9,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "simple",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L14"
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "4. architectural options for this project (godot 4.7)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L113"
+    },
+    {
+      "id": "ground_combat_research_option_4_1a_unified_force_driven_rigidbody3d_grounded_extension_of_aerial_mech_gd",
+      "label": "Option 4.1A \u2014 Unified Force-Driven `RigidBody3D` (\"Grounded Extension of `aerial_mech.gd`\")",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.1a \u2014 unified force-driven `rigidbody3d` (\"grounded extension of `aerial_mech.gd`\")",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L143"
+    },
+    {
+      "id": "ground_combat_research_option_4_1b_dual_mode_kinematic_dynamic_hybrid_characterbody3d_ground_leftrightarrow_rigidbody3d_ballistic_crash",
+      "label": "Option 4.1B \u2014 Dual-Mode Kinematic/Dynamic Hybrid (`CharacterBody3D` Ground $\\leftrightarrow$ `RigidBody3D` Ballistic/Crash)",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.1b \u2014 dual-mode kinematic/dynamic hybrid (`characterbody3d` ground $\\leftrightarrow$ `rigidbody3d` ballistic/crash)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L149"
+    },
+    {
+      "id": "ground_combat_research_option_4_1c_stride_phase_gait_envelope_over_kinematic_or_force_capsule",
+      "label": "Option 4.1C \u2014 Stride-Phase Gait Envelope Over Kinematic or Force Capsule",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.1c \u2014 stride-phase gait envelope over kinematic or force capsule",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L155"
+    },
+    {
+      "id": "ground_combat_research_option_4_2a_procedural_gait_asymmetric_servo_vocabulary_extend_flight_pose_gd_pose_studio_tscn",
+      "label": "Option 4.2A \u2014 Procedural Gait + Asymmetric Servo Vocabulary (Extend `flight_pose.gd` & `pose_studio.tscn`)",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.2a \u2014 procedural gait + asymmetric servo vocabulary (extend `flight_pose.gd` & `pose_studio.tscn`)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L171"
+    },
+    {
+      "id": "ground_combat_research_option_4_2b_authored_keyframe_combat_library_animationtree_procedural_ik_additive_layers",
+      "label": "Option 4.2B \u2014 Authored Keyframe Combat Library (`AnimationTree`) + Procedural IK/Additive Layers",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.2b \u2014 authored keyframe combat library (`animationtree`) + procedural ik/additive layers",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L179"
+    },
+    {
+      "id": "ground_combat_research_option_4_2c_hybrid_split_procedural_lower_body_slides_aiming_authored_high_commitment_upper_body_cqc_beats",
+      "label": "Option 4.2C \u2014 Hybrid Split: Procedural Lower-Body/Slides/Aiming + Authored High-Commitment Upper-Body/CQC Beats",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.2c \u2014 hybrid split: procedural lower-body/slides/aiming + authored high-commitment upper-body/cqc beats",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L185"
+    },
+    {
+      "id": "ground_combat_research_option_4_3a_shield_actuator_posture_lethal_core_ghost_of_tsushima_times_uc_gundam",
+      "label": "Option 4.3A \u2014 \"Shield + Actuator Posture + Lethal Core\" (*Ghost of Tsushima* $\\times$ UC Gundam)",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.3a \u2014 \"shield + actuator posture + lethal core\" (*ghost of tsushima* $\\times$ uc gundam)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L194"
+    },
+    {
+      "id": "ground_combat_research_option_4_3b_titanfall_tactical_brawler_economy",
+      "label": "Option 4.3B \u2014 *Titanfall* Tactical Brawler Economy",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.3b \u2014 *titanfall* tactical brawler economy",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L203"
+    },
+    {
+      "id": "ground_combat_research_option_4_3c_staggered_group_ai_choreography_1_messer_vs_2_3_gustav_karls",
+      "label": "Option 4.3C \u2014 Staggered Group AI Choreography (1 Messer vs. 2\u20133 Gustav Karls)",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.3c \u2014 staggered group ai choreography (1 messer vs. 2\u20133 gustav karls)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L209"
+    },
+    {
+      "id": "ground_combat_research_option_4_4a_low_slung_street_level_chase_rig_extend_flight_camera_gd_phantomcamera3d",
+      "label": "Option 4.4A \u2014 Low-Slung \"Street-Level Chase\" Rig (Extend `flight_camera.gd` & `PhantomCamera3D`)",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.4a \u2014 low-slung \"street-level chase\" rig (extend `flight_camera.gd` & `phantomcamera3d`)",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L220"
+    },
+    {
+      "id": "ground_combat_research_option_4_4b_uc_panoramic_cockpit_mode_360_linear_seat",
+      "label": "Option 4.4B \u2014 UC Panoramic Cockpit Mode (\"360\u00b0 Linear Seat\")",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.4b \u2014 uc panoramic cockpit mode (\"360\u00b0 linear seat\")",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L227"
+    },
+    {
+      "id": "ground_combat_research_option_4_4c_circe_davao_civilian_witness_replay_camera",
+      "label": "Option 4.4C \u2014 *Circe* / Davao \"Civilian Witness\" Replay Camera",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.4c \u2014 *circe* / davao \"civilian witness\" replay camera",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L233"
+    },
+    {
+      "id": "ground_combat_research_option_4_5a_neo_noir_night_dusk_palette_transient_3d_weapon_lights",
+      "label": "Option 4.5A \u2014 Neo-Noir Night/Dusk Palette + Transient 3D Weapon Lights",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.5a \u2014 neo-noir night/dusk palette + transient 3d weapon lights",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L242"
+    },
+    {
+      "id": "ground_combat_research_option_4_5b_multi_impulse_environmental_vector_field_deterministic_1g_secondary_rulers",
+      "label": "Option 4.5B \u2014 Multi-Impulse Environmental Vector Field + Deterministic `1g` Secondary Rulers",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.5b \u2014 multi-impulse environmental vector field + deterministic `1g` secondary rulers",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L250"
+    },
+    {
+      "id": "ground_combat_research_option_4_5c_crushable_urban_micro_architecture_collateral_weight",
+      "label": "Option 4.5C \u2014 Crushable Urban Micro-Architecture (\"Collateral Weight\")",
+      "_origin": "ast",
+      "community": 9,
+      "community_name": "4. Architectural Options for This Project (Godot 4.7)",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "option 4.5c \u2014 crushable urban micro-architecture (\"collateral weight\")",
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L260"
     }
   ],
   "links": [
@@ -13056,17 +13488,6 @@
     },
     {
       "source": "demo_aerial_poses_pose_design_flight_pose_design",
-      "target": "demo_aerial_poses_pose_design_physical_body_flight_coupling",
-      "relation": "contains",
-      "_origin": "ast",
-      "confidence": "EXTRACTED",
-      "confidence_score": 1.0,
-      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L105",
-      "weight": 1.0
-    },
-    {
-      "source": "demo_aerial_poses_pose_design_flight_pose_design",
       "target": "demo_aerial_poses_pose_design_ownership",
       "relation": "contains",
       "_origin": "ast",
@@ -13084,7 +13505,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L120",
+      "source_location": "L113",
       "weight": 1.0
     },
     {
@@ -13095,7 +13516,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L149",
+      "source_location": "L142",
       "weight": 1.0
     },
     {
@@ -13106,7 +13527,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L176",
+      "source_location": "L169",
       "weight": 1.0
     },
     {
@@ -13117,7 +13538,18 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L33",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_poses_pose_design_flight_pose_design",
+      "target": "demo_aerial_poses_pose_design_physical_body_flight_coupling",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/POSE_DESIGN.md",
+      "source_location": "L98",
       "weight": 1.0
     },
     {
@@ -13139,7 +13571,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L380",
+      "source_location": "L378",
       "weight": 1.0
     },
     {
@@ -13150,7 +13582,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L395",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -13161,7 +13593,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L467",
+      "source_location": "L463",
       "weight": 1.0
     },
     {
@@ -13194,7 +13626,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L771",
+      "source_location": "L766",
       "weight": 1.0
     },
     {
@@ -13205,7 +13637,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L633",
+      "source_location": "L628",
       "weight": 1.0
     },
     {
@@ -13216,7 +13648,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L682",
+      "source_location": "L677",
       "weight": 1.0
     },
     {
@@ -13227,7 +13659,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L716",
+      "source_location": "L711",
       "weight": 1.0
     },
     {
@@ -13238,7 +13670,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L739",
+      "source_location": "L734",
       "weight": 1.0
     },
     {
@@ -13745,6 +14177,391 @@
       "confidence_score": 1.0,
       "source_file": "GRASS_RESEARCH.md",
       "source_location": "L70",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research",
+      "target": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_1_scope_target_reference_and_evidence_standard",
+      "target": "ground_combat_research_why_grunt_ms_combat_differs_from_ace_flight_combat",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L12",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_1_scope_target_reference_and_evidence_standard",
+      "target": "ground_combat_research_evidence_standard",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L20",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "target": "ground_combat_research_cross_production_synthesis",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L101",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "target": "ground_combat_research_3_1_sunrise_bandai_namco_filmworks_studio_1_d_i_d_sublimation_yamatoworks_gundam_hathaway",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L43",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "target": "ground_combat_research_3_2_industrial_light_magic_ilm_pacific_rim",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L56",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "target": "ground_combat_research_3_3_respawn_entertainment_titanfall_titanfall_2",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L72",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "target": "ground_combat_research_3_4_sucker_punch_productions_ghost_of_tsushima",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L85",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_1_ground_locomotion_physics_authority",
+      "target": "ground_combat_research_option_4_1a_unified_force_driven_rigidbody3d_grounded_extension_of_aerial_mech_gd",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L143",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_1_ground_locomotion_physics_authority",
+      "target": "ground_combat_research_option_4_1b_dual_mode_kinematic_dynamic_hybrid_characterbody3d_ground_leftrightarrow_rigidbody3d_ballistic_crash",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L149",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_1_ground_locomotion_physics_authority",
+      "target": "ground_combat_research_option_4_1c_stride_phase_gait_envelope_over_kinematic_or_force_capsule",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L155",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_2_skeletal_animation_mechanical_weight",
+      "target": "ground_combat_research_option_4_2a_procedural_gait_asymmetric_servo_vocabulary_extend_flight_pose_gd_pose_studio_tscn",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L171",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_2_skeletal_animation_mechanical_weight",
+      "target": "ground_combat_research_option_4_2b_authored_keyframe_combat_library_animationtree_procedural_ik_additive_layers",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L179",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_2_skeletal_animation_mechanical_weight",
+      "target": "ground_combat_research_option_4_2c_hybrid_split_procedural_lower_body_slides_aiming_authored_high_commitment_upper_body_cqc_beats",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L185",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_3_combat_loop_lethality_and_subsystem_damage",
+      "target": "ground_combat_research_option_4_3a_shield_actuator_posture_lethal_core_ghost_of_tsushima_times_uc_gundam",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L194",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_3_combat_loop_lethality_and_subsystem_damage",
+      "target": "ground_combat_research_option_4_3b_titanfall_tactical_brawler_economy",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L203",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_3_combat_loop_lethality_and_subsystem_damage",
+      "target": "ground_combat_research_option_4_3c_staggered_group_ai_choreography_1_messer_vs_2_3_gustav_karls",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L209",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_4_camera_scale_framing_and_readability",
+      "target": "ground_combat_research_option_4_4a_low_slung_street_level_chase_rig_extend_flight_camera_gd_phantomcamera3d",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L220",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_4_camera_scale_framing_and_readability",
+      "target": "ground_combat_research_option_4_4b_uc_panoramic_cockpit_mode_360_linear_seat",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L227",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_4_camera_scale_framing_and_readability",
+      "target": "ground_combat_research_option_4_4c_circe_davao_civilian_witness_replay_camera",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L233",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_5_cel_lighting_atmosphere_and_systemic_scale_ruler_vfx",
+      "target": "ground_combat_research_option_4_5a_neo_noir_night_dusk_palette_transient_3d_weapon_lights",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L242",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_5_cel_lighting_atmosphere_and_systemic_scale_ruler_vfx",
+      "target": "ground_combat_research_option_4_5b_multi_impulse_environmental_vector_field_deterministic_1g_secondary_rulers",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L250",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_5_cel_lighting_atmosphere_and_systemic_scale_ruler_vfx",
+      "target": "ground_combat_research_option_4_5c_crushable_urban_micro_architecture_collateral_weight",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L260",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "target": "ground_combat_research_4_1_ground_locomotion_physics_authority",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L139",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "target": "ground_combat_research_4_2_skeletal_animation_mechanical_weight",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L167",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "target": "ground_combat_research_4_3_combat_loop_lethality_and_subsystem_damage",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L190",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "target": "ground_combat_research_4_4_camera_scale_framing_and_readability",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L216",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "target": "ground_combat_research_4_5_cel_lighting_atmosphere_and_systemic_scale_ruler_vfx",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L238",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_5_recommended_option_stack_phased_path",
+      "target": "ground_combat_research_suggested_prototyping_verification_order_future_work",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L277",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "target": "ground_combat_research_4_architectural_options_for_this_project_godot_4_7",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L113",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "target": "ground_combat_research_2_anatomy_of_the_hathaway_target_scenes",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L26",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "target": "ground_combat_research_5_recommended_option_stack_phased_path",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L265",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "target": "ground_combat_research_6_sources_and_what_each_supports",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L286",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "target": "ground_combat_research_1_scope_target_reference_and_evidence_standard",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L3",
+      "weight": 1.0
+    },
+    {
+      "source": "ground_combat_research_ground_combat_direction_gundam_hathaway_grunt_ms_study",
+      "target": "ground_combat_research_3_underlying_techniques_of_the_four_reference_productions",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "GROUND_COMBAT_RESEARCH.md",
+      "source_location": "L41",
       "weight": 1.0
     },
     {
@@ -14448,7 +15265,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/poses/POSE_DESIGN.md",
-      "source_location": "L178",
+      "source_location": "L171",
       "weight": 1.0
     },
     {
@@ -14470,7 +15287,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L397",
+      "source_location": "L395",
       "weight": 1.0
     },
     {
@@ -14510,5 +15327,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "278c64dd0a40c44960a628aafc12a8c5dacc99ca"
+  "built_at_commit": "3ab726227c7938d8215508b12b39433cc22794eb"
 }

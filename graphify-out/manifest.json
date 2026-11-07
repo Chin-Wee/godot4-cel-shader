@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1793992792.8921168,
-    "seen": 1793993065.1519868,
-    "ast_hash": "bcb492f1d9f3c522185e9ac0093bb5f8",
+    "mtime": 1794028150.7500944,
+    "seen": 1794028424.06583,
+    "ast_hash": "c2dcf8c285d9cf7f58642685c27e0f17",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1398,9 +1398,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/poses/POSE_DESIGN.md": {
-    "mtime": 1793985564.2533362,
-    "seen": 1793986108.9250429,
-    "ast_hash": "bd7f987712818bd9b6b6c212808ec75b",
+    "mtime": 1794028150.7531323,
+    "seen": 1794028424.0658329,
+    "ast_hash": "a9e7b24243569e6095c900030dbb8657",
     "semantic_hash": ""
   },
   "graphify-out/memory/query_20261102_073400_970b2df8_implement_the_phantom_camera_in_the_aerial_demo_sc.md": {
@@ -1461,6 +1461,12 @@
     "mtime": 1793993063.9708753,
     "seen": 1793993065.152003,
     "ast_hash": "8ca1c1ff9e35deb907526dce9fc518aa",
+    "semantic_hash": ""
+  },
+  "GROUND_COMBAT_RESEARCH.md": {
+    "mtime": 1794028150.7491584,
+    "seen": 1794028424.065825,
+    "ast_hash": "49df5c0e59f1b799d808e8d59a0c4557",
     "semantic_hash": ""
   }
 }
