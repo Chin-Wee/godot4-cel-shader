@@ -4,6 +4,8 @@ Open [Ground Trial](ground_demo.tscn) in the demo project. Use **F6** to switch 
 
 The acceptance sequence is **two steps → 90° pivot → powered hop → one-foot catch → skid → guard**. The current **9 m, 10 t** chassis should visibly load a foot, push off, commit to the move, and recover its weight. Armored Core VI is the shipped-game reference for short powered repositioning and landing recovery. Hathaway supplies the sole mechanics, posing, and street-level staging. [Armored Core VI movement](https://www.armoredcore.net/article/230911_1.html) · [Gustav Karl ankle rig](https://area.autodesk.jp/case/animation/hathaway-the-witch-of-circe/) · [Hathaway production and camera](https://febri.jp/topics/gundam_hathaway_chap2_3_1/)
 
+The proposed follow-up is documented in the [authored locomotion plan](AUTHORED_LOCOMOTION_PLAN.md).
+
 ## Movement
 
 | Input or event | Required behavior and tuning targets |
