@@ -78,8 +78,13 @@ func update(delta: float, controller) -> void:
 	_prepare_maneuver_pose(controller,delta)
 	var ground = contacts.body.ground_motion
 	if ground:
-		motion["ground_guard"] = float(ground.guard and ground.supported and not ground.hot_enabled and ground.hop_load<=0.0)
-		motion["ground_run"] = float(ground.supported and not ground.hot_enabled and not ground.braking and not ground.skidding and ground.pivot_steps==0 and ground.hop_load<=0.0 and ground.catch_time<=0.0 and ground.recovery<=0.0 and (ground.step_running or ground.running))
+		var grounded_pose_available: bool = (
+			ground.supported and not ground.hot_enabled and not ground.braking
+			and not ground.skidding and ground.pivot_steps==0 and ground.hop_load<=0.0
+			and ground.catch_time<=0.0 and ground.recovery<=0.0
+		)
+		motion["ground_guard"] = float(ground.guard and grounded_pose_available)
+		motion["ground_run"] = float(grounded_pose_available and (ground.step_running or ground.running))
 		motion["ground_phase"] = clampf(ground.step_time/maxf(ground.step_duration,0.01),0.0,1.0) if ground.step_time>=0.0 else 0.0
 		motion["ground_swing"] = ground.swing
 		motion["ground_load"] = float(ground.hop_load>0.0) + ground.landing_load

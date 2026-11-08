@@ -187,6 +187,10 @@ func _run() -> void:
 	_check(mech.controller.velocity.length()<=0.10,"Run release did not settle")
 	await _ticks(30,{"guard":true})
 	_check(motion.guard and motion.pelvis_offset().y<=-0.10 and saw_guard_pose,"Crouched guard did not lower the pelvis and apply its pose")
+	await _ticks(2,{"guard":true,"brake":true})
+	_check(mech.rig.motion.get("ground_guard",0.0)<=0.01,"Crouched guard pose remained active while braking")
+	await _ticks(2,{"guard":true})
+	_check(mech.rig.motion.get("ground_guard",0.0)>=0.99,"Crouched guard pose did not return after braking")
 	var guard_steps_before: int = motion.steps
 	for tick in 100:
 		await _step({"move":Vector2(0,1),"guard":true})
