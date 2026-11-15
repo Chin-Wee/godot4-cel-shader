@@ -22,7 +22,7 @@ These values are the ones that made this screenshot you're seeing, but feel free
 
 These controls follow Risk of Rain 2's HGStandard material pattern: specular strength, exponent, and smoothness are separate per-material values. The `specular` alpha and `specular_texture` alpha now multiply strength; both previously changed the exponent. Set `specular_exponent` to control highlight size; `specular_smoothness` controls its threshold softness. Fresnel emission is disabled by default; enable it on a material to use `fresnel` for color and intensity, `fresnel_texture` as its mask, `fresnel_ramp` for its ramp, and tune `fresnel_power` and `fresnel_boost`.
 
-The `diffuse_curve` texture must also be set. You can put a texture you already have or you can use Godot's built in `GradientTexture1D` or `CurveTexture` types, but *you must save them as resources* or else the engine won't be able to load them the next time you open Godot. The one I used for this demo is [this one](demo/texture/diffuse-texture.tres) saved from a `GradientTexture1D` resource, so you can use this one to get a scene looking exactly like the one in the demo. I explain its functionality more in detail on [the previous video](https://youtu.be/Y3tT_-GTXKg).
+The `diffuse_curve` texture must also be set. You can put a texture you already have or you can use Godot's built in `GradientTexture1D` or `CurveTexture` types, but *you must save them as resources* or else the engine won't be able to load them the next time you open Godot. The one I used for this demo is [this one](demo/textures/diffuse-texture.tres) saved from a `GradientTexture1D` resource, so you can use this one to get a scene looking exactly like the one in the demo. I explain its functionality more in detail on [the previous video](https://youtu.be/Y3tT_-GTXKg).
 
 ### Base Materials
 
@@ -85,4 +85,9 @@ See [controls, implementation, comparison checks and remaining fidelity work](de
 ## Ground movement study
 
 Open [Ground Trial](demo/ground/ground_demo.tscn) for the 9 m mech street trial.
-See the [movement spec and replay commands](demo/ground/GROUND_MODE_SPEC.md).
+See the [ground controls and replay commands](demo/ground/README.md).
+
+## Mech movement and animation design
+
+The [mech animation and movement guide](MECH_ANIMATION_RESEARCH.md) is the
+source of truth for movement, animation, and combat animation design.

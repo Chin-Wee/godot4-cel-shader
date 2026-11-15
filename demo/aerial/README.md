@@ -392,8 +392,8 @@ Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
 ## Procedural pose ownership and tuning
 
-The [flight animation contract](flight-animation-contract.md) defines the required
-behaviors. The airborne rig uses one native modifier to write torso, arms,
+The [mech animation and movement guide](../../MECH_ANIMATION_RESEARCH.md)
+defines the design and authoring targets. The airborne rig uses one native modifier to write torso, arms,
 wrists, fingers and legs. Arms use direct joint poses; there is no airborne arm
 IK, elbow-pole solve, wrist post-pass or chain of completion signals.
 
@@ -454,7 +454,7 @@ it captures every fixture in three views and rejects blank renders. The contact
 check covers landing, platforms and slopes. Real input replays
 include `flare_exit`: high-speed braking into a squat/wide-hand flare, then a
 powered acceleration stroke and aerodynamic recovery in both review and gameplay
-cameras. See [pose design and capture commands](poses/POSE_DESIGN.md).
+cameras. See [Pose Studio and capture commands](#pose-studio).
 
 F9 displays posture percentages, foot plants, probe count and impact strength.
 Behavior and launch channels are recorded in the replay reports.
@@ -468,8 +468,7 @@ camera at 30/144/240 FPS and rejects GDScript errors even if the engine exits ze
 The native material check is
 `godot --path demo --script res://scripts/tests/capture_shader_variants.gd -- /tmp/shader-variants.png`.
 It renders the four demo wrappers plus the distributable and height-mapped
-template configurations. `REFACTOR_PLAN.md` records ownership decisions and the
-refactor's verification scope.
+template configurations.
 
 `test_flight_controls.gd` runs real-input sequences, including 24 sustained W/S
 pulls across all four powered levels at 35, 70 and 110 m/s. It checks signed
@@ -674,19 +673,30 @@ name) selects a quick visual pass. The frozen-pose check also covers quiet head
 settling, anticipation, neck speed/bounds, camera independence, unchanged air
 panels under gaze, vacuum exclusion and geometry-before-drag causality.
 
-### Flight animation contract validation
+### Pose Studio
 
-The [pose design and native Pose Studio](poses/POSE_DESIGN.md) provide 45 full-body
-key poses and fourteen editable motion studies, including four directional hover
-keys and horizontal-slide / bank-and-pull studies. Run `pose_studio.tscn` to inspect the
-silhouettes and timing separately from the physical gameplay replays below.
+Open [Pose Studio](pose_studio.tscn) to review 45 full-body keys and fourteen
+editable motion studies, including directional hover, horizontal slide and bank
+and pull. Select PosePlayer in the Animation dock. Arrow keys select clips,
+Space pauses, R restarts, and 1/2/3 changes the view. The studio holds the chassis
+still for pose review. Use the gameplay replays to verify motion under load.
+
+```sh
+godot --headless --path demo --script res://aerial/poses/bake_pose_library.gd
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_air_pose.gd
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/test_air_pose.gd -- /tmp/air-pose-geometry
+godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_maneuver_intent.gd -- /tmp/air-pose-motion
+```
+
+### Flight animation checks
+
 Runtime maneuver effort adds directional reverse/acceleration bracing, retained
 left/right roles, independent hand expression and alignment-dependent cruise.
 `test_maneuver_intent.gd` checks the temporal response; `capture_maneuver_intent.gd`
 records reverse-through-zero, burst, interruption, turns, freefall and flare-to-flight with real
 physics in both cameras. The study clips remain authoring references.
 
-The contract-specific check covers normalized behavior weights, bounded transitions,
+The animation check covers normalized behavior weights, bounded transitions,
 force-driven launch and recovery, quiet hover versus independent steering,
 inverted fighter shape, thrust-cutoff continuity, start/coast/stop strokes,
 vacuum exclusion, completed wrist articulation, box/arch, tracking, flare and
