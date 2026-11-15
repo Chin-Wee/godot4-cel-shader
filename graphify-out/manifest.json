@@ -1,8 +1,8 @@
 {
   "README.md": {
-    "mtime": 1794037156.9152362,
-    "seen": 1794037186.450309,
-    "ast_hash": "d99994090f62081211497e6dd361d612",
+    "mtime": 1794760994.9633725,
+    "seen": 1794760996.164681,
+    "ast_hash": "a1be847889b01236efd98d2456d5ebef",
     "semantic_hash": ""
   },
   "demo/models/kenney_factory-kit_3.0/License.txt": {
@@ -1380,27 +1380,15 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1794028150.7500944,
-    "seen": 1794028424.06583,
-    "ast_hash": "c2dcf8c285d9cf7f58642685c27e0f17",
+    "mtime": 1794760994.963798,
+    "seen": 1794760996.164684,
+    "ast_hash": "5289d9a7de20c10b7ddc0c8c267a4538",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
     "mtime": 1793067869.2490835,
     "seen": 1793068155.500041,
     "ast_hash": "b2e4476ac5a33af87336daf896d4d62a",
-    "semantic_hash": ""
-  },
-  "demo/aerial/flight-animation-contract.md": {
-    "mtime": 1793985564.2510796,
-    "seen": 1793986108.925042,
-    "ast_hash": "6044f35841d74d9a1d8197bc6ce6a436",
-    "semantic_hash": ""
-  },
-  "demo/aerial/poses/POSE_DESIGN.md": {
-    "mtime": 1794028150.7531323,
-    "seen": 1794028424.0658329,
-    "ast_hash": "a9e7b24243569e6095c900030dbb8657",
     "semantic_hash": ""
   },
   "graphify-out/memory/query_20261102_073400_970b2df8_implement_the_phantom_camera_in_the_aerial_demo_sc.md": {
@@ -1415,16 +1403,10 @@
     "ast_hash": "47da74733d677c5df1ef859d5965c461",
     "semantic_hash": ""
   },
-  "REFACTOR_PLAN.md": {
-    "mtime": 1793878212.269374,
-    "seen": 1793878213.236458,
-    "ast_hash": "5c5fd466c7a89be69b6382ae6bf3a9d4",
-    "semantic_hash": ""
-  },
   "graphify-out/memory/query_20261105_112848_78f9098f_refactor_the_codebase_based_on_solid_design_princi.md": {
-    "mtime": 1793878128.6543205,
-    "seen": 1793878129.749321,
-    "ast_hash": "f62de87479ed5be5e26658d2a1191288",
+    "mtime": 1794760994.9642105,
+    "seen": 1794760996.1646929,
+    "ast_hash": "582f7b316d1bac99aba2205e8df69121",
     "semantic_hash": ""
   },
   "graphify-out/memory/query_20261106_102146_54c4d695_where_are_armored_core_hover_tap_burst_control_tim.md": {
@@ -1463,22 +1445,16 @@
     "ast_hash": "8ca1c1ff9e35deb907526dce9fc518aa",
     "semantic_hash": ""
   },
-  "GROUND_COMBAT_RESEARCH.md": {
-    "mtime": 1794037156.9139585,
-    "seen": 1794037186.450308,
-    "ast_hash": "41dfaaf92493a38a9c60ea73a679fa18",
+  "MECH_ANIMATION_RESEARCH.md": {
+    "mtime": 1794760994.9628665,
+    "seen": 1794760996.1646788,
+    "ast_hash": "94523b6e96315fa669cc6b9c183de6cc",
     "semantic_hash": ""
   },
-  "demo/ground/GROUND_MODE_SPEC.md": {
-    "mtime": 1794038120.0361798,
-    "seen": 1794038121.731725,
-    "ast_hash": "2c0ae271caec7af01eb92abf96bd9c98",
-    "semantic_hash": ""
-  },
-  "demo/ground/AUTHORED_LOCOMOTION_PLAN.md": {
-    "mtime": 1794038120.0359282,
-    "seen": 1794038121.731723,
-    "ast_hash": "72bd6dbc7aa3c2fe00e77f376503bb2d",
+  "demo/ground/README.md": {
+    "mtime": 1794760994.964001,
+    "seen": 1794760996.164686,
+    "ast_hash": "83b8c9edbc44503d9c626c6960221a44",
     "semantic_hash": ""
   }
 }

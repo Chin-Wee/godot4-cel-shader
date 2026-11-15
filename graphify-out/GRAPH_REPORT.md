@@ -1,22 +1,22 @@
-# Graph Report - godot4-cel-shader  (2026-11-07)
+# Graph Report - godot4-cel-shader  (2026-11-16)
 
 ## Corpus Check
-- 33 files · ~2,128,272 words
+- 29 files · ~2,121,222 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 1078 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 540 nodes · 602 edges · 39 communities (32 shown, 7 thin omitted)
+- 486 nodes · 549 edges · 37 communities (30 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `13bddf03`
+- Built from commit: `81f685d6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Flight pose design
+- Godot 4 Complete Cel Shader
 - PhantomCamera3D
 - PhantomCamera2D
 - TransitionType
@@ -25,7 +25,7 @@
 - Camera3DResource
 - PhantomCameraHost
 - FollowLockAxis3D
-- 4. Architectural Options for This Project (Godot 4.7)
+- Animation direction for the 9 m, 10 t mech
 - PhantomCameraNoise3D
 - PhantomCameraManager
 - PhantomCameraNoiseEmitter2D
@@ -41,15 +41,13 @@
 - .EmitNoise
 - .EmitNoise
 - Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff.
-- Ground Mode v2 · Gustav Karl locomotion
+- MechAsset
 - Balanced aerial thrust and directional braking
 - Q: Why do A/D and Q/E keep their axes between space and plane flight?
-- SOLID refactor
 - Q: refactor the codebase based on solid design principles.
 - check_godot.py
 - Q: Where are Armored Core hover tap burst control timings and force handling defined?
 - Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?
-- Ground Combat Direction: Gundam Hathaway Grunt MS Study
 - Q: How are aerial per-booster thrust caps and redundant opposing burns handled?
 - Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?
 - FollowMode2D
@@ -82,11 +80,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (39 total, 7 thin omitted)
+## Communities (37 total, 7 thin omitted)
 
-### Community 0 - "Flight pose design"
+### Community 0 - "Godot 4 Complete Cel Shader"
 Cohesion: 0.08
-Nodes (24): Dynamic rotation requirements, Mech flight animation contract, Recommended architecture, Required behaviors, Research body-flight requirements, Visual acceptance, Banks, rolls and somersaults, Flight pose design (+16 more)
+Nodes (24): Aerial rendering study — DELIVERY MUST COMPLETE, Asset selection, Body-flight control checks, Checks and comparison captures, Dynamic rotation and flip checks, Flight animation checks, Implementation and reference, Pose Studio (+16 more)
 
 ### Community 1 - "PhantomCamera3D"
 Cohesion: 0.04
@@ -114,15 +112,15 @@ Nodes (23): KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMas
 
 ### Community 7 - "PhantomCameraHost"
 Cohesion: 0.10
-Nodes (18): Callable, StringName, InterpolationMode, Auto, Idle, Manual, Physics, MethodName (+10 more)
+Nodes (19): Callable, PhantomCamera, StringName, InterpolationMode, Auto, Idle, Manual, Physics (+11 more)
 
 ### Community 8 - "FollowLockAxis3D"
-Cohesion: 0.08
-Nodes (23): PhantomCamera, FollowLockAxis3D, None, X, XY, XYZ, XZ, Y (+15 more)
+Cohesion: 0.09
+Nodes (22): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+14 more)
 
-### Community 9 - "4. Architectural Options for This Project (Godot 4.7)"
-Cohesion: 0.10
-Nodes (21): 4.1 Ground Locomotion & Physics Authority, 4.2 Skeletal Animation & Mechanical Weight, 4.3 Combat Loop, Lethality, and Subsystem Damage, 4.4 Camera, Scale Framing, and Readability, 4.5 Cel Lighting, Atmosphere, and Systemic "Scale Ruler" VFX, 4. Architectural Options for This Project (Godot 4.7), Option 4.1A — Unified Force-Driven `RigidBody3D` ("Grounded Extension of `aerial_mech.gd`"), Option 4.1B — Dual-Mode Kinematic/Dynamic Hybrid (`CharacterBody3D` Ground $\leftrightarrow$ `RigidBody3D` Ballistic/Crash) (+13 more)
+### Community 9 - "Animation direction for the 9 m, 10 t mech"
+Cohesion: 0.18
+Nodes (11): Animation direction for the 9 m, 10 t mech, Author the beats on the actual chassis, Fit to this repo, Flight, Ground locomotion, Movement and combat reference sheet, Movement architecture and constraints, Put numbers against the silhouette (+3 more)
 
 ### Community 10 - "PhantomCameraNoise3D"
 Cohesion: 0.11
@@ -164,9 +162,9 @@ Nodes (3): StringName, MethodName, SignalName
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: implement the phantom camera in the aerial demo scene. everything moves quite fast, so make sure we dont get jittery stuff., Source Nodes
 
-### Community 26 - "Ground Mode v2 · Gustav Karl locomotion"
-Cohesion: 0.17
-Nodes (10): A fast right cut, one contact at a time, Acceptance replay, Authoring and delivery, Ground Mode v2 · Gustav Karl locomotion, Movement and silhouette, Production and biomechanics references, Runtime architecture, Controls and animations (+2 more)
+### Community 26 - "MechAsset"
+Cohesion: 0.50
+Nodes (3): Controls and animations, MechAsset, Validation
 
 ### Community 27 - "Balanced aerial thrust and directional braking"
 Cohesion: 0.20
@@ -175,10 +173,6 @@ Nodes (9): Answer, Balanced aerial thrust and directional braking, Directional b
 ### Community 28 - "Q: Why do A/D and Q/E keep their axes between space and plane flight?"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Why do A/D and Q/E keep their axes between space and plane flight?, Source Nodes
-
-### Community 29 - "SOLID refactor"
-Cohesion: 0.33
-Nodes (5): Baseline, Progress, SOLID refactor, Verification, Work and completion evidence
 
 ### Community 30 - "Q: refactor the codebase based on solid design principles."
 Cohesion: 0.40
@@ -191,10 +185,6 @@ Nodes (4): Answer, Outcome, Q: Where are Armored Core hover tap burst control ti
 ### Community 33 - "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?, Source Nodes
-
-### Community 34 - "Ground Combat Direction: Gundam Hathaway Grunt MS Study"
-Cohesion: 0.06
-Nodes (28): Ground Mode v1 · Hathaway Movement Slice, Integration, Movement, Replay and checks, Visual targets, 1. Scope, Target Reference, and Evidence Standard, 2. Anatomy of the Hathaway Target Scenes, 3.1 Sunrise (Bandai Namco Filmworks Studio 1 / D.I.D., Sublimation & YAMATOWORKS) — *Gundam Hathaway* (+20 more)
 
 ### Community 35 - "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?"
 Cohesion: 0.40
@@ -213,23 +203,23 @@ Cohesion: 0.40
 Nodes (5): FollowLockAxis2D, None, X, Xy, Y
 
 ## Knowledge Gaps
-- **309 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+304 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 378 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **270 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+265 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 339 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.215) - this node is a cross-community bridge._
+  _High betweenness centrality (0.266) - this node is a cross-community bridge._
 - **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `FollowMode2D`, `FollowLockAxis2D`, `PhantomCameraHost`, `PhantomCamera`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.168) - this node is a cross-community bridge._
+  _High betweenness centrality (0.207) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.140) - this node is a cross-community bridge._
+  _High betweenness centrality (0.173) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _309 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Flight pose design` be split into smaller, more focused modules?**
-  _Cohesion score 0.07692307692307693 - nodes in this community are weakly interconnected._
+  _270 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `Godot 4 Complete Cel Shader` be split into smaller, more focused modules?**
+  _Cohesion score 0.07671957671957672 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
   _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera2D` be split into smaller, more focused modules?**
