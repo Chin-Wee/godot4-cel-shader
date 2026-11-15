@@ -6,10 +6,10 @@
     "demo/aerial/README.md",
     "demo/ground/README.md"
   ],
-  "source_revision": "81f685d6539b8515db572456ba67afe57813f207",
+  "source_revision": "d5e64d55410074f34434edb3b4588036f779a2ce",
   "code_graph_updated": true,
   "backend": "opencode-go",
-  "reason": "This refresh indexed the current documentation structure and pruned removed sources. The previously configured semantic backend returned MissingSessionID. The design guide and runtime source remain authoritative.",
+  "reason": "The structural refresh indexed the Unreal integration headings and retained the prior cleanup of retired documents. The configured semantic backend previously returned MissingSessionID. The design guide and runtime source remain authoritative.",
   "gdscript_ast_supported": false,
   "indexing_note": "The installed updater refreshes structural/document headings but does not index .gd source. GDScript remains authoritative; no synthetic code relationships were added."
 }

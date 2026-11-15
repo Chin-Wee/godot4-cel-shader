@@ -1,17 +1,17 @@
 # Graph Report - godot4-cel-shader  (2026-11-16)
 
 ## Corpus Check
-- 29 files · ~2,121,222 words
+- 29 files · ~2,123,824 words
 - Verdict: corpus is large enough that graph structure adds value.
 - Unclassified: 1078 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 486 nodes · 549 edges · 37 communities (30 shown, 7 thin omitted)
+- 492 nodes · 555 edges · 35 communities (28 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `81f685d6`
+- Built from commit: `d5e64d55`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -33,7 +33,7 @@
 - Grass direction: Breath of the Wild
 - LimitTargetQueryResult
 - PhantomCamera3DExtensions
-- PhantomCamera2D.cs
+- Node2D
 - Node3D
 - StringName
 - .GetLimit
@@ -50,8 +50,6 @@
 - Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?
 - Q: How are aerial per-booster thrust caps and redundant opposing burns handled?
 - Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?
-- FollowMode2D
-- FollowLockAxis2D
 
 ## God Nodes (most connected - your core abstractions)
 1. `PhantomCamera3D` - 70 edges
@@ -80,7 +78,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (37 total, 7 thin omitted)
+## Communities (35 total, 7 thin omitted)
 
 ### Community 0 - "Godot 4 Complete Cel Shader"
 Cohesion: 0.08
@@ -111,16 +109,16 @@ Cohesion: 0.08
 Nodes (23): KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMask, Far, Fov (+15 more)
 
 ### Community 7 - "PhantomCameraHost"
-Cohesion: 0.10
-Nodes (19): Callable, PhantomCamera, StringName, InterpolationMode, Auto, Idle, Manual, Physics (+11 more)
+Cohesion: 0.06
+Nodes (31): Callable, PhantomCamera, StringName, InterpolationMode, Auto, Idle, Manual, Physics (+23 more)
 
 ### Community 8 - "FollowLockAxis3D"
 Cohesion: 0.09
 Nodes (22): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+14 more)
 
 ### Community 9 - "Animation direction for the 9 m, 10 t mech"
-Cohesion: 0.18
-Nodes (11): Animation direction for the 9 m, 10 t mech, Author the beats on the actual chassis, Fit to this repo, Flight, Ground locomotion, Movement and combat reference sheet, Movement architecture and constraints, Put numbers against the silhouette (+3 more)
+Cohesion: 0.12
+Nodes (17): Animation direction for the 9 m, 10 t mech, AnimBP, clip data and correction, Author the beats on the actual chassis, Fit to the existing Godot demos, Flight, Ground locomotion, Movement and combat reference sheet, Movement architecture and constraints (+9 more)
 
 ### Community 10 - "PhantomCameraNoise3D"
 Cohesion: 0.11
@@ -194,30 +192,22 @@ Nodes (4): Answer, Outcome, Q: How are aerial per-booster thrust caps and redund
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?, Source Nodes
 
-### Community 37 - "FollowMode2D"
-Cohesion: 0.29
-Nodes (7): FollowMode2D, Framed, Glued, Group, None, Path, Simple
-
-### Community 38 - "FollowLockAxis2D"
-Cohesion: 0.40
-Nodes (5): FollowLockAxis2D, None, X, Xy, Y
-
 ## Knowledge Gaps
-- **270 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+265 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 339 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **275 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+270 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 344 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.266) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `FollowMode2D`, `FollowLockAxis2D`, `PhantomCameraHost`, `PhantomCamera`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.207) - this node is a cross-community bridge._
+  _High betweenness centrality (0.259) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
+  _High betweenness centrality (0.202) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.173) - this node is a cross-community bridge._
+  _High betweenness centrality (0.169) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _270 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _275 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Godot 4 Complete Cel Shader` be split into smaller, more focused modules?**
   _Cohesion score 0.07671957671957672 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
