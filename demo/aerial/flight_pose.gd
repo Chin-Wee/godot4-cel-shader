@@ -32,6 +32,7 @@ var effort := Vector3.ZERO # Prepare, opposing thrust, outgoing acceleration.
 var lead_side := 1.0
 var lead_time := 0.0
 var layout := 0.0 # Air-supported extended-body alternative to compact actuator flips.
+var ground_animation_active := false
 
 func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 	var sk := get_skeleton()
@@ -60,6 +61,7 @@ func reset() -> void:
 	lead_side = 1.0
 	lead_time = 0.0
 	layout = 0.0
+	ground_animation_active = false
 	contacts.reset()
 
 func update(delta: float, controller) -> void:
@@ -76,7 +78,15 @@ func update(delta: float, controller) -> void:
 	_prepare_maneuver_pose(controller,delta)
 	var ground = contacts.body.ground_motion
 	if ground:
-		motion["ground_guard"] = float(ground.guard and ground.supported)
+		var grounded_pose_available: bool = (
+			ground.supported and not ground.hot_enabled and not ground.braking
+			and not ground.skidding and ground.pivot_steps==0 and ground.hop_load<=0.0
+			and ground.catch_time<=0.0 and ground.recovery<=0.0
+		)
+		motion["ground_guard"] = float(ground.guard and grounded_pose_available)
+		motion["ground_run"] = float(grounded_pose_available and (ground.step_running or ground.running))
+		motion["ground_phase"] = clampf(ground.step_time/maxf(ground.step_duration,0.01),0.0,1.0) if ground.step_time>=0.0 else 0.0
+		motion["ground_swing"] = ground.swing
 		motion["ground_load"] = float(ground.hop_load>0.0) + ground.landing_load
 		motion["ground_skid"] = clampf(ground.slip/4.0,0,1)
 		motion["ground_tuck"] = float(not ground.supported and not ground.hot_enabled)*smoothstep(0.0,2.0,ground.velocity.y)
@@ -84,6 +94,9 @@ func update(delta: float, controller) -> void:
 	_update_body(delta)
 	_update_legs(delta,controller)
 	arms.update(delta,motion)
+	if ground_animation_active:
+		root_angles = Vector3.ZERO
+		com.reset()
 
 func _sample_motion(controller, delta: float) -> Dictionary:
 	var basis := Basis(controller.attitude)
@@ -394,6 +407,10 @@ func _update_legs(delta: float, controller) -> void:
 		var targets: Array[Vector3] = []
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
+			var ground_guard: float = motion.get("ground_guard",0.0)
+			if joint==0: target.x -= 0.08*ground_guard
+			elif joint==1: target.x += 0.32*ground_guard
+			else: target.x -= 0.06*ground_guard
 			var working: Vector3 = target.lerp(profile.drive_pose[joint]*Vector3(1,1,sx),motion.drive)
 			working = working.lerp(profile.retro_pose[joint]*Vector3(1,1,sx),motion.retro)
 			# Preserve the calibrated support pose; knee/hip changes compensate
@@ -462,6 +479,14 @@ func _rotate(bone: String, angles: Vector3) -> void:
 	sk.set_bone_pose_rotation(index,(sk.get_bone_pose_rotation(index)*offset.get_rotation_quaternion()).normalized())
 
 func _process_modification() -> void:
+	if ground_animation_active:
+		var ground_run: float = motion.get("ground_run",0.0)
+		var ground_guard: float = motion.get("ground_guard",0.0)
+		_apply_ground_animation_pose(ground_run,ground_guard)
+		if ground_run>0.0 or ground_guard>0.0:
+			arms.apply(get_skeleton(),_rotate)
+		contacts.prepare_targets()
+		return
 	var difference := chest.value-hips.value
 	for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
 	_rotate("Neck",head.value)
@@ -470,4 +495,24 @@ func _process_modification() -> void:
 		_rotate(profile.knee_bones[side],legs[side*3+1].value)
 		_rotate(profile.foot_bones[side],legs[side*3+2].value)
 	arms.apply(get_skeleton(),_rotate)
+	_apply_ground_torso_lean(0.12*float(motion.get("ground_guard",0.0)))
 	contacts.prepare_targets()
+
+
+func _apply_ground_animation_pose(run_weight: float, guard_weight: float) -> void:
+	if run_weight>0.0:
+		_apply_ground_torso_lean(0.34*run_weight)
+		for side in 2:
+			_rotate(profile.thigh_bones[side],Vector3(-0.10*run_weight,0,0))
+			_rotate(profile.knee_bones[side],Vector3(0.16*run_weight,0,0))
+	if guard_weight>0.0:
+		_apply_ground_torso_lean(0.12*guard_weight)
+		for side in 2:
+			_rotate(profile.thigh_bones[side],Vector3(-0.08*guard_weight,0,0))
+			_rotate(profile.knee_bones[side],Vector3(0.32*guard_weight,0,0))
+
+
+func _apply_ground_torso_lean(angle: float) -> void:
+	if angle<=0.0: return
+	for part in profile.torso_bones.size():
+		_rotate(profile.torso_bones[part],Vector3(angle*profile.torso_weights[part],0,0))
