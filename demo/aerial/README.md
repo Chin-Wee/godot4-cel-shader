@@ -675,14 +675,37 @@ panels under gaze, vacuum exclusion and geometry-before-drag causality.
 
 ### Pose Studio
 
-Open [Pose Studio](pose_studio.tscn) to review 45 full-body keys and fourteen
-editable motion studies, including directional hover, horizontal slide and bank
-and pull. Select PosePlayer in the Animation dock. Arrow keys select clips,
-Space pauses, R restarts, and 1/2/3 changes the view. The studio holds the chassis
-still for pose review. Use the gameplay replays to verify motion under load.
+Open [Pose Studio](pose_studio.tscn) to review **126 full-body keys and 52 editable
+motion studies** on the existing MechAsset rig. Select PosePlayer in the Animation
+dock. The `K_` clips hold one pose and the `M_` clips sequence poses with named
+timeline markers. Arrow keys select clips, Space pauses, R restarts, and 1/2/3
+changes the view.
+
+| Family | Authored beats and variants |
+| --- | --- |
+| Launch and hover | Coil, soft or hard push, catch, neutral support, climb, and sink |
+| Directional boost | Gather, drive, catch, and settle across four cardinal and four diagonal directions, with soft and heavy forward variants |
+| Powered flight | Pierce, drive, cruise, climb, dive, pitch arrest, high-thrust tuck, and left/right slip |
+| Bank and yaw | Lead, hold, loaded bank-and-pull, counterstroke, and settle on both sides |
+| Brake and reverse | Open, flare, and close the airbrake, or brace against thrust, unload, and drive out. Symmetric and directional airbrake and left/right reverse loads are covered |
+| Cutoff, fall, and relight | Thrust release, detached and compact coast, belly and back fall, turning track, recovery, preparation, and powered drive |
+| Acrobatics | Front and back swing, inversion, opening, and arrest, with compact and extended layouts, left/right rolls, and interrupted exits |
+| Landing | Guard, one- or two-foot reach, optional cushion, catch or compression, hard impact, skid, missed foothold, and settle |
+
+[The pose sheet](poses/flight_pose_sheet.gd) builds on the original study keys
+and uses the calibrated joint limits for the authored leg and ankle offsets.
+The design references are Overgrowth for sparse authored poses with directional
+variations and Armored Core VI for the directional boost silhouette. The library
+uses the same MechAsset GLB as live flight so the keys target the existing bones
+and rigid armor. The studio animates its preview transform. Live flight selects
+its procedural poses and still needs a gameplay pose selector to use these keys.
+The preview can be inspected for limb motion and clearance. Force authority and
+flight handling require the gameplay replays.
 
 ```sh
 godot --headless --path demo --script res://aerial/poses/bake_pose_library.gd
+godot --headless --path demo --script res://aerial/tests/capture_pose_studio.gd
+godot --path demo --disable-render-loop --script res://aerial/tests/capture_pose_studio.gd -- /tmp/flight-key-poses --keyframes-only
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_air_pose.gd
 godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/test_air_pose.gd -- /tmp/air-pose-geometry
 godot --path demo --disable-render-loop --fixed-fps 60 --script res://aerial/tests/capture_maneuver_intent.gd -- /tmp/air-pose-motion
