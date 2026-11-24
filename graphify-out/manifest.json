@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1794760994.963798,
-    "seen": 1794760996.164684,
-    "ast_hash": "5289d9a7de20c10b7ddc0c8c267a4538",
+    "mtime": 1795514799.4664617,
+    "seen": 1795514832.8466089,
+    "ast_hash": "0439a738c57bb6afa582016317f3723c",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1452,9 +1452,9 @@
     "semantic_hash": ""
   },
   "demo/ground/README.md": {
-    "mtime": 1794760994.964001,
-    "seen": 1794760996.164686,
-    "ast_hash": "83b8c9edbc44503d9c626c6960221a44",
+    "mtime": 1795512732.411332,
+    "seen": 1795514832.846611,
+    "ast_hash": "1a080b75d0c8ac3b730836d56140c4b9",
     "semantic_hash": ""
   }
 }
