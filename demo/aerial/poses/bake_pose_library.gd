@@ -6,7 +6,7 @@ const Mech = preload("res://aerial/aerial_mech.gd")
 const PoseSheet = preload("res://aerial/poses/flight_pose_sheet.gd")
 const OUTPUT := "res://aerial/poses/flight_pose_keys.tres"
 const KEYS := {
-	"Ready_Coil":{"land":1.0,"compression":0.3},
+	"Ready_Coil":{"land":1.0,"compression":0.3,"feet":Vector2.ZERO,"body_shift":Vector3(0,0,0.14)},
 	"Launch_Push":{"hover":1.0,"launch":1.0},
 	"Hover_Catch":{"hover":1.0,"compression":0.45,"acceleration":Vector3(0,12,0)},
 	"Hover_Support":{"hover":1.0,"trim":Vector3(0.35,0.6,-0.3)},
@@ -49,8 +49,8 @@ const KEYS := {
 	"Head_Look_Right":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(0,-0.65,0)},
 	"Head_Look_Up":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(-0.70,0,0)},
 	"Head_Look_Down":{"hover":1.0,"look_weight":1.0,"look_angles":Vector3(0.40,0,0)},
-	"Landing_Guard":{"land":1.0},
-	"Landing_Absorb":{"land":1.0,"compression":1.1,"g_load":4.0},
+	"Landing_Guard":{"land":1.0,"feet":Vector2(5,5),"body_shift":Vector3(0,0,0.14)},
+	"Landing_Absorb":{"land":1.0,"compression":1.1,"g_load":4.0,"feet":Vector2.ZERO,"pelvis_drop":0.19,"body_shift":Vector3(0,0,0.18)},
 }
 const STUDIES := {
 	"Launch":[[0.0,"Ready_Coil"],[0.25,"Ready_Coil"],[0.55,"Launch_Push"],[0.90,"Hover_Catch"],[1.4,"Hover_Support"],[2.0,"Hover_Support"]],
@@ -103,6 +103,7 @@ func _bake() -> void:
 			"reach":Vector3.ZERO,"gather":Vector2.ZERO,"move_intent":Vector3.ZERO,"translate":Vector3.ZERO,
 			"trim":Vector3.ZERO,"up":Vector3.UP,"omega":Vector3.ZERO,"alpha":Vector3.ZERO,"acceleration":Vector3.ZERO}
 		frame.merge(key,true)
+		var attitude := _study_attitude(name,key)
 		mech.controller.thrust_level = key.get("thrust",1.0)
 		frame.flare = maxf(frame.flare,frame.brake)
 		if not key.has("back"): frame.belly = frame.box*smoothstep(-0.2,0.2,-frame.flow.z)
@@ -133,6 +134,10 @@ func _bake() -> void:
 			mech.actor.position = (-(Basis.from_euler(rig.root_angles)*Vector3(0,0.9,0))+rig.com.value+rig.contacts.pelvis.value)*mech.display_scale
 			sk.advance(1.0/60)
 		_apply_authored_leg_offsets(rig,frame)
+		_apply_authored_upper_body(rig,frame)
+		mech.actor.position = attitude*mech.actor.position+frame.get("body_shift",Vector3.ZERO)*mech.display_scale
+		mech.actor.quaternion = attitude*mech.actor.quaternion
+		_prepare_contact(rig.contacts,frame)
 		# SkeletonModifier3D evaluation is deferred to the scene update. Flush the
 		# finished key before reading the completion cache, not the restored rest.
 		for flush in 3:
@@ -144,8 +149,8 @@ func _bake() -> void:
 			var parent := sk.get_bone_parent(index)
 			var parent_pose: Transform3D = mech.bone_poses[parent] if parent>=0 else Transform3D.IDENTITY
 			rotations.append((parent_pose.affine_inverse()*mech.bone_poses[index]).basis.get_rotation_quaternion().normalized())
-		var attitude := _study_attitude(name,key)
-		samples[name] = {"bones":rotations,"position":attitude*mech.actor.position,"rotation":attitude*mech.actor.quaternion}
+		var pivot := mech.actor.position+mech.actor.quaternion*Vector3.UP*0.9*mech.display_scale
+		samples[name] = {"bones":rotations,"position":pivot,"rotation":mech.actor.quaternion}
 	var library := AnimationLibrary.new()
 	var skeleton_path: NodePath = mech.actor.get_path_to(sk)
 	for name in keys:
@@ -153,7 +158,10 @@ func _bake() -> void:
 		clip.resource_scene_unique_id = "Animation_K_"+name
 		assert(library.add_animation("K_"+name,clip)==OK)
 	for name in studies:
-		var clip := _clip(studies[name],samples,sk,skeleton_path,name)
+		var timeline: Array = studies[name]
+		if name.begins_with("Boost_"):
+			timeline = _retime_boost(timeline,samples,sk,rig.profile)
+		var clip := _clip(timeline,samples,sk,skeleton_path,name)
 		clip.resource_scene_unique_id = "Animation_M_"+name
 		assert(library.add_animation("M_"+name,clip)==OK)
 	assert(library.get_animation_list().size()==keys.size()+studies.size())
@@ -175,6 +183,45 @@ func _apply_authored_leg_offsets(rig, frame: Dictionary) -> void:
 			var offset := Vector3(stance[joint],0,0)
 			if joint==2: offset += frame.get("ankle_aim",Vector3.ZERO)
 			servo.value = rig.profile.limit_joint(servo.value+offset,side,joint)
+
+func _apply_authored_upper_body(rig, frame: Dictionary) -> void:
+	rig.chest.value += frame.get("chest_offset",Vector3.ZERO)
+	var brace: float = frame.get("shoulder_brace",0.0)
+	var support: float = frame.get("support_lean",0.0)
+	for side in 2:
+		var sign := 1.0 if side==0 else -1.0
+		rig.arms.upper[side].value += Vector3(brace+sign*support*0.18,0,sign*brace*0.45+support*0.12)
+		rig.arms.elbows[side].value.x -= brace*0.65+sign*support*0.12
+
+func _prepare_contact(contacts, frame: Dictionary) -> void:
+	# Use the runtime two-bone and sole constraints on the Studio contact plane.
+	if not frame.has("feet"): return
+	var feet: Vector2 = frame.feet
+	var shift: Vector2 = frame.get("contact_shift",Vector2.ZERO)
+	var inset: Vector2 = frame.get("foot_inset",Vector2.ZERO)
+	for side in 2:
+		var x := (16.0-inset[side])*(-1.0 if side==0 else 1.0)
+		contacts.last_world_plants[side] = Vector3(x+shift.x,-47.0+feet[side],11.0+shift.y)
+		contacts.last_world_normals[side] = Vector3.UP
+		contacts.weights[side].reset(Vector3.RIGHT)
+		contacts.solvers[side].active = true
+		contacts.solvers[side].influence = 1.0
+
+func _retime_boost(timeline: Array, samples: Dictionary, sk: Skeleton3D, profile) -> Array:
+	var result := [timeline[0]]
+	var time := 0.0
+	for index in range(1,timeline.size()):
+		var from: Array = samples[timeline[index-1][1]].bones
+		var to: Array = samples[timeline[index][1]].bones
+		var duration: float = timeline[index][0]-timeline[index-1][0]
+		for side in 2:
+			var names := [profile.thigh_bones[side],profile.knee_bones[side],profile.foot_bones[side]]
+			for joint in 3:
+				var bone := sk.find_bone(names[joint])
+				duration = maxf(duration,from[bone].angle_to(to[bone])/profile.joint_speed[joint])
+		time += duration
+		result.append([time,timeline[index][1]])
+	return result
 
 func _study_attitude(name: String, key: Dictionary) -> Quaternion:
 	# Presentation attitude belongs only to this frozen-chassis authoring asset.
@@ -211,6 +258,7 @@ func _study_attitude(name: String, key: Dictionary) -> Quaternion:
 func _clip(timeline: Array, samples: Dictionary, sk: Skeleton3D, skeleton_path: NodePath, study: String) -> Animation:
 	var animation := Animation.new()
 	animation.length = timeline[-1][0]
+	var landing := study.begins_with("Landing") and study!="Landing_Missed"
 	if not study.is_empty():
 		for index in timeline.size():
 			var key: Array = timeline[index]
@@ -222,11 +270,12 @@ func _clip(timeline: Array, samples: Dictionary, sk: Skeleton3D, skeleton_path: 
 		if not changing: continue
 		var track := animation.add_track(Animation.TYPE_ROTATION_3D)
 		animation.track_set_path(track,NodePath(str(skeleton_path)+":"+sk.get_bone_name(index)))
-		animation.track_set_interpolation_type(track,Animation.INTERPOLATION_CUBIC)
 		var bone := sk.get_bone_name(index)
 		var leg := "Thigh" in bone or "Knee" in bone or "Feet" in bone
+		var controlled_leg := leg and (study.begins_with("Boost_") or landing)
+		animation.track_set_interpolation_type(track,Animation.INTERPOLATION_LINEAR if controlled_leg else Animation.INTERPOLATION_CUBIC)
 		var offset := 0.0
-		if STUDIES.has(study):
+		if STUDIES.has(study) and not landing:
 			if "Neck" in bone: offset = -0.06
 			elif "Shoulder" in bone: offset = -0.04
 			elif "Hands" in bone: offset = 0.02
@@ -238,8 +287,8 @@ func _clip(timeline: Array, samples: Dictionary, sk: Skeleton3D, skeleton_path: 
 			animation.rotation_track_insert_key(track,time,samples[key[1]].bones[index])
 	for type in [Animation.TYPE_POSITION_3D,Animation.TYPE_ROTATION_3D]:
 		var track := animation.add_track(type)
-		animation.track_set_path(track,NodePath("."))
-		animation.track_set_interpolation_type(track,Animation.INTERPOLATION_CUBIC)
+		animation.track_set_path(track,NodePath(".."))
+		animation.track_set_interpolation_type(track,Animation.INTERPOLATION_LINEAR if landing else Animation.INTERPOLATION_CUBIC)
 		for key in timeline:
 			if type==Animation.TYPE_POSITION_3D: animation.position_track_insert_key(track,key[0],samples[key[1]].position)
 			else: animation.rotation_track_insert_key(track,key[0],samples[key[1]].rotation)

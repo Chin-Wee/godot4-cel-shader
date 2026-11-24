@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://aerial/pose_studio.gd" id="1"]
 [ext_resource type="PackedScene" path="res://actors/mechs/mech_asset.tscn" id="2"]
@@ -9,17 +9,33 @@ background_mode = 1
 background_color = Color(0.055, 0.075, 0.10, 1)
 tonemap_mode = 0
 
+[sub_resource type="StandardMaterial3D" id="Material_floor"]
+shading_mode = 0
+albedo_color = Color(0.12, 0.16, 0.20, 1)
+
+[sub_resource type="PlaneMesh" id="Mesh_floor"]
+material = SubResource("Material_floor")
+size = Vector2(150, 115)
+
 [node name="PoseStudio" type="Node3D"]
 script = ExtResource("1")
 
-[node name="MechAsset" parent="." instance=ExtResource("2")]
+[node name="ChassisPivot" type="Node3D" parent="."]
+
+[node name="MechAsset" parent="ChassisPivot" instance=ExtResource("2")]
+position = Vector3(0, -45, 0)
 scale = Vector3(50, 50, 50)
 collision_layer = 0
 collision_mask = 0
 
 [node name="PosePlayer" type="AnimationPlayer" parent="."]
-root_node = NodePath("../MechAsset")
+root_node = NodePath("../ChassisPivot/MechAsset")
 libraries = {&"design": ExtResource("3")}
+
+[node name="ContactFloor" type="MeshInstance3D" parent="."]
+position = Vector3(0, -47, 0)
+mesh = SubResource("Mesh_floor")
+visible = false
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_stage")

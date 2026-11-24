@@ -3,7 +3,8 @@ extends RefCounted
 # Overgrowth: a small set of authored poses with directional variations.
 # Armored Core VI: distinct gather, drive and catch for directional boost.
 # Hip, knee and ankle pitch offsets are in radians. Preview attitude is in degrees.
-const HOVER_ANKLE_PITCH := -0.43 # Aim the two fixed heel axes up on the neutral rig.
+const HOVER_ANKLE_PITCH := -0.174 # Vertical heel axes on the reset bind pose.
+const BOOST_ANKLE_TRIM := -0.43 # Loaded leg bias shared by drive and catch.
 const KEYS := {
 	"Hover_Neutral":{"hover":1.0,"lead":0.0,"ankle_aim":Vector3(HOVER_ANKLE_PITCH,0,0)},
 	"Launch_Soft_Push":{"hover":0.65,"launch":0.6,"stance":Vector3(-0.10,0.25,-0.06),"lead":0.0,"preview":Vector3(-4,0,0)},
@@ -30,10 +31,11 @@ const KEYS := {
 	"Back_Abort":{"coast":1.0,"acro":Vector2(0.8,0),"acro_sign":Vector2(1,0),"acro_recovery":Vector2(1,0),"flip_degrees":105},
 	"Front_Arrest":{"hover":0.4,"coast":0.6,"acro":Vector2(0.45,0),"acro_sign":Vector2(-1,0),"acro_recovery":Vector2(1,0),"steer":Vector3(0.5,0,0),"flip_degrees":348},
 	"Back_Arrest":{"hover":0.4,"coast":0.6,"acro":Vector2(0.45,0),"acro_sign":Vector2(1,0),"acro_recovery":Vector2(1,0),"steer":Vector3(-0.5,0,0),"flip_degrees":348},
-	"Landing_Reach_Both":{"land":0.78,"coast":0.22,"stance":Vector3(0.13,-0.24,0.18),"lead":0.0,"preview":Vector3(-7,0,0)},
-	"Landing_Cushion":{"land":0.60,"hover":0.40,"compression":0.55,"stance":Vector3(0.08,-0.11,0.09),"lead":0.0,"preview":Vector3(-4,0,0)},
-	"Landing_Hard_Absorb":{"land":1.0,"compression":1.3,"g_load":4.0,"stance":Vector3(-0.30,0.42,-0.11),"pelvis_drop":0.32,"lead":0.0,"preview":Vector3(-12,0,0)},
-	"Landing_Settle":{"land":1.0,"stance":Vector3(0.12,-0.25,0.04),"pelvis_drop":0.06,"lead":0.0},
+	"Landing_Reach_Both":{"land":0.78,"coast":0.22,"feet":Vector2(2.5,2.5),"body_shift":Vector3(0,0,0.15),"lead":0.0,"preview":Vector3(-4,0,0)},
+	"Landing_Cushion":{"land":0.60,"hover":0.40,"compression":0.55,"feet":Vector2(1.0,1.0),"body_shift":Vector3(0,0,0.16),"lead":0.0,"preview":Vector3(-3,0,0)},
+	"Landing_Hard_Absorb":{"land":1.0,"compression":1.3,"g_load":4.0,"feet":Vector2.ZERO,"body_shift":Vector3(0,0,0.18),
+		"pelvis_drop":0.27,"shoulder_brace":-0.24,"chest_offset":Vector3(0.18,0,0),"lead":0.0,"preview":Vector3(-6,0,0)},
+	"Landing_Settle":{"land":1.0,"feet":Vector2.ZERO,"body_shift":Vector3(0,0,0.16),"pelvis_drop":0.12,"lead":0.0},
 	"Landing_Miss":{"coast":0.75,"fall":0.25,"stance":Vector3(-0.12,0.27,-0.12),"steer":Vector3(0.5,0,0),"preview":Vector3(-16,0,0)},
 }
 
@@ -64,13 +66,16 @@ static func add_directional_variants(keys: Dictionary, studies: Dictionary) -> v
 		var move: Vector3 = directions[direction]
 		var lead := signf(move.x) if absf(move.x)>0.01 else 1.0
 		var gather := "Hover_"+direction
-		keys[gather] = {"hover":1.0,"move_intent":move,"lead":lead,"ankle_aim":Vector3(HOVER_ANKLE_PITCH,0,0)}
+		keys[gather] = {"hover":1.0,"move_intent":move*0.48,"lead":lead,
+			"ankle_aim":Vector3(lerpf(HOVER_ANKLE_PITCH,BOOST_ANKLE_TRIM,0.35),0,0),
+			"chest_offset":Vector3(move.z*0.10,0,-move.x*0.12)}
 		var drive := "Boost_"+direction+"_Drive"
 		var catch_key := "Boost_"+direction+"_Catch"
 		keys[drive] = _boost_drive(move,lead,1.0)
 		keys[catch_key] = {"hover":1.0,"move_intent":-move*0.30,"lead":lead,"compression":0.62,
 			"stance":Vector3(-0.19,0.13-maxf(move.z,0.0)*0.14,0),
-			"ankle_aim":Vector3(HOVER_ANKLE_PITCH-move.z*0.24,0,move.x*0.16)}
+			"body_shift":Vector3(0,0,-maxf(move.z,0.0)*0.094),
+			"ankle_aim":Vector3(BOOST_ANKLE_TRIM-move.z*(0.30 if move.z<0.0 else 0.24),0,move.x*0.16)}
 		studies["Boost_"+direction] = _boost_study(gather,drive,catch_key)
 
 	for load_variant in [["Soft",0.55],["Heavy",1.25]]:
@@ -105,12 +110,16 @@ static func add_directional_variants(keys: Dictionary, studies: Dictionary) -> v
 			"brake_turn":Vector3(0.15,-sign*0.6,sign*0.75),"lead":sign,"preview":Vector3(-32,sign*14,sign*24)}
 		keys[retro] = {"coast":1.0,"retro":1.0,"g_load":1.9,"compression":0.42,"asymmetry":1.0,"lead":sign,
 			"lead_leg":Vector3(-0.10,0.22,-0.1),"trail_leg":Vector3(0.14,-0.12,0.08),"preview":Vector3(9,0,sign*12)}
-		keys[reach] = {"land":0.78,"coast":0.22,"lead":sign,"lead_leg":Vector3(0.15,-0.29,0.19),
-			"trail_leg":Vector3(-0.17,0.28,-0.08),"preview":Vector3(-7,0,-sign*9)}
-		keys[catch_key] = {"land":1.0,"lead":sign,"compression":0.83,"g_load":2.4,"pelvis_drop":0.23,
-			"lead_leg":Vector3(-0.17,0.27,-0.12),"trail_leg":Vector3(-0.04,0.09,0.06),"preview":Vector3(-10,0,-sign*5)}
+		keys[reach] = {"land":0.78,"coast":0.22,"lead":sign,"feet":Vector2(2.5,8) if sign>0 else Vector2(8,2.5),
+			"foot_inset":Vector2(0,6) if sign>0 else Vector2(6,0),"body_shift":Vector3(-sign*0.10,0,0.15),
+			"support_lean":sign*0.45,"preview":Vector3(-4,0,-sign*4)}
+		keys[catch_key] = {"land":1.0,"lead":sign,"compression":0.83,"g_load":2.4,"pelvis_drop":0.20,
+			"feet":Vector2(0,7) if sign>0 else Vector2(7,0),"body_shift":Vector3(-sign*0.23,0,0.18),
+			"foot_inset":Vector2(0,8) if sign>0 else Vector2(8,0),
+			"support_lean":sign,"chest_offset":Vector3(0.08,0,-sign*0.18),"preview":Vector3(-4,0,-sign*3)}
 		keys[skid] = {"land":0.8,"coast":0.2,"compression":0.8,"ground_skid":0.85,"lead":sign,
-			"lead_leg":Vector3(-0.15,0.21,-0.14),"trail_leg":Vector3(0.11,-0.15,0.08),"preview":Vector3(-13,sign*13,sign*7)}
+			"feet":Vector2(0,3) if sign>0 else Vector2(3,0),"contact_shift":Vector2(-sign*9,0),
+			"body_shift":Vector3(-sign*0.31,0,0.18),"support_lean":sign*0.8,"preview":Vector3(-5,sign*7,-sign*4)}
 		keys[roll_abort] = {"coast":1.0,"acro":Vector2(0,0.85),"acro_sign":Vector2(0,sign),
 			"acro_recovery":Vector2(0,1),"roll_degrees":105}
 		keys[roll_arrest] = {"fighter":0.8,"coast":0.2,"track":0.8,"acro":Vector2(0,0.45),"acro_sign":Vector2(0,sign),
@@ -129,10 +138,12 @@ static func add_directional_variants(keys: Dictionary, studies: Dictionary) -> v
 	studies["Roll_Right_Abort"] = [[0.0,"Flight_Sustain"],[0.53,"Roll_Right_Initiate"],[0.97,"Roll_Right_Abort"],[1.62,"Bank_Arrest_Right"],[2.21,"Flight_Sustain"]]
 
 static func _boost_drive(move: Vector3, lead: float, load: float) -> Dictionary:
-	return {"hover":1.0,"move_intent":move,"translate":move*0.60,"lead":lead,
-		"drive":minf(load,1.0)*0.7,"asymmetry":0.85,"compression":0.32*load,
-		"lead_leg":Vector3(0.12,-0.23,0.0)*load,"trail_leg":Vector3(-0.08,0.17,0.0)*load,
-		"ankle_aim":Vector3(HOVER_ANKLE_PITCH+move.z*0.30*load,0,-move.x*0.20*load)}
+	return {"hover":1.0,"move_intent":move*0.60,"translate":move*0.60,"lead":lead,
+		"drive":minf(load*0.64,1.0),"asymmetry":0.85,"compression":0.32*load,
+		"shoulder_brace":maxf(load-1.0,0.0)*0.65,"chest_offset":Vector3(0.12,0,0)*maxf(load-1.0,0.0),
+		"body_shift":Vector3(move.x*0.004,0,move.z*0.02-absf(move.x)*0.06+minf(move.z,0.0)*0.116),
+		"lead_leg":Vector3(0.08,-0.16,0.0)*load,"trail_leg":Vector3(-0.08,0.17,0.0)*load,
+		"ankle_aim":Vector3(BOOST_ANKLE_TRIM+move.z*0.30*load,0,-move.x*0.20*load)}
 
 static func _boost_study(gather: String, drive: String, catch_key: String) -> Array:
-	return [[0.0,"Hover_Neutral"],[0.12,gather],[0.29,drive],[0.49,drive],[0.70,catch_key],[1.18,"Hover_Neutral"]]
+	return [[0.0,"Hover_Neutral"],[0.13,gather],[0.40,drive],[0.55,drive],[0.86,catch_key],[1.38,"Hover_Neutral"]]

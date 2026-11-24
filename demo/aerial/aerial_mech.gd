@@ -135,6 +135,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	actor.animation_player.stop()
 	actor.current_animation = &""
 	skeleton = actor.find_child("Skeleton3D",true,false)
+	rig.profile.fit_waist_armor(skeleton)
 	# Flight animation pass: the supplied gun remains available in asset preview.
 	# Mesh inspection: both are weapon geometry weighted solely to Hands.R;
 	# Cube is the Torso-weighted backpack and must remain visible.

@@ -73,6 +73,13 @@ extends Resource
 @export var foot_response := 0.10
 @export var landing_lead := 0.8
 @export var sole_tilt_limit := 0.5
+# Rigid waist skirt travel clearance, in MechAsset bone units.
+@export var waist_armor_lift := 0.26
+
+func fit_waist_armor(skeleton: Skeleton3D) -> void:
+	var skirt := skeleton.find_child("Waist Armor",true,false) as MeshInstance3D
+	assert(skirt != null,"Expected MechAsset's rigid waist armor")
+	skirt.position.y += waist_armor_lift
 
 func leg_target(weights: PackedFloat32Array, side: int, joint: int) -> Vector3:
 	var poses := [hover_pose, stream_pose, spread_pose, coast_pose, landing_pose]

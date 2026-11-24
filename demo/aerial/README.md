@@ -699,8 +699,13 @@ variations and Armored Core VI for the directional boost silhouette. The library
 uses the same MechAsset GLB as live flight so the keys target the existing bones
 and rigid armor. The studio animates its preview transform. Live flight selects
 its procedural poses and still needs a gameplay pose selector to use these keys.
-The preview can be inspected for limb motion and clearance. Force authority and
-flight handling require the gameplay replays.
+Pose Studio resets the input rig to bind pose, then rotates the preview around
+its chassis center. Landing keys use the runtime two-bone foot and sole
+constraints against a visible floor, following the existing Uncharted 4
+contact-layering reference. Boost timelines let the torso prepare early and
+pace leg turns to the profile's servo limits. The aerial rig shares the small
+waist armor clearance adjustment between the studio and live mech. Force
+authority under valve timing and flight handling require the gameplay replays.
 
 ```sh
 godot --headless --path demo --script res://aerial/poses/bake_pose_library.gd

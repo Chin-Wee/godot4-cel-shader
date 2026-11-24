@@ -1,7 +1,7 @@
 extends Node3D
 
 # Native AnimationPlayer authoring preview. This scene never runs flight physics.
-@onready var actor := $MechAsset
+@onready var actor := $ChassisPivot/MechAsset
 @onready var player: AnimationPlayer = $PosePlayer
 @onready var camera: Camera3D = $Camera3D
 @onready var caption: Label = $CanvasLayer/Caption
@@ -14,6 +14,9 @@ func _ready() -> void:
 	actor.animation_player.stop()
 	actor.animation_player.active = false
 	var sk: Skeleton3D = actor.find_child("Skeleton3D",true,false)
+	# The baked library is relative to rest. Idle also keys untracked joint transforms.
+	sk.reset_bone_poses()
+	preload("res://aerial/mech_rig_profile.tres").fit_waist_armor(sk)
 	for name in ["GUN","Cube_001"]: sk.find_child(name,false,false).visible = false
 	# Match the runtime's matte palette, under neutral pose-review lighting.
 	var colors := {}
@@ -41,6 +44,8 @@ func show_clip(index: int) -> void:
 	selected = posmod(index,clips.size())
 	player.play(clips[selected])
 	player.seek(0,true)
+	var clip := str(clips[selected])
+	$ContactFloor.visible = clip.contains("Landing_") or clip.contains("Launch") or clip.ends_with("Ready_Coil")
 	caption.text = "%s\nPOSE / MOTION STUDY · frozen chassis\n← / → clips · Space pause · R restart · 1 / 2 / 3 views" % str(clips[selected]).trim_prefix("design/").replace("_"," ")
 
 func _unhandled_input(event: InputEvent) -> void:

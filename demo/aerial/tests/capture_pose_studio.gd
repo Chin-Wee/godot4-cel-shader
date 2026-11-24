@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Mech = preload("res://aerial/aerial_mech.gd")
+const Profile = preload("res://aerial/mech_rig_profile.tres")
 
 var viewport: SubViewport
 var studio
@@ -33,6 +34,7 @@ func _run() -> void:
 	await process_frame
 	var sk: Skeleton3D = studio.actor.find_child("Skeleton3D",true,false)
 	var library: AnimationLibrary = studio.player.get_animation_library(&"design")
+	assert(_check_landing_and_flip(sk))
 	var pose_count := 0
 	var study_count := 0
 	for clip in studio.clips:
@@ -50,6 +52,8 @@ func _run() -> void:
 				_save(output.path_join(str(clip).trim_prefix("design/")+"-view"+str(view)+".png"))
 		else:
 			study_count += 1
+			if str(clip).begins_with("design/M_Boost_"):
+				assert(_check_boost_rates(sk,animation))
 			assert(markers.size()>=3 and is_zero_approx(animation.get_marker_time(markers[0])))
 			assert(is_equal_approx(animation.get_marker_time(markers[-1]),animation.length))
 			var previous_time := -1.0
@@ -88,8 +92,9 @@ func _run() -> void:
 		["Front_Inversion","Front_Layout_Inversion","Knee.L",0.20],
 		["Roll_Initiate","Roll_Right_Initiate","Knee.L",0.15],
 		["Landing_Reach_Left","Landing_Reach_Right","Knee.L",0.15],
-		["Landing_Reach_Left","Landing_Catch_Left","Knee.L",0.15],
-		["Landing_Absorb","Landing_Hard_Absorb","Knee.L",0.20],
+		["Landing_Absorb","Landing_Hard_Absorb","Shoulder.L",0.16],
+		["Landing_Catch_Left","Landing_Catch_Right","Shoulder.L",0.16],
+		["Boost_Forward_Drive","Boost_Forward_Heavy","Shoulder.L",0.13],
 	]:
 		var start := _joint_rotation(sk,pair[0],pair[2])
 		var finish := _joint_rotation(sk,pair[1],pair[2])
@@ -115,6 +120,53 @@ func _run() -> void:
 func _joint_rotation(sk: Skeleton3D, pose: String, bone: String) -> Quaternion:
 	_show_key(pose)
 	return sk.get_bone_pose_rotation(sk.find_bone(bone))
+
+func _check_landing_and_flip(sk: Skeleton3D) -> bool:
+	var floor_y: float = studio.get_node("ContactFloor").global_position.y
+	for side in ["Left","Right"]:
+		var foot := sk.find_bone("Feet.L" if side=="Left" else "Feet.R")
+		_show_key("Landing_Reach_"+side)
+		var reaching: Vector3 = sk.global_transform*sk.get_bone_global_pose(foot)*Profile.sole_offset
+		assert(reaching.y>floor_y+1.5,"Reach key starts on the ground")
+		_show_key("Landing_Catch_"+side)
+		var transform := sk.global_transform*sk.get_bone_global_pose(foot)
+		var plant: Vector3 = transform*Profile.sole_offset
+		assert(absf(plant.y-floor_y)<0.12 and transform.basis.z.normalized().dot(Vector3.UP)>0.999)
+		var clip := StringName("design/M_Landing_One_Foot_"+side)
+		studio.player.play(clip)
+		var animation: Animation = studio.player.get_animation(clip)
+		var contact := animation.get_marker_time("03_Landing_Catch_"+side)
+		for frame in ceili((animation.length-contact)*60)+1:
+			studio.player.seek(minf(contact+frame/60.0,animation.length),true)
+			var sole: Vector3 = sk.global_transform*sk.get_bone_global_pose(foot)*Profile.sole_offset
+			assert(sole.distance_to(plant)<0.9,"Landing boot slipped during compression or transfer")
+	_show_key("Landing_Hard_Absorb")
+	for foot_name in Profile.foot_bones:
+		var foot := sk.global_transform*sk.get_bone_global_pose(sk.find_bone(foot_name))
+		assert(absf((foot*Profile.sole_offset).y-floor_y)<0.12,"Hard landing boot misses the plane")
+	var flip := &"design/M_Front_Flip"
+	studio.player.play(flip)
+	var length: float = studio.player.get_animation(flip).length
+	studio.player.seek(0,true)
+	var origin: Vector3 = studio.actor.get_parent_node_3d().global_position
+	for frame in ceili(length*60)+1:
+		studio.player.seek(minf(frame/60.0,length),true)
+		assert(studio.actor.to_global(Vector3(0,0.9,0)).distance_to(origin)<1.0,"Flip wandered away from its pivot")
+	return true
+
+func _check_boost_rates(sk: Skeleton3D, animation: Animation) -> bool:
+	var skeleton_path: NodePath = studio.actor.get_path_to(sk)
+	for side in 2:
+		var bones := [Profile.thigh_bones[side],Profile.knee_bones[side],Profile.foot_bones[side]]
+		for joint in 3:
+			var track := animation.find_track(NodePath(str(skeleton_path)+":"+bones[joint]),Animation.TYPE_ROTATION_3D)
+			assert(track>=0 and animation.track_get_interpolation_type(track)==Animation.INTERPOLATION_LINEAR)
+			for key in range(1,animation.track_get_key_count(track)):
+				var previous: Quaternion = animation.track_get_key_value(track,key-1)
+				var current: Quaternion = animation.track_get_key_value(track,key)
+				var seconds := animation.track_get_key_time(track,key)-animation.track_get_key_time(track,key-1)
+				assert(previous.angle_to(current)<=(Profile.joint_speed[joint]+0.005)*seconds,"Boost leg exceeds servo speed")
+	return true
 
 func _heel_axis(sk: Skeleton3D, pose: String) -> Vector3:
 	_show_key(pose)
