@@ -2117,7 +2117,7 @@
       "node_kind": "heading",
       "norm_label": "body-flight control checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L744"
+      "source_location": "L749"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -2141,7 +2141,7 @@
       "node_kind": "heading",
       "norm_label": "dynamic rotation and flip checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L767"
+      "source_location": "L772"
     },
     {
       "id": "demo_aerial_readme_flight_animation_checks",
@@ -2153,7 +2153,7 @@
       "node_kind": "heading",
       "norm_label": "flight animation checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L714"
+      "source_location": "L719"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -2225,7 +2225,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L799"
+      "source_location": "L804"
     },
     {
       "id": "demo_ground_readme",
@@ -13087,7 +13087,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L799",
+      "source_location": "L804",
       "weight": 1.0
     },
     {
@@ -13120,7 +13120,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L714",
+      "source_location": "L719",
       "weight": 1.0
     },
     {
@@ -13131,7 +13131,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L744",
+      "source_location": "L749",
       "weight": 1.0
     },
     {
@@ -13142,7 +13142,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L767",
+      "source_location": "L772",
       "weight": 1.0
     },
     {
@@ -14601,5 +14601,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "5b2de2a2068501ccda0c051c87034c8068eedcf7"
+  "built_at_commit": "1940353acae1b0ff013c73d20d4ea6c6c553c222"
 }
