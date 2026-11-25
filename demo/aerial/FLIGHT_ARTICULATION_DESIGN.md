@@ -592,3 +592,11 @@ independent head tracking and finger motion. It measures hot outlet axes against
 rendered exhaust, and compares hard roll across 30, 60 and 120 physics ticks per
 second and against the gimballed baseline. The separate laboratory regression
 continues to check the six-outlet configuration.
+
+Under powered pull-up, the full rig rotates the ankles back toward axial
+thrust while keeping the gathered knee target. The six-outlet lab keeps the
+untrimmed authored anchor for its force comparison. In the full-rig replay,
+hard roll reached 1.465 rad/s at 60 Hz versus 1.470 rad/s on the gimballed
+comparison. The peak hot-exhaust discrepancy across the tested moves was
+0.46° while the next pose advanced. A sampled middle finger moved 4.42° during
+relaxed hover, and all 28 finger joints changed from hover to a loaded pull.

@@ -588,6 +588,9 @@ func _update_authored_legs(delta: float, controller) -> void:
 	var flip: Vector3 = motion.flip_shape
 	var roll: Vector3 = motion.roll_shape
 	var throttle_load: float = smoothstep(0.1,0.8,controller.thrust_level)
+	# With the calf, backpack and cold couples present, the deep pull can keep
+	# its knee silhouette while the boots recover axial thrust under power.
+	var powered_pull: float = smoothstep(0.25,0.85,steer.x)*throttle_load*(1.0-motion.hover)
 	var stroke: Vector3 = motion.stroke
 	var alternative := target.duplicate()
 	for side in 2:
@@ -598,6 +601,7 @@ func _update_authored_legs(delta: float, controller) -> void:
 		for joint in 3:
 			var index := side*3+joint
 			var aim := target[index]
+			if joint==2: aim.x -= 0.52*powered_pull
 			aim = aim.lerp(Articulation.BELLY_LEGS[joint]*mirror,motion.belly)
 			aim = aim.lerp(Articulation.BACK_LEGS[joint]*mirror,motion.back)
 			var tuck: Vector3 = profile.fall_pose[joint]*mirror

@@ -8,6 +8,7 @@ const HEAD_FIRST := Quaternion(Vector3.RIGHT,-PI/2)
 var mech: Mech
 var failures: Array[String] = []
 var maximum_visible_error := 0.0
+var relaxed_digits := {}
 
 func _initialize() -> void: call_deferred("_run")
 
@@ -72,6 +73,9 @@ func _hover_and_gaze() -> void:
 	await _ticks(90)
 	_expect(fc.velocity.length()<0.6 and fc.angular_velocity.length()<0.08,"Fixed-axis hover drifts")
 	_expect(mech.rig.legs[1].value.x<0.16 and mech.rig.arms.elbows[0].value.x> -0.55,"Routine hover misses the extended pose")
+	for index in mech.rig.arms.digits:
+		var name := mech.skeleton.get_bone_name(index)
+		relaxed_digits[name] = _rest_rotation(name)
 	var finger := _rest_rotation("Finger5.L")
 	var finger_motion := 0.0
 	for i in 8:
@@ -94,7 +98,11 @@ func _powered_inputs() -> void:
 		mech.controls = {key:true}
 		await _ticks(60)
 		vertical_rates.append(fc.velocity.y)
-		if key=="back": _expect(mech.rig.legs[1].value.x>1.04,"Hard pull-up never gathers the knees")
+		if key=="back":
+			_expect(mech.rig.legs[1].value.x>1.04,"Hard pull-up never gathers the knees")
+			for name in relaxed_digits:
+				var relaxed: Quaternion = relaxed_digits[name]
+				_expect(relaxed.angle_to(_rest_rotation(name))>0.025,"Loaded hand does not articulate "+name)
 		else: _expect(mech.rig.legs[1].value.x<0.25,"Hard pitch-down loses its extended knees")
 	_expect(vertical_rates[1]>vertical_rates[0]+3.0,"W and S bend the trajectory in the same direction")
 	_reset(HEAD_FIRST,Vector3(0,0,-65),3)
