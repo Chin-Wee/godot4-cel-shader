@@ -68,7 +68,7 @@ func reset() -> void:
 		for joint in 3:
 			var angle := profile.leg_target(PackedFloat32Array([1,0,0,0,0]),side,joint) if neutral.is_empty() else neutral[side*3+joint]
 			legs[side*3+joint].reset(angle)
-	arms.reset()
+	arms.reset(contacts.body.controller.articulated_flight)
 	last_brake = 0.0
 	effort = Vector3.ZERO
 	lead_side = 1.0

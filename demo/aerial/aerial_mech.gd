@@ -238,10 +238,11 @@ func _integrate_forces(state: PhysicsDirectBodyState3D) -> void:
 func aerodynamic_surfaces() -> Array:
 	var surfaces := []
 	var profile = rig.profile
+	var incidence: PackedFloat32Array = profile.authored_aero_incidence if controller.articulated_flight else profile.aero_incidence
 	for index in profile.aero_bones.size():
 		var bone := skeleton.find_bone(profile.aero_bones[index])
 		var pose: Transform3D = bone_poses[bone]
-		var rotation := skeleton.global_basis.orthonormalized()*pose.basis.orthonormalized()*skeleton.get_bone_global_rest(bone).basis.orthonormalized().inverse()*Basis(Vector3.RIGHT,-profile.aero_incidence[index])
+		var rotation := skeleton.global_basis.orthonormalized()*pose.basis.orthonormalized()*skeleton.get_bone_global_rest(bone).basis.orthonormalized().inverse()*Basis(Vector3.RIGHT,-incidence[index])
 		var offset: Vector3 = skeleton.global_transform*pose.origin-global_position
 		# Torso panel represents the whole trunk/pelvis, below its upper bone pivot.
 		if index==0: offset -= global_basis.y*2.0*display_scale/50.0*FlightController.WORLD_UNITS_PER_METER

@@ -130,6 +130,12 @@ func _powered_inputs() -> void:
 
 func _cutoff_and_landing() -> void:
 	var fc := mech.controller
+	var inverted := Quaternion(Vector3.FORWARD,PI)*Quaternion(Vector3.RIGHT,-PI/2-deg_to_rad(10))
+	_reset(inverted,Vector3(0,0,-80),0)
+	fc.reset(0.0)
+	fc.detent = 0
+	await _ticks(3)
+	_expect(fc.aero_force.y>1000.0,"Inverted negative-AoA coast produces no upward lift")
 	_reset(HEAD_FIRST,Vector3(0,0,-42),3)
 	await _ticks(40)
 	var speed := fc.velocity

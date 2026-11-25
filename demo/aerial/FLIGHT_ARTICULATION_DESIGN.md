@@ -598,5 +598,9 @@ thrust while keeping the gathered knee target. The six-outlet lab keeps the
 untrimmed authored anchor for its force comparison. In the full-rig replay,
 hard roll reached 1.465 rad/s at 60 Hz versus 1.470 rad/s on the gimballed
 comparison. The peak hot-exhaust discrepancy across the tested moves was
-0.46° while the next pose advanced. A sampled middle finger moved 4.42° during
+0.47° while the next pose advanced. A sampled middle finger moved 4.42° during
 relaxed hover, and all 28 finger joints changed from hover to a loaded pull.
+The five aerodynamic panels keep their existing areas. Their fixed incidence
+is calibrated for the authored straight-limb silhouettes. The integrated test
+includes an engines-off, inverted coast at negative angle of attack to check
+that the completed armor still generates signed lift.

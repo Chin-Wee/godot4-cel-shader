@@ -50,13 +50,15 @@ func configure(sk: Skeleton3D, player: AnimationPlayer, rig_profile) -> void:
 		wrists.append(Servo.new())
 	reset()
 
-func reset() -> void:
+func reset(authored := false) -> void:
 	hands = PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
 	shoulders = PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
 	elbow_positions = PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
 	for side in 2:
-		upper[side].reset(Vector3(profile.arm_hover.x,0,(1 if side==0 else -1)*profile.arm_hover.y))
-		elbows[side].reset(Vector3(-profile.arm_hover.z,0,0))
+		var sx := 1.0 if side==0 else -1.0
+		var pose := Poses.arm_key("Neutral_Straight",side) if authored else Vector4(profile.arm_hover.x,0,profile.arm_hover.y,profile.arm_hover.z)
+		upper[side].reset(Vector3(pose.x,pose.y*sx,pose.z*sx))
+		elbows[side].reset(Vector3(-pose.w,0,0))
 		wrists[side].reset()
 		finger_curl[side] = 0.25
 	for digit in digits.values():

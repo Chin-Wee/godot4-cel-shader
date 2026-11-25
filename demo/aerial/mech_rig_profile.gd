@@ -17,7 +17,10 @@ extends Resource
 # Fractions share the controller's existing total area; no duplicated body lift.
 @export var aero_bones := PackedStringArray(["Torso","ArmJoint.L","ArmJoint.R","Shin.L","Shin.R"])
 @export var aero_fractions := PackedFloat32Array([0.5,0.075,0.075,0.175,0.175])
-@export var aero_incidence := PackedFloat32Array([0.04,0.15,0.15,0.12,0.12]) # Neutral stream calibration, radians.
+@export var aero_incidence := PackedFloat32Array([0.04,0.15,0.15,0.12,0.12]) # Gimballed comparison stream, radians.
+# Rest-frame incidence of the same armor panels in the authored rig. The
+# straighter lower legs and forearms need their own panel calibration.
+@export var authored_aero_incidence := PackedFloat32Array([0.04,0.035,0.035,-0.08,-0.08])
 # Thigh, knee, ankle offsets in skeleton axes. Mirror Z for the right leg.
 # Retain the calibrated hover anchor: physical heel/calf outlets move with it.
 @export var hover_pose := PackedVector3Array([Vector3(-1.0,0,0.12), Vector3(1.17,0,0), Vector3.ZERO])
