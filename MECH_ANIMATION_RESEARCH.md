@@ -1,5 +1,7 @@
 # Animation direction for the 9 m, 10 t mech
 
+**Proposed next aerial experiment:** [Pose-driven aerial mech articulation](demo/aerial/FLIGHT_ARTICULATION_DESIGN.md) records the lower-body fixed-axis pose laboratory, upper-body layers and stress-driven corrective gestures. It is a design specification, not current runtime behaviour.
+
 **This is the source of truth for mech movement architecture, animation, and combat animation design.** The [ground demo README](demo/ground/README.md) and [aerial demo README](demo/aerial/README.md) describe current controls, implementation and verification. The [Unreal integration](#unreal-engine-58-integration) is a proposed playable prototype. Use source and replay results to verify what the demos currently do.
 
 The mech should feel heavy because the player can see **where it takes load, what accelerates it, and how it arrests the motion**. A Gustav Karl-style run can be fast. The loaded boot stays readable, the hips drive over it, and the next step lands with purpose. In flight, a jet can react quickly while the velocity vector takes time to change. In combat, a weapon can move quickly through its strike while the chassis takes longer to recover.

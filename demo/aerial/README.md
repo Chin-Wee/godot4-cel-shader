@@ -1,5 +1,7 @@
 # Aerial rendering study — DELIVERY MUST COMPLETE
 
+**Proposed next experiment:** [Pose-driven aerial mech articulation](FLIGHT_ARTICULATION_DESIGN.md) specifies the isolated lower-body laboratory, fixed foot outlets, upper-body keyframes and stress-driven corrections. Current runtime behaviour is documented below.
+
 A working comparison scene for the rendering goal. This is an ongoing visual
 iteration, **not a claim that reference fidelity has been achieved**. The existing
 factory/mech scene remains the default project scene.
