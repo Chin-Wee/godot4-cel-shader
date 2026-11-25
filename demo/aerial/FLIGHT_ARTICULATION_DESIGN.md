@@ -33,7 +33,7 @@ All angles are first-pass visual authoring targets in anatomical terms, not sign
 | Pose | Hip orientation | Knee flexion | Stance | Ankle adjustment |
 | --- | --- | --- | --- | --- |
 | Neutral | Centered over the feet | 3° | Close | Neutral trim |
-| Soft pull up | Forward of the knees | 3° | Close | 8° backward |
+| Soft pull up | Forward of the knees | 3° | Close | 7° backward |
 | Hard pull up | Farther forward of the knees | 3° | Close | 16° backward |
 | Soft pull down | Back, with the legs reaching forward | 3° | Slightly open | Neutral trim |
 | Hard pull down | Back, with the legs flared forward | 6° | Wide | Neutral trim |
@@ -593,8 +593,10 @@ rendered exhaust, and compares hard roll across 30, 60 and 120 physics ticks per
 second and against the gimballed baseline. The separate laboratory regression
 continues to check the six-outlet configuration.
 
-The live rig and six-outlet lab share the pull-up and pull-down anchors. In
-the full-rig replay, hard roll reached 1.467 rad/s at 60 Hz and the gimballed
+The live rig and six-outlet lab share the pull-up and pull-down anchors. At
+low airspeed and full power, the live pull-up reduces backward ankle deflection
+by up to 4° while holding its hip and knee targets. In the full-rig replay,
+hard roll reached 1.467 rad/s at 60 Hz and the gimballed
 comparison reached 1.470 rad/s. The peak hot-exhaust discrepancy across the
 tested moves was 0.10° while the next pose advanced. A sampled middle finger moved 4.42° during
 relaxed hover, and all 28 finger joints changed from hover to a loaded pull.

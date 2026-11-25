@@ -602,6 +602,10 @@ func _update_authored_legs(delta: float, controller) -> void:
 	var acro: Vector2 = motion.acro
 	var flip: Vector3 = motion.flip_shape
 	var throttle_load: float = smoothstep(0.1,0.8,controller.thrust_level)
+	# At low airspeed, reduce boot deflection under heavy power so more of
+	# the fixed thrust remains axial. The knees and hip target stay extended.
+	var pull_trim: float = deg_to_rad(4.0)*maxf(steer.x,0.0)*motion.pitch_line
+	pull_trim *= (1.0-smoothstep(86.0,105.0,controller.air_velocity.length()))*smoothstep(1.0,4.0,controller.engine_level)
 	var stroke: Vector3 = motion.stroke
 	var alternative := target.duplicate()
 	for side in 2:
@@ -618,6 +622,7 @@ func _update_authored_legs(delta: float, controller) -> void:
 			tuck = tuck.lerp(profile.layout_pose[joint]*mirror,motion.layout)
 			aim = aim.lerp(tuck,acro.x*flip.y*(1.0-throttle_load*0.45))
 			aim = aim.lerp(line_target[index],clean_line)
+			if joint==2: aim.x -= pull_trim
 			aim = aim.lerp(profile.launch_pose[joint]*mirror,takeoff)
 			aim = aim.lerp(profile.landing_pose[joint]*mirror,land)
 			target[index] = aim

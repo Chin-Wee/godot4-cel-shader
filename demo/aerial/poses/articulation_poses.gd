@@ -9,8 +9,8 @@ const NEUTRAL := [[NEUTRAL_HIP,STRAIGHT_KNEE,Vector3(4,0,5.5)]]
 const AUTHORED := {
 	"Neutral_Flight": NEUTRAL,
 	"Unpowered_Coast": [[Vector3(2,0,-4),STRAIGHT_KNEE,Vector3(0,0,4)]],
-	"Pitch_Up_Soft": [[Vector3(5,0,-5.5),STRAIGHT_KNEE,Vector3(8,0,5.5)]],
-	"Pitch_Up_Hard": [[Vector3(18,0,-5.5),STRAIGHT_KNEE,Vector3(16,0,5.5)]],
+	"Pitch_Up_Soft": [[Vector3(5,0,-5.5),STRAIGHT_KNEE,Vector3(7,0,5.5)]],
+	"Pitch_Up_Hard": [[Vector3(16,0,-5.5),STRAIGHT_KNEE,Vector3(16,0,5.5)]],
 	"Pitch_Down_Soft": [[Vector3(-17,0,2),STRAIGHT_KNEE,Vector3(-3,0,-2)]],
 	"Pitch_Down_Hard": [[Vector3(-30,0,11),6,Vector3(-2,0,-10)]],
 	"Roll_Left_Soft": [[NEUTRAL_HIP,STRAIGHT_KNEE,Vector3(10,0,5.5)],[NEUTRAL_HIP*Vector3(1,1,-1),STRAIGHT_KNEE,Vector3(-2,0,-5.5)]],
