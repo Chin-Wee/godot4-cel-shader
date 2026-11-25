@@ -1,22 +1,22 @@
-# Graph Report - godot4-cel-shader  (2026-11-24)
+# Graph Report - godot4-cel-shader  (2026-11-25)
 
 ## Corpus Check
-- 29 files · ~2,124,213 words
+- 30 files · ~2,129,929 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1080 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- Unclassified: 1089 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 492 nodes · 555 edges · 35 communities (28 shown, 7 thin omitted)
+- 523 nodes · 587 edges · 36 communities (29 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `1940353a`
+- Built from commit: `5afa94ec`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- Godot 4 Complete Cel Shader
+- Aerial rendering study — DELIVERY MUST COMPLETE
 - PhantomCamera3D
 - PhantomCamera2D
 - TransitionType
@@ -31,7 +31,7 @@
 - PhantomCameraNoiseEmitter2D
 - PhantomCameraNoiseEmitter3D
 - Grass direction: Breath of the Wild
-- LimitTargetQueryResult
+- FollowMode2D
 - PhantomCamera3DExtensions
 - Node2D
 - Node3D
@@ -44,6 +44,7 @@
 - MechAsset
 - Balanced aerial thrust and directional braking
 - Q: Why do A/D and Q/E keep their axes between space and plane flight?
+- 2. Lower-body flight articulation study
 - Q: refactor the codebase based on solid design principles.
 - check_godot.py
 - Q: Where are Armored Core hover tap burst control timings and force handling defined?
@@ -78,11 +79,11 @@
 ## Import Cycles
 - None detected.
 
-## Communities (35 total, 7 thin omitted)
+## Communities (36 total, 7 thin omitted)
 
-### Community 0 - "Godot 4 Complete Cel Shader"
-Cohesion: 0.08
-Nodes (24): Aerial rendering study — DELIVERY MUST COMPLETE, Asset selection, Body-flight control checks, Checks and comparison captures, Dynamic rotation and flip checks, Flight animation checks, Implementation and reference, Pose Studio (+16 more)
+### Community 0 - "Aerial rendering study — DELIVERY MUST COMPLETE"
+Cohesion: 0.17
+Nodes (12): Aerial rendering study — DELIVERY MUST COMPLETE, Asset selection, Body-flight control checks, Checks and comparison captures, Dynamic rotation and flip checks, Flight animation checks, Implementation and reference, Pose Studio (+4 more)
 
 ### Community 1 - "PhantomCamera3D"
 Cohesion: 0.04
@@ -109,16 +110,16 @@ Cohesion: 0.08
 Nodes (23): KeepAspect, GDScript, StringName, Vector2, Camera3DResource, CullMask, Far, Fov (+15 more)
 
 ### Community 7 - "PhantomCameraHost"
-Cohesion: 0.06
-Nodes (31): Callable, PhantomCamera, StringName, InterpolationMode, Auto, Idle, Manual, Physics (+23 more)
+Cohesion: 0.10
+Nodes (18): Callable, StringName, InterpolationMode, Auto, Idle, Manual, Physics, MethodName (+10 more)
 
 ### Community 8 - "FollowLockAxis3D"
-Cohesion: 0.09
-Nodes (22): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+14 more)
+Cohesion: 0.08
+Nodes (23): PhantomCamera, FollowLockAxis3D, None, X, XY, XYZ, XZ, Y (+15 more)
 
 ### Community 9 - "Animation direction for the 9 m, 10 t mech"
-Cohesion: 0.12
-Nodes (17): Animation direction for the 9 m, 10 t mech, AnimBP, clip data and correction, Author the beats on the actual chassis, Fit to the existing Godot demos, Flight, Ground locomotion, Movement and combat reference sheet, Movement architecture and constraints (+9 more)
+Cohesion: 0.06
+Nodes (29): Ground movement demo, Replay and checks, Animation direction for the 9 m, 10 t mech, AnimBP, clip data and correction, Author the beats on the actual chassis, Fit to the existing Godot demos, Flight, Ground locomotion (+21 more)
 
 ### Community 10 - "PhantomCameraNoise3D"
 Cohesion: 0.11
@@ -130,7 +131,7 @@ Nodes (12): PhantomCamera.Manager, GodotObject, PhantomCamera2D, PhantomCamera3D
 
 ### Community 12 - "PhantomCameraNoiseEmitter2D"
 Cohesion: 0.06
-Nodes (26): PhantomCamera.Noise, GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime (+18 more)
+Nodes (25): GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime, Duration (+17 more)
 
 ### Community 13 - "PhantomCameraNoiseEmitter3D"
 Cohesion: 0.12
@@ -140,9 +141,9 @@ Nodes (11): GodotObject, Node3D, StringName, MethodName, PhantomCameraNoiseEmitt
 Cohesion: 0.29
 Nodes (6): Grass direction: Breath of the Wild, Local checks, Recommended implementation order, Scope and evidence, Sources and what each supports, Why this scene looks like panels
 
-### Community 15 - "LimitTargetQueryResult"
-Cohesion: 0.22
-Nodes (6): CollisionShape2D, GodotObject, LimitTargetQueryResult, IsCollisionShape2D, IsTileMapLayer, TileMapLayer
+### Community 15 - "FollowMode2D"
+Cohesion: 0.07
+Nodes (19): CollisionShape2D, PhantomCamera.Noise, GodotObject, FollowLockAxis2D, None, X, Xy, Y (+11 more)
 
 ### Community 16 - "PhantomCamera3DExtensions"
 Cohesion: 0.25
@@ -172,6 +173,10 @@ Nodes (9): Answer, Balanced aerial thrust and directional braking, Directional b
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Why do A/D and Q/E keep their axes between space and plane flight?, Source Nodes
 
+### Community 29 - "2. Lower-body flight articulation study"
+Cohesion: 0.07
+Nodes (30): 1. Goals and design principles, 2.1 Pitch, 2.2 Roll, 2.3 Yaw — Armored Core-style lean, 2.4 Translation and braking, 2.5 Initial pose authoring checklist, 2.6 Continuous pose intensity and selection, 2.7 Experimental scene (+22 more)
+
 ### Community 30 - "Q: refactor the codebase based on solid design principles."
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: refactor the codebase based on solid design principles., Source Nodes
@@ -193,24 +198,24 @@ Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?, Source Nodes
 
 ## Knowledge Gaps
-- **275 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+270 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 344 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **301 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+296 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 370 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.259) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.202) - this node is a cross-community bridge._
+  _High betweenness centrality (0.230) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `FollowMode2D`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
+  _High betweenness centrality (0.179) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.169) - this node is a cross-community bridge._
+  _High betweenness centrality (0.150) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _275 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `Godot 4 Complete Cel Shader` be split into smaller, more focused modules?**
-  _Cohesion score 0.07671957671957672 - nodes in this community are weakly interconnected._
+  _301 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**
   _Cohesion score 0.043478260869565216 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera2D` be split into smaller, more focused modules?**
   _Cohesion score 0.05405405405405406 - nodes in this community are weakly interconnected._
+- **Should `TransitionType` be split into smaller, more focused modules?**
+  _Cohesion score 0.07311827956989247 - nodes in this community are weakly interconnected._
