@@ -3,21 +3,23 @@ extends RefCounted
 # The lower-body sheet from FLIGHT_ARTICULATION_DESIGN.md, calibrated on MechAsset.
 # Hip and ankle are XYZ degrees in chassis reference axes. Knee is flexion in degrees.
 # Armored Core VI is the reference for the directional lean and staggered boost.
-const NEUTRAL := [[Vector3(-8.8,0,5),5,Vector3(3.6,0,-5)]]
+const NEUTRAL_HIP := Vector3(-7,0,-5.5)
+const STRAIGHT_KNEE := 3.0
+const NEUTRAL := [[NEUTRAL_HIP,STRAIGHT_KNEE,Vector3(4,0,5.5)]]
 const AUTHORED := {
 	"Neutral_Flight": NEUTRAL,
-	"Unpowered_Coast": [[Vector3(-3,0,7),8,Vector3(-5,0,-4)]],
-	"Pitch_Up_Soft": [[Vector3(-12,0,7),5,Vector3(12,0,-7)]],
-	"Pitch_Up_Hard": [[Vector3(-40,0,22),85,Vector3(10,0,-10)]],
-	"Pitch_Down_Soft": [[Vector3(16,0,12),5,Vector3(-25,0,-8)]],
-	"Pitch_Down_Hard": [[Vector3(32,0,22),8,Vector3(-35,0,-10)]],
-	"Roll_Left_Soft": [[Vector3(-10,0,4),5,Vector3(2,0,-4)],[Vector3(10,0,-4),5,Vector3(-14,0,4)]],
-	"Roll_Left_Hard": [[Vector3(-25,0,6),7,Vector3(9,0,-5)],[Vector3(25,0,-6),7,Vector3(-36,0,5)]],
+	"Unpowered_Coast": [[Vector3(2,0,-4),STRAIGHT_KNEE,Vector3(0,0,4)]],
+	"Pitch_Up_Soft": [[Vector3(5,0,-5.5),STRAIGHT_KNEE,Vector3(8,0,5.5)]],
+	"Pitch_Up_Hard": [[Vector3(18,0,-5.5),STRAIGHT_KNEE,Vector3(16,0,5.5)]],
+	"Pitch_Down_Soft": [[Vector3(-17,0,2),STRAIGHT_KNEE,Vector3(-3,0,-2)]],
+	"Pitch_Down_Hard": [[Vector3(-30,0,11),6,Vector3(-2,0,-10)]],
+	"Roll_Left_Soft": [[NEUTRAL_HIP,STRAIGHT_KNEE,Vector3(10,0,5.5)],[NEUTRAL_HIP*Vector3(1,1,-1),STRAIGHT_KNEE,Vector3(-2,0,-5.5)]],
+	"Roll_Left_Hard": [[NEUTRAL_HIP,STRAIGHT_KNEE,Vector3(20,0,5.5)],[NEUTRAL_HIP*Vector3(1,1,-1),STRAIGHT_KNEE,Vector3(-12,0,-5.5)]],
 	"Yaw_Left_Soft": [[Vector3(-12,-4,9),12,Vector3(-21,4,-2)],[Vector3(5,0,-11),5,Vector3(-17,0,9)]],
 	"Yaw_Left_Hard": [[Vector3(-31,-13,20),38,Vector3(-27,8,-8)],[Vector3(10,0,-19),7,Vector3(-22,0,8)]],
-	"Vertical_Ascent": [[Vector3(-8.8,0,3),5,Vector3(3.6,0,-3)]],
-	"Forward_Boost": [[Vector3(5,0,7),9,Vector3(-35,0,-6)],[Vector3(13,0,-7),12,Vector3(-35,0,6)]],
-	"Backward_Boost": [[Vector3(-24,0,8),12,Vector3(28,0,-7)]],
+	"Vertical_Ascent": NEUTRAL,
+	"Forward_Boost": [[Vector3(5,0,1),STRAIGHT_KNEE,Vector3(-32,0,-1)],[Vector3(13,0,-1),5,Vector3(-32,0,1)]],
+	"Backward_Boost": [[Vector3(-24,0,1),6,Vector3(28,0,-1)]],
 	"Lateral_Boost_Left": [[Vector3(-30,2,21),31,Vector3(-11,1,-4)],[Vector3(9,0,-5),6,Vector3(-19,0,-10)]],
 	"Retrograde_Brake": [[Vector3(-32,0,24),56,Vector3(9,0,-7)]],
 }

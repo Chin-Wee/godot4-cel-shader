@@ -32,26 +32,26 @@ All angles are first-pass visual authoring targets in anatomical terms, not sign
 
 | Pose | Hip orientation | Knee flexion | Stance | Ankle adjustment |
 | --- | --- | --- | --- | --- |
-| Neutral | Neutral | 5° | Normal | 0° |
-| Soft pull up | Forward 10–15° | 5° | Normal | 10° backward |
-| Hard pull up | Forward 35–45° | 80–90° | Wide | 20–30° trim |
-| Soft pull down | Backward 10–20° | 5° | Wide | 10° forward |
-| Hard pull down | Backward 25–35° | 5–10° | Extra wide | 20–30° forward |
+| Neutral | Centered over the feet | 3° | Close | Neutral trim |
+| Soft pull up | Forward of the knees | 3° | Close | 8° backward |
+| Hard pull up | Farther forward of the knees | 3° | Close | 16° backward |
+| Soft pull down | Back, with the legs reaching forward | 3° | Slightly open | Neutral trim |
+| Hard pull down | Back, with the legs flared forward | 6° | Wide | Neutral trim |
 
-Soft pull-up keeps the legs straight, hips forward and ankles slightly angled back. Hard pull-up retains the intent but introduces approximately 90° knee bend and a wide stance. Pull-down retains straight legs, widens the stance and moves hips/legs backward. The silhouette contrast is essential.
+Both pull-up anchors keep the knees extended and the feet together. The hip rotates the legs behind the pelvis and the ankles angle back with increasing demand. Pull-down puts the hips behind the legs and sends both feet forward, with more outward flare at full demand.
 
-Later upper-body integration: soft pitch keeps the torso relatively rigid and hands near thighs. Hard pull-up arches and compresses the chest, with arms clearing the wider stance; hard pull-down commits the torso forward as the legs trail. These are starting silhouettes, not rigidly held poses during high stress.
+Soft pitch keeps the hands near the thighs. Hard pull-up arches the chest. Hard pull-down leans the chest forward over the legs.
 
 ### 2.2 Roll
 
-| Pose | Leading leg | Trailing leg | Ankles |
-| --- | --- | --- | --- |
-| Soft roll left | Forward 10° | Backward 10° | Opposing 10° angles |
-| Hard roll left | Forward 25° | Backward 25° | Opposing 20–25° angles |
-| Soft roll right | Mirrored | Mirrored | Mirrored |
-| Hard roll right | Mirrored | Mirrored | Mirrored |
+| Pose | Hips and knees | Ankle offset from neutral |
+| --- | --- | --- |
+| Soft roll left | Close, extended, even | Opposing 6° |
+| Hard roll left | Close, extended, even | Opposing 16° |
+| Soft roll right | Same stance | Mirrored |
+| Hard roll right | Same stance | Mirrored |
 
-Use narrow, extended legs, normally under 10° knee flexion. One foot advances and the other retracts, with opposite forward/backward ankle orientations. Later, add slight opposing shoulder/pelvis twist and compact arms. Test the desired pilot-axis moment and minimise unintended translation. Opposing ankle angles alone do not establish that the moment is about the correct axis.
+Keep the feet together with both legs at the same fore-aft position through commitment and arrest. Only the ankles and arms articulate for the roll. The arms move fore and aft along the body, with an explicit airbrake input able to deploy the arm surfaces. Measure signed pilot-axis torque and cross-axis translation on the completed rig.
 
 ### 2.3 Yaw — Armored Core-style lean
 
@@ -165,7 +165,7 @@ For each completed pose, compute resultant force F = sum(f_i d_i) and moment M =
 | Knee angular speed | 103°/s |
 | Ankle angular speed | 86°/s |
 
-The hard pull-up sits close to the knee limit. Moving from 5° to 90° takes at least approximately 0.83 seconds at the current maximum speed, before servo settling. Some proposed angles may exceed signed limits once mapped to bone axes. Clamp and inspect; change aerial joint response only after measuring the pose and input latency. Preserve grounded response and shared contact behaviour.
+The normal pitch and roll anchors stay near the minimum knee flexion. Deep bends remain available for landing, braking and other loaded poses. Clamp the anchors in skeleton space and check completed armor clearance.
 
 The full rig currently has ten main outlets: two backpack, two calf, two heel and four toe, plus twelve cold-gas ports. Only the six heel/toe outlets on Feet.L/R are enabled for the feet-only experiment. The current main-engine gimbal cone is 30°; zero independent deflection is an experimental requirement, not existing runtime behaviour.
 
@@ -173,12 +173,12 @@ The full rig currently has ten main outlets: two backpack, two calf, two heel an
 
 | Situation | Straight legs | Asymmetry | Stance |
 | --- | --- | --- | --- |
-| Neutral | Very high | Minimal | Normal |
+| Neutral | Very high | Minimal | Close |
 | Cruise | Very high | Minimal | Narrow |
-| Soft pitch | High | Minimal | Normal |
-| Hard pull up | Low | Low | Wide |
+| Soft pitch | High | Minimal | Close to slightly open |
+| Hard pull up | Very high | Minimal | Close |
 | Hard pull down | High | Low | Wide |
-| Roll | High | Very high | Narrow |
+| Roll | Very high | Ankles and arms | Close |
 | Yaw | Moderate–high | High | Wide |
 | Directional boost | High | Moderate | Variable |
 | Emergency braking | Low | Moderate | Wide |
@@ -236,7 +236,7 @@ Current mechanical limits remain authoritative until deliberately recalibrated.
 | Hard pull up | Pronounced arch and load compression |
 | Soft pull down | Slight forward inclination |
 | Hard pull down | Strong forward commitment |
-| Roll | Small opposing twist |
+| Roll | Aligned with the chassis |
 | Yaw | Armored Core-style directional lean |
 | Forward boost | Forward lean |
 | Retrograde braking | Rearward brace |
@@ -256,7 +256,7 @@ Default straight and close to the body, with slight independent shoulder, elbow 
 | Trailing extension | Forward acceleration |
 | Forward brace | Braking |
 | Asymmetric balance | Yaw and lateral boost |
-| Counterrotation | Roll initiation and arrest |
+| Counterrotation | Fore-aft arm cues for roll initiation and arrest |
 | Wide brace | Emergency braking |
 | Relaxed suspension | Engines-off coast |
 | Landing guard | Touchdown preparation |
@@ -303,7 +303,7 @@ Use low-frequency coherent variation plus event-driven grip changes. Different h
 
 ### 3.5 Timing and inventory
 
-For hard pull-up, head anticipates, hips/ankles establish direction, torso commits, knees enter the heavier pose, hands tighten as load develops. Thrust follows available geometry and valve delivery, never a fixed timeline. Initial timing study (seconds, illustrative): head 0–0.16; shoulders 0.04–0.26; hips 0.05–0.38; ankles 0.06–0.32; torso 0.07–0.34; knees 0.09–0.55; hands 0.12–0.32; thrust 0.20–0.62. These are aspirational choreography targets; the current knee speed cannot achieve the specified full hard-pull-up excursion in that window.
+In hard pull-up, the head anticipates, the hips and ankles establish direction, the torso commits, and the hands tighten as load develops. The knees hold the extended line. Thrust follows available geometry and valve delivery.
 
 | Layer | Manually authored | Mirrored |
 | --- | ---: | ---: |
@@ -395,11 +395,11 @@ Combine authored primary poses, authored short gestures, signed telemetry-driven
 | Time (illustrative) | Beat | Articulation |
 | --- | --- | --- |
 | 0.00 s | Cruise | Straight legs, compact arms, relaxed hands |
-| 0.15 s | Initiation | Head turns, leading shoulder opens, legs stagger |
-| 0.35 s | Commitment | Ankles redirect thrust, one arm sweeps outward |
-| 0.60 s | Correction | Opposite arm moves, inside knee gathers, grip tightens |
-| 0.90 s | Arrest | Limbs counterrotate as angular demand falls |
-| 1.30 s | Recovery | Arms settle independently, legs return towards cruise |
+| 0.15 s | Initiation | Ankles oppose and the leading shoulder draws aft |
+| 0.35 s | Commitment | Feet stay together as the arms stroke along the body |
+| 0.60 s | Correction | Opposite arm moves and grip tightens |
+| 0.90 s | Arrest | Ankles counter as angular demand falls |
+| 1.30 s | Recovery | Arms settle independently into cruise |
 
 Even if input is held, animation evolves with velocity, angular acceleration, force allocation and airflow. Index gestures by events/physical progress, not a mandatory fixed 1.3-second animation. Low stress: disciplined machine. Moderate: actively controlled. High: visibly fighting loads. Extreme: aggressive overlapping corrections.
 
@@ -533,13 +533,13 @@ exhaust vectors use the same completed foot transforms as the physics forces.
 
 | Pose and request | Fixed force / moment residual | 30° force / moment residual |
 | --- | ---: | ---: |
-| Neutral, one body weight of lift | 0.5 kN / 3.3 kN·m | 0.2 kN / 4.1 kN·m |
-| Hard roll left with one body weight of lift | 16.0 kN / 121.3 kN·m | <0.1 kN / <0.1 kN·m |
-| Soft yaw left with one body weight of lift | 22.2 kN / 137.0 kN·m | 2.0 kN / 39.1 kN·m |
+| Neutral, one body weight of lift | 0.2 kN / 1.7 kN·m | 0.1 kN / 1.7 kN·m |
+| Hard roll left with one body weight of lift | 0.9 kN / 119.7 kN·m | 2.0 kN / 73.7 kN·m |
+| Soft yaw left with one body weight of lift | 22.1 kN / 136.9 kN·m | 2.0 kN / 39.1 kN·m |
 | Left boost, 0.5 body weights laterally with support | 15.3 kN / 172.3 kN·m | 11.3 kN / 71.9 kN·m |
 
-The hard-left-roll key delivered 26.3 kN·m against a 133.3 kN·m request.
-Its absolute signed ceiling is 55.3 kN·m before reserving any lift. Neutral
+The hard-left-roll key delivered 14.2 kN·m against a 133.3 kN·m request.
+Its absolute signed ceiling is 53.8 kN·m before reserving any lift. Neutral
 support, signed turn moments and lateral translation are demonstrated. The
 feet-only rig lacks the clean roll authority needed for full flight. The full-rig
 implementation adds the existing backpack, calf and cold-gas outlets and keeps
@@ -586,19 +586,17 @@ Run the integrated native witness from the repository root.
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_authored_flight.gd
 ```
 
-The witness checks compact hover, extended versus gathered pitch, signed roll
+The witness checks compact hover, both extended pitch silhouettes, sustained roll
 and arrest, lateral boost with yaw and reversal, valve tails and relight, landing,
 independent head tracking and finger motion. It measures hot outlet axes against
 rendered exhaust, and compares hard roll across 30, 60 and 120 physics ticks per
 second and against the gimballed baseline. The separate laboratory regression
 continues to check the six-outlet configuration.
 
-Under powered pull-up, the full rig rotates the ankles back toward axial
-thrust while keeping the gathered knee target. The six-outlet lab keeps the
-untrimmed authored anchor for its force comparison. In the full-rig replay,
-hard roll reached 1.465 rad/s at 60 Hz versus 1.470 rad/s on the gimballed
-comparison. The peak hot-exhaust discrepancy across the tested moves was
-0.47° while the next pose advanced. A sampled middle finger moved 4.42° during
+The live rig and six-outlet lab share the pull-up and pull-down anchors. In
+the full-rig replay, hard roll reached 1.467 rad/s at 60 Hz and the gimballed
+comparison reached 1.470 rad/s. The peak hot-exhaust discrepancy across the
+tested moves was 0.10° while the next pose advanced. A sampled middle finger moved 4.42° during
 relaxed hover, and all 28 finger joints changed from hover to a loaded pull.
 The five aerodynamic panels keep their existing areas. Their fixed incidence
 is calibrated for the authored straight-limb silhouettes. The integrated test

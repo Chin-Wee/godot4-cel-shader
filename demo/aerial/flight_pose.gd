@@ -354,13 +354,15 @@ func _update_body(delta: float) -> void:
 	anticipation.y += bank*0.14+signs.y*acro.y*(0.14*roll.x-0.12*roll.y)
 	anticipation.z += signs.y*acro.y*(0.08*roll.x-0.08*roll.y)
 	var pelvic := Vector3(acro.x*(-swing_pitch*flip.x+0.26*flip.y),-bank*0.12-signs.y*acro.y*roll.x*0.12,acro.y*signs.y*0.08)
-	hips.step((pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0))),delta,0.30,0.5)
+	var roll_line: float = motion.get("roll_line",0.0)
+	var pelvic_target := (pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0)))
+	hips.step(pelvic_target*(1.0-roll_line),delta,0.30,0.5)
 	root_angles = hips.value*Vector3(-1,1,1)
 	var displacement := Vector3(-acceleration.x*0.001,-clampf(motion.g_load-1,0,3)*0.012,acceleration.z*0.001)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
 	displacement.z -= motion.land*0.02
 	displacement.y -= (motion.retro*0.055+motion.drive*0.025)*(1.0-motion.land)*(1.0-motion.hover)
-	com.step(displacement.limit_length(0.08),delta,0.30,0.4)
+	com.step(displacement.limit_length(0.08)*(1.0-roll_line),delta,0.30,0.4)
 	# Chest establishes the arch and leads the shoulder press. Load lag stays
 	# secondary so the upper body looks piloted rather than pulled by inertia.
 	var arch := Vector3(-0.16*motion.get("belly",motion.box)+0.12*motion.get("back",0.0)+0.04*motion.track-motion.launch*0.06,0,0)
@@ -373,7 +375,7 @@ func _update_body(delta: float) -> void:
 	if motion.get("authored",false):
 		var stroke: Vector3 = motion.stroke
 		chest_target = Articulation.torso_target(motion)+lag*0.45+Vector3(stroke.x*0.12,stroke.z*0.10,stroke.y*0.09)
-	chest.step(chest_target.clamp(Vector3(-0.45,-0.30,-0.45),Vector3(0.45,0.30,0.45)),delta,0.30,0.9)
+	chest.step(chest_target.clamp(Vector3(-0.45,-0.30,-0.45),Vector3(0.45,0.30,0.45))*(1.0-roll_line),delta,0.30,0.9)
 	_update_head(delta)
 
 func _update_head(delta: float) -> void:
@@ -394,6 +396,7 @@ func _update_head(delta: float) -> void:
 	if motion.get("authored",false) and wanted.distance_to(head.value)<deg_to_rad(2.0):
 		wanted = head.value
 	wanted.z = -chest.value.z*0.2-motion.up.x*0.10
+	wanted *= 1.0-motion.get("roll_line",0.0)
 	head.step(profile.limit_head(wanted),delta,profile.head_response,profile.head_speed)
 	head.value = profile.limit_head(head.value)
 
@@ -568,45 +571,53 @@ func _sample_articulation(controller, delta: float) -> void:
 		var side: int = i%2 if i<6 else int(i>=8)
 		sides[side] += force.length()
 	var differential := (sides.x-sides.y)/maxf(sides.x+sides.y,1.0)
+	var pose_steer: Vector3 = motion.steer
+	for axis in 3:
+		if absf(demand[axis])>absf(pose_steer[axis]): pose_steer[axis] = demand[axis]
+	var airborne: float = (1.0-motion.land)*(1.0-motion.launch)
+	var roll_amount: float = maxf(absf(demand.z),absf(motion.pilot_rates.z)/controller.MAX_RATE.z)
+	var roll_line := smoothstep(0.08,0.45,roll_amount)*float(absf(demand.z)>=maxf(absf(demand.x),absf(demand.y)))*airborne
+	var pitch_line: float = smoothstep(0.10,0.55,absf(demand.x))*float(absf(demand.x)>maxf(absf(demand.y),absf(demand.z)))*airborne*(1.0-motion.brake)
 	motion.merge({"authored":true,"stress":intensity,"stroke":stroke,
 		"stroke_direction":stroke_direction,"stroke_phase":stroke_age,"differential":differential,
+		"pose_steer":pose_steer,"roll_line":roll_line,"pitch_line":pitch_line,
 		"hand_time":controller.clock,"impact":contacts.impact},true)
 
 func _update_authored_legs(delta: float, controller) -> void:
 	var power: float = maxf(controller.thrust_level,float(controller.detent>0))
-	var steer: Vector3 = motion.steer
-	var intent: Vector3 = controller.rotation_request
-	for axis in 3:
-		if absf(intent[axis])>absf(steer[axis]): steer[axis] = intent[axis]
+	var steer: Vector3 = motion.pose_steer
 	# Lab anchors use calibrated chassis axes. The old directional pose
 	# frame reflects X and Z relative to pilot translation.
 	var move: Vector3 = motion.reach*Vector3(-1,1,-1)
 	var target := Articulation.select(steer,move,power,motion.retro)
+	var roll_line: float = motion.roll_line
+	var clean_line := maxf(roll_line,motion.pitch_line)
+	var line_target := target
+	if clean_line>0.0:
+		# Keep commanded roll and pitch silhouettes through airflow and effort blends.
+		var axis := Vector3(0,0,steer.z) if roll_line>0.0 else Vector3(steer.x,0,0)
+		line_target = Articulation.select(axis,Vector3.ZERO,1.0,0.0)
 	var land: float = motion.land
 	var takeoff: float = motion.launch
 	var acro: Vector2 = motion.acro
 	var flip: Vector3 = motion.flip_shape
-	var roll: Vector3 = motion.roll_shape
 	var throttle_load: float = smoothstep(0.1,0.8,controller.thrust_level)
-	# With the calf, backpack and cold couples present, the deep pull can keep
-	# its knee silhouette while the boots recover axial thrust under power.
-	var powered_pull: float = smoothstep(0.25,0.85,steer.x)*throttle_load*(1.0-motion.hover)
 	var stroke: Vector3 = motion.stroke
 	var alternative := target.duplicate()
 	for side in 2:
 		var sx := 1.0 if side==0 else -1.0
 		var mirror := Vector3(1,1,sx)
 		var exposed: float = (1.0-land)*(1.0-takeoff)*(1.0-maxf(sx*motion.differential,0.0)*0.6)
-		var gesture := (stroke.y+0.55*stroke.z)*sx*exposed*0.18
+		var gesture := (stroke.y+0.55*stroke.z)*sx*exposed*0.18*(1.0-clean_line)
 		for joint in 3:
 			var index := side*3+joint
 			var aim := target[index]
-			if joint==2: aim.x -= 0.52*powered_pull
 			aim = aim.lerp(Articulation.BELLY_LEGS[joint]*mirror,motion.belly)
 			aim = aim.lerp(Articulation.BACK_LEGS[joint]*mirror,motion.back)
 			var tuck: Vector3 = profile.fall_pose[joint]*mirror
 			tuck = tuck.lerp(profile.layout_pose[joint]*mirror,motion.layout)
-			aim = aim.lerp(tuck,(acro.x*flip.y+acro.y*roll.y)*(1.0-throttle_load*0.45))
+			aim = aim.lerp(tuck,acro.x*flip.y*(1.0-throttle_load*0.45))
+			aim = aim.lerp(line_target[index],clean_line)
 			aim = aim.lerp(profile.launch_pose[joint]*mirror,takeoff)
 			aim = aim.lerp(profile.landing_pose[joint]*mirror,land)
 			target[index] = aim

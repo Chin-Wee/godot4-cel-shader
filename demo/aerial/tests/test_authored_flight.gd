@@ -67,6 +67,13 @@ func _rest_rotation(bone: String) -> Quaternion:
 	var local: Transform3D = parent.affine_inverse()*mech.bone_poses[index]
 	return local.basis.get_rotation_quaternion()
 
+func _foot_offsets() -> Vector3:
+	var sk := mech.skeleton
+	var left: Vector3 = mech.bone_poses[sk.find_bone("Feet.L")].origin
+	var right: Vector3 = mech.bone_poses[sk.find_bone("Feet.R")].origin
+	var pelvis: Vector3 = mech.bone_poses[sk.find_bone("PelvisBase")].origin
+	return Vector3(left.x-right.x,left.z-right.z,((left+right)*0.5-pelvis).z)
+
 func _hover_and_gaze() -> void:
 	var fc := mech.controller
 	_reset()
@@ -98,12 +105,17 @@ func _powered_inputs() -> void:
 		mech.controls = {key:true}
 		await _ticks(60)
 		vertical_rates.append(fc.velocity.y)
+		var stance := _foot_offsets()
 		if key=="back":
-			_expect(mech.rig.legs[1].value.x>1.04,"Hard pull-up never gathers the knees")
+			_expect(maxf(mech.rig.legs[1].value.x,mech.rig.legs[4].value.x)<deg_to_rad(6),"Hard pull-up bends the knees")
+			_expect(stance.x<2.0 and stance.z< -1.0,"Hard pull-up does not keep its feet together and behind the hips")
+			_expect(mech.rig.legs[2].value.x>deg_to_rad(9),"Hard pull-up does not angle the ankles backward")
 			for name in relaxed_digits:
 				var relaxed: Quaternion = relaxed_digits[name]
 				_expect(relaxed.angle_to(_rest_rotation(name))>0.025,"Loaded hand does not articulate "+name)
-		else: _expect(mech.rig.legs[1].value.x<0.25,"Hard pitch-down loses its extended knees")
+		else:
+			_expect(mech.rig.legs[1].value.x<0.25,"Hard pitch-down loses its extended knees")
+			_expect(stance.x>4.0 and stance.z>2.0,"Hard pitch-down does not flare its legs forward of the hips")
 	_expect(vertical_rates[1]>vertical_rates[0]+3.0,"W and S bend the trajectory in the same direction")
 	_reset(HEAD_FIRST,Vector3(0,0,-65),3)
 	await _ticks(30)
@@ -115,6 +127,14 @@ func _powered_inputs() -> void:
 	_expect(bank_rate>0.9 and mech.rig.gesture_count>=1,"Full rig cannot drive the documented roll")
 	_expect(mech.rig.motion.stress>low_stress or mech.rig.gesture_count>1,"Held bank lacks active correction")
 	_expect(cruise.angle_to(_rest_rotation("Finger8.R"))>0.02,"High load never changes the fingers")
+	await _ticks(88)
+	var roll_stance := _foot_offsets()
+	_expect(roll_stance.x<2.0 and absf(roll_stance.y)<0.20,"Sustained roll separates or staggers the feet")
+	_expect(maxf(mech.rig.legs[1].value.x,mech.rig.legs[4].value.x)<deg_to_rad(6),"Sustained roll tucks its knees")
+	_expect(absf(mech.rig.legs[2].value.x-mech.rig.legs[5].value.x)>deg_to_rad(12),"Sustained roll has no ankle stroke")
+	_expect(mech.rig.hips.value.length()<0.04 and mech.rig.chest.value.length()<0.04,"Roll twists the torso or pelvis")
+	for side in 2:
+		_expect(absf(mech.rig.arms.upper[side].value.z)<deg_to_rad(13),"Roll flares an arm outside the body line")
 	mech.controls = {}
 	await _ticks(55)
 	_expect(absf((fc.pilot_frame().inverse()*mech.angular_velocity).z)<0.16,"Roll does not arrest")

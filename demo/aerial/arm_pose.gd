@@ -185,6 +185,10 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 		var hand_texture := grip_noise.get_noise_2d(time,side*19.3)
 		var settling: float = frame.pressure*strength*hand_texture*(1.0-envelope)*(1.0-frame.land)
 		target += Vector4(settling*0.065,0,settling*0.06,settling*0.09)
+		var aligned := Poses.arm_key("Streamlined",side)
+		aligned.x += clampf(target.x-aligned.x,-0.10,0.10)
+		# A deliberate airbrake still deploys its arm surfaces during a turn.
+		target = target.lerp(aligned,frame.roll_line*(1.0-frame.brake))
 		goals[side] = Poses.hand_target(frame,side,hand_texture)
 		var curl: float = goals[side].x
 		var rate := 6.0 if curl>finger_curl[side] else 2.6
