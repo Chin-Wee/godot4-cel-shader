@@ -1,6 +1,6 @@
 # Pose-driven aerial mech articulation
 
-**Status: proposed design and experimental specification — not a claim of implemented flight behaviour.**
+**Status: lower-body authoring and feet-only force analysis are implemented in the [Flight Articulation Lab](flight_articulation_lab.tscn). See the [laboratory measurements](#9-laboratory-measurements).**
 
 Companion to the [mech animation research guide](../../MECH_ANIMATION_RESEARCH.md) and [aerial demo implementation notes](README.md). The current Godot runtime remains authoritative for existing behaviour. This document records the intended direction for the next flight-articulation experiment; where its aesthetic requirements differ from older flight proposals, follow this document for the experiment only.
 
@@ -94,26 +94,26 @@ Translation and rotation are independent requests. A similar-looking pose may ha
 | Translation | Vertical ascent; forward boost; backward boost; lateral boost left; mirrored right; retrograde braking | 5 | 1 |
 | Total | 20 | 15 | 5 |
 
-- [ ] Neutral flight
-- [ ] Unpowered coast
-- [ ] Soft pull up
-- [ ] Hard pull up
-- [ ] Soft pull down
-- [ ] Hard pull down
-- [ ] Soft roll left
-- [ ] Hard roll left
-- [ ] Soft roll right (mirrored)
-- [ ] Hard roll right (mirrored)
-- [ ] Soft yaw left
-- [ ] Hard yaw left
-- [ ] Soft yaw right (mirrored)
-- [ ] Hard yaw right (mirrored)
-- [ ] Vertical ascent
-- [ ] Forward boost
-- [ ] Backward boost
-- [ ] Lateral boost left
-- [ ] Lateral boost right (mirrored)
-- [ ] Retrograde braking
+- [x] Neutral flight
+- [x] Unpowered coast
+- [x] Soft pull up
+- [x] Hard pull up
+- [x] Soft pull down
+- [x] Hard pull down
+- [x] Soft roll left
+- [x] Hard roll left
+- [x] Soft roll right (mirrored)
+- [x] Hard roll right (mirrored)
+- [x] Soft yaw left
+- [x] Hard yaw left
+- [x] Soft yaw right (mirrored)
+- [x] Hard yaw right (mirrored)
+- [x] Vertical ascent
+- [x] Forward boost
+- [x] Backward boost
+- [x] Lateral boost left
+- [x] Lateral boost right (mirrored)
+- [x] Retrograde braking
 
 ### 2.6 Continuous pose intensity and selection
 
@@ -504,3 +504,49 @@ Existing tests that mandate gimbal travel or old procedural internal targets nee
 Source inspection on main at 4db86a26330babadc5df47db777f8606a1dd123: rig defaults, mount layout, flight controller/allocator, pose and arm scripts, servo, baker, studio and documentation. Graphify reports pending semantic refresh and unsupported GDScript AST indexing; runtime source wins. No pose values have been validated against the actual fixed-axis force envelope; no new scene, poses, code or tests are implemented by this document.
 
 Key risks: feet-only yaw/pitch authority, cross-axis force, reduced quick-boost responsiveness, joint-limit mapping, armour clearance, and high-frequency corrections causing excess residual force or valve chatter. Proposed angles, timings, stress envelopes and pose counts are authoring targets, not verified outcomes.
+
+## 9. Laboratory measurements
+
+Open the lab from the Godot editor or run these commands from the repository root.
+
+```sh
+godot --path demo res://aerial/flight_articulation_lab.tscn
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_articulation_lab.gd
+```
+
+Use **Pose authoring** to edit the hip, knee and ankle of either leg. **Save key**
+writes a native AnimationLibrary at `user://lower_body_keys.tres` with six
+bone-local rotation tracks. **Force analysis** keeps the chassis frozen and
+runs the real valve state machines. **Dynamic simulation** releases the same
+fixture. Choose **Pilot blend** for continuous selection from demand, travel,
+delivered output and cutoff tails. The **Intensity** control blends an
+individual pose from neutral when a named key is selected. W/S, A/D and Q/E
+provide rotation demand, and the translation fields independently request
+lateral, vertical and longitudinal force. Keys 1/2/3 switch the front, side and
+top views.
+
+The fixture uses the full mech's 10,000 kg mass and measured capsule inertia of
+80,833 / 26,667 / 80,833 kg·m² about its COM. The six heel/toe outlets are rated
+at 65 kN each. The comparison uses the same six mounts, demands and mass in
+both solves. It changes only the cone from 0° to 30°. The displayed thrust and
+exhaust vectors use the same completed foot transforms as the physics forces.
+
+| Pose and request | Fixed force / moment residual | 30° force / moment residual |
+| --- | ---: | ---: |
+| Neutral, one body weight of lift | 0.5 kN / 3.3 kN·m | 0.2 kN / 4.1 kN·m |
+| Hard roll left with one body weight of lift | 16.0 kN / 121.3 kN·m | <0.1 kN / <0.1 kN·m |
+| Soft yaw left with one body weight of lift | 22.2 kN / 137.0 kN·m | 2.0 kN / 39.1 kN·m |
+| Left boost, 0.5 body weights laterally with support | 15.3 kN / 172.3 kN·m | 11.3 kN / 71.9 kN·m |
+
+The hard-left-roll key delivered 26.3 kN·m against a 133.3 kN·m request.
+Its absolute signed ceiling is 55.3 kN·m before reserving any lift. Neutral
+support, signed turn moments and lateral translation are demonstrated, but this
+pose set fails the gate for replacing the full-flight controller. The stage 3–7
+layers remain pending. Review the weaker roll couple and the cross-axis moments
+before using the authored keys to steer live flight.
+
+The lab regression checks all 20 targets at five intensities, fixed axes and
+caps, signed moments, asymmetric output, ignition, cutoff tails, relight,
+inversion and native motion under the measured wrench. A triangle sweep of
+the 100 poses found no intersections among the checked waist/thigh and
+opposing lower-leg/foot armor pairs.

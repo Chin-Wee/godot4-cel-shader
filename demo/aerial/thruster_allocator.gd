@@ -24,7 +24,7 @@ static func project(candidate: Vector3, port: Dictionary) -> Vector3:
 	var off: Vector3 = axis*port.off
 	return off if candidate.distance_squared_to(off)<=candidate.distance_squared_to(on)+2.0*port.fuel*(magnitude-port.off) else on
 
-static func solve(ports: Array, force: Vector3, moment: Vector3, force_axis: Vector3, seed: Array, preferred: Array = [], sweeps := SWEEPS) -> Array[Vector3]:
+static func solve(ports: Array, force: Vector3, moment: Vector3, force_axis: Vector3, seed: Array, preferred: Array = [], sweeps := SWEEPS, fidelity := Vector2(20000.0,3000.0)) -> Array[Vector3]:
 	var n := ports.size()
 	var weights: Array[float] = []
 	var reference: Array[Vector3] = []
@@ -35,12 +35,12 @@ static func solve(ports: Array, force: Vector3, moment: Vector3, force_axis: Vec
 		weights.append(1.0/(1.0+tracking))
 		reference.append(preferred[i]*(1.0-weights[i]) if tracking>0 else Vector3.ZERO)
 	var zero := Basis(Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
-	var force_inverse := Basis.IDENTITY/20000.0
+	var force_inverse := Basis.IDENTITY/fidelity.x
 	if not force_axis.is_zero_approx():
-		for axis in 3: force_inverse[axis] += force_axis*force_axis[axis]*(1.0/3.0-1.0/20000.0)
+		for axis in 3: force_inverse[axis] += force_axis*force_axis[axis]*(1.0/3.0-1.0/fidelity.x)
 	var a := force_inverse
 	var coupling := zero
-	var d := Basis.IDENTITY/3000.0
+	var d := Basis.IDENTITY/fidelity.y
 	for i in n:
 		var port: Dictionary = ports[i]
 		var r: Vector3 = port.lever
