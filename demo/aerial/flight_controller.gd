@@ -11,6 +11,7 @@ const WORLD_UNITS_PER_METER := 10.0
 const GRAVITY := 9.81
 const TRIM_SHARES := [0.02, 0.02, 0.02, 0.02, 0.46, 0.46]
 const VECTOR_LIMIT := PI / 6.0
+const FIXED_FIT := Vector2(1100.0,150.0)
 const MAX_RATE := Vector3(0.75, 0.8, 1.5)
 # Elite Dangerous reference: fixed ship axes with or without flight assistance.
 # This mech flies head-first: pitch = body X, yaw = body Z, roll = body -Y.
@@ -50,6 +51,8 @@ const BASE_DRAG_CD := 0.075
 const HIGH_SPEED_DRAG_CD := 0.28
 const BRAKE_DRAG_CD := 1.8
 const LIFT_BIAS := 0.36 # Shared camber calibrated after splitting the original area.
+# The same body and allocator also support the gimballed comparison path.
+var articulated_flight := false
 var hardware: Resource
 var body: RigidBody3D
 # These are readbacks, never a second integrated position/velocity/attitude.
@@ -445,14 +448,16 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	requested_main_force = force_target*weight
 	requested_thrust = requested_main_force.length()
 	var ports := []
+	var hot_cone := 0.0 if articulated_flight else VECTOR_LIMIT
+	var fit := FIXED_FIT if articulated_flight else Vector2(20000.0,3000.0)
 	var combined := outlets+cold_outlets
 	for i in combined.size():
 		var hot := i<hot_count
 		ports.append({"basis":combined[i].basis,"lever":combined[i].position/(WORLD_UNITS_PER_METER*length_scale),
-			"cone":VECTOR_LIMIT if hot else 0.0,"center":Vector3.ZERO,"gain":1.0,
+			"cone":hot_cone if hot else 0.0,"center":Vector3.ZERO,"gain":1.0,
 			"minimum":HOT_IDLE_FLOW*_hot_capacity(i) if hot and hot_enabled else 0.0,"maximum":_hot_capacity(i) if hot and hot_enabled else (_cold_capacity(i-hot_count) if not hot else 0.0),
 			"off":0.0,"fuel":0.002 if hot else 0.3})
-	var hot_plan := Allocator.solve(ports.slice(0,hot_count),force_target,moment_target,along,ideal_forces,[],64)
+	var hot_plan := Allocator.solve(ports.slice(0,hot_count),force_target,moment_target,along,ideal_forces,[],64,fit)
 	var hot_error := -force_target
 	var hot_moment_error := -moment_target
 	for i in hot_count:
@@ -461,7 +466,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	if hot_error.length()<0.02 and hot_moment_error.length()<0.005:
 		ideal_forces = hot_plan
 		for i in cold_outlets.size(): ideal_forces.append(Vector3.ZERO)
-	else: ideal_forces = Allocator.solve(ports,force_target,moment_target,along,ideal_forces,[],96)
+	else: ideal_forces = Allocator.solve(ports,force_target,moment_target,along,ideal_forces,[],96,fit)
 	# Choose attainable magnitude first; then slew the complete wrench request.
 	# The next-step solve fits all force axes equally, so fuel savings cannot
 	# suddenly drop the along-axis push or create an upward hop.
@@ -484,7 +489,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		ports[i].minimum = valve.preview(minimum,dt)*capacity
 		if hot and hot_enabled: ports[i].off = ports[i].minimum
 		ports[i].maximum = valve.preview(1.0 if not hot or hot_enabled else minimum,dt)*capacity
-		if hot:
+		if hot and hot_cone>0.0:
 			var spring = motor_springs[i]
 			var omega := 2.0/HOVER_VECTOR_RESPONSE
 			var decay := exp(-omega*dt)
@@ -510,7 +515,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		off_plan.append(off)
 		off_force += off
 		off_moment += ports[i].lever.cross(off)
-	var plan := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,moment_target-off_moment,along,seed,ideal_forces.slice(0,hot_count))
+	var plan := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,moment_target-off_moment,along,seed,ideal_forces.slice(0,hot_count),Allocator.SWEEPS,fit)
 	var residual_force := off_force-force_target
 	var residual_moment := off_moment-moment_target
 	for i in hot_count:
@@ -536,7 +541,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	if cold_needed:
 		for i in range(hot_count,ports.size()):
 			if keep_open[i-hot_count]: ports[i].off = ports[i].minimum
-		plan = Allocator.solve(ports,force_target,moment_target,along,seed,ideal_forces)
+		plan = Allocator.solve(ports,force_target,moment_target,along,seed,ideal_forces,Allocator.SWEEPS,fit)
 	else: plan.append_array(off_plan)
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
@@ -553,11 +558,13 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
 		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
 		var command_angle := Vector3.ZERO
-		if hot:
+		if hot and hot_cone>0.0:
 			var aim := plan[i] if plan[i].length()>0.00001 else ideal_forces[i]
-			command_angle = ((Allocator.angle(ports[i].basis,aim,VECTOR_LIMIT)-ports[i].center)/ports[i].gain).limit_length(VECTOR_LIMIT)
-			motor_angles[i] = motor_springs[i].step(command_angle,dt,HOVER_VECTOR_RESPONSE).limit_length(VECTOR_LIMIT)
+			command_angle = ((Allocator.angle(ports[i].basis,aim,hot_cone)-ports[i].center)/ports[i].gain).limit_length(hot_cone)
+			motor_angles[i] = motor_springs[i].step(command_angle,dt,HOVER_VECTOR_RESPONSE).limit_length(hot_cone)
 			motor_springs[i].value = motor_angles[i]
+		elif hot:
+			motor_angles[i] = Vector3.ZERO
 		var flow: float = valve.command_for(plan[i].length()/capacity,dt,minimum) if capacity>0 and (hot or cold_needed) else 0.0
 		# Prime the next useful hot engine during ignition, while other outlets
 		# balance its actual zero output. Never bypass ignition or restart time.
@@ -638,7 +645,10 @@ func _hot_capacity(index: int) -> float:
 	return hot_max_thrust(index)/(body.mass*GRAVITY)
 
 func cold_power_fraction() -> float:
-	return lerpf(0.15,1.0,clampf(velocity.length()/40.0,0.0,1.0))
+	# The fixed full rig reserves more of the existing cold-port rating at
+	# hover to cover the six feet's missing transverse couples.
+	var hover_reserve := 0.23 if articulated_flight else 0.15
+	return lerpf(hover_reserve,1.0,clampf(velocity.length()/40.0,0.0,1.0))
 
 func cold_thrust_limit(index: int) -> float:
 	# Speed in m/s from the native body, including vertical motion. Keep the

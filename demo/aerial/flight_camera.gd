@@ -15,6 +15,7 @@ var distance := 3.8
 var camera_target: Node3D
 var phantom_camera: PhantomCamera3D
 var camera_host: PhantomCameraHost
+var manual_gaze_time := 0.0
 var focus_target: Node3D
 var focus_targets: Array[Node3D] = []
 var focus_index := -1
@@ -104,6 +105,7 @@ func focus_next() -> void:
 	focus_target = focus_targets[focus_index]
 
 func orbit(relative: Vector2) -> void:
+	manual_gaze_time = 0.75
 	# Camera remains gravity-upright even during inverted/body-independent flight.
 	focus_target = null
 	focus_index = -1

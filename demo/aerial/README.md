@@ -1,6 +1,6 @@
 # Aerial rendering study — DELIVERY MUST COMPLETE
 
-[Pose-driven aerial mech articulation](FLIGHT_ARTICULATION_DESIGN.md) is the specification for the [Flight Articulation Lab](flight_articulation_lab.tscn). The lab has 20 lower-body targets, six fixed-axis foot outlets and a native rigid-body witness. The main aerial demo continues to use the production controller while the lab measures actuator authority.
+[Pose-driven aerial mech articulation](FLIGHT_ARTICULATION_DESIGN.md) is the specification for the [Flight Articulation Lab](flight_articulation_lab.tscn). The lab has 20 lower-body targets, six fixed-axis foot outlets and a native rigid-body witness. The aerial demo uses the authored pose layers on the full fixed-axis rig. Earlier gimbal and procedural pose notes below describe the comparison path. See [live flight implementation and checks](FLIGHT_ARTICULATION_DESIGN.md#10-live-flight-implementation).
 
 A working comparison scene for the rendering goal. This is an ongoing visual
 iteration, **not a claim that reference fidelity has been achieved**. The existing

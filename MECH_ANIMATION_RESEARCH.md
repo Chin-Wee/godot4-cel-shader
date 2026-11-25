@@ -1,6 +1,6 @@
 # Animation direction for the 9 m, 10 t mech
 
-**Proposed next aerial experiment:** [Pose-driven aerial mech articulation](demo/aerial/FLIGHT_ARTICULATION_DESIGN.md) records the lower-body fixed-axis pose laboratory, upper-body layers and stress-driven corrective gestures. It is a design specification, not current runtime behaviour.
+**Flight articulation:** [Pose-driven aerial mech articulation](demo/aerial/FLIGHT_ARTICULATION_DESIGN.md) specifies the fixed-axis laboratory and the aerial demo’s authored upper-body layers and stress-driven corrective gestures.
 
 **This is the source of truth for mech movement architecture, animation, and combat animation design.** The [ground demo README](demo/ground/README.md) and [aerial demo README](demo/aerial/README.md) describe current controls, implementation and verification. The [Unreal integration](#unreal-engine-58-integration) is a proposed playable prototype. Use source and replay results to verify what the demos currently do.
 

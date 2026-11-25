@@ -2,12 +2,16 @@ extends RefCounted
 
 # Overgrowth reference: authored joint poses with directional corrections.
 # Data for the single flight modifier, not another modifier/IK pass.
+const Poses = preload("res://aerial/poses/articulation_poses.gd")
 const Servo = preload("res://aerial/pose_servo.gd")
 var profile
 var upper: Array = []
 var elbows: Array = []
 var wrists: Array = []
 var finger_poses := {}
+var digits := {}
+var authored_hands := false
+var grip_noise := FastNoiseLite.new()
 var finger_curl := PackedFloat32Array([0.25,0.25])
 # Completed, displayed geometry in torso space; never unsolved hand targets.
 var hands := PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
@@ -16,11 +20,28 @@ var elbow_positions := PackedVector3Array([Vector3.ZERO,Vector3.ZERO])
 
 func configure(sk: Skeleton3D, player: AnimationPlayer, rig_profile) -> void:
 	profile = rig_profile
+	grip_noise.seed = 407
+	grip_noise.frequency = 0.54
+	grip_noise.fractal_type = FastNoiseLite.FRACTAL_NONE
 	player.play(&"GunPose")
 	player.advance(0.0)
 	for index in sk.get_bone_count():
-		if "Finger" in sk.get_bone_name(index) or "Thumb" in sk.get_bone_name(index):
-			finger_poses[index] = sk.get_bone_pose_rotation(index)
+		var name := sk.get_bone_name(index)
+		var finger := name.begins_with("Finger")
+		if not finger and not name.begins_with("Thumb"): continue
+		finger_poses[index] = sk.get_bone_pose_rotation(index)
+		var number := name.get_slice(".",0).trim_prefix("Finger").trim_prefix("Thumb").to_int()-1
+		var side := int(name.ends_with(".R"))
+		var joint := number%3
+		var digit := number/3
+		var scale: float = (0.80+0.12*digit)*[1.08,1.0,0.67][joint] if finger else 0.59
+		var spread := Vector3.ZERO
+		if finger and joint==0:
+			var palm := sk.get_bone_global_rest(sk.find_bone(profile.arm_ends[side])).basis
+			var knuckle := sk.get_bone_global_rest(index).basis
+			spread = (knuckle.inverse()*palm.x).normalized()*(1.0-2.0*digit/3.0)
+		digits[index] = {"side":side,"delay":0.015+0.007*(digit+joint),"scale":scale,
+			"spread":spread,"fan":0.0,"curl":0.25,"phase":float(digit)*2.7+float(side)*17.3}
 	player.stop()
 	sk.reset_bone_poses()
 	for side in 2:
@@ -38,8 +59,16 @@ func reset() -> void:
 		elbows[side].reset(Vector3(-profile.arm_hover.z,0,0))
 		wrists[side].reset()
 		finger_curl[side] = 0.25
+	for digit in digits.values():
+		digit.curl = 0.25
+		digit.fan = 0.0
+	authored_hands = false
 
 func update(delta: float, frame: Dictionary) -> void:
+	authored_hands = frame.get("authored",false)
+	if authored_hands:
+		_update_articulation(delta,frame)
+		return
 	var pose: Vector3 = profile.arm_hover*frame.hover+profile.arm_coast*(frame.coast+frame.fall+frame.land)+profile.arm_stream*frame.fighter
 	pose = pose.lerp(profile.arm_stream,frame.track)
 	pose = pose.lerp(profile.arm_box,frame.get("belly",frame.box))
@@ -129,6 +158,50 @@ func update(delta: float, frame: Dictionary) -> void:
 		curl = lerpf(curl,0.20+0.35*roll.y,acro.y)
 		finger_curl[side] = move_toward(finger_curl[side],curl,delta*2.0)
 
+func _update_articulation(delta: float, frame: Dictionary) -> void:
+	var time: float = frame.hand_time
+	var phase: float = frame.stroke_phase
+	var strength: float = frame.stress
+	var direction: Vector3 = frame.stroke_direction
+	var goals := [Vector2.ZERO,Vector2.ZERO]
+	for side in 2:
+		var sx := 1.0 if side==0 else -1.0
+		var target := Poses.arm_target(frame,side)
+		var age := maxf(0.0,phase-float(side)*0.11)
+		var envelope := smoothstep(0,0.25,age)*(1.0-smoothstep(0.53,1.0,age))
+		var weight: float = envelope*strength*(0.7+sx*frame.differential*0.15)*(1.0-frame.land)
+		var opposition := sx*(direction.y+direction.z)*0.50
+		var recoil := smoothstep(0.24,0.45,age)*(1.0-smoothstep(0.48,0.72,age))
+		target += Vector4(direction.x*0.48+opposition*0.33,opposition*0.30,
+			absf(opposition)*0.47+0.18,opposition*0.36+recoil*0.46)*weight
+		var flip: Vector3 = frame.flip_shape
+		var acro: Vector2 = frame.acro
+		var tuck := Vector4(0.08,-0.22,0.35,1.22)
+		var opening := Poses.arm_key("Forward_Brace",side)
+		target = target.lerp(tuck,acro.x*flip.y)
+		target = target.lerp(opening,acro.x*flip.z)
+		var hand_texture := grip_noise.get_noise_2d(time,side*19.3)
+		var settling: float = frame.pressure*strength*hand_texture*(1.0-envelope)*(1.0-frame.land)
+		target += Vector4(settling*0.065,0,settling*0.06,settling*0.09)
+		goals[side] = Poses.hand_target(frame,side,hand_texture)
+		var curl: float = goals[side].x
+		var rate := 6.0 if curl>finger_curl[side] else 2.6
+		finger_curl[side] = move_toward(finger_curl[side],curl,delta*rate)
+		upper[side].step(Vector3(clampf(target.x,-0.8,1.05),target.y*sx,clampf(target.z,0.10,2.12)*sx),
+			delta,0.27,profile.arm_speed)
+		elbows[side].step(Vector3(-clampf(target.w,0.12,1.65),0,0),delta,0.31,profile.arm_speed)
+		wrists[side].step(Vector3(-frame.flare*0.18+direction.x*weight*0.10+hand_texture*0.035,0,opposition*weight*0.15*sx),delta,0.23,1.0)
+	for digit in digits.values():
+		var hand: Vector2 = goals[digit.side]
+		var value := grip_noise.get_noise_2d(time,digit.phase)
+		var variation := lerpf(0.06,0.115,smoothstep(0.06,0.26,hand.x))
+		variation = lerpf(variation,0.022,smoothstep(0.44,0.80,hand.x))
+		var curl := clampf(hand.x+value*variation,0.0,0.90)
+		var tau: float = (0.08 if curl>digit.curl else 0.20)+digit.delay
+		var amount := 1.0-exp(-delta/tau)
+		digit.curl = lerpf(digit.curl,curl,amount)
+		digit.fan = lerpf(digit.fan,hand.y,amount)
+
 func apply(sk: Skeleton3D, rotate: Callable) -> void:
 	for side in 2:
 		var angles: Vector3 = upper[side].value
@@ -140,8 +213,14 @@ func apply(sk: Skeleton3D, rotate: Callable) -> void:
 		rotate.call(profile.arm_middles[side],elbows[side].value)
 		rotate.call(profile.arm_ends[side],wrists[side].value)
 	for index in finger_poses:
-		var side := 1 if ".R" in sk.get_bone_name(index) else 0
-		sk.set_bone_pose_rotation(index,sk.get_bone_pose_rotation(index).slerp(finger_poses[index],finger_curl[side]))
+		var digit: Dictionary = digits[index]
+		var curl: float = minf(digit.curl*digit.scale,0.91) if authored_hands else finger_curl[digit.side]
+		var open := sk.get_bone_rest(index).basis.get_rotation_quaternion() if authored_hands else sk.get_bone_pose_rotation(index)
+		var rotation := open.slerp(finger_poses[index],curl)
+		var spread: Vector3 = digit.spread
+		if authored_hands and not spread.is_zero_approx():
+			rotation *= Quaternion(spread.normalized(),spread.length()*digit.fan)
+		sk.set_bone_pose_rotation(index,rotation)
 
 func sample_completed(sk: Skeleton3D, completed: Dictionary) -> void:
 	var torso: Transform3D = completed[sk.find_bone("Torso")].affine_inverse()

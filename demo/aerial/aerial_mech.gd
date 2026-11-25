@@ -164,7 +164,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		socket.bone_name = mount[1]
 		skeleton.add_child(socket)
 		var gimbal := Node3D.new()
-		gimbal.name = "VectoringPivot"
+		gimbal.name = "FixedOutlet" if cold or controller.articulated_flight else "VectoringPivot"
 		socket.add_child(gimbal)
 		gimbal.position = mount[2]
 		var direction: Vector3 = mount[3].normalized()
@@ -257,6 +257,66 @@ func _thruster_outlets(attachments: Array, mounts: Array, offset: int) -> Array:
 			"basis":(transform.basis*neutral_bases[index+offset]).orthonormalized()})
 	return outlets
 
+func leg_gesture_feasible(primary: PackedVector3Array, gesture: PackedVector3Array) -> bool:
+	# Test the next reachable joint geometry against the same fixed-axis
+	# allocator. Only the leg chain changes; torso and other mounts use the
+	# last completed pose, matching the one-tick actuator pipeline.
+	if primary==gesture: return true
+	var first := _pose_wrench_error(primary)
+	var second := _pose_wrench_error(gesture)
+	return second<=first+0.002
+
+func _pose_wrench_error(angles: PackedVector3Array) -> float:
+	var length_scale := display_scale/FlightController.WORLD_UNITS_PER_METER
+	var weight := mass*FlightController.GRAVITY
+	var ports := []
+	var seed := []
+	var predicted := {}
+	for side in 2:
+		var profile = rig.profile
+		var names := [profile.thigh_bones[side],profile.knee_bones[side],profile.foot_bones[side]]
+		var chain := PackedInt32Array()
+		var bone := skeleton.find_bone(names[2])
+		while bone>=0:
+			chain.append(bone)
+			if skeleton.get_bone_name(bone)==names[0]: break
+			bone = skeleton.get_bone_parent(bone)
+		chain.reverse()
+		var parent: Transform3D = bone_poses[skeleton.get_bone_parent(chain[0])]
+		for index in chain:
+			var local := skeleton.get_bone_rest(index)
+			var joint := names.find(skeleton.get_bone_name(index))
+			if joint>=0:
+				var rest := skeleton.get_bone_global_rest(index).basis.orthonormalized()
+				var goal: Vector3 = profile.limit_joint(angles[side*3+joint],side,joint)
+				var current: Vector3 = rig.legs[side*3+joint].value
+				var reachable := current.move_toward(goal,profile.joint_speed[joint]*0.16)
+				local.basis *= rest.inverse()*Basis.from_euler(reachable)*rest
+			parent *= local
+			predicted[index] = parent
+	for i in MOUNTS.size()+COLD_MOUNTS.size():
+		var hot := i<MOUNTS.size()
+		var index := i if hot else i-MOUNTS.size()
+		var mount: Array = MOUNTS[index] if hot else COLD_MOUNTS[index]
+		var bone := skeleton.find_bone(mount[1])
+		var pose: Transform3D = skeleton.global_transform*predicted.get(bone,bone_poses[bone])
+		var capacity := controller.hot_max_thrust(index) if hot else controller.cold_thrust_limit(index)
+		var valve = controller.hot_valves[index] if hot else controller.cold_valves[index]
+		var can_fire := not hot or controller.detent>0 or controller.jump_remaining>0.0
+		var tail: float = valve.preview(0.0,0.16)*capacity/weight
+		var available: float = valve.preview(float(can_fire),0.16)*capacity/weight
+		ports.append({"basis":(pose.basis*neutral_bases[i]).orthonormalized(),
+			"lever":(pose*mount[2]-global_position)/display_scale,"cone":0.0,"center":Vector3.ZERO,
+			"gain":1.0,"minimum":tail,"maximum":available,"off":tail,"fuel":0.0})
+		seed.append((controller.motor_forces[index] if hot else controller.cold_forces[index])/weight)
+	var force := controller.requested_main_force/weight
+	var moment := (controller.control_torque-controller.aero_torque)/(weight*length_scale)
+	var plan := FlightController.Allocator.solve(ports,force,moment,Vector3.ZERO,seed,[],32,FlightController.FIXED_FIT)
+	for i in plan.size():
+		force -= plan[i]
+		moment -= ports[i].lever.cross(plan[i])
+	return force.length()+moment.length()*1.4
+
 func _ground_probe(state: PhysicsDirectBodyState3D) -> Dictionary:
 	var reach := 0.9 * display_scale
 	var ray := PhysicsRayQueryParameters3D.create(global_position, global_position + Vector3.DOWN * (reach + 8.0), 2)
@@ -302,11 +362,12 @@ func update_animation(delta: float) -> void:
 	var ground_animation := _ground_animation_name()
 	rig.ground_animation_active = not ground_animation.is_empty()
 	rig.update(delta,controller)
-	skeleton.reset_bone_poses()
+	if not controller.articulated_flight or not ground_animation.is_empty(): skeleton.reset_bone_poses()
 	if ground_animation.is_empty():
 		actor.animation_player.stop()
 		actor.animation_player.speed_scale = 1.0
 		actor.current_animation = &""
+		if controller.articulated_flight: skeleton.reset_bone_poses()
 	else:
 		if actor.current_animation != ground_animation or not actor.animation_player.is_playing():
 			actor.animation_player.play(ground_animation,GROUND_ANIMATION_BLEND)

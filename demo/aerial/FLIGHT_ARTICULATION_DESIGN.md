@@ -1,6 +1,6 @@
 # Pose-driven aerial mech articulation
 
-**Status: lower-body authoring and feet-only force analysis are implemented in the [Flight Articulation Lab](flight_articulation_lab.tscn). See the [laboratory measurements](#9-laboratory-measurements).**
+**Status: the aerial demo uses authored full-body articulation and fixed-axis propulsion. The [Flight Articulation Lab](flight_articulation_lab.tscn) remains available for the six-outlet experiment. See the [live flight implementation](#10-live-flight-implementation).**
 
 Companion to the [mech animation research guide](../../MECH_ANIMATION_RESEARCH.md) and [aerial demo implementation notes](README.md). The current Godot runtime remains authoritative for existing behaviour. This document records the intended direction for the next flight-articulation experiment; where its aesthetic requirements differ from older flight proposals, follow this document for the experiment only.
 
@@ -460,7 +460,7 @@ flowchart TD
 | [contact_pose.gd](contact_pose.gd) | Ground and landing corrections when reintegrated |
 | [poses/bake_pose_library.gd](poses/bake_pose_library.gd) and [pose_studio.gd](pose_studio.gd) | Authoring workflow and inspection; preserve authored assets |
 
-Current main includes a procedural aerial pose path, grounded imported animation playback, and an expanded Pose Studio (README describes 126 full-body keys and 52 motion studies). The new 20-key experiment is not a replacement for that library count. Separate gameplay bone-local data from studio presentation/root tracks; do not let playback overwrite chassis attitude or silently rebake manually authored keys. Prefer refactoring existing paths over creating parallel runtime controllers.
+The laboratory and live flight use the same lower-body anchor sheet. Grounded imported animation playback and the full-body Pose Studio studies remain available. Separate gameplay bone-local data from studio presentation/root tracks; do not let playback overwrite chassis attitude or silently rebake manually authored keys. Prefer refactoring existing paths over creating parallel runtime controllers.
 
 Demand must prepare articulation before full thrust arrives. Use previous delivered telemetry and the latest completed pose cache for allocation; if skeleton modifiers are deferred, explicitly tolerate that latency rather than sampling partially evaluated/restored transforms. Read actual output for bracing and exhaust. Keep the existing ground animation/contact path outside the experimental changes.
 
@@ -540,13 +540,55 @@ exhaust vectors use the same completed foot transforms as the physics forces.
 
 The hard-left-roll key delivered 26.3 kN·m against a 133.3 kN·m request.
 Its absolute signed ceiling is 55.3 kN·m before reserving any lift. Neutral
-support, signed turn moments and lateral translation are demonstrated, but this
-pose set fails the gate for replacing the full-flight controller. The stage 3–7
-layers remain pending. Review the weaker roll couple and the cross-axis moments
-before using the authored keys to steer live flight.
+support, signed turn moments and lateral translation are demonstrated. The
+feet-only rig lacks the clean roll authority needed for full flight. The full-rig
+implementation adds the existing backpack, calf and cold-gas outlets and keeps
+the same fixed-axis constraint.
 
 The lab regression checks all 20 targets at five intensities, fixed axes and
 caps, signed moments, asymmetric output, ignition, cutoff tails, relight,
 inversion and native motion under the measured wrench. A triangle sweep of
 the 100 poses found no intersections among the checked waist/thigh and
 opposing lower-leg/foot armor pairs.
+
+## 10. Live flight implementation
+
+The [aerial demo](aerial_demo.tscn) enables authored flight at startup. The same
+[pose sheet](poses/articulation_poses.gd) supplies the lower-body anchors to the
+lab and flight. It also contains nine torso targets, nine arm targets, and nine
+hand targets. Pose selection splits translation from rotation, blends diagonal
+moves and ramps knees more slowly through the neutral, soft and hard anchors.
+Flight uses the existing four-bone torso, joint servos and landing contact solve.
+
+The ten main outlets and twelve cold ports use their completed bone axes.
+Independent nozzle angle stays zero through firing and valve shutdown. The cold
+ports cover the moment deficits recorded in the feet-only lab. At zero speed the
+full rig can use 23% of each existing cold-port rating and reaches the existing
+rating at 40 m/s. The gimballed comparison starts at 15%. The solver trades
+unreachable demand against the available point forces and reports saturation.
+Both modes use the same body mass, inertia and valve models. Set **Authored
+Flight** off on the aerial demo root before running to reproduce the gimballed
+comparison.
+
+The pose pass reads the previous delivered wrench and the current pilot demand.
+The strongest load or rate error starts a correction, reversal can interrupt its
+recovery, and left and right shoulders follow staggered timing. Loaded feet
+receive less secondary motion. Each powered leg correction is screened against
+the predicted joint-limited, valve-reachable wrench. The next physics tick uses
+the completed skeleton. Target lock and camera orbit can take over the neck.
+Otherwise it anticipates steering, follows travel, or looks at a landing contact.
+The 28 finger joints blend from bind to the imported grip calibration, with
+individual lag, finger fan and coherent variation.
+
+Run the integrated native witness from the repository root.
+
+```sh
+godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_authored_flight.gd
+```
+
+The witness checks compact hover, extended versus gathered pitch, signed roll
+and arrest, lateral boost with yaw and reversal, valve tails and relight, landing,
+independent head tracking and finger motion. It measures hot outlet axes against
+rendered exhaust, and compares hard roll across 30, 60 and 120 physics ticks per
+second and against the gimballed baseline. The separate laboratory regression
+continues to check the six-outlet configuration.

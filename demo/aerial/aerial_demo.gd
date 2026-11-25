@@ -25,6 +25,7 @@ var elapsed := 0.0
 var trails: Array[MultiMeshInstance3D] = []
 var explosion: Explosion
 var explosion_clock := 0.0
+@export var authored_flight := true
 @export_range(0.0,1.0,0.01) var afterburner_throttle := 0.35
 var afterburner_material: ShaderMaterial
 var afterburner_flow_phase := 0.0
@@ -79,6 +80,7 @@ func _ready() -> void:
 	hero.name = "HeroMech"
 	hero.display_scale = 50.0
 	hero.player_controlled = true
+	hero.controller.articulated_flight = authored_flight
 	hero.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	add_child(hero)
 	hero.build(body,afterburner_material)
@@ -87,6 +89,7 @@ func _ready() -> void:
 	wingman = AerialMech.new()
 	wingman.name = "WingmanMech"
 	wingman.display_scale = 35.0
+	wingman.controller.articulated_flight = authored_flight
 	wingman.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	add_child(wingman)
 	wingman.build(body,afterburner_material)
@@ -211,11 +214,13 @@ func trigger_explosion(seed_value := -1) -> void:
 	add_child(explosion)
 	explosion.build(fire,smoke,accent,seed_value)
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	# Vision is sampled on the fixed pose clock. Head movement never feeds back
 	# into the independent camera or the chassis rotation controller.
 	if is_instance_valid(hero) and hero.player_controlled and animate:
-		hero.controller.gaze_direction = camera.look_direction()
+		var following := is_instance_valid(camera.focus_target) or camera.manual_gaze_time>0.0
+		hero.controller.gaze_direction = camera.look_direction() if following or not authored_flight else Vector3.ZERO
+		camera.manual_gaze_time = maxf(0.0,camera.manual_gaze_time-delta)
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(camera): return

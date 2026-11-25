@@ -66,4 +66,113 @@ static func select(steer: Vector3, move: Vector3, power: float, reversing: float
 		return blend(soft,hard,2.0*turn-1.0,pow(2.0*turn-1.0,2))
 	var boost_keys := ["Lateral_Boost_Right" if move.x>=0 else "Lateral_Boost_Left",
 		"Vertical_Ascent" if move.y>=0 else "Retrograde_Brake", "Forward_Boost" if move.z>=0 else "Backward_Boost"]
-	return blend(rest,angles(boost_keys[translation.max_axis_index()]),demand,demand*demand)
+	var total := translation.x+translation.y+translation.z
+	if total<=0.0001: return rest
+	var mixed := rest.duplicate()
+	var keys := [angles(boost_keys[0]),angles(boost_keys[1]),angles(boost_keys[2])]
+	for index in mixed.size():
+		mixed[index] = (keys[0][index]*translation.x+keys[1][index]*translation.y+keys[2][index]*translation.z)/total
+	var intensity := minf(move.length(),1.0)
+	return blend(rest,mixed,intensity,intensity*intensity)
+
+# Local torso offsets (radians), distributed by the existing four-bone spine.
+# Hathaway's Messer and Titanfall's Titans provide the loaded body accents.
+const TORSO := {
+	"Neutral":Vector3.ZERO,
+	"Arch":Vector3(-0.10,0,0),
+	"Deep_Arch":Vector3(-0.34,0,0),
+	"Forward_Lean":Vector3(0.12,0,0),
+	"Deep_Forward_Lean":Vector3(0.35,0,0),
+	"Lateral_Lean":Vector3(0,0.10,0.35),
+	"Axial_Twist":Vector3(0,-0.24,0.08),
+	"Compressed_Brace":Vector3(0.22,0,0),
+	"Extended_Release":Vector3(-0.08,0,0),
+}
+const TORSO_MIRRORED := {"Lateral_Lean_Right":"Lateral_Lean","Axial_Twist_Right":"Axial_Twist"}
+
+# Swing, humerus twist, elevation from the side, and elbow flexion.
+const ARMS := {
+	"Neutral_Straight":Vector4(0.02,0,0.22,0.28),
+	"Streamlined":Vector4(0.30,-0.08,0.17,0.20),
+	"Trailing_Extension":Vector4(0.61,-0.11,0.25,0.30),
+	"Forward_Brace":Vector4(-0.42,-0.42,0.72,0.91),
+	"Asymmetric_Balance":[Vector4(-0.14,-0.36,0.60,0.82),Vector4(0.26,-0.16,0.27,0.36)],
+	"Counterrotation":[Vector4(0.52,-0.18,0.49,0.70),Vector4(-0.32,-0.36,0.32,0.86)],
+	"Wide_Brace":Vector4(-0.22,-0.68,1.32,1.04),
+	"Relaxed_Suspension":Vector4(-0.05,-0.18,0.31,0.53),
+	"Landing_Guard":Vector4(-0.30,-0.43,0.55,1.02),
+}
+const ARMS_MIRRORED := {"Asymmetric_Balance_Right":"Asymmetric_Balance","Counterrotation_Right":"Counterrotation"}
+# Curl amount and knuckle fan relative to the imported hand's bind/grip targets.
+const HANDS := {
+	"Natural_Open":Vector2(0.12,0.05),
+	"Spread_Fingers":Vector2(0.07,0.16),
+	"Extended_Fingers":Vector2(0.025,0.025),
+	"Loose_Curl":Vector2(0.22,0.065),
+	"Natural_Curl":Vector2(0.34,0.045),
+	"Tighter_Curl":Vector2(0.47,0.03),
+	"Loose_Fist":Vector2(0.58,0.02),
+	"Normal_Fist":Vector2(0.72,0.01),
+	"Hard_Clench":Vector2(0.86,0.0),
+}
+
+# Belly/back support is a separate freefall family, adapted from AXIS.
+const BELLY_LEGS := [Vector3(0.22,0,0.52),Vector3(0.82,0,0),Vector3(0.16,0,0)]
+const BACK_LEGS := [Vector3(-1.09,0,0.45),Vector3(1.39,0,0),Vector3(0.20,0,0)]
+const BELLY_ARMS := Vector4(0.43,-1.55,1.96,1.61)
+const BACK_ARMS := Vector4(0.71,-1.30,1.82,1.18)
+
+static func torso_key(key: String) -> Vector3:
+	var angles: Vector3 = TORSO[TORSO_MIRRORED.get(key,key)]
+	return angles*REFLECT if TORSO_MIRRORED.has(key) else angles
+
+static func arm_key(key: String, side: int) -> Vector4:
+	var pose: Variant = ARMS[ARMS_MIRRORED.get(key,key)]
+	if pose is Array: return pose[1-side if ARMS_MIRRORED.has(key) else side]
+	return pose
+
+static func torso_target(frame: Dictionary) -> Vector3:
+	var steer: Vector3 = frame.steer
+	var pitch := absf(steer.x)
+	var soft := torso_key("Arch" if steer.x>0.0 else "Forward_Lean")
+	var hard := torso_key("Deep_Arch" if steer.x>0.0 else "Deep_Forward_Lean")
+	var target := torso_key("Neutral").lerp(soft,2.0*pitch) if pitch<0.5 else soft.lerp(hard,2.0*pitch-1.0)
+	var lateral: float = clampf(steer.y+frame.reach.x*0.55,-1,1)
+	var side := torso_key("Lateral_Lean" if lateral>=0 else "Lateral_Lean_Right")
+	target = target.lerp(side,absf(lateral)*(1.0-pitch*0.65))
+	var roll: float = steer.z
+	var twist := torso_key("Axial_Twist" if roll>=0 else "Axial_Twist_Right")
+	target += twist*absf(roll)*(1.0-absf(lateral)*0.65)
+	target = target.lerp(torso_key("Forward_Lean"),frame.drive*0.65)
+	target = target.lerp(torso_key("Extended_Release"),frame.coast*0.75)
+	target = target.lerp(torso_key("Compressed_Brace"),maxf(frame.retro,maxf(frame.flare*0.7,frame.land)))
+	target.x += frame.back*0.12-frame.belly*0.18
+	return target
+
+static func arm_target(frame: Dictionary, side: int) -> Vector4:
+	var steer: Vector3 = frame.steer
+	var lateral: float = clampf(steer.y+frame.reach.x,-1,1)
+	var target := arm_key("Neutral_Straight",side).lerp(arm_key("Streamlined",side),frame.track)
+	target = target.lerp(arm_key("Relaxed_Suspension",side),frame.coast+frame.fall)
+	target = target.lerp(arm_key("Trailing_Extension",side),frame.drive)
+	target = target.lerp(arm_key("Asymmetric_Balance" if lateral>=0 else "Asymmetric_Balance_Right",side),absf(lateral)*0.75)
+	target = target.lerp(arm_key("Counterrotation" if steer.z>=0 else "Counterrotation_Right",side),absf(steer.z)*0.65)
+	target = target.lerp(arm_key("Forward_Brace",side),frame.retro)
+	target = target.lerp(BELLY_ARMS,frame.belly)
+	target = target.lerp(BACK_ARMS,frame.back)
+	target = target.lerp(arm_key("Wide_Brace",side),frame.flare)
+	return target.lerp(arm_key("Landing_Guard",side),frame.land)
+
+static func hand_target(frame: Dictionary, side: int, texture: float) -> Vector2:
+	var sx := 1.0 if side==0 else -1.0
+	var firm: float = maxf(frame.drive,maxf(frame.retro,smoothstep(0.3,1.0,absf(frame.steer.x))*frame.get("stress",0.0)))
+	firm = maxf(firm,frame.get("impact",0.0))
+	var open: float = maxf(frame.flare,frame.fall*frame.steer.length()*0.6)
+	firm = clampf(firm+sx*(frame.steer.y*0.18+frame.get("differential",0.0)*0.16),0,1)
+	var relaxed: Vector2 = HANDS.Loose_Curl.lerp(HANDS.Natural_Curl,0.5+texture*0.5)
+	relaxed = relaxed.lerp(HANDS.Tighter_Curl,frame.track*0.65)
+	var closed: Vector2 = HANDS.Loose_Fist.lerp(HANDS.Normal_Fist,firm)
+	closed = closed.lerp(HANDS.Hard_Clench,smoothstep(0.75,1.0,firm))
+	var flat: Vector2 = HANDS.Natural_Open.lerp(HANDS.Extended_Fingers,maxf(-texture,0.0))
+	flat = flat.lerp(HANDS.Spread_Fingers,maxf(texture,frame.flare*0.6))
+	return relaxed.lerp(closed,firm).lerp(flat,clampf(open,0,1))
