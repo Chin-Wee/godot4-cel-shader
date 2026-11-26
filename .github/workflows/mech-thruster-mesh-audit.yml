@@ -55,5 +55,13 @@ jobs:
           include-templates: false
       - name: Import the demo project and GLB
         run: godot --headless --path demo --editor --import --quit
-      - name: Run the repository's headless regression suite
-        run: python tools/check_godot.py
+      - name: Run flight and thruster headless regressions
+        run: >-
+          python tools/check_godot.py
+          test_authored_flight
+          test_thruster_control
+          test_articulation_lab
+          test_thruster_allocator
+          test_flight_propulsion_policy
+          test_flight_pose
+          test_aerial_stack

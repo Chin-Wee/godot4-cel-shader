@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run all headless first-party checks and copy checks; requires an imported demo and Godot 4.7."""
+"""Run headless first-party checks and copy checks; optional arguments select exact test stems."""
 
 from pathlib import Path
 import shutil
@@ -34,6 +34,15 @@ def main() -> int:
     tests += sorted((root / "demo").glob("ground/tests/test_*.gd"))
     tests += sorted((root / "demo").glob("actors/mechs/tests/test_*.gd"))
     tests += sorted((root / "demo").glob("scripts/tests/test_*.gd"))
+    requested = set(sys.argv[1:])
+    if requested:
+        available = {test.stem for test in tests}
+        unknown = requested - available
+        if unknown:
+            print("Unknown test names: " + ", ".join(sorted(unknown)), file=sys.stderr)
+            return 2
+        tests = [test for test in tests if test.stem in requested]
+        print("Selected tests: " + ", ".join(test.stem for test in tests), flush=True)
     for test in tests:
         for fps in ([30, 144, 240] if test.stem == "test_phantom_camera" else [60]):
             name = f"{test.stem}-{fps}"
