@@ -308,7 +308,7 @@ def closest_on_triangle(p, a, b, c):
     return add(add(a, mul(ab, vb*inv)), mul(ac, vc*inv))
 
 
-def nearest_surface(candidate, candidates, center):
+def nearest_surface(candidate, candidates, center, bone_name):
     best = None
     for tri in candidates:
         point = closest_on_triangle(candidate, tri["a"], tri["b"], tri["c"])
@@ -323,7 +323,7 @@ def nearest_surface(candidate, candidates, center):
     return {"mesh": tri["mesh"], "primitive": tri["primitive"], "nearest": nearest,
             "distance": math.sqrt(d2), "normal": normal,
             "signed_offset": dot(sub(candidate, nearest), normal),
-            "bone_weight": tri["bone_weights"].get("", 0.0)}
+            "bone_weight": tri["bone_weights"].get(bone_name, 0.0)}
 
 
 def audit_mount(mount, node_names, globals_, triangles, center):
@@ -336,8 +336,8 @@ def audit_mount(mount, node_names, globals_, triangles, center):
     scope = "bone-weighted"
     if not candidates:
         candidates, scope = triangles, "whole-mesh fallback"
-    local = nearest_surface(candidate, candidates, center)
-    whole = nearest_surface(candidate, triangles, center)
+    local = nearest_surface(candidate, candidates, center, mount["bone"])
+    whole = nearest_surface(candidate, triangles, center, mount["bone"])
     return {"kind": mount["kind"], "name": mount["name"], "bone": mount["bone"], "scope": scope,
             "mesh": local["mesh"], "primitive": local["primitive"],
             "bone_weight": round(local["bone_weight"], 4),
