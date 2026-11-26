@@ -167,7 +167,7 @@ For each completed pose, compute resultant force F = sum(f_i d_i) and moment M =
 
 The hard pull-up sits close to the knee limit. Moving from 5° to 90° takes at least approximately 0.83 seconds at the current maximum speed, before servo settling. Some proposed angles may exceed signed limits once mapped to bone axes. Clamp and inspect; change aerial joint response only after measuring the pose and input latency. Preserve grounded response and shared contact behaviour.
 
-The full rig uses six main outlets: two backpack, two rear-calf and two foot-sole nozzles. Four additional toe outlets have been removed. Twelve cold-gas verniers are distributed across shoulder, thigh, chest, backpack and rear-waist hardpoints. All live main and cold outlets use fixed axes; the six heel/toe outlets in the separate feet-only laboratory remain a distinct test fixture.
+The full rig uses six main outlets: two backpack, two rear-calf and two foot-sole nozzles. Four additional toe outlets have been removed. Twelve cold-gas verniers are distributed across shoulder, thigh, chest, backpack and rear-waist hardpoints. All live main and cold outlets use fixed axes. The articulation laboratory now uses the same six main hardpoints, grouped by leg for side-to-side power comparisons.
 
 ### 2.9 Visual hierarchy
 
@@ -526,10 +526,11 @@ lateral, vertical and longitudinal force. Keys 1/2/3 switch the front, side and
 top views.
 
 The fixture uses the full mech's 10,000 kg mass and measured capsule inertia of
-80,833 / 26,667 / 80,833 kg·m² about its COM. The six heel/toe outlets are rated
-at 65 kN each. The comparison uses the same six mounts, demands and mass in
-both solves. It changes only the cone from 0° to 30°. The displayed thrust and
-exhaust vectors use the same completed foot transforms as the physics forces.
+80,833 / 26,667 / 80,833 kg·m² about its COM. The six backpack/calf/foot-sole
+outlets are rated at 65 kN each. The comparison uses the same six mounts,
+demands and mass in both solves. It changes only the cone from 0° to 30°.
+Backpack forces use the completed torso transform; calf and sole forces use
+their completed leg transforms, matching the live physics hardpoints.
 
 | Pose and request | Fixed force / moment residual | 30° force / moment residual |
 | --- | ---: | ---: |

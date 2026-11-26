@@ -1,6 +1,6 @@
 # Aerial rendering study — DELIVERY MUST COMPLETE
 
-[Pose-driven aerial mech articulation](FLIGHT_ARTICULATION_DESIGN.md) is the specification for the [Flight Articulation Lab](flight_articulation_lab.tscn). The lab has 20 lower-body targets, six fixed-axis foot outlets and a native rigid-body witness. The aerial demo uses the authored pose layers on the full fixed-axis rig. Earlier gimbal and procedural pose notes below describe the comparison path. See [live flight implementation and checks](FLIGHT_ARTICULATION_DESIGN.md#10-live-flight-implementation).
+[Pose-driven aerial mech articulation](FLIGHT_ARTICULATION_DESIGN.md) is the specification for the [Flight Articulation Lab](flight_articulation_lab.tscn). The lab has 20 lower-body targets, the six fixed-axis backpack/calf/foot-sole outlets and a native rigid-body witness. The aerial demo uses the authored pose layers on the full fixed-axis rig. Earlier gimbal and procedural pose notes below describe the comparison path. See [live flight implementation and checks](FLIGHT_ARTICULATION_DESIGN.md#10-live-flight-implementation).
 
 A working comparison scene for the rendering goal. This is an ongoing visual
 iteration, **not a claim that reference fidelity has been achieved**. The existing
@@ -609,7 +609,7 @@ finite ignition/restart/minimum-burn timing across 30–240 Hz, nozzle-force mom
 truthful cold-gas flashes, burst jerk below 80 m/s³, cross-axis acceleration below 0.5 m/s²,
 chassis tilt below one degree, and 30 seconds
 of quiet hover with cold valves closed for most ticks. The native
-version uses a low three-quarter view so foot-sole and calf redirection is visible.
+version uses a low three-quarter view so backpack, calf and foot-sole thrust redirection is visible.
 
 ```sh
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_thruster_control.gd -- /tmp/thruster-control

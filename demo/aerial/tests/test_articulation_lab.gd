@@ -12,6 +12,7 @@ func _run() -> void:
 	lab.set_physics_process(false)
 	lab.set_process(false)
 	var fixture: Fixture = lab.fixture
+	assert(Fixture.MAIN_MOUNT_ORDER==[0,2,4,1,3,5],"Fixture must use left/right groups of the six live main hardpoints")
 	assert(Poses.AUTHORED.size()==15 and Poses.MIRRORED.size()==5)
 	for pair in Poses.MIRRORED:
 		var left := Poses.angles(Poses.MIRRORED[pair])

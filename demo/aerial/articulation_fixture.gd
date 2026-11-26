@@ -14,7 +14,7 @@ const UNITS := Flight.WORLD_UNITS_PER_METER
 const LENGTH := 5.0
 const WEIGHT := BODY_MASS*Flight.GRAVITY
 const FIT_WEIGHTS := Vector2(250.0,80.0) # Moderate tracking weights for the constrained six-outlet fixture.
-const MOUNTS := [4,6,7,5,8,9] # Left heel/toes, right heel/toes.
+const MAIN_MOUNT_ORDER := [0,2,4,1,3,5] # Left backpack/calf/sole, then right.
 
 var skeleton: Skeleton3D
 var bone_ids := PackedInt32Array()
@@ -71,8 +71,10 @@ func configure(sk: Skeleton3D) -> void:
 			bone_rest.append(sk.get_bone_rest(id).basis.get_rotation_quaternion())
 			bone_axes.append(sk.get_bone_global_rest(id).basis.orthonormalized())
 			joints.append(Servo.new())
-	for index in MOUNTS:
-		var exhaust: Vector3 = Mech.MOUNTS[index][3].normalized()
+	assert(MAIN_MOUNT_ORDER.size()==Profile.main_booster_max_thrust.size())
+	for mount_index in MAIN_MOUNT_ORDER:
+		var exhaust: Vector3 = Mech.MOUNTS[mount_index][3].normalized()
+		assert(skeleton.find_bone(Mech.MOUNTS[mount_index][1])>=0,"Missing main outlet bone")
 		valve_bases.append(Basis.looking_at(-exhaust,Vector3.UP))
 		valves.append(Valve.new(Flight.HOT_IGNITION,Flight.HOT_RESTART,Flight.HOT_RESPONSE,Flight.HOT_RESPONSE,Flight.HOT_MINIMUM_ON))
 		outputs.append(0.0)
@@ -122,12 +124,14 @@ func _apply_angles() -> void:
 func outlet_geometry() -> Array:
 	var relative := global_transform.affine_inverse()*skeleton.global_transform
 	var result := []
-	for i in MOUNTS.size():
-		var mount: Array = Mech.MOUNTS[MOUNTS[i]]
-		var foot := relative*skeleton.get_bone_global_pose(bone_ids[(i/3)*3+2])
-		var rating := Profile.main_booster_max_thrust[MOUNTS[i]]
-		result.append({"basis":(foot.basis*valve_bases[i]).orthonormalized(),
-			"lever":foot*mount[2]/(UNITS*LENGTH), "cap":rating/WEIGHT})
+	for i in MAIN_MOUNT_ORDER.size():
+		var mount_index: int = MAIN_MOUNT_ORDER[i]
+		var mount: Array = Mech.MOUNTS[mount_index]
+		var bone := skeleton.find_bone(mount[1])
+		var segment := relative*skeleton.get_bone_global_pose(bone)
+		var rating := Profile.main_booster_max_thrust[mount_index]
+		result.append({"basis":(segment.basis*valve_bases[i]).orthonormalized(),
+			"lever":segment*mount[2]/(UNITS*LENGTH), "cap":rating/WEIGHT})
 	return result
 
 func wrench_plan(geometry: Array, wanted_force: Vector3, wanted_moment: Vector3, cone := 0.0, dt := 0.0) -> Array[Vector3]:
