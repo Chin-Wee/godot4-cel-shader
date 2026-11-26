@@ -627,7 +627,7 @@ Run test_flight_propulsion_policy.gd, test_authored_flight.gd, test_articulation
 The full rig uses six main outlets, matching the conventional mobile-suit distribution:
 - Two lower-backpack bell nozzles on the Torso bone, seated on the Cube mesh.
 - One canted rear-calf nozzle on each Shin bone, seated on L.3.Shin and R.3.Shin.
-- One recessed foot-sole nozzle on each Feet bone, seated on L.4.Feets and R.4.Feets. These follow the completed foot pose; there are no toe-mounted main engines.
+- One foot-sole nozzle on each Feet bone, seated on the outermost downward-facing sole triangles of L.4.Feets and R.4.Feets. These follow the completed foot pose; there are no toe-mounted main engines.
 
 Twelve fixed cold-gas verniers form six mirrored pairs:
 - Shoulder armour: L.1. Shoulder / R.1. Shoulder, attached to Shoulder.L/R.
@@ -637,7 +637,7 @@ Twelve fixed cold-gas verniers form six mirrored pairs:
 - Lower backpack sides: outward-canted ports on Cube, attached to Torso.
 - Rear waist: rear-facing ports on Waist Armor, attached to Low_Waist.
 
-The GLB mesh audit accounts for both skinned vertices and rigid mesh nodes parented to bones. It measures the live mount coordinates against actual triangles and checks the exhaust axis against the outward surface normal. The current positions are bone-local; the six main mounts retain the measured barrel/recess coordinates, while the lower-backpack side axes and rear-waist locations use the measured mesh normals and parent transforms.
+The GLB mesh audit accounts for both skinned vertices and rigid mesh nodes parented to bones. It measures the live mount coordinates against actual triangles, checks exhaust axes against outward surface normals, and ray-tests the rendered nozzle housing envelope for armour obstruction. The foot-sole hardpoints were moved from the inner sole surface to the outermost downward-facing triangles. The lower-backpack side axes and rear-waist locations use measured mesh normals and parent transforms.
 
 The main-engine rating array has six entries in MOUNTS order; cold-gas ratings have twelve entries in COLD_MOUNTS order. The first four main outlets are backpack/calf, and the final two are foot soles, matching the six-entry trim distribution.
 

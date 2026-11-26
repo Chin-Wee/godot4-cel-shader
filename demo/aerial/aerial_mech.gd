@@ -52,14 +52,14 @@ const GROUND_ANIMATION_BLEND := 0.12
 const GROUND_WALK_STEPS_PER_CYCLE := 2.0
 # Six traditional mobile-suit main outlets: backpack, rear calves and foot soles.
 # MechAsset is +Z-forward; each direction is authored in its mounting bone frame.
-# Centers are the inspected barrel/recess positions, not estimated body offsets.
+# Centers are measured against the actual barrel/recess surfaces; foot soles use the outermost downward-facing triangles.
 const MOUNTS := [
  ["BackpackL",&"Torso",Vector3(0.9018,-2.9555,-4.4456),Vector3(0,-0.789,-0.615)],
  ["BackpackR",&"Torso",Vector3(-0.9018,-2.9555,-4.4456),Vector3(0,-0.789,-0.615)],
  ["CalfL",&"Shin.L",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
  ["CalfR",&"Shin.R",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
- ["FootSoleL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
- ["FootSoleR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
+ ["FootSoleL",&"Feet.L",Vector3(0,-0.297,-0.193247),Vector3(0,0,-1)],
+ ["FootSoleR",&"Feet.R",Vector3(0,-0.297,-0.193246),Vector3(0,0,-1)],
 ]
 # Twelve fixed cold-gas verniers across six paired, mesh-verified locations.
 # Static child meshes are attached to their parent bones in the GLB hierarchy.

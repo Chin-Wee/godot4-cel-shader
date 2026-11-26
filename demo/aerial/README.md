@@ -108,9 +108,9 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Camera settings are native Camera3D properties. Atmosphere strengths are exported
   on `Lighting`; pose tuning remains in the existing rig-profile Resource.
 - Main propulsion uses six fixed-axis, bone-mounted outlets: two lower-backpack
-  bells, one canted rear-calf nozzle per leg and one recessed foot-sole nozzle
-  per foot. Each main booster is capped at 65,000 N; twelve cold-gas verniers
-  are capped at 90,000 N each. Ratings live in the rig profile and are independent
+  bells, one canted rear-calf nozzle per leg and one foot-sole nozzle per foot,
+  seated on the outermost underside of the foot mesh. Each main booster is
+  capped at 65,000 N; twelve cold-gas verniers are capped at 90,000 N each. Ratings live in the rig profile and are independent
   of body mass, throttle detent or burst request; zero disables that booster.
   Cold-jet authority scales linearly with native body speed: 15% of each rating
   at rest, 57.5% at 20 m/s, and 100% at/above 40 m/s, including vertical motion.
@@ -118,7 +118,7 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   Low-speed propulsion ramps more gently and reserves an earlier burst shutdown
   so reduced cold authority can keep the combined thrust balanced.
   The main hardpoints use the measured backpack barrel caps, rear calf recesses
-  and foot-sole inlays. There are no toe-mounted main boosters. The hover leg
+  and outer foot-sole faces. There are no toe-mounted main boosters. The hover leg
   anchor brings the sole thrust lines under the mass center so quiet support does
   not require a permanent opposing cold-gas burn.
 - `thruster_allocator.gd` reuses native 3×3 force/moment blocks with bounded
