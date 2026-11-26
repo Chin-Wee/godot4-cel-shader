@@ -459,6 +459,31 @@ def waist_rear_candidates(triangles, center, node_names, globals_):
     return candidates
 
 
+def foot_sole_candidates(mounts, node_names, globals_, triangles, center):
+    candidates = []
+    for side, mesh_name, mount_name, bone_name in (
+        ("left", "L.4.FeetArmor", "FootSoleL", "Feet.L"),
+        ("right", "R.4.FeetArmor", "FootSoleR", "Feet.R"),
+    ):
+        mount = next(m for m in mounts["MOUNTS"] if m["name"] == mount_name)
+        current = transform_point(globals_[node_names[bone_name]], mount["position"])
+        surface = [t for t in triangles if t["mesh"] == mesh_name]
+        if not surface:
+            candidates.append({"side": side, "mesh": mesh_name, "error": "mesh node not found"})
+            continue
+        nearest = nearest_surface(current, surface, center, bone_name)
+        inverse_bone = inverse4(globals_[node_names[bone_name]])
+        candidates.append({
+            "side": side, "mesh": mesh_name, "current_distance": round(nearest["distance"], 6),
+            "world_position": [round(v, 6) for v in nearest["nearest"]],
+            "world_outward_normal": [round(v, 6) for v in nearest["normal"]],
+            "bone": bone_name,
+            "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, nearest["nearest"])],
+            "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, nearest["normal"])]
+        })
+    return candidates
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -491,11 +516,13 @@ def main():
     relevant_meshes = [m for m in mesh_details if any(term in m["name"].lower()
                        for term in ["armor", "waist", "cube", "thigh", "shin", "feet", "shoulder"])]
     waist_candidates = waist_rear_candidates(triangles, center, node_names, globals_)
+    foot_candidates = foot_sole_candidates(mounts, node_names, globals_, triangles, center)
     summary = {"glb": str(GLB_PATH.relative_to(ROOT)), "glb_bytes": len(raw),
                "glb_sha256": hashlib.sha256(raw).hexdigest(), "nodes": len(doc.get("nodes", [])),
                "skins": len(doc.get("skins", [])), "mesh_nodes": mesh_nodes, "triangles": len(triangles),
                "relevant_mesh_details": relevant_meshes, "bone_details": bone_details,
                "waist_rear_candidates": waist_candidates,
+               "foot_sole_candidates": foot_candidates,
                "main_mounts": len(mounts["MOUNTS"]), "cold_mounts": len(mounts["COLD_MOUNTS"]),
                "thresholds": {"max_distance": args.max_distance, "min_normal_dot": args.min_normal_dot},
                "failing_mounts": [r["name"] for r in failures], "mounts": results}
