@@ -167,7 +167,7 @@ For each completed pose, compute resultant force F = sum(f_i d_i) and moment M =
 
 The hard pull-up sits close to the knee limit. Moving from 5° to 90° takes at least approximately 0.83 seconds at the current maximum speed, before servo settling. Some proposed angles may exceed signed limits once mapped to bone axes. Clamp and inspect; change aerial joint response only after measuring the pose and input latency. Preserve grounded response and shared contact behaviour.
 
-The full rig currently has ten main outlets: two backpack, two calf, two heel and four toe, plus twelve cold-gas ports. Only the six heel/toe outlets on Feet.L/R are enabled for the feet-only experiment. The current main-engine gimbal cone is 30°; zero independent deflection is an experimental requirement, not existing runtime behaviour.
+The full rig uses six main outlets: two backpack, two rear-calf and two foot-sole nozzles. Four additional toe outlets have been removed. Twelve cold-gas verniers are distributed across shoulder, thigh, chest, backpack and rear-waist hardpoints. All live main and cold outlets use fixed axes; the six heel/toe outlets in the separate feet-only laboratory remain a distinct test fixture.
 
 ### 2.9 Visual hierarchy
 
@@ -560,7 +560,7 @@ hand targets. Pose selection splits translation from rotation, blends diagonal
 moves and ramps knees more slowly through the neutral, soft and hard anchors.
 Flight uses the existing four-bone torso, joint servos and landing contact solve.
 
-The ten main outlets and twelve cold ports use their completed bone axes.
+The six main outlets and twelve cold ports use their completed bone axes. Backpack, calf and foot-sole engines provide primary propulsion; shoulder/thigh and torso/backpack verniers provide cold-gas attitude control.
 Independent nozzle angle stays zero through firing and valve shutdown. The cold
 ports cover the moment deficits recorded in the feet-only lab. At zero speed the
 full rig can use 23% of each existing cold-port rating and reaches the existing
@@ -616,3 +616,13 @@ Review-branch implementation based on main b8ed3b6. All live outlets now have ze
 - Current comparison/ground handling will need revalidation. These timing and pose targets are untested. Historical gimbal notes above do not describe the new live policy.
 
 Run test_flight_propulsion_policy.gd, test_authored_flight.gd, test_articulation_lab.gd, test_thruster_allocator.gd, test_thruster_control.gd and the ground movement regression before merging. Measure brace separation and knee flexion, pressure slew, cumulative cold impulse/reversals, force/moment tracking, boost and takeoff authority.
+
+
+## 12. Gundam-style propulsion hardpoints
+
+The full rig uses six main outlets, matching the conventional mobile-suit distribution:
+- Two lower-backpack bell nozzles, fixed to the torso and directed aft/down.
+- One canted rear-calf nozzle on each Shin bone.
+- One recessed foot-sole nozzle on each Feet bone. These follow the foot's completed pose; there are no toe-mounted main engines.
+
+Twelve smaller fixed cold-gas verniers are distributed over six paired hardpoint groups: shoulders, thighs, front torso, upper backpack, lower-backpack sides and rear waist. Shoulder and thigh outlets are attached to their respective articulated bones. Chest/backpack/waist outlets remain on the rigid torso structure. All positions and directions are bone-local and mirrored across the body where applicable. The main-engine rating array is six entries in the same order as `MOUNTS`; cold-gas ratings remain twelve entries in `COLD_MOUNTS` order. The first four main outlets are backpack/calf, and the final two are foot soles, matching the six-entry trim distribution.

@@ -22,6 +22,7 @@ func _run() -> void:
 	var plume := ShaderMaterial.new()
 	plume.shader = preload("res://shaders/aerial/afterburner.gdshader")
 	mech.build(surface,plume)
+	_check_thruster_layout()
 	assert(Poses.AUTHORED.size()+Poses.TORSO.size()+Poses.ARMS.size()+Poses.HANDS.size()==42)
 	assert(Poses.MIRRORED.size()+Poses.TORSO_MIRRORED.size()+Poses.ARMS_MIRRORED.size()==9)
 	assert(mech.rig.arms.digits.size()==28)
@@ -35,6 +36,20 @@ func _run() -> void:
 		return
 	print("Authored flight checks passed. Peak exhaust lag %.2f degrees."%rad_to_deg(maximum_visible_error))
 	quit()
+
+func _check_thruster_layout() -> void:
+	var expected_hot := ["BackpackL","BackpackR","CalfL","CalfR","FootSoleL","FootSoleR"]
+	assert(mech.MOUNTS.size()==6 and mech.sockets.size()==6,"Expected six Gundam-style main outlets")
+	for index in expected_hot.size():
+		assert(String(mech.MOUNTS[index][0])==expected_hot[index],"Unexpected main outlet order")
+		assert(mech.skeleton.find_bone(mech.MOUNTS[index][1])>=0,"Main outlet bone is missing")
+	assert(mech.COLD_MOUNTS.size()==12 and mech.gas_sockets.size()==12,"Expected twelve cold-gas verniers")
+	var cold_bones := {}
+	for mount in mech.COLD_MOUNTS:
+		assert(mech.skeleton.find_bone(mount[1])>=0,"Cold outlet bone is missing: "+String(mount[1]))
+		cold_bones[mount[1]] = true
+	for bone in [&"Shoulder.L",&"Shoulder.R",&"Thigh.L",&"Thigh.R",&"Torso"]:
+		assert(cold_bones.has(bone),"Cold-gas layout is missing "+String(bone))
 
 func _expect(condition: bool, message: String) -> void:
 	if not condition and not failures.has(message): failures.append(message)

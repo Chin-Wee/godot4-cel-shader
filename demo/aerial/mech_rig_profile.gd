@@ -3,7 +3,7 @@ extends Resource
 # MechAsset's measured skeleton frame is +Z forward. Behavior stays in body/SI
 # coordinates; this resource owns asset calibration and mechanical limits.
 # Newton ratings, in aerial_mech MOUNTS / COLD_MOUNTS order. Same housing, same cap.
-@export var main_booster_max_thrust := PackedFloat32Array([65000,65000,65000,65000,65000,65000,65000,65000,65000,65000])
+@export var main_booster_max_thrust := PackedFloat32Array([65000,65000,65000,65000,65000,65000])
 @export var cold_booster_max_thrust := PackedFloat32Array([90000,90000,90000,90000,90000,90000,90000,90000,90000,90000,90000,90000])
 @export var torso_bones := PackedStringArray(["PelvisBase", "Low_Waist", "Torso_WaistConnect", "Torso"])
 @export var torso_weights := PackedFloat32Array([0.14, 0.24, 0.30, 0.32])
@@ -22,7 +22,7 @@ extends Resource
 # straighter lower legs and forearms need their own panel calibration.
 @export var authored_aero_incidence := PackedFloat32Array([0.04,0.035,0.035,-0.08,-0.08])
 # Thigh, knee, ankle offsets in skeleton axes. Mirror Z for the right leg.
-# Retain the calibrated hover anchor: physical heel/calf outlets move with it.
+# Retain the calibrated hover anchor: physical foot-sole/calf outlets move with it.
 @export var hover_pose := PackedVector3Array([Vector3(-1.0,0,0.12), Vector3(1.17,0,0), Vector3.ZERO])
 @export var stream_pose := PackedVector3Array([Vector3.ZERO, Vector3(0.12,0,0), Vector3(0.32,0,0)])
 @export var spread_pose := PackedVector3Array([Vector3(-0.88,0,0.46), Vector3(1.07,0,0), Vector3(-0.24,0,0)])
@@ -33,7 +33,7 @@ extends Resource
 @export var coast_pose := PackedVector3Array([Vector3(-0.32,0,0.16), Vector3(0.58,0,0), Vector3(-0.06,0,0)])
 @export var landing_pose := PackedVector3Array([Vector3(-0.36,0,0.20), Vector3(0.68,0,0), Vector3(-0.10,0,0)])
 @export var launch_pose := PackedVector3Array([Vector3(-0.03,0,0.08),Vector3(0.05,0,0),Vector3.ZERO])
-# Coupled flexion keeps the calf/heel axes close to the main thrust line.
+# Coupled flexion keeps the calf/sole axes close to the main thrust line.
 @export var retro_pose := PackedVector3Array([Vector3(-0.62,0,0.20),Vector3(1.02,0,0),Vector3(-0.35,0,0)])
 @export var drive_pose := PackedVector3Array([Vector3(-0.32,0,0.13),Vector3(0.58,0,0),Vector3(-0.20,0,0)])
 @export var joint_min := PackedVector3Array([Vector3(-1.15,-0.5,-0.65), Vector3(0.05,0,0), Vector3(-0.65,-0.2,-0.2)])

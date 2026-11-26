@@ -50,35 +50,32 @@ var native_support := false
 var exhaust_phase := 0.0
 const GROUND_ANIMATION_BLEND := 0.12
 const GROUND_WALK_STEPS_PER_CYCLE := 2.0
-# Measured centers of the actual barrel ends / recessed ports, in source bone space.
-# The paired lower backpack barrels are angled down and aft; use their inset caps.
+# Six traditional mobile-suit main outlets: backpack, rear calves and foot soles.
+# MechAsset is +Z-forward; each direction is authored in its mounting bone frame.
+# Centers are the inspected barrel/recess positions, not estimated body offsets.
 const MOUNTS := [
  ["BackpackL",&"Torso",Vector3(0.9018,-2.9555,-4.4456),Vector3(0,-0.789,-0.615)],
  ["BackpackR",&"Torso",Vector3(-0.9018,-2.9555,-4.4456),Vector3(0,-0.789,-0.615)],
  ["CalfL",&"Shin.L",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
  ["CalfR",&"Shin.R",Vector3(0,1.90103,-0.76695),Vector3(0,0.442,-0.897)],
- ["HeelL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
- ["HeelR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
- ["ToeLInner",&"Feet.L",Vector3(-0.375359,0.8,0.15),Vector3(-0.2,0.05,-0.978)],
- ["ToeLOuter",&"Feet.L",Vector3(0.374634,0.8,0.15),Vector3(0.2,0.05,-0.978)],
- ["ToeRInner",&"Feet.R",Vector3(0.375374,0.8,0.15),Vector3(0.2,0.05,-0.978)],
- ["ToeROuter",&"Feet.R",Vector3(-0.374634,0.8,0.15),Vector3(-0.2,0.05,-0.978)],
+ ["FootSoleL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
+ ["FootSoleR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
 ]
-# Fixed opposed triads, seated on inspected torso/backpack armor triangles. The
-# upper/lower separation supplies pitch; lateral separation supplies yaw/roll.
-# Shared rigid torso axes keep opposed jets balanced while the legs articulate.
+# Twelve fixed cold-gas verniers across six paired locations. Shoulder/thigh
+# hardpoints reuse the previously measured native-bone coordinates. The other
+# pairs remain on inspected chest, backpack and rear-waist armor surfaces.
 const COLD_MOUNTS := [
- ["UpperLSide",&"Torso",Vector3(1.596664,1.112213,0.25),Vector3.RIGHT],
+ ["ShoulderL",&"Shoulder.L",Vector3(-0.63559,0.002,-0.047),Vector3(-1,0,0)],
  ["UpperLFore",&"Torso",Vector3(0.822496,1.353148,1.307773),Vector3.BACK],
  ["UpperLAft",&"Torso",Vector3(1.077153,1.250922,-3.557281),Vector3.FORWARD],
- ["UpperRSide",&"Torso",Vector3(-1.596657,1.112215,0.25),Vector3.LEFT],
+ ["ThighL",&"Thigh.L",Vector3(-0.47860,2.339,-0.187),Vector3(-1,0,0)],
+ ["LowerLSide",&"Torso",Vector3(1.246701,-2.183311,-3.406221),Vector3.RIGHT],
+ ["LowerLAft",&"Torso",Vector3(1.335068,-2.64238,-4.471244),Vector3.FORWARD],
+ ["ShoulderR",&"Shoulder.R",Vector3(0.63559,0.002,-0.047),Vector3(1,0,0)],
  ["UpperRFore",&"Torso",Vector3(-0.822495,1.353148,1.307774),Vector3.BACK],
  ["UpperRAft",&"Torso",Vector3(-1.077152,1.250921,-3.557281),Vector3.FORWARD],
- ["LowerLSide",&"Torso",Vector3(1.246701,-2.183311,-3.406221),Vector3.RIGHT],
- ["LowerLFore",&"Torso",Vector3(0.734726,0.163116,1.28089),Vector3.BACK],
- ["LowerLAft",&"Torso",Vector3(1.335068,-2.64238,-4.471244),Vector3.FORWARD],
+ ["ThighR",&"Thigh.R",Vector3(0.47860,2.339,-0.187),Vector3(1,0,0)],
  ["LowerRSide",&"Torso",Vector3(-1.246699,-2.183311,-3.406221),Vector3.LEFT],
- ["LowerRFore",&"Torso",Vector3(-0.734725,0.163116,1.280891),Vector3.BACK],
  ["LowerRAft",&"Torso",Vector3(-1.335067,-2.642381,-4.471244),Vector3.FORWARD],
 ]
 var palette_materials: Array[ShaderMaterial] = []

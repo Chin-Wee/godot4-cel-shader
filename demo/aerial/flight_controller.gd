@@ -230,8 +230,8 @@ func reset(power := 1.0) -> void:
 	delivered_thrust = 0.0
 	for index in hot_valves.size():
 		var capacity := _hot_capacity(index)
-		var heel_share := minf(TRIM_SHARES[4],minf(_hot_capacity(4),_hot_capacity(5))/maxf(power,0.01))
-		var share := (heel_share if index>=4 else (1.0-2.0*heel_share)/4.0) if index<6 else 0.0
+		var sole_share := minf(TRIM_SHARES[4],minf(_hot_capacity(4),_hot_capacity(5))/maxf(power,0.01))
+		var share := (sole_share if index>=4 else (1.0-2.0*sole_share)/4.0) if index<6 else 0.0
 		hot_valves[index].reset(power*share/capacity if capacity>0 else 0.0)
 		delivered_thrust += hot_valves[index].level*hot_max_thrust(index)
 		motor_forces[index] = Vector3.ZERO

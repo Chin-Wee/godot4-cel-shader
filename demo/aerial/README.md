@@ -107,35 +107,32 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   camera before weather on the render clock; physics remains on its fixed clock.
   Camera settings are native Camera3D properties. Atmosphere strengths are exported
   on `Lighting`; pose tuning remains in the existing rig-profile Resource.
-- Main forces use actual physics-tick gimbal directions and animated attachment
-  positions. Back, calf, heel and four forefoot outlets share the solve with cold
-  ports. Each of the ten main boosters is capped at 65,000 N; each of twelve cold
-  jets at 90,000 N. Individual Newton ratings live in the rig profile, independent
+- Main propulsion uses six fixed-axis, bone-mounted outlets: two lower-backpack
+  bells, one canted rear-calf nozzle per leg and one recessed foot-sole nozzle
+  per foot. Each main booster is capped at 65,000 N; twelve cold-gas verniers
+  are capped at 90,000 N each. Ratings live in the rig profile and are independent
   of body mass, throttle detent or burst request; zero disables that booster.
   Cold-jet authority scales linearly with native body speed: 15% of each rating
   at rest, 57.5% at 20 m/s, and 100% at/above 40 m/s, including vertical motion.
   The same speed cap constrains planning and actual delivered point forces.
   Low-speed propulsion ramps more gently and reserves an earlier burst shutdown
   so reduced cold authority can keep the combined thrust balanced.
-  Forefoot pods sit on the inspected Feet.L/R mesh sidewalls (y=0.8, z=0.15),
-  clear of the measured sole, to balance aft engines without overdriving heels.
-  MechAsset.glb remains the source mesh; both armor and inner foot meshes were
-  inspected before selecting the exposed inner-foot surfaces. The selected
-  4× detent is a collective request; Quick Boost is not a 4× collective command.
-  The hover leg anchor brings the heel thrust lines under the mass center so
-  quiet support does not require a permanent opposing cold-gas burn.
+  The main hardpoints use the measured backpack barrel caps, rear calf recesses
+  and foot-sole inlays. There are no toe-mounted main boosters. The hover leg
+  anchor brings the sole thrust lines under the mass center so quiet support does
+  not require a permanent opposing cold-gas burn.
 - `thruster_allocator.gd` reuses native 3×3 force/moment blocks with bounded
   projection sweeps. The horizon solve considers actual port positions, capacity
-  and hot gimbal cones. It reduces directional acceleration before sacrificing
+  and fixed-axis hot outlets. It reduces directional acceleration before sacrificing
   cross-axis force or attitude control. Gravity and current panel forces are
   included in the net-acceleration target. A finite complete-force slew and a
   shutdown reserve shape the half-second burst instead of adding an impulse.
   The next-tick solve includes predicted average valve output and reachable
-  gimbal angles. Cold ports retain a fuel cost in this reachable solve and do
+  valve pressure. Cold ports retain a fuel cost in this reachable solve and do
   not track redundant horizon flow; necessary torque couples and unavoidable
   valve shutdown tails remain physical. The same predicted commands are executed
-  against the real valves and servos; only their delivered point forces move the body.
-- Cold gas has fuel priority: first try hot vectoring and unavoidable shutdown
+  against the real valves; only their delivered point forces move the body.
+- Cold gas has fuel priority: first try fixed-axis hot pressure and unavoidable shutdown
   tails; open cold valves only when the force/moment residual exceeds the trim
   tolerance. The horizon also penalizes total cold flow. A small minimum useful
   flow and angular/force deadbands permit coast intervals instead of a recurring
@@ -145,13 +142,13 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   disguise a pending restart gap. Sustained rotation requests can require an acquisition/arrest
   burn; quiet hover and rate-matched coasting do not require perpetual jets.
   This is a bounded allocator, not a claim of a globally optimal fuel solution.
-- Twelve fixed cold nozzles form opposed upper/lower triads on torso/backpack
-  armor. Shared rigid axes prevent leg articulation from rotating one member
-  of an opposed pair. Vertical separation provides pitch leverage; lateral
-  separation provides yaw/roll leverage. Fixed nozzles have pressure authority
-  only; the matrix includes that one-dimensional constraint. Hot outlets retain
-  their 30-degree cones and finite gimbal response. All six signed rotation
-  axes are checked with native body motion and with summed outlet moments.
+- Twelve fixed cold-gas verniers are distributed across the shoulder armour,
+  thighs, front torso, upper backpack, lower-backpack sides and rear waist.
+  The shoulder/thigh jets follow their articulated armour bones; torso/backpack
+  jets remain on the rigid upper-body structure. Their separated moment arms
+  provide signed pitch/yaw/roll authority without independent nozzle steering.
+  All six signed rotation axes are checked with native body motion and summed
+  outlet moments.
 - One angular-rate controller uses native capsule inertia. Requests remain
   0.75/0.8/1.5 rad/s before precision scaling, with a 5 rad/s² demand ceiling.
   Available nozzle moments, rather than a free torque channel, determine actual
@@ -295,20 +292,20 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   simulation framework, so pause and deterministic seeking remain available.
   Live bursts choose a fresh seed; captures can pass a seed for reproducibility.
   Transient effects are freed without retaining palette references.
-- Each mech has six main boosters: paired lower backpack barrel caps, calf
-  recesses and heel inlays. Twelve smaller fixed cold ports occupy inspected
-  chest and upper/lower backpack armor surfaces. The existing source GLB was
-  retained after inspecting torso, shin, foot and backpack geometry. Rigid torso
-  mounts were selected for predictable opposed-jet axes and useful lever arms;
-  all centers were projected onto source triangles. There are no hand boosters.
-  Hot bells vector within their spring-damped 30-degree local cones; cold
-  housings remain fixed to the armor. Limb animation carries the hot calf/heel
-  mounts through the actual pose, and the allocator measures those moving points.
-  Each plume's visibility, brightness and length use that outlet's delivered
-  force, including valve transients. A material-preview throttle cannot light a
-  physically inactive nozzle. The same sampled directions/forces drive the native
-  body and the rendered gimbals; final modifier poses update attachment readbacks
-  before rendering. Trails record actual paths and stay hidden at rest/on foot.
+- Each mech has six main boosters: paired lower-backpack barrel caps, one
+  rear-calf nozzle per leg and one foot-sole nozzle per foot. Twelve smaller fixed
+  cold-gas verniers occupy the shoulder, thigh, chest, backpack and rear-waist
+  hardpoints. Their bone attachments follow the relevant articulated armour;
+  rigid torso/backpack mounts retain their upper-body axes. All centers use
+  inspected bone-local coordinates. There are no hand or toe-mounted main
+  boosters. Hot and cold nozzle axes remain fixed; limb animation carries the
+  calf and foot-sole mounts through the actual pose, and the allocator measures
+  those moving points. Each plume's visibility, brightness and length use that
+  outlet's delivered force, including valve transients. A material-preview
+  throttle cannot light a physically inactive nozzle. The same sampled
+  directions/forces drive the native body and rendered fixed outlets; final
+  modifier poses update attachment readbacks before rendering. Trails record
+  actual paths and stay hidden at rest/on foot.
 - Cel exhaust follows [KSP2's engine exhaust breakdown](https://forum.kerbalspaceprogram.com/topic/204884-developer-insights-11-%E2%80%93-engine-exhaust-visual-effects/): throttle drives mesh length, flow rate and brightness together.
   The supplied `Stylized_BOTW_Fire.gdshader` supplies the scrolling/twisting noise,
   tail deformation and rim-color ideas. Its duplicate in `open-sea-godot` was
@@ -385,10 +382,11 @@ MechAsset is the white humanoid model with 76 mesh parts and 11 source
 clips. The other four are colored compact robots and lack its directional boost
 poses. The existing GLB is chosen over its FBX source for the same import reasons
 recorded in `models/MechAsset/README.md`. No new external asset is needed.
-The model has no named thruster sockets. Native Torso, Shin, Feet, Shoulder and Thigh attachments
-provide paired backpack, calf and heel mounts plus shoulder/thigh control jets
-without editing the skeleton. All mount coordinates were inspected in native
-close-ups and measured against source triangles in bone-local space. The backpack
+The model has no named thruster sockets. Native Torso, Shin, Feet, Shoulder and
+Thigh attachments provide paired backpack, calf and foot-sole main mounts plus
+shoulder/thigh cold-gas verniers without editing the skeleton. The additional
+cold ports occupy inspected chest, backpack and rear-waist hardpoints. Mount
+coordinates are measured in their respective bone-local frames. The backpack
 uses the paired lower barrels, rather than an estimated point beneath the pack.
 Missile, trail, explosion, terrain and cloud geometry remain procedural.
 
@@ -446,8 +444,8 @@ Physical support still owns plants. Two short rays prepare near-ground contact;
 prediction alone cannot plant feet. A platform-local plant follows moving ground
 and retains its last world position if the platform disappears. Native foot IK
 limits extension, and sole tilt is capped at 0.5 radians. These visual contacts
-operate over the same physical capsule; they add no suspension forces. Actual
-30-degree gimbals and seated backpack/calf/heel outlets still produce the forces.
+operate over the same physical capsule; they add no suspension forces. Fixed-axis backpack, calf and foot-sole outlets produce the forces; the
+limbs redirect the calf and foot-sole thrust lines through articulation.
 There are no hand boosters, weapon aiming, ragdoll bodies or velocity rewrites.
 
 `test_air_pose.gd` measures displayed shoulders, elbows, hands and knees from the
@@ -611,7 +609,7 @@ finite ignition/restart/minimum-burn timing across 30–240 Hz, nozzle-force mom
 truthful cold-gas flashes, burst jerk below 80 m/s³, cross-axis acceleration below 0.5 m/s²,
 chassis tilt below one degree, and 30 seconds
 of quiet hover with cold valves closed for most ticks. The native
-version uses a low three-quarter view so the heel and calf redirection is visible.
+version uses a low three-quarter view so foot-sole and calf redirection is visible.
 
 ```sh
 godot --headless --path demo --fixed-fps 60 --script res://aerial/tests/test_thruster_control.gd -- /tmp/thruster-control
@@ -750,8 +748,8 @@ thrust, retains aerodynamic coasting, then re-ignites without a fixture reset.
 
 ### Body-flight control checks
 
-Directional hover calculates one balanced net force through the real back,
-calf, heel and cold outlets. Quick Boost reduces its magnitude to preserve
+Directional hover calculates one balanced net force through the real backpack,
+calf, foot-sole and cold outlets. Quick Boost reduces its magnitude to preserve
 attitude and cross-axis force, with leading/trailing knees and complementary hands. Opposing
 input catches the old momentum before accelerating outward; it never assigns
 velocity. The chase spring compensates constant-velocity lag so fast climbs stay

@@ -136,6 +136,13 @@ func _check_nozzle_allocation() -> void:
 	fc.configure(scene.hero,50.0,scene.hero.rig.profile)
 	var hot: Array = scene.hero._thruster_outlets(scene.hero.sockets,scene.hero.MOUNTS,0)
 	var outlets: Array = scene.hero._thruster_outlets(scene.hero.gas_sockets,scene.hero.COLD_MOUNTS,scene.hero.MOUNTS.size())
+	_expect(hot.size()==6,"Main propulsion does not use the six Gundam-style hardpoints")
+	_expect(outlets.size()==12,"Cold-gas system must retain twelve verniers")
+	var cold_bones := {}
+	for socket in scene.hero.gas_sockets: cold_bones[socket.bone_name] = true
+	_expect(cold_bones.has(&"Shoulder.L") and cold_bones.has(&"Shoulder.R")
+		and cold_bones.has(&"Thigh.L") and cold_bones.has(&"Thigh.R"),
+		"Cold-gas verniers are not attached to both shoulders and thighs")
 	for axis in 3:
 		for sign in [-1.0,1.0]:
 			fc.reset(0.0)
