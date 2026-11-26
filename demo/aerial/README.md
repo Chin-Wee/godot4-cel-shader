@@ -142,13 +142,13 @@ reconstructions using Godot's existing mesh, MultiMesh, camera and fog facilitie
   disguise a pending restart gap. Sustained rotation requests can require an acquisition/arrest
   burn; quiet hover and rate-matched coasting do not require perpetual jets.
   This is a bounded allocator, not a claim of a globally optimal fuel solution.
-- Twelve fixed cold-gas verniers occupy six mirrored pairs: shoulder
-  armour, front chest, upper backpack, lower-backpack sides, thighs and rear
-  waist armour. Shoulder/thigh/waist outlets follow their respective articulated
-  bones; chest/backpack outlets follow the Torso bone. Their measured axes face
-  outward from the actual armour surfaces and provide attitude-control moment
-  arms without independent nozzle steering. The GLB mesh audit checks the live
-  mount arrays against parented and skinned triangles.
+- Twelve fixed cold-gas verniers occupy six mirrored pairs: shoulder armour,
+  front chest, upper backpack, lower-backpack sides, front waist and rear waist.
+  Shoulder outlets follow their articulated bones; chest/backpack outlets follow
+  Torso; both waist pairs follow Low_Waist. Their measured axes face outward from
+  the actual armour surfaces and provide signed attitude-control moments without
+  independent nozzle steering. The GLB mesh audit checks the live mount arrays
+  against parented and skinned triangles.
 - One angular-rate controller uses native capsule inertia. Requests remain
   0.75/0.8/1.5 rad/s before precision scaling, with a 5 rad/s² demand ceiling.
   Available nozzle moments, rather than a free torque channel, determine actual

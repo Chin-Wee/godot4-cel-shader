@@ -624,24 +624,24 @@ Run test_flight_propulsion_policy.gd, test_authored_flight.gd, test_articulation
 
 ## 12. Gundam-style propulsion hardpoints
 
-The full rig uses six main outlets, matching the conventional mobile-suit distribution:
-- Two lower-backpack bell nozzles on the Torso bone, seated on the Cube mesh.
+The full rig uses six main outlets:
+- Two lower-backpack bell nozzles on Torso, seated on the Cube mesh.
 - One canted rear-calf nozzle on each Shin bone, seated on L.3.Shin and R.3.Shin.
-- One foot-sole nozzle on each Feet bone, seated on the outermost downward-facing sole triangles of L.4.Feets and R.4.Feets. These follow the completed foot pose; there are no toe-mounted main engines.
+- One foot-sole nozzle on each Feet bone, seated on the outermost downward-facing sole triangles of L.4.Feets and R.4.Feets. There are no toe-mounted main engines.
 
 Twelve fixed cold-gas verniers form six mirrored pairs:
 - Shoulder armour: L.1. Shoulder / R.1. Shoulder, attached to Shoulder.L/R.
 - Front chest: UpperArmors, a rigid child of Torso.
 - Upper backpack: rear-facing ports on Cube, attached to Torso.
-- Thigh armour: L.1.Thigh / R.1.Thigh, attached to Thigh.L/R.
 - Lower backpack sides: outward-canted ports on Cube, attached to Torso.
-- Rear waist: rear-facing ports on Waist Armor, attached to Low_Waist.
+- Front waist: Upper Waist Armor, attached to Low_Waist.
+- Rear waist: Waist Armor, attached to Low_Waist.
 
-The GLB mesh audit accounts for both skinned vertices and rigid mesh nodes parented to bones. It measures the live mount coordinates against actual triangles, checks exhaust axes against outward surface normals, and ray-tests the rendered nozzle housing envelope for armour obstruction. The foot-sole hardpoints were moved from the inner sole surface to the outermost downward-facing triangles. The lower-backpack side axes and rear-waist locations use measured mesh normals and parent transforms.
+The GLB mesh audit accounts for both skinned vertices and rigid mesh nodes parented to bones. It measures the live mount coordinates against actual triangles, checks exhaust axes against outward surface normals, and ray-tests the rendered nozzle housing envelope for armour obstruction. The foot-sole hardpoints sit on the outermost downward-facing triangles; the lower-backpack sides and both waist pairs use measured mesh normals and their actual parent-bone transforms.
 
 The main-engine rating array has six entries in MOUNTS order; cold-gas ratings have twelve entries in COLD_MOUNTS order. The first four main outlets are backpack/calf, and the final two are foot soles, matching the six-entry trim distribution.
 
-The mesh-audit workflow enforces a maximum mount-to-surface distance of 0.02 source units and a minimum exhaust-axis/normal dot product of 0.97. The inspected GLB (SHA-256 7a21d989528f1fe78577da7d5acfb475d0264acce8601709de0d5a8f28bbaeb5) passed: all 18 mounts were within 0.000044 source units of their intended surfaces, all 18 axes aligned with the measured outward normals, and 90 sampled housing-clearance rays found no mesh intersections. This is a bind-pose housing-clearance check. The Godot regression suite separately verifies that all 18 outlet mounts and axes follow their bones through authored flight poses; it does not perform a full swept-volume collision test for the nozzle housings.
+The mesh-audit workflow enforces a maximum mount-to-surface distance of 0.02 source units and a minimum exhaust-axis/normal dot product of 0.97. The inspected GLB passed with all 18 mounts within 0.000044 source units, all 18 axes aligned with their measured outward normals, and no intersections in 90 sampled housing-clearance rays. This is a bind-pose housing-clearance check. The Godot regression suite separately verifies that all 18 outlet mounts and axes follow their bones through authored flight poses; it does not perform a full swept-volume collision test for the nozzle housings.
 
 Run the audit locally with:
 

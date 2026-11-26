@@ -45,9 +45,9 @@ func _check_thruster_layout() -> void:
 		assert(mech.skeleton.find_bone(mech.MOUNTS[index][1])>=0,"Main outlet bone is missing")
 	var expected_cold := [
 		["ShoulderL","Shoulder.L"],["ChestFrontL","Torso"],["BackpackUpperL","Torso"],
-		["ThighL","Thigh.L"],["BackpackSideL","Torso"],["WaistRearL","Low_Waist"],
+		["BackpackSideL","Torso"],["WaistFrontL","Low_Waist"],["WaistRearL","Low_Waist"],
 		["ShoulderR","Shoulder.R"],["ChestFrontR","Torso"],["BackpackUpperR","Torso"],
-		["ThighR","Thigh.R"],["BackpackSideR","Torso"],["WaistRearR","Low_Waist"],
+		["BackpackSideR","Torso"],["WaistFrontR","Low_Waist"],["WaistRearR","Low_Waist"],
 	]
 	assert(mech.COLD_MOUNTS.size()==12 and mech.gas_sockets.size()==12,"Expected twelve cold-gas verniers")
 	for index in expected_cold.size():

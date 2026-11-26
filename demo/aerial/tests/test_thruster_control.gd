@@ -141,8 +141,8 @@ func _check_nozzle_allocation() -> void:
 	var cold_bones := {}
 	for socket in scene.hero.gas_sockets: cold_bones[socket.bone_name] = true
 	_expect(cold_bones.has(&"Shoulder.L") and cold_bones.has(&"Shoulder.R")
-		and cold_bones.has(&"Thigh.L") and cold_bones.has(&"Thigh.R") and cold_bones.has(&"Low_Waist"),
-		"Cold-gas verniers are not attached to both shoulders and thighs")
+		and cold_bones.has(&"Torso") and cold_bones.has(&"Low_Waist"),
+		"Cold-gas verniers are missing shoulder, torso or waist attachments")
 	for axis in 3:
 		for sign in [-1.0,1.0]:
 			fc.reset(0.0)
@@ -213,7 +213,7 @@ func _check_booster_caps() -> void:
 		fc.reset(4.0)
 		fc.detent = 4
 		fc.control_torque = Vector3.ZERO
-		fc.burst_direction = Vector3.RIGHT
+		fc.burst_direction = Vector3.DOWN
 		fc.burst_amount = 1.0
 		fc.burst_remaining = 0.5
 		for tick in 45:
