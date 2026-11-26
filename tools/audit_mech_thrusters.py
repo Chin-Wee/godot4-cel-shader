@@ -308,16 +308,7 @@ def closest_on_triangle(p, a, b, c):
     return add(add(a, mul(ab, vb*inv)), mul(ac, vc*inv))
 
 
-def audit_mount(mount, node_names, globals_, triangles, center):
-    if mount["bone"] not in node_names:
-        raise ValueError(f"{mount['name']}: missing GLB bone {mount['bone']}")
-    bone_matrix = globals_[node_names[mount["bone"]]]
-    candidate = transform_point(bone_matrix, mount["position"])
-    axis = transform_direction(bone_matrix, mount["direction"])
-    candidates = [t for t in triangles if t["bone_weights"].get(mount["bone"], 0.0) >= 0.05]
-    scope = "bone-weighted"
-    if not candidates:
-        candidates, scope = triangles, "whole-mesh fallback"
+def nearest_surface(candidate, candidates, center):
     best = None
     for tri in candidates:
         point = closest_on_triangle(candidate, tri["a"], tri["b"], tri["c"])
@@ -329,17 +320,40 @@ def audit_mount(mount, node_names, globals_, triangles, center):
     normal = tri["normal"]
     if dot(normal, sub(nearest, center)) < 0.0:
         normal = mul(normal, -1.0)
+    return {"mesh": tri["mesh"], "primitive": tri["primitive"], "nearest": nearest,
+            "distance": math.sqrt(d2), "normal": normal,
+            "signed_offset": dot(sub(candidate, nearest), normal),
+            "bone_weight": tri["bone_weights"].get("", 0.0)}
+
+
+def audit_mount(mount, node_names, globals_, triangles, center):
+    if mount["bone"] not in node_names:
+        raise ValueError(f"{mount['name']}: missing GLB bone {mount['bone']}")
+    bone_matrix = globals_[node_names[mount["bone"]]]
+    candidate = transform_point(bone_matrix, mount["position"])
+    axis = transform_direction(bone_matrix, mount["direction"])
+    candidates = [t for t in triangles if t["bone_weights"].get(mount["bone"], 0.0) >= 0.05]
+    scope = "bone-weighted"
+    if not candidates:
+        candidates, scope = triangles, "whole-mesh fallback"
+    local = nearest_surface(candidate, candidates, center)
+    whole = nearest_surface(candidate, triangles, center)
     return {"kind": mount["kind"], "name": mount["name"], "bone": mount["bone"], "scope": scope,
-            "mesh": tri["mesh"], "primitive": tri["primitive"],
-            "bone_weight": round(tri["bone_weights"].get(mount["bone"], 0.0), 4),
+            "mesh": local["mesh"], "primitive": local["primitive"],
+            "bone_weight": round(local["bone_weight"], 4),
             "position_bone_local": [round(v, 6) for v in mount["position"]],
             "position_world": [round(v, 6) for v in candidate],
-            "nearest_world": [round(v, 6) for v in nearest],
-            "distance": round(math.sqrt(d2), 6),
-            "signed_offset": round(dot(sub(candidate, nearest), normal), 6),
+            "nearest_world": [round(v, 6) for v in local["nearest"]],
+            "distance": round(local["distance"], 6),
+            "signed_offset": round(local["signed_offset"], 6),
             "axis_world": [round(v, 6) for v in axis],
-            "surface_normal_world": [round(v, 6) for v in normal],
-            "normal_alignment": round(dot(axis, normal), 6)}
+            "surface_normal_world": [round(v, 6) for v in local["normal"]],
+            "normal_alignment": round(dot(axis, local["normal"]), 6),
+            "nearest_any_mesh": whole["mesh"],
+            "nearest_any_world": [round(v, 6) for v in whole["nearest"]],
+            "distance_any": round(whole["distance"], 6),
+            "normal_any_world": [round(v, 6) for v in whole["normal"]],
+            "normal_alignment_any": round(dot(axis, whole["normal"]), 6)}
 
 
 def main():
