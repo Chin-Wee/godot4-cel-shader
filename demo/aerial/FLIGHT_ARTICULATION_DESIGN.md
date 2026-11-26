@@ -625,8 +625,20 @@ Run test_flight_propulsion_policy.gd, test_authored_flight.gd, test_articulation
 ## 12. Gundam-style propulsion hardpoints
 
 The full rig uses six main outlets, matching the conventional mobile-suit distribution:
-- Two lower-backpack bell nozzles, fixed to the torso and directed aft/down.
-- One canted rear-calf nozzle on each Shin bone.
-- One recessed foot-sole nozzle on each Feet bone. These follow the foot's completed pose; there are no toe-mounted main engines.
+- Two lower-backpack bell nozzles on the Torso bone, seated on the Cube mesh.
+- One canted rear-calf nozzle on each Shin bone, seated on L.3.Shin and R.3.Shin.
+- One recessed foot-sole nozzle on each Feet bone, seated on L.4.Feets and R.4.Feets. These follow the completed foot pose; there are no toe-mounted main engines.
 
-Twelve smaller fixed cold-gas verniers are distributed over six paired hardpoint groups: shoulders, thighs, front torso, upper backpack, lower-backpack sides and rear waist. Shoulder and thigh outlets are attached to their respective articulated bones. Chest/backpack/waist outlets remain on the rigid torso structure. All positions and directions are bone-local and mirrored across the body where applicable. The main-engine rating array is six entries in the same order as `MOUNTS`; cold-gas ratings remain twelve entries in `COLD_MOUNTS` order. The first four main outlets are backpack/calf, and the final two are foot soles, matching the six-entry trim distribution.
+Twelve fixed cold-gas verniers form six mirrored pairs:
+- Shoulder armour: L.1. Shoulder / R.1. Shoulder, attached to Shoulder.L/R.
+- Front chest: UpperArmors, a rigid child of Torso.
+- Upper backpack: rear-facing ports on Cube, attached to Torso.
+- Thigh armour: L.1.Thigh / R.1.Thigh, attached to Thigh.L/R.
+- Lower backpack sides: outward-canted ports on Cube, attached to Torso.
+- Rear waist: rear-facing ports on Waist Armor, attached to Low_Waist.
+
+The GLB mesh audit accounts for both skinned vertices and rigid mesh nodes parented to bones. It measures the live mount coordinates against actual triangles and checks the exhaust axis against the outward surface normal. The current positions are bone-local; the six main mounts retain the measured barrel/recess coordinates, while the lower-backpack side axes and rear-waist locations use the measured mesh normals and parent transforms.
+
+The main-engine rating array has six entries in MOUNTS order; cold-gas ratings have twelve entries in COLD_MOUNTS order. The first four main outlets are backpack/calf, and the final two are foot soles, matching the six-entry trim distribution.
+
+The mesh-audit workflow enforces a maximum mount-to-surface distance of 0.02 source units and a minimum exhaust-axis/normal dot product of 0.97.

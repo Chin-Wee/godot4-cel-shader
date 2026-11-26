@@ -141,7 +141,7 @@ func _check_nozzle_allocation() -> void:
 	var cold_bones := {}
 	for socket in scene.hero.gas_sockets: cold_bones[socket.bone_name] = true
 	_expect(cold_bones.has(&"Shoulder.L") and cold_bones.has(&"Shoulder.R")
-		and cold_bones.has(&"Thigh.L") and cold_bones.has(&"Thigh.R"),
+		and cold_bones.has(&"Thigh.L") and cold_bones.has(&"Thigh.R") and cold_bones.has(&"Low_Waist"),
 		"Cold-gas verniers are not attached to both shoulders and thighs")
 	for axis in 3:
 		for sign in [-1.0,1.0]:

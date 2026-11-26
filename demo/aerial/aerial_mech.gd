@@ -61,22 +61,22 @@ const MOUNTS := [
  ["FootSoleL",&"Feet.L",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
  ["FootSoleR",&"Feet.R",Vector3(0,-0.297,-0.009),Vector3(0,0,-1)],
 ]
-# Twelve fixed cold-gas verniers across six paired locations. Shoulder/thigh
-# hardpoints reuse the previously measured native-bone coordinates. The other
-# pairs remain on inspected chest, backpack and rear-waist armor surfaces.
+# Twelve fixed cold-gas verniers across six paired, mesh-verified locations.
+# Static child meshes are attached to their parent bones in the GLB hierarchy.
+# Torso and waist positions are measured in their respective parent-bone frames.
 const COLD_MOUNTS := [
  ["ShoulderL",&"Shoulder.L",Vector3(-0.63559,0.002,-0.047),Vector3(-1,0,0)],
- ["UpperLFore",&"Torso",Vector3(0.822496,1.353148,1.307773),Vector3.BACK],
- ["UpperLAft",&"Torso",Vector3(1.077153,1.250922,-3.557281),Vector3.FORWARD],
+ ["ChestFrontL",&"Torso",Vector3(0.822496,1.353148,1.307773),Vector3(0,-0.175874,0.984413)],
+ ["BackpackUpperL",&"Torso",Vector3(1.077153,1.250922,-3.557281),Vector3(0,0,-1)],
  ["ThighL",&"Thigh.L",Vector3(-0.47860,2.339,-0.187),Vector3(-1,0,0)],
- ["LowerLSide",&"Torso",Vector3(1.246701,-2.183311,-3.406221),Vector3.RIGHT],
- ["LowerLAft",&"Torso",Vector3(1.335068,-2.64238,-4.471244),Vector3.FORWARD],
+ ["BackpackSideL",&"Torso",Vector3(1.246701,-2.183311,-3.406221),Vector3(-0.831482,0.34158,-0.438133)],
+ ["WaistRearL",&"Low_Waist",Vector3(1.2,0.342699,-1.127871),Vector3(-0.011052,0.180136,-0.98358)],
  ["ShoulderR",&"Shoulder.R",Vector3(0.63559,0.002,-0.047),Vector3(1,0,0)],
- ["UpperRFore",&"Torso",Vector3(-0.822495,1.353148,1.307774),Vector3.BACK],
- ["UpperRAft",&"Torso",Vector3(-1.077152,1.250921,-3.557281),Vector3.FORWARD],
+ ["ChestFrontR",&"Torso",Vector3(-0.822495,1.353148,1.307774),Vector3(0,-0.175874,0.984413)],
+ ["BackpackUpperR",&"Torso",Vector3(-1.077152,1.250921,-3.557281),Vector3(0,0,-1)],
  ["ThighR",&"Thigh.R",Vector3(0.47860,2.339,-0.187),Vector3(1,0,0)],
- ["LowerRSide",&"Torso",Vector3(-1.246699,-2.183311,-3.406221),Vector3.LEFT],
- ["LowerRAft",&"Torso",Vector3(-1.335067,-2.642381,-4.471244),Vector3.FORWARD],
+ ["BackpackSideR",&"Torso",Vector3(-1.246699,-2.183311,-3.406221),Vector3(0.831482,0.34158,-0.438133)],
+ ["WaistRearR",&"Low_Waist",Vector3(-1.201091,0.342214,-1.124886),Vector3(0.011055,0.180136,-0.98358)],
 ]
 var palette_materials: Array[ShaderMaterial] = []
 
