@@ -66,20 +66,18 @@ func _reset(attitude := Quaternion.IDENTITY, speed := Vector3.ZERO, power := 2, 
 func _check_thruster_attachments() -> void:
 	for index in mech.MOUNTS.size():
 		var mount: Array = mech.MOUNTS[index]
-		var bone := mech.skeleton.find_bone(mount[1])
-		var bone_pose := mech.skeleton.get_bone_global_pose(bone)
-		var expected_position := mech.skeleton.to_global(bone_pose*mount[2])
-		var expected_axis: Vector3 = (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
+		var socket: BoneAttachment3D = mech.sockets[index]
+		var expected_position := socket.to_global(mount[2])
+		var expected_axis: Vector3 = (socket.global_basis*mount[3]).normalized()
 		_expect(mech.gimbals[index].global_position.distance_to(expected_position)<0.02,
 			"Main outlet detached from articulated bone: "+String(mount[0]))
 		_expect(mech.gimbals[index].global_basis.z.normalized().dot(expected_axis)>0.995,
 			"Main outlet axis changed during articulation: "+String(mount[0]))
 	for index in mech.COLD_MOUNTS.size():
 		var mount: Array = mech.COLD_MOUNTS[index]
-		var bone := mech.skeleton.find_bone(mount[1])
-		var bone_pose := mech.skeleton.get_bone_global_pose(bone)
-		var expected_position := mech.skeleton.to_global(bone_pose*mount[2])
-		var expected_axis: Vector3 = (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
+		var socket: BoneAttachment3D = mech.gas_sockets[index]
+		var expected_position := socket.to_global(mount[2])
+		var expected_axis: Vector3 = (socket.global_basis*mount[3]).normalized()
 		_expect(mech.gas_gimbals[index].global_position.distance_to(expected_position)<0.02,
 			"Cold vernier detached from articulated bone: "+String(mount[0]))
 		_expect(mech.gas_gimbals[index].global_basis.z.normalized().dot(expected_axis)>0.995,
