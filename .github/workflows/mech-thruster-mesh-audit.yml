@@ -7,13 +7,21 @@ on:
     paths:
       - "demo/models/MechAsset/MechAsset.glb"
       - "demo/aerial/aerial_mech.gd"
+      - "demo/aerial/articulation_fixture.gd"
+      - "demo/aerial/tests/**"
       - "tools/audit_mech_thrusters.py"
+      - "tools/check_godot.py"
+      - "demo/project.godot"
       - ".github/workflows/mech-thruster-mesh-audit.yml"
   pull_request:
     paths:
       - "demo/models/MechAsset/MechAsset.glb"
       - "demo/aerial/aerial_mech.gd"
+      - "demo/aerial/articulation_fixture.gd"
+      - "demo/aerial/tests/**"
       - "tools/audit_mech_thrusters.py"
+      - "tools/check_godot.py"
+      - "demo/project.godot"
   workflow_dispatch:
 
 permissions:
@@ -31,3 +39,21 @@ jobs:
         run: python -m py_compile tools/audit_mech_thrusters.py
       - name: Inspect all live thruster hardpoints against the GLB
         run: python tools/audit_mech_thrusters.py --json --strict --max-distance 0.02 --min-normal-dot 0.97
+
+  godot-regressions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.7.0
+          use-dotnet: false
+          include-templates: false
+      - name: Import the demo project and GLB
+        run: godot --headless --path demo --editor --import --quit
+      - name: Run the repository's headless regression suite
+        run: python tools/check_godot.py
