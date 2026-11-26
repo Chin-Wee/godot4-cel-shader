@@ -459,6 +459,46 @@ def waist_rear_candidates(triangles, center, node_names, globals_):
     return candidates
 
 
+def surface_hardpoint_probes(node_names, globals_, triangles, center):
+    probes = [
+        ("UpperSideL", ["UpperArmors", "L.1. Shoulder"], "Torso", (1.596664, 11.945323, -0.12162), (1, 0, 0)),
+        ("UpperSideR", ["UpperArmors", "R.1. Shoulder"], "Torso", (-1.596657, 11.945325, -0.12162), (-1, 0, 0)),
+        ("LowerSideL", ["Cube"], "Torso", (1.246701, 8.649802, -3.777841), (1, 0, 0)),
+        ("LowerSideR", ["Cube"], "Torso", (-1.246699, 8.649804, -3.777841), (-1, 0, 0)),
+        ("LowerFrontL", ["Upper Waist Armor", "Waist Armor"], "Low_Waist", (0.734726, 10.996226, 0.909270), (0, 0, 1)),
+        ("LowerFrontR", ["Upper Waist Armor", "Waist Armor"], "Low_Waist", (-0.734725, 10.996226, 0.909271), (0, 0, 1)),
+        ("LowerRearL", ["Waist Armor", "Cube"], "Low_Waist", (1.335068, 8.190730, -1.65), (0, 0, -1)),
+        ("LowerRearR", ["Waist Armor", "Cube"], "Low_Waist", (-1.335067, 8.190729, -1.65), (0, 0, -1)),
+    ]
+    results = []
+    for name, mesh_names, bone_name, target, desired_axis in probes:
+        surface = []
+        for tri in triangles:
+            if tri["mesh"] not in mesh_names:
+                continue
+            point = closest_on_triangle(target, tri["a"], tri["b"], tri["c"])
+            normal = tri["normal"]
+            if dot(normal, sub(point, center)) < 0.0:
+                normal = mul(normal, -1.0)
+            if dot(normal, desired_axis) >= 0.55:
+                surface.append(tri)
+        if not surface or bone_name not in node_names:
+            results.append({"name": name, "error": "no matching outward-facing mesh surface"})
+            continue
+        nearest = nearest_surface(target, surface, center, bone_name)
+        inverse_bone = inverse4(globals_[node_names[bone_name]])
+        results.append({
+            "name": name, "mesh": nearest["mesh"], "bone": bone_name,
+            "distance_from_target": round(nearest["distance"], 6),
+            "world_position": [round(v, 6) for v in nearest["nearest"]],
+            "world_normal": [round(v, 6) for v in nearest["normal"]],
+            "normal_alignment": round(dot(nearest["normal"], desired_axis), 6),
+            "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, nearest["nearest"])],
+            "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, nearest["normal"])]
+        })
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -491,11 +531,13 @@ def main():
     relevant_meshes = [m for m in mesh_details if any(term in m["name"].lower()
                        for term in ["armor", "waist", "cube", "thigh", "shin", "feet", "shoulder"])]
     waist_candidates = waist_rear_candidates(triangles, center, node_names, globals_)
+    surface_probes = surface_hardpoint_probes(node_names, globals_, triangles, center)
     summary = {"glb": str(GLB_PATH.relative_to(ROOT)), "glb_bytes": len(raw),
                "glb_sha256": hashlib.sha256(raw).hexdigest(), "nodes": len(doc.get("nodes", [])),
                "skins": len(doc.get("skins", [])), "mesh_nodes": mesh_nodes, "triangles": len(triangles),
                "relevant_mesh_details": relevant_meshes, "bone_details": bone_details,
                "waist_rear_candidates": waist_candidates,
+               "surface_hardpoint_probes": surface_probes,
 
                "main_mounts": len(mounts["MOUNTS"]), "cold_mounts": len(mounts["COLD_MOUNTS"]),
                "thresholds": {"max_distance": args.max_distance, "min_normal_dot": args.min_normal_dot},
