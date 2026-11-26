@@ -124,7 +124,7 @@ Selection considers current velocity vector, thrust on/off (including valve shut
 - Compute signed thrust alignment with travel only when both vectors are meaningful. Decompose force into parallel and perpendicular components; negative parallel force indicates retrograde thrust. Do not subtract velocity and force (different units).
 - Compare requested and delivered force magnitudes in body weights for anticipation, sustained load and release. Distinguish the resultant force magnitude from the sum of individual engine magnitudes; the latter measures total effort. Equal total power can conceal directional error.
 - Use requested force/torque to prepare limbs, delivered force and net acceleration to brace, and actual angular-rate error to initiate or arrest correction. Preserve momentum through cutoff and reversal. Retain the previous meaningful direction near zero speed; use demand for directional movement from rest.
-- Differential engine output is a separate asymmetry signal. For the foot fixture, group measured heel/toe outputs by side rather than assuming two physical outlets.
+- Differential engine output is a separate asymmetry signal. In the six-main fixture, group the backpack/calf/sole outlets as three left-side and three right-side engines.
 - Separate gravity-supported hover from true acceleration; stable hover is not a hard drive pose. Keep airborne, coast, freefall and landing context distinct when later integrating the full system.
 - Blend overlapping manoeuvres by priority/feasibility, not by summing every extreme pose. Maintain continuity on interruption and reversal.
 
@@ -140,7 +140,7 @@ Reuse [Pose Studio](pose_studio.tscn), [its script](pose_studio.gd), the actual 
 
 Controls: independent left/right power, total thrust, pitch/yaw/roll demand, translational demand, pose intensity, slow motion, front/side/top views. Show actual thrust and opposite exhaust arrows, outlet axes, force lever arms and reference centre of mass.
 
-Disable backpack, calf and cold-gas output and aerodynamic forces in the initial feet-only witness; do not delete those systems. If a later comparison enables them, identify that explicitly. Exclude arms, acrobatics, landing IK and automatic torso corrections in the first experiment.
+Use all six live main hardpoints in the initial fixed-axis witness; disable cold-gas output and aerodynamic forces so the test isolates main-engine geometry. Exclude arms, acrobatics, landing IK and automatic torso corrections in the first experiment.
 
 | Demand | Linear X (lateral) | Linear Y (support) | Linear Z (longitudinal) | Pitch | Yaw | Roll |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -469,14 +469,14 @@ Demand must prepare articulation before full thrust arrives. Use previous delive
 | Stage | Scope |
 | --- | --- |
 | 1 | Isolated lower-body laboratory, 15 authored + 5 mirrored targets |
-| 2 | Fixed-axis feet-only force analysis and dynamic witness; stress gestures for legs |
+| 2 | Fixed-axis six-main-hardpoint force analysis and dynamic witness; stress gestures for legs |
 | 3 | Torso poses and counterbalance |
 | 4 | Shoulder, elbow and wrist gestures, stress response |
 | 5 | Independent head tracking |
 | 6 | Nine hand targets and continuous variations |
 | 7 | Full-body flight, re-enable other outlets/surfaces deliberately and reintegrate contacts |
 
-Before stage 3, assess whether the feet-only rig provides usable signed pitch/yaw/roll and translation authority. Test neutral, soft/hard endpoints, intermediate blends, diagonals, reversals, interruption, shutdown/restart, high thrust, and changing attitude. Record force/moment error, residual torque, saturation, per-side engine output, joint limits, clipping, response latency and physical/rendered outlet agreement. Compare against the current gimballed baseline at matched mass, input and timestep; explicitly report any unsupported manoeuvre. No guarantee of full six-axis control from a feet-only geometry.
+Before stage 3, assess whether the six fixed main hardpoints provide usable signed pitch/yaw/roll and translation authority through leg articulation. Test neutral, soft/hard endpoints, intermediate blends, diagonals, reversals, interruption, shutdown/restart, high thrust, and changing attitude. Record force/moment error, residual torque, saturation, per-side engine output, joint limits, clipping, response latency and physical/rendered outlet agreement. Compare against the gimballed numerical baseline at matched mass, input and timestep; explicitly report unsupported manoeuvres rather than inventing authority.
 
 For full-body integration, check stable cruise versus high-speed bank, hard pull-up/down, roll arrest, combined yaw/boost, coast and relight, and landing. Review body-relative and chase views. Require readable primary silhouettes, visible independent corrective motions, no rhythmic flailing, non-static hands, no hidden gimbal steering, no velocity/attitude snaps and no grounded locomotion regression. Measure repeatability across timestep changes.
 
@@ -503,7 +503,7 @@ Existing tests that mandate gimbal travel or old procedural internal targets nee
 
 Source inspection on main at 4db86a26330babadc5df47db777f8606a1dd123: rig defaults, mount layout, flight controller/allocator, pose and arm scripts, servo, baker, studio and documentation. Graphify reports pending semantic refresh and unsupported GDScript AST indexing; runtime source wins. No pose values have been validated against the actual fixed-axis force envelope; no new scene, poses, code or tests are implemented by this document.
 
-Key risks: feet-only yaw/pitch authority, cross-axis force, reduced quick-boost responsiveness, joint-limit mapping, armour clearance, and high-frequency corrections causing excess residual force or valve chatter. Proposed angles, timings, stress envelopes and pose counts are authoring targets, not verified outcomes.
+Key risks: six-hardpoint signed-axis authority, cross-axis force, reduced quick-boost responsiveness, joint-limit mapping, armour clearance, and high-frequency corrections causing excess residual force or valve chatter. Proposed angles, timings, stress envelopes and pose counts remain subject to runtime validation.
 
 ## 9. Laboratory measurements
 
@@ -539,12 +539,12 @@ their completed leg transforms, matching the live physics hardpoints.
 | Soft yaw left with one body weight of lift | 22.2 kN / 137.0 kN·m | 2.0 kN / 39.1 kN·m |
 | Left boost, 0.5 body weights laterally with support | 15.3 kN / 172.3 kN·m | 11.3 kN / 71.9 kN·m |
 
-The hard-left-roll key delivered 26.3 kN·m against a 133.3 kN·m request.
-Its absolute signed ceiling is 55.3 kN·m before reserving any lift. Neutral
-support, signed turn moments and lateral translation are demonstrated. The
-feet-only rig lacks the clean roll authority needed for full flight. The full-rig
-implementation adds the existing backpack, calf and cold-gas outlets and keeps
-the same fixed-axis constraint.
+The earlier feet-only study delivered 26.3 kN·m against a 133.3 kN·m hard-left-roll
+request, with an absolute signed ceiling of 55.3 kN·m before reserving lift. Neutral
+support, signed turn moments and lateral translation were demonstrated, but that
+reduced geometry lacked clean roll authority. The current six-main fixture includes
+the backpack, calf and foot-sole outlets; the live full rig adds cold-gas verniers
+and aerodynamic surfaces while retaining fixed main-engine axes.
 
 The lab regression checks all 20 targets at five intensities, fixed axes and
 caps, signed moments, asymmetric output, ignition, cutoff tails, relight,
@@ -563,7 +563,8 @@ Flight uses the existing four-bone torso, joint servos and landing contact solve
 
 The six main outlets and twelve cold ports use their completed bone axes. Backpack, calf and foot-sole engines provide primary propulsion; shoulder/thigh and torso/backpack verniers provide cold-gas attitude control.
 Independent nozzle angle stays zero through firing and valve shutdown. The cold
-ports cover the moment deficits recorded in the feet-only lab. At zero speed the
+ports supplement the six main hardpoints when their fixed-axis force/moment solve
+leaves residual attitude demand or reaches a main-engine limit. At zero speed the
 full rig can use 23% of each existing cold-port rating and reaches the existing
 rating at 40 m/s. The gimballed comparison starts at 15%. The solver trades
 unreachable demand against the available point forces and reports saturation.
