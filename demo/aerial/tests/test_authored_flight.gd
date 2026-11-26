@@ -63,9 +63,32 @@ func _reset(attitude := Quaternion.IDENTITY, speed := Vector3.ZERO, power := 2, 
 	mech.reset_flight(Vector3(0,altitude,0),attitude,speed)
 	mech.controller.detent = power
 
+func _check_thruster_attachments() -> void:
+	for index in mech.MOUNTS.size():
+		var mount: Array = mech.MOUNTS[index]
+		var bone := mech.skeleton.find_bone(mount[1])
+		var bone_pose := mech.skeleton.get_bone_global_pose(bone)
+		var expected_position := mech.skeleton.to_global(bone_pose*mount[2])
+		var expected_axis := (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
+		_expect(mech.gimbals[index].global_position.distance_to(expected_position)<0.02,
+			"Main outlet detached from articulated bone: "+String(mount[0]))
+		_expect(mech.gimbals[index].global_basis.z.normalized().dot(expected_axis)>0.995,
+			"Main outlet axis changed during articulation: "+String(mount[0]))
+	for index in mech.COLD_MOUNTS.size():
+		var mount: Array = mech.COLD_MOUNTS[index]
+		var bone := mech.skeleton.find_bone(mount[1])
+		var bone_pose := mech.skeleton.get_bone_global_pose(bone)
+		var expected_position := mech.skeleton.to_global(bone_pose*mount[2])
+		var expected_axis := (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
+		_expect(mech.gas_gimbals[index].global_position.distance_to(expected_position)<0.02,
+			"Cold vernier detached from articulated bone: "+String(mount[0]))
+		_expect(mech.gas_gimbals[index].global_basis.z.normalized().dot(expected_axis)>0.995,
+			"Cold vernier axis changed during articulation: "+String(mount[0]))
+
 func _ticks(count: int) -> void:
 	for i in count:
 		await physics_frame
+		_check_thruster_attachments()
 		if not mech.controller.articulated_flight: continue
 		var fc := mech.controller
 		for index in fc.motor_forces.size():
