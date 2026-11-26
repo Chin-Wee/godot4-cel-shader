@@ -641,7 +641,7 @@ The GLB mesh audit accounts for both skinned vertices and rigid mesh nodes paren
 
 The main-engine rating array has six entries in MOUNTS order; cold-gas ratings have twelve entries in COLD_MOUNTS order. The first four main outlets are backpack/calf, and the final two are foot soles, matching the six-entry trim distribution.
 
-The mesh-audit workflow enforces a maximum mount-to-surface distance of 0.02 source units and a minimum exhaust-axis/normal dot product of 0.97. The inspected GLB (SHA-256 7a21d989528f1fe78577da7d5acfb475d0264acce8601709de0d5a8f28bbaeb5) passed: all 18 mounts were within 0.000044 source units of their intended surfaces, all 18 axes aligned with the measured outward normals, and 90 sampled housing-clearance rays found no mesh intersections. This is a bind-pose geometry check; animated clearance remains covered by the Godot regression suite.
+The mesh-audit workflow enforces a maximum mount-to-surface distance of 0.02 source units and a minimum exhaust-axis/normal dot product of 0.97. The inspected GLB (SHA-256 7a21d989528f1fe78577da7d5acfb475d0264acce8601709de0d5a8f28bbaeb5) passed: all 18 mounts were within 0.000044 source units of their intended surfaces, all 18 axes aligned with the measured outward normals, and 90 sampled housing-clearance rays found no mesh intersections. This is a bind-pose housing-clearance check. The Godot regression suite separately verifies that all 18 outlet mounts and axes follow their bones through authored flight poses; it does not perform a full swept-volume collision test for the nozzle housings.
 
 Run the audit locally with:
 
