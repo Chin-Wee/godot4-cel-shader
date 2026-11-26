@@ -249,6 +249,9 @@ func _check_mount_surfaces(mech: Node3D) -> bool:
 			elif child is MeshInstance3D and child.name == &"Cube" and mount[1] == &"Torso":
 				candidates = [child]
 				transform = sk.get_bone_global_rest(sk.find_bone("Torso")).affine_inverse()
+			elif child is MeshInstance3D and child.name in [&"Waist Armor",&"Upper Waist Armor"] and mount[1] == &"Low_Waist":
+				candidates = [child]
+				transform = sk.get_bone_global_rest(sk.find_bone("Low_Waist")).affine_inverse()
 			for mesh in candidates:
 				if not mesh is MeshInstance3D: continue
 				var to_bone: Transform3D = transform*mesh.transform

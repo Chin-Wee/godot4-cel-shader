@@ -69,7 +69,7 @@ func _check_thruster_attachments() -> void:
 		var bone := mech.skeleton.find_bone(mount[1])
 		var bone_pose := mech.skeleton.get_bone_global_pose(bone)
 		var expected_position := mech.skeleton.to_global(bone_pose*mount[2])
-		var expected_axis := (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
+		var expected_axis: Vector3 = (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
 		_expect(mech.gimbals[index].global_position.distance_to(expected_position)<0.02,
 			"Main outlet detached from articulated bone: "+String(mount[0]))
 		_expect(mech.gimbals[index].global_basis.z.normalized().dot(expected_axis)>0.995,
@@ -79,7 +79,7 @@ func _check_thruster_attachments() -> void:
 		var bone := mech.skeleton.find_bone(mount[1])
 		var bone_pose := mech.skeleton.get_bone_global_pose(bone)
 		var expected_position := mech.skeleton.to_global(bone_pose*mount[2])
-		var expected_axis := (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
+		var expected_axis: Vector3 = (mech.skeleton.global_basis*bone_pose.basis*mount[3]).normalized()
 		_expect(mech.gas_gimbals[index].global_position.distance_to(expected_position)<0.02,
 			"Cold vernier detached from articulated bone: "+String(mount[0]))
 		_expect(mech.gas_gimbals[index].global_basis.z.normalized().dot(expected_axis)>0.995,
