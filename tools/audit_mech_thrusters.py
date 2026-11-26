@@ -461,38 +461,59 @@ def waist_rear_candidates(triangles, center, node_names, globals_):
 
 def foot_sole_candidates(mounts, node_names, globals_, triangles, center):
     results = []
-    for side, mesh_names, mount_name, bone_name in (
-        ("left", ["L.4.Feets", "L.4.FeetArmor"], "FootSoleL", "Feet.L"),
-        ("right", ["R.4.Feets", "R.4.FeetArmor"], "FootSoleR", "Feet.R"),
+    for side, mesh_name, mount_name, bone_name in (
+        ("left", "L.4.Feets", "FootSoleL", "Feet.L"),
+        ("right", "R.4.Feets", "FootSoleR", "Feet.R"),
     ):
         mount = next(m for m in mounts["MOUNTS"] if m["name"] == mount_name)
         current = transform_point(globals_[node_names[bone_name]], mount["position"])
-        for mesh_name in mesh_names:
-            matches = []
-            for tri in triangles:
-                if tri["mesh"] != mesh_name:
-                    continue
-                point = closest_on_triangle(current, tri["a"], tri["b"], tri["c"])
-                normal = tri["normal"]
-                if dot(normal, sub(point, center)) < 0.0:
-                    normal = mul(normal, -1.0)
-                if normal[1] > -0.6 or point[1] >= current[1] - 0.03:
-                    continue
-                matches.append((length(sub(point, current)), point, normal))
-            matches.sort(key=lambda x: x[0])
-            if matches:
-                distance, point, normal = matches[0]
-                inverse_bone = inverse4(globals_[node_names[bone_name]])
-                results.append({
-                    "side": side, "mesh": mesh_name, "current_distance": round(distance, 6),
-                    "world_position": [round(v, 6) for v in point],
-                    "world_outward_normal": [round(v, 6) for v in normal],
-                    "bone": bone_name,
-                    "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, point)],
-                    "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, normal)]
-                })
-            else:
-                results.append({"side": side, "mesh": mesh_name, "error": "no lower downward-facing surface"})
+        best = None
+        # Intersect a vertical line through the current nozzle with downward-facing
+        # triangles. This finds the exterior sole face rather than an inner shell.
+        for dx in (-0.08, -0.04, 0.0, 0.04, 0.08):
+            for dz in (-0.08, -0.04, 0.0, 0.04, 0.08):
+                x, z = current[0] + dx, current[2] + dz
+                for tri in triangles:
+                    if tri["mesh"] != mesh_name:
+                        continue
+                    normal = tri["normal"]
+                    centroid = mul(add(add(tri["a"], tri["b"]), tri["c"]), 1.0/3.0)
+                    if dot(normal, sub(centroid, center)) < 0.0:
+                        normal = mul(normal, -1.0)
+                    if normal[1] > -0.6:
+                        continue
+                    a, b, c = tri["a"], tri["b"], tri["c"]
+                    v0, v1, v2 = (b[0]-a[0], b[2]-a[2]), (c[0]-a[0], c[2]-a[2]), (x-a[0], z-a[2])
+                    denominator = v0[0]*v1[1] - v1[0]*v0[1]
+                    if abs(denominator) < 1e-10:
+                        continue
+                    u = (v2[0]*v1[1] - v1[0]*v2[1]) / denominator
+                    v = (v0[0]*v2[1] - v2[0]*v0[1]) / denominator
+                    w = 1.0 - u - v
+                    if min(u, v, w) < -1e-6:
+                        continue
+                    y = w*a[1] + u*b[1] + v*c[1]
+                    point = (x, y, z)
+                    if y >= current[1] - 0.03:
+                        continue
+                    horizontal_distance = math.sqrt(dx*dx + dz*dz)
+                    distance = length(sub(point, current))
+                    score = (horizontal_distance, y)
+                    if best is None or score[0] < best[0] or (abs(score[0]-best[0]) < 1e-6 and score[1] < best[1]):
+                        best = (score[0], score[1], distance, point, normal)
+        if best:
+            _, _, distance, point, normal = best
+            inverse_bone = inverse4(globals_[node_names[bone_name]])
+            results.append({
+                "side": side, "mesh": mesh_name, "current_distance": round(distance, 6),
+                "world_position": [round(v, 6) for v in point],
+                "world_outward_normal": [round(v, 6) for v in normal],
+                "bone": bone_name,
+                "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, point)],
+                "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, normal)]
+            })
+        else:
+            results.append({"side": side, "mesh": mesh_name, "error": "no downward-facing sole surface at nozzle footprint"})
     return results
 
 
