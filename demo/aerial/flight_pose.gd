@@ -406,13 +406,13 @@ func _update_legs(delta: float, controller) -> void:
 	# at its cone, reduce extra load/airflow articulation rather than bend jets.
 	var articulation := lerpf(1.0,0.35,clampf(controller.thrust_level,0,1)*float(controller.motor_saturated))
 	var move: Vector3 = motion.get("translate",Vector3.ZERO)
-	# Full-power streaming otherwise leaves the heel outlets behind the mass
+	# Full-power streaming otherwise leaves the foot-sole outlets behind the mass
 	# center and overwhelms pitch authority. Paired hip/knee flexion moves the
 	# actual outlets forward without changing the lower-leg thrust heading.
 	var thrust_tuck: float = smoothstep(2,4,controller.thrust_level)*profile.high_thrust_tuck
 	thrust_tuck *= 1.0-maxf(maxf(motion.flare,motion.retro),maxf(motion.land,motion.launch))
 	thrust_tuck *= 1.0-move.length()
-	# Reverse hover sweeps the calves forward; ankles counter-rotate for heel aim.
+	# Reverse hover sweeps the calves forward; ankles counter-rotate to align the sole outlets.
 	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,controller.thrust_level)
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
@@ -432,7 +432,7 @@ func _update_legs(delta: float, controller) -> void:
 		# Actual calf nozzles move with it and retain their vectoring limits.
 		extras[1].x -= sx*motion.steer.z*lerpf(0.035,0.18,motion.brake)*motion.track
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
-		extras[2].x += move.z*(0.36 if move.z<0 else 0.18) # Reverse brace presents the heel outlets farther aft.
+		extras[2].x += move.z*(0.36 if move.z<0 else 0.18) # Reverse brace presents the foot-sole outlets farther aft.
 		var targets: Array[Vector3] = []
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
@@ -443,7 +443,7 @@ func _update_legs(delta: float, controller) -> void:
 			var working: Vector3 = target.lerp(profile.drive_pose[joint]*Vector3(1,1,sx),motion.drive)
 			working = working.lerp(profile.retro_pose[joint]*Vector3(1,1,sx),motion.retro)
 			# Preserve the calibrated support pose; knee/hip changes compensate
-			# each other rather than yawing a heavily loaded heel nozzle sideways.
+			# each other rather than yawing a heavily loaded foot-sole nozzle sideways.
 			target = target.lerp(working,(1.0-motion.land)*(1.0-motion.launch)*(1.0-motion.hover))
 			# A skydiver arches through the hips with the calves folded up. The
 			# powered braking brace remains a separate pose for feasible nozzles.

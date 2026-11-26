@@ -505,7 +505,9 @@ Source inspection on main at 4db86a26330babadc5df47db777f8606a1dd123: rig defaul
 
 Key risks: six-hardpoint signed-axis authority, cross-axis force, reduced quick-boost responsiveness, joint-limit mapping, armour clearance, and high-frequency corrections causing excess residual force or valve chatter. Proposed angles, timings, stress envelopes and pose counts remain subject to runtime validation.
 
-## 9. Laboratory measurements
+## 9. Historical feet-only laboratory measurements (superseded)
+
+The following measurements belong to the previous six heel/toe outlet fixture. The current articulation laboratory uses the six live backpack/calf/foot-sole main hardpoints; these numerical results must not be treated as measurements of the new layout until the updated Godot regression is run.
 
 Open the lab from the Godot editor or run these commands from the repository root.
 

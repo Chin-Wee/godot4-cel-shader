@@ -8,7 +8,7 @@ var was_firing := false
 var maneuver_firing_ticks := 0
 
 func _position_capture_camera() -> void:
-	# Low three-quarter view exposes heel vectoring and torso/backpack puffs.
+	# Low three-quarter view exposes foot-sole/calf articulation and shoulder/backpack puffs.
 	scene.camera.position = scene.hero.position+scene.hero.global_basis*Vector3(65,-35,-120)
 	scene.camera.look_at(scene.hero.position,scene.hero.global_basis.y)
 	scene.camera.force_update_transform()
