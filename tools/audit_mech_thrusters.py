@@ -245,6 +245,8 @@ def mesh_triangles(doc, binary, globals_):
                             if weight > 0 and int(slot) < len(joint_names):
                                 name = joint_names[int(slot)]
                                 influences[name] = influences.get(name, 0.0) + float(weight) / total
+                if skin is None and parent_name:
+                    influences[parent_name] = 1.0
                 per_vertex_weights.append(influences)
                 for name, weight in influences.items():
                     joint_weight_sums[name] = joint_weight_sums.get(name, 0.0) + weight
@@ -375,6 +377,41 @@ def audit_mount(mount, node_names, globals_, triangles, center):
             "normal_alignment_any": round(dot(axis, whole["normal"]), 6)}
 
 
+def waist_rear_candidates(triangles, center, node_names, globals_):
+    if "Low_Waist" not in node_names:
+        return []
+    inverse_bone = inverse4(globals_[node_names["Low_Waist"]])
+    candidates = []
+    for side_name, target_x in (("left", 1.2), ("right", -1.2)):
+        target = (target_x, 8.7, -1.55)
+        best = None
+        for tri in triangles:
+            if tri["mesh"] != "Waist Armor":
+                continue
+            point = closest_on_triangle(target, tri["a"], tri["b"], tri["c"])
+            normal = tri["normal"]
+            if dot(normal, sub(point, center)) < 0.0:
+                normal = mul(normal, -1.0)
+            if normal[2] > -0.55:
+                continue
+            if (point[0] > 0.0) != (side_name == "left"):
+                continue
+            distance = length(sub(point, target))
+            if best is None or distance < best[0]:
+                best = (distance, point, normal, tri)
+        if best:
+            distance, point, normal, tri = best
+            candidates.append({
+                "side": side_name, "mesh": tri["mesh"], "distance_from_probe": round(distance, 5),
+                "world_position": [round(v, 6) for v in point],
+                "world_outward_normal": [round(v, 6) for v in normal],
+                "bone": "Low_Waist",
+                "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, point)],
+                "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, normal)]
+            })
+    return candidates
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--json", action="store_true")
@@ -406,10 +443,12 @@ def main():
                              "global_origin": [round(globals_[index][i][3], 5) for i in range(3)]})
     relevant_meshes = [m for m in mesh_details if any(term in m["name"].lower()
                        for term in ["armor", "waist", "cube", "thigh", "shin", "feet", "shoulder"])]
+    waist_candidates = waist_rear_candidates(triangles, center, node_names, globals_)
     summary = {"glb": str(GLB_PATH.relative_to(ROOT)), "glb_bytes": len(raw),
                "glb_sha256": hashlib.sha256(raw).hexdigest(), "nodes": len(doc.get("nodes", [])),
                "skins": len(doc.get("skins", [])), "mesh_nodes": mesh_nodes, "triangles": len(triangles),
                "relevant_mesh_details": relevant_meshes, "bone_details": bone_details,
+               "waist_rear_candidates": waist_candidates,
                "main_mounts": len(mounts["MOUNTS"]), "cold_mounts": len(mounts["COLD_MOUNTS"]),
                "thresholds": {"max_distance": args.max_distance, "min_normal_dot": args.min_normal_dot},
                "failing_mounts": [r["name"] for r in failures], "mounts": results}
