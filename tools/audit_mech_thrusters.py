@@ -204,13 +204,17 @@ def build_node_transforms(doc):
 
 def mesh_triangles(doc, binary, globals_):
     node_names = {n.get("name", f"node_{i}"): i for i, n in enumerate(doc.get("nodes", []))}
-    triangles, all_points, mesh_nodes = [], [], []
+    triangles, all_points, mesh_nodes, mesh_details = [], [], [], []
+    parents = {child: parent for parent, node in enumerate(doc.get("nodes", [])) for child in node.get("children", [])}
     for node_index, node in enumerate(doc.get("nodes", [])):
         if "mesh" not in node:
             continue
         mesh_name = node.get("name", f"mesh_node_{node_index}")
         mesh_nodes.append(mesh_name)
+        parent_index = parents.get(node_index)
+        parent_name = doc["nodes"][parent_index].get("name") if parent_index is not None else None
         skin = doc.get("skins", [])[node["skin"]] if "skin" in node else None
+        mesh_points, joint_weight_sums, node_triangle_count, node_vertex_count = [], {}, 0, 0
         joint_names = [doc["nodes"][j].get("name", f"node_{j}") for j in skin.get("joints", [])] if skin else []
         for primitive_index, primitive in enumerate(doc["meshes"][node["mesh"]].get("primitives", [])):
             if "KHR_draco_mesh_compression" in primitive.get("extensions", {}):
@@ -220,6 +224,8 @@ def mesh_triangles(doc, binary, globals_):
             normals = read_accessor(doc, binary, attrs["NORMAL"]) if "NORMAL" in attrs else None
             inverse_mesh_transform = inverse4(globals_[node_index]) if normals else None
             world_positions = [transform_point(globals_[node_index], p) for p in positions]
+            mesh_points.extend(world_positions)
+            node_vertex_count += len(world_positions)
             world_normals = ([transform_normal_inverse(inverse_mesh_transform, n) for n in normals]
                              if normals else None)
             joints0 = read_accessor(doc, binary, attrs["JOINTS_0"]) if "JOINTS_0" in attrs else None
@@ -240,6 +246,8 @@ def mesh_triangles(doc, binary, globals_):
                                 name = joint_names[int(slot)]
                                 influences[name] = influences.get(name, 0.0) + float(weight) / total
                 per_vertex_weights.append(influences)
+                for name, weight in influences.items():
+                    joint_weight_sums[name] = joint_weight_sums.get(name, 0.0) + weight
             indices = ([int(v) for v in read_accessor(doc, binary, primitive["indices"])]
                        if "indices" in primitive else list(range(len(positions))))
             mode = primitive.get("mode", 4)
@@ -275,11 +283,22 @@ def mesh_triangles(doc, binary, globals_):
                 triangles.append({"a": a, "b": b, "c": c, "normal": normal,
                                   "mesh": mesh_name, "primitive": primitive_index,
                                   "bone_weights": bone_weights})
+                node_triangle_count += 1
                 all_points.extend((a, b, c))
+        if mesh_points:
+            mesh_details.append({
+                "name": mesh_name, "parent": parent_name, "skin": node.get("skin"),
+                "mesh_resource": doc["meshes"][node["mesh"]].get("name"),
+                "vertices": node_vertex_count, "triangles": node_triangle_count,
+                "bounds_min": [round(min(p[i] for p in mesh_points), 5) for i in range(3)],
+                "bounds_max": [round(max(p[i] for p in mesh_points), 5) for i in range(3)],
+                "dominant_bones": [{"name": name, "weight_sum": round(weight, 2)}
+                                   for name, weight in sorted(joint_weight_sums.items(), key=lambda item: item[1], reverse=True)[:8]]
+            })
     if not triangles:
         raise ValueError("No triangle primitives found in GLB")
     center = tuple(sum(p[i] for p in all_points) / len(all_points) for i in range(3))
-    return node_names, triangles, center, mesh_nodes
+    return node_names, triangles, center, mesh_nodes, mesh_details
 
 
 def closest_on_triangle(p, a, b, c):
@@ -366,14 +385,31 @@ def main():
     doc, binary, raw = read_glb(GLB_PATH)
     globals_ = build_node_transforms(doc)
     mounts = parse_mounts(SOURCE_PATH)
-    node_names, triangles, center, mesh_nodes = mesh_triangles(doc, binary, globals_)
+    node_names, triangles, center, mesh_nodes, mesh_details = mesh_triangles(doc, binary, globals_)
     results = [audit_mount(m, node_names, globals_, triangles, center)
                for group in ("MOUNTS", "COLD_MOUNTS") for m in mounts[group]]
     failures = [r for r in results if r["distance"] > args.max_distance or
                 r["normal_alignment"] < args.min_normal_dot]
+    parent_map = {child: parent for parent, node in enumerate(doc.get("nodes", [])) for child in node.get("children", [])}
+    relevant_bones = ["PelvisBase", "Low_Waist", "Torso_WaistConnect", "Torso",
+                      "Shoulder.L", "Shoulder.R", "Thigh.L", "Thigh.R",
+                      "Shin.L", "Shin.R", "Feet.L", "Feet.R"]
+    bone_details = []
+    for name in relevant_bones:
+        if name not in node_names:
+            bone_details.append({"name": name, "missing": True})
+            continue
+        index = node_names[name]
+        parent = parent_map.get(index)
+        bone_details.append({"name": name,
+                             "parent": doc["nodes"][parent].get("name") if parent is not None else None,
+                             "global_origin": [round(globals_[index][i][3], 5) for i in range(3)]})
+    relevant_meshes = [m for m in mesh_details if any(term in m["name"].lower()
+                       for term in ["armor", "waist", "cube", "thigh", "shin", "feet", "shoulder"])]
     summary = {"glb": str(GLB_PATH.relative_to(ROOT)), "glb_bytes": len(raw),
                "glb_sha256": hashlib.sha256(raw).hexdigest(), "nodes": len(doc.get("nodes", [])),
                "skins": len(doc.get("skins", [])), "mesh_nodes": mesh_nodes, "triangles": len(triangles),
+               "relevant_mesh_details": relevant_meshes, "bone_details": bone_details,
                "main_mounts": len(mounts["MOUNTS"]), "cold_mounts": len(mounts["COLD_MOUNTS"]),
                "thresholds": {"max_distance": args.max_distance, "min_normal_dot": args.min_normal_dot},
                "failing_mounts": [r["name"] for r in failures], "mounts": results}
