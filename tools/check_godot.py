@@ -58,9 +58,10 @@ def main() -> int:
                     print(f"FAIL {name}", flush=True)
                     continue
             # GDScript assertions can stop a coroutine while Godot exits zero.
-            if result.returncode or "ERROR:" in log.read_text(errors="replace"):
+            log_text = log.read_text(errors="replace")
+            if result.returncode or "ERROR:" in log_text:
                 failures.append(f"{name}: {log}")
-                print(f"FAIL {name}", flush=True)
+                print(f"FAIL {name}\\n--- {name} log tail ---\\n{log_text[-8000:]}", flush=True)
             else:
                 print(f"PASS {name}", flush=True)
     for failure in failures:
