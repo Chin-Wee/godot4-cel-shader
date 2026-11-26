@@ -604,3 +604,15 @@ The five aerodynamic panels keep their existing areas. Their fixed incidence
 is calibrated for the authored straight-limb silhouettes. The integrated test
 includes an engines-off, inverted coast at negative angle of attack to check
 that the completed armor still generates signed lift.
+
+
+## 11. Loaded bracing and fixed thrust revision (2026-11-26)
+
+Review-branch implementation based on main b8ed3b6. All live outlets now have zero independent deflection, including the legacy/shared ground controller. A 30° cone remains only as an offline numerical reference in the lab. Native point forces and completed bone-relative exhaust remain authoritative.
+
+- Project actual and requested main force against velocity in body weights. Prepare a brace while the engine spools; zero speed or zero thrust/demand cannot invent a reverse burn. Blend a continuous 32° hip-abduction/72° knee-flexion target over concurrent steering, with fast 0.10 s attack and 0.28 s release. Preserve deeper hard-pull knees. Braking flare and lateral loading also widen the stance; intentional rolls retain their compact base. Landing/takeoff retain priority.
+- Heavy valves keep finite 0.06 s ignition, now use 0.40 s full-range rise/fall, 0.18 s restart and 0.16 s minimum burn. Reachable allocation tracks the existing scalar pressure on each bone-derived axis (tracking weight 6). Caps are unchanged; do not compensate for reduced authority with fictitious forces.
+- Cold valves retain their fast timings. Increase reachable cold-flow penalty from 0.03 to 0.06. Apply six-channel chassis-frame residual wrench hysteresis, with half-entry exit threshold and 0.10 s dwell before small opposite requests. Reversals at least three times the entry threshold remain immediate. Prime only useful jets rather than all jets in a stale horizon plan. Useful simultaneous opposed torque couples remain allowed. No actual fuel-mass model is added.
+- Current comparison/ground handling will need revalidation. These timing and pose targets are untested. Historical gimbal notes above do not describe the new live policy.
+
+Run test_flight_propulsion_policy.gd, test_authored_flight.gd, test_articulation_lab.gd, test_thruster_allocator.gd, test_thruster_control.gd and the ground movement regression before merging. Measure brace separation and knee flexion, pressure slew, cumulative cold impulse/reversals, force/moment tracking, boost and takeoff authority.

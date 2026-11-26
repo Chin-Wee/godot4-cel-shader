@@ -19,7 +19,6 @@ var gas_sockets: Array[BoneAttachment3D] = []
 var gas_gimbals: Array[Node3D] = []
 var bone_poses := {}
 var controller: FlightController = FlightController.new()
-var motor_springs: Array = []
 var neutral_bases: Array[Basis] = []
 var display_scale := 50.0
 var controls := {}
@@ -49,7 +48,6 @@ var prediction_clock := 0.0
 var collided := false
 var native_support := false
 var exhaust_phase := 0.0
-const VECTOR_LIMIT := PI/6.0
 const GROUND_ANIMATION_BLEND := 0.12
 const GROUND_WALK_STEPS_PER_CYCLE := 2.0
 # Measured centers of the actual barrel ends / recessed ports, in source bone space.
@@ -164,14 +162,13 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		socket.bone_name = mount[1]
 		skeleton.add_child(socket)
 		var gimbal := Node3D.new()
-		gimbal.name = "FixedOutlet" if cold or controller.articulated_flight else "VectoringPivot"
+		gimbal.name = "FixedOutlet"
 		socket.add_child(gimbal)
 		gimbal.position = mount[2]
 		var direction: Vector3 = mount[3].normalized()
 		var up := Vector3.FORWARD if absf(direction.dot(Vector3.UP)) > 0.95 else Vector3.UP
 		var neutral := Basis.looking_at(-direction,up)
 		neutral_bases.append(neutral)
-		motor_springs.append(FlightPose.Spring.new())
 		gimbal.basis = neutral
 		var radius := 0.085 if cold else 0.18
 		# A seated ball joint connects the vectoring bell to its modeled recess.
@@ -413,8 +410,6 @@ func capture_pose() -> void:
 	# No chain of modifier-completion signals and no restored-rest pose reads.
 	for index in skeleton.get_bone_count(): bone_poses[index] = skeleton.get_bone_global_pose(index)
 	rig.arms.sample_completed(skeleton,bone_poses)
-	for index in MOUNTS.size(): motor_springs[index].value = controller.motor_angles[index]
-	for index in gas_gimbals.size(): motor_springs[index+MOUNTS.size()].value = controller.cold_angles[index]
 	_refresh_exhaust()
 
 func update_force_debug() -> void:
@@ -449,11 +444,6 @@ func update_exhaust(phase: float) -> void:
 	_refresh_exhaust()
 
 func _refresh_exhaust() -> void:
-	var all_gimbals := gimbals+gas_gimbals
-	for index in all_gimbals.size():
-		var angle: Vector3 = motor_springs[index].value
-		var rotation_basis := Basis.IDENTITY if angle.is_zero_approx() else Basis(Quaternion(angle.normalized(),angle.length()))
-		all_gimbals[index].basis = neutral_bases[index]*rotation_basis
 	for index in flames.size():
 		var flame := flames[index]
 		var output: float = controller.motor_forces[index].length()

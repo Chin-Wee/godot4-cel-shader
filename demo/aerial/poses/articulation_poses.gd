@@ -19,7 +19,7 @@ const AUTHORED := {
 	"Forward_Boost": [[Vector3(5,0,7),9,Vector3(-35,0,-6)],[Vector3(13,0,-7),12,Vector3(-35,0,6)]],
 	"Backward_Boost": [[Vector3(-24,0,8),12,Vector3(28,0,-7)]],
 	"Lateral_Boost_Left": [[Vector3(-30,2,21),31,Vector3(-11,1,-4)],[Vector3(9,0,-5),6,Vector3(-19,0,-10)]],
-	"Retrograde_Brake": [[Vector3(-32,0,24),56,Vector3(9,0,-7)]],
+	"Retrograde_Brake": [[Vector3(-32,0,32),72,Vector3(9,0,-10)]],
 }
 const MIRRORED := {
 	"Roll_Right_Soft":"Roll_Left_Soft", "Roll_Right_Hard":"Roll_Left_Hard",
@@ -46,15 +46,34 @@ static func blend(from: PackedVector3Array, to: PackedVector3Array, weight: floa
 		result.append(from[joint].lerp(to[joint],knee_weight if joint%3==1 else weight))
 	return result
 
+# Reverse burn is a continuous load, not a competing manoeuvre key.
+static func retrograde_weight(velocity: Vector3, delivered: Vector3, requested: Vector3, weight: float, powered: bool) -> float:
+	var speed := velocity.length()
+	if speed<0.001: return 0.0
+	var travel := velocity/speed
+	var actual := maxf(0.0,-delivered.dot(travel))/maxf(weight,1.0)
+	var intent := maxf(0.0,-requested.dot(travel))/maxf(weight,1.0) if powered else 0.0
+	return smoothstep(2.0,10.0,speed)*smoothstep(0.08,0.65,maxf(actual,intent*0.8))
+
 static func select(steer: Vector3, move: Vector3, power: float, reversing: float) -> PackedVector3Array:
+	var base := _maneuver(steer,move,power)
+	if power<0.001: return base
+	var brace := clampf(reversing,0.0,1.0)
+	var result := blend(base,angles("Retrograde_Brake"),brace,brace)
+	for side in 2:
+		var knee := side*3+1
+		var angle := result[knee]
+		angle.x = maxf(angle.x,base[knee].x)
+		result[knee] = angle
+	return result
+
+static func _maneuver(steer: Vector3, move: Vector3, power: float) -> PackedVector3Array:
 	var rest := angles("Neutral_Flight")
 	var strength := steer.abs()
 	var turn := strength[strength.max_axis_index()]
 	var translation := move.abs()
 	var demand := translation[translation.max_axis_index()]
 	if power<0.001: return angles("Unpowered_Coast")
-	if reversing>maxf(turn,demand):
-		return blend(rest,angles("Retrograde_Brake"),reversing,reversing*reversing)
 	if turn>demand and turn>0.0:
 		var axis := strength.max_axis_index()
 		var turn_keys := ["Pitch_Up" if steer.x>=0 else "Pitch_Down",

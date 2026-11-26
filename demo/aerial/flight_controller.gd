@@ -10,7 +10,7 @@ const DETENTS := [0.0, 0.5, 1.0, 2.0, 4.0]
 const WORLD_UNITS_PER_METER := 10.0
 const GRAVITY := 9.81
 const TRIM_SHARES := [0.02, 0.02, 0.02, 0.02, 0.46, 0.46]
-const VECTOR_LIMIT := PI / 6.0
+const VECTOR_LIMIT := PI / 6.0 # Offline laboratory comparison only; all live outlets are fixed.
 const FIXED_FIT := Vector2(1100.0,150.0)
 const MAX_RATE := Vector3(0.75, 0.8, 1.5)
 # Elite Dangerous reference: fixed ship axes with or without flight assistance.
@@ -24,7 +24,7 @@ const INPUT_RESPONSE := 0.14
 const FULL_POWER_INPUT_RESPONSE := 0.28 # Leave torque reserve while loaded joints settle.
 const BRAKE_RESPONSE := 0.28
 const ENGINE_SPOOL_RATE := 3.0 # Hover multiples per second; no velocity impulses.
-const HOVER_VECTOR_RESPONSE := 0.08 # AC VI directional boost reference: jets lead the slide.
+const HOVER_TRANSLATION_RESPONSE := 0.08 # Translation input filter, not a nozzle servo.
 # Armored Core VI Quick Boost reference; reuse the existing directional motors.
 const HOVER_BURST_TIME := 0.5
 const HOVER_BURST_COOLDOWN := 1.0 # Activation to activation; never auto-repeats.
@@ -39,11 +39,14 @@ const FLIGHT_PITCH_GAIN := 3.0
 const LAUNCH_TIME := 0.5
 # Fictional mech calibration, not a claim that all real engines share timings.
 const HOT_IGNITION := 0.06
-const HOT_RESTART := 0.12
-const HOT_RESPONSE := 0.06
-const HOT_MINIMUM_ON := 0.08
+const HOT_RESTART := 0.18
+const HOT_RESPONSE := 0.40 # Full-range pressure ramp, seconds.
+const HOT_MINIMUM_ON := 0.16
+const HOT_TRACKING := 6.0 # Prefer current heavy-engine pressure distribution.
+const COLD_REVERSE_DWELL := 0.10
+const COLD_REVERSE_OVERRIDE := 3.0
 const HOT_IDLE_FLOW := 0.01 # Powered engines retain pilot flow; cutoff closes valves.
-const COLD_ACTUATION_FUEL_COST := 0.03 # Penalize cancellation in the reachable solve too.
+const COLD_ACTUATION_FUEL_COST := 0.06 # Penalize cancellation in the reachable solve too.
 const COLD_MINIMUM_FLOW := 0.025 # Minimum useful impulse; small errors coast instead.
 # Cd stays positive in every pose. High-speed drag supplies a finite energy bound.
 const AERO_AREA_M2 := 80.0
@@ -144,7 +147,10 @@ var air_velocity := Vector3.ZERO
 var engine_shares := PackedFloat32Array()
 var motor_angles: Array[Vector3] = []
 var motor_forces: Array[Vector3] = []
-var motor_springs: Array = []
+# Signed residual wrench channels in the chassis frame, not nozzle pairs.
+var cold_last_sign := PackedInt32Array([0,0,0,0,0,0])
+var cold_active := PackedInt32Array([0,0,0,0,0,0])
+var cold_reverse_age := PackedFloat32Array([0,0,0,0,0,0])
 var hot_valves: Array = []
 var cold_valves: Array = []
 var cold_requests: Array[Vector3] = []
@@ -165,7 +171,6 @@ func configure(owner_body: RigidBody3D, display_scale: float, profile: Resource)
 		assert(is_finite(rating) and rating>=0,"Booster ratings must be finite, nonnegative Newtons")
 	model_scale = display_scale
 	for index in hardware.main_booster_max_thrust.size():
-		motor_springs.append(Spring.new())
 		motor_angles.append(Vector3.ZERO)
 		motor_forces.append(Vector3.ZERO)
 		hot_valves.append(Valve.new(HOT_IGNITION,HOT_RESTART,HOT_RESPONSE,HOT_RESPONSE,HOT_MINIMUM_ON))
@@ -238,7 +243,10 @@ func reset(power := 1.0) -> void:
 		cold_requests[index] = Vector3.ZERO
 		cold_forces[index] = Vector3.ZERO
 		cold_angles[index] = Vector3.ZERO
-	for spring in [command, brake, accel, translation] + motor_springs:
+	cold_last_sign.fill(0)
+	cold_active.fill(0)
+	cold_reverse_age.fill(0.0)
+	for spring in [command, brake, accel, translation]:
 		spring.value = Vector3.ZERO
 		spring.velocity = Vector3.ZERO
 
@@ -325,7 +333,7 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	var age := HOVER_BURST_TIME - burst_remaining
 	burst_amount = smoothstep(0.0, HOVER_BURST_RAMP, age) * smoothstep(0.0, HOVER_BURST_RAMP, burst_remaining) * active_time / dt
 	translation_request = burst_direction if burst_remaining > 0.0 else Vector3.ZERO
-	hover_translation = translation.step(translation_request, dt, HOVER_VECTOR_RESPONSE)
+	hover_translation = translation.step(translation_request, dt, HOVER_TRANSLATION_RESPONSE)
 	rotation_request = request * precision
 	released_axes = Vector3.ONE-rotation_request.abs()
 	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,thrust_level))
@@ -448,13 +456,12 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	requested_main_force = force_target*weight
 	requested_thrust = requested_main_force.length()
 	var ports := []
-	var hot_cone := 0.0 if articulated_flight else VECTOR_LIMIT
-	var fit := FIXED_FIT if articulated_flight else Vector2(20000.0,3000.0)
+	var fit := FIXED_FIT
 	var combined := outlets+cold_outlets
 	for i in combined.size():
 		var hot := i<hot_count
 		ports.append({"basis":combined[i].basis,"lever":combined[i].position/(WORLD_UNITS_PER_METER*length_scale),
-			"cone":hot_cone if hot else 0.0,"center":Vector3.ZERO,"gain":1.0,
+			"cone":0.0,"center":Vector3.ZERO,"gain":1.0,
 			"minimum":HOT_IDLE_FLOW*_hot_capacity(i) if hot and hot_enabled else 0.0,"maximum":_hot_capacity(i) if hot and hot_enabled else (_cold_capacity(i-hot_count) if not hot else 0.0),
 			"off":0.0,"fuel":0.002 if hot else 0.3})
 	var hot_plan := Allocator.solve(ports.slice(0,hot_count),force_target,moment_target,along,ideal_forces,[],64,fit)
@@ -479,6 +486,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	force_target = force_reference
 	along = Vector3.ZERO
 	var seed: Array[Vector3] = []
+	var preferred: Array[Vector3] = []
 	for i in combined.size():
 		var hot := i<hot_count
 		var valve = hot_valves[i] if hot else cold_valves[i-hot_count]
@@ -489,13 +497,11 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		ports[i].minimum = valve.preview(minimum,dt)*capacity
 		if hot and hot_enabled: ports[i].off = ports[i].minimum
 		ports[i].maximum = valve.preview(1.0 if not hot or hot_enabled else minimum,dt)*capacity
-		if hot and hot_cone>0.0:
-			var spring = motor_springs[i]
-			var omega := 2.0/HOVER_VECTOR_RESPONSE
-			var decay := exp(-omega*dt)
-			ports[i].gain = 1.0-(1.0+omega*dt)*decay
-			ports[i].center = (spring.value*(1.0+omega*dt)+spring.velocity*dt)*decay
-		seed.append((motor_forces[i] if hot else cold_forces[i-hot_count])/weight)
+		# Track scalar pressure on the new bone axis, not the old world vector.
+		ports[i]["tracking"] = HOT_TRACKING if hot and hot_enabled else 0.0
+		var axis: Vector3 = -ports[i].basis.z
+		preferred.append(axis*valve.level*capacity if hot else Vector3.ZERO)
+		seed.append(axis*(motor_forces[i] if hot else cold_forces[i-hot_count]).length()/weight)
 	if not hot_enabled:
 		# Coast requests zero added translation. Track unavoidable hot shutdown
 		# impulse, rather than wasting cold gas trying to replace cut-off power.
@@ -504,8 +510,8 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		for i in hot_count:
 			ports[i].minimum = ports[i].off
 			ports[i].maximum = ports[i].off
-			force_target += _motor_direction(ports[i].basis,motor_angles[i])*ports[i].off
-	# Fuel priority: first try hot vectoring plus unavoidable cold shutdown
+			force_target += -ports[i].basis.z*ports[i].off
+	# Fuel priority: first try fixed-axis hot pressure plus unavoidable cold shutdown
 	# tails. Open a cold valve only when that cannot meet the wrench tolerance.
 	var off_force := Vector3.ZERO
 	var off_moment := Vector3.ZERO
@@ -515,21 +521,24 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		off_plan.append(off)
 		off_force += off
 		off_moment += ports[i].lever.cross(off)
-	var plan := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,moment_target-off_moment,along,seed,ideal_forces.slice(0,hot_count),Allocator.SWEEPS,fit)
-	var residual_force := off_force-force_target
-	var residual_moment := off_moment-moment_target
+	var plan := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,moment_target-off_moment,along,seed,preferred.slice(0,hot_count),Allocator.SWEEPS,fit)
+	var hot_force := Vector3.ZERO
+	var hot_moment := Vector3.ZERO
 	for i in hot_count:
-		residual_force += plan[i]
-		residual_moment += ports[i].lever.cross(plan[i])
-	var force_error := residual_force
-	var cold_needed := force_error.length()>(0.025 if translating else 0.04) or residual_moment.length()>(0.005 if translating else 0.02)
-	# Shutdown impulse can briefly disguise a continuing need. Do not close a
-	# required jet just because its minimum burn covers this one physics tick.
+		hot_force += plan[i]
+		hot_moment += ports[i].lever.cross(plan[i])
+	# Gate net cold wrench, not nozzle pairs: opposing forces at separate
+	# lever arms can supply a useful torque couple.
+	var correction := _cold_trim(frame,force_target-hot_force,moment_target-hot_moment,dt,translating)
+	var correction_force: Vector3 = correction[0]
+	var correction_moment: Vector3 = correction[1]
+	var cold_needed := not correction_force.is_zero_approx() or not correction_moment.is_zero_approx()
 	var keep_open := []
 	for i in range(hot_count,ports.size()):
-		var needed: bool = ideal_forces[i].length()>_cold_capacity(i-hot_count)*COLD_MINIMUM_FLOW*0.5
+		var axis: Vector3 = -ports[i].basis.z
+		var useful: float = axis.dot(correction_force)+ports[i].lever.cross(axis).dot(correction_moment)
+		var needed: bool = useful>0.000001 and ideal_forces[i].length()>_cold_capacity(i-hot_count)*COLD_MINIMUM_FLOW*0.5
 		keep_open.append(needed)
-		cold_needed = cold_needed or needed
 	# Real motion, not a trim clock, opens a quiet-hover correction window.
 	# Hysteresis lets the body coast through small errors without valve chatter.
 	if quiet_hover:
@@ -541,7 +550,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	if cold_needed:
 		for i in range(hot_count,ports.size()):
 			if keep_open[i-hot_count]: ports[i].off = ports[i].minimum
-		plan = Allocator.solve(ports,force_target,moment_target,along,seed,ideal_forces,Allocator.SWEEPS,fit)
+		plan = Allocator.solve(ports,hot_force+correction_force,hot_moment+correction_moment,along,seed,preferred,Allocator.SWEEPS,fit)
 	else: plan.append_array(off_plan)
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
@@ -557,14 +566,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		var valve = hot_valves[i] if hot else cold_valves[i-hot_count]
 		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
 		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
-		var command_angle := Vector3.ZERO
-		if hot and hot_cone>0.0:
-			var aim := plan[i] if plan[i].length()>0.00001 else ideal_forces[i]
-			command_angle = ((Allocator.angle(ports[i].basis,aim,hot_cone)-ports[i].center)/ports[i].gain).limit_length(hot_cone)
-			motor_angles[i] = motor_springs[i].step(command_angle,dt,HOVER_VECTOR_RESPONSE).limit_length(hot_cone)
-			motor_springs[i].value = motor_angles[i]
-		elif hot:
-			motor_angles[i] = Vector3.ZERO
+		if hot: motor_angles[i] = Vector3.ZERO
 		var flow: float = valve.command_for(plan[i].length()/capacity,dt,minimum) if capacity>0 and (hot or cold_needed) else 0.0
 		# Prime the next useful hot engine during ignition, while other outlets
 		# balance its actual zero output. Never bypass ignition or restart time.
@@ -573,7 +575,7 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		if hot: flow = maxf(flow,HOT_IDLE_FLOW) if hot_enabled and capacity>0 else 0.0
 		elif cold_needed and keep_open[i-hot_count]: flow = maxf(flow,COLD_MINIMUM_FLOW)
 		var output: float = valve.step(flow,dt)
-		var actual := Allocator.direction(ports[i].basis,motor_angles[i] if hot else Vector3.ZERO)*output*capacity*weight
+		var actual: Vector3 = -ports[i].basis.z*output*capacity*weight
 		var moment: Vector3 = combined[i].position/WORLD_UNITS_PER_METER
 		moment = moment.cross(actual)
 		allocated_force += plan[i]*weight
@@ -596,11 +598,34 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	torque_saturated = (control_torque-main_torque-rcs_torque-aero_torque).length()>torque_limits.length()*0.05
 	motor_saturated = (force_target*weight-main_force-cold_force).length()>weight*0.05
 
-func _motor_angle(basis: Basis, direction: Vector3) -> Vector3:
-	return Allocator.angle(basis,direction,VECTOR_LIMIT)
+func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, translating: bool) -> Array[Vector3]:
+	var local_force := frame.transposed()*force
+	var local_moment := frame.transposed()*moment
+	for axis in 3:
+		local_force[axis] = _cold_trim_axis(axis,local_force[axis],0.025 if translating else 0.04,dt)
+		local_moment[axis] = _cold_trim_axis(axis+3,local_moment[axis],0.005 if translating else 0.02,dt)
+	return [frame*local_force,frame*local_moment]
 
-func _motor_direction(basis: Basis, angle: Vector3) -> Vector3:
-	return Allocator.direction(basis,angle)
+func _cold_trim_axis(index: int, request: float, enter: float, dt: float) -> float:
+	var magnitude := absf(request)
+	if magnitude<enter*0.5:
+		cold_active[index] = 0
+		cold_reverse_age[index] = 0.0
+		return 0.0
+	var direction := int(signf(request))
+	if cold_active[index]==0 and magnitude<enter:
+		cold_reverse_age[index] = 0.0
+		return 0.0
+	# Delay small repeated reversals, never a large deliberate arrest.
+	if cold_last_sign[index]!=0 and direction!=cold_last_sign[index] and magnitude<enter*COLD_REVERSE_OVERRIDE:
+		cold_reverse_age[index] += dt
+		if cold_reverse_age[index]<COLD_REVERSE_DWELL:
+			cold_active[index] = 0
+			return 0.0
+	cold_reverse_age[index] = 0.0
+	cold_last_sign[index] = direction
+	cold_active[index] = direction
+	return request
 
 func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 	var frame := state.transform.basis.orthonormalized()

@@ -144,10 +144,8 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var slowing: float = maxf(0,-(basis*acceleration).dot(controller.velocity.normalized()))
 	# Retro means delivered thrust opposing existing travel, not a throttle cut
 	# or a velocity rewrite. Gravity and aerodynamic braking stay independent.
-	var thrust_direction: Vector3 = controller.main_force.normalized() if controller.main_force.length_squared()>1 else basis.y
-	# Prepare while the requested engines spool, then follow their delivered force.
-	var next_output: float = move_toward(controller.thrust_level,controller.DETENTS[controller.detent],controller.ENGINE_SPOOL_RATE*0.15)
-	var retro: float = maxf(0,-thrust_direction.dot(controller.velocity.normalized()))*smoothstep(2,12,speed)*smoothstep(0.1,0.8,maxf(controller.thrust_level,next_output))
+	var retro := Articulation.retrograde_weight(controller.velocity,controller.main_force,
+		controller.requested_main_force,controller.body.mass*controller.GRAVITY,controller.detent>0 or controller.jump_remaining>0)
 	var brake_rate := clampf((controller.brake_amount-last_brake)/delta,-3,3) if delta>0 else 0.0
 	last_brake = controller.brake_amount
 	var roll_stop := clampf(pilot_rates.z/controller.MAX_RATE.z-intent.z,-1,1)*(1.0-absf(intent.z))
@@ -207,7 +205,7 @@ func _sample_effort(controller, delta: float) -> void:
 	var target := Vector3(prepare,opposition,drive)
 	# One bounded envelope for effort; final limb servos retain their velocities.
 	for channel in 3:
-		var tau: float = profile.effort_response[channel] if target[channel]>effort[channel] else 0.28
+		var tau: float = (0.10 if channel==1 else profile.effort_response[channel]) if target[channel]>effort[channel] else 0.28
 		var decay := 1.0-exp(-delta/maxf(tau,0.001))
 		effort[channel] = lerpf(effort[channel],target[channel],decay)
 	var local_across := basis.inverse()*across
@@ -581,7 +579,11 @@ func _update_authored_legs(delta: float, controller) -> void:
 	# Lab anchors use calibrated chassis axes. The old directional pose
 	# frame reflects X and Z relative to pilot translation.
 	var move: Vector3 = motion.reach*Vector3(-1,1,-1)
-	var target := Articulation.select(steer,move,power,motion.retro)
+	# Preserve intentional narrow rolls, but open the stance under lateral load
+	# and braking. Reverse thrust has priority even during full steering.
+	var lateral_balance: float = smoothstep(0.25,0.9,absf(motion.side_load))*(1.0-absf(steer.z))*0.55
+	var bracing: float = maxf(motion.retro,maxf(motion.flare*0.85,lateral_balance))
+	var target := Articulation.select(steer,move,power,bracing)
 	var land: float = motion.land
 	var takeoff: float = motion.launch
 	var acro: Vector2 = motion.acro
@@ -590,7 +592,7 @@ func _update_authored_legs(delta: float, controller) -> void:
 	var throttle_load: float = smoothstep(0.1,0.8,controller.thrust_level)
 	# With the calf, backpack and cold couples present, the deep pull can keep
 	# its knee silhouette while the boots recover axial thrust under power.
-	var powered_pull: float = smoothstep(0.25,0.85,steer.x)*throttle_load*(1.0-motion.hover)
+	var powered_pull: float = smoothstep(0.25,0.85,steer.x)*throttle_load*(1.0-motion.hover)*(1.0-bracing)
 	var stroke: Vector3 = motion.stroke
 	var alternative := target.duplicate()
 	for side in 2:
@@ -602,11 +604,11 @@ func _update_authored_legs(delta: float, controller) -> void:
 			var index := side*3+joint
 			var aim := target[index]
 			if joint==2: aim.x -= 0.52*powered_pull
-			aim = aim.lerp(Articulation.BELLY_LEGS[joint]*mirror,motion.belly)
-			aim = aim.lerp(Articulation.BACK_LEGS[joint]*mirror,motion.back)
+			aim = aim.lerp(Articulation.BELLY_LEGS[joint]*mirror,motion.belly*(1.0-bracing))
+			aim = aim.lerp(Articulation.BACK_LEGS[joint]*mirror,motion.back*(1.0-bracing))
 			var tuck: Vector3 = profile.fall_pose[joint]*mirror
 			tuck = tuck.lerp(profile.layout_pose[joint]*mirror,motion.layout)
-			aim = aim.lerp(tuck,(acro.x*flip.y+acro.y*roll.y)*(1.0-throttle_load*0.45))
+			aim = aim.lerp(tuck,(acro.x*flip.y+acro.y*roll.y)*(1.0-throttle_load*0.45)*(1.0-bracing))
 			aim = aim.lerp(profile.launch_pose[joint]*mirror,takeoff)
 			aim = aim.lerp(profile.landing_pose[joint]*mirror,land)
 			target[index] = aim

@@ -29,9 +29,9 @@ static func solve(ports: Array, force: Vector3, moment: Vector3, force_axis: Vec
 	var weights: Array[float] = []
 	var reference: Array[Vector3] = []
 	for i in n:
-		# Hot gimbals prepare for the horizon. Fixed cold jets must remain free
-		# to shed cancelling flow rather than track a redundant distribution.
-		var tracking := 0.25 if preferred.size()>=n and ports[i].cone>0 else 0.0
+		# Heavy fixed outlets may track current pressure; cold outlets remain
+		# free to shed cancelling flow. Cone fallback is for offline comparison.
+		var tracking: float = float(ports[i].get("tracking",0.25 if ports[i].cone>0 else 0.0)) if preferred.size()>=n else 0.0
 		weights.append(1.0/(1.0+tracking))
 		reference.append(preferred[i]*(1.0-weights[i]) if tracking>0 else Vector3.ZERO)
 	var zero := Basis(Vector3.ZERO,Vector3.ZERO,Vector3.ZERO)
