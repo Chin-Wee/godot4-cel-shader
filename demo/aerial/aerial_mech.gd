@@ -68,15 +68,15 @@ const COLD_MOUNTS := [
  ["ShoulderL",&"Shoulder.L",Vector3(-0.63559,0.002,-0.047),Vector3(-1,0,0)],
  ["ChestFrontL",&"Torso",Vector3(0.822496,1.353148,1.307773),Vector3(0,-0.175874,0.984413)],
  ["BackpackUpperL",&"Torso",Vector3(1.077153,1.250922,-3.557281),Vector3(0,0,-1)],
- ["BackpackSideL",&"Torso",Vector3(1.352454,-2.086017,-3.531022),Vector3(0.980791,-0.119927,0.153839)],
+ ["BackpackSideL",&"Torso",Vector3(1.352454,-2.086017,-3.531022),Vector3(-0.831482,0.34158,-0.438133)],
  ["WaistFrontL",&"Low_Waist",Vector3(0.734726,2.449736,1.022654),Vector3(0,0.612551,0.790431)],
- ["WaistRearL",&"Low_Waist",Vector3(1.222387,-0.109595,-1.317057),Vector3(0.701382,-0.297636,-0.647670)],
+ ["WaistRearL",&"Low_Waist",Vector3(1.222387,-0.109595,-1.317057),Vector3(0.919755,-0.380953,-0.094472)],
  ["ShoulderR",&"Shoulder.R",Vector3(0.63559,0.002,-0.047),Vector3(1,0,0)],
  ["ChestFrontR",&"Torso",Vector3(-0.822495,1.353148,1.307774),Vector3(0,-0.175874,0.984413)],
  ["BackpackUpperR",&"Torso",Vector3(-1.077152,1.250921,-3.557281),Vector3(0,0,-1)],
- ["BackpackSideR",&"Torso",Vector3(-1.352453,-2.086016,-3.531022),Vector3(-0.980791,-0.119927,0.153839)],
+ ["BackpackSideR",&"Torso",Vector3(-1.352453,-2.086016,-3.531022),Vector3(0.831482,0.34158,-0.438133)],
  ["WaistFrontR",&"Low_Waist",Vector3(-0.734725,2.449736,1.022654),Vector3(0,0.612551,0.790431)],
- ["WaistRearR",&"Low_Waist",Vector3(-1.222384,-0.109595,-1.317059),Vector3(-0.701380,-0.297636,-0.647672)],
+ ["WaistRearR",&"Low_Waist",Vector3(-1.222384,-0.109595,-1.317059),Vector3(-0.919755,-0.380953,-0.094474)],
 ]
 var palette_materials: Array[ShaderMaterial] = []
 
