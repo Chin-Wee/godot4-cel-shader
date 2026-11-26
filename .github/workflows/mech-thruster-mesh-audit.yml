@@ -1,0 +1,33 @@
+name: Mech thruster mesh audit
+
+on:
+  push:
+    branches:
+      - flight/fixed-thrust-bracing
+    paths:
+      - "demo/models/MechAsset/MechAsset.glb"
+      - "demo/aerial/aerial_mech.gd"
+      - "tools/audit_mech_thrusters.py"
+      - ".github/workflows/mech-thruster-mesh-audit.yml"
+  pull_request:
+    paths:
+      - "demo/models/MechAsset/MechAsset.glb"
+      - "demo/aerial/aerial_mech.gd"
+      - "tools/audit_mech_thrusters.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mesh-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check audit script syntax
+        run: python -m py_compile tools/audit_mech_thrusters.py
+      - name: Inspect all live thruster hardpoints against the GLB
+        run: python tools/audit_mech_thrusters.py --json
