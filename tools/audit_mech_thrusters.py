@@ -347,6 +347,50 @@ def nearest_surface(candidate, candidates, center, bone_name):
             "bone_weight": tri["bone_weights"].get(bone_name, 0.0)}
 
 
+def ray_segment_hit(start, end, tri):
+    direction = sub(end, start)
+    edge1, edge2 = sub(tri["b"], tri["a"]), sub(tri["c"], tri["a"])
+    pvec = cross(direction, edge2)
+    determinant = dot(edge1, pvec)
+    if abs(determinant) < 1e-10:
+        return None
+    inverse = 1.0 / determinant
+    tvec = sub(start, tri["a"])
+    u = dot(tvec, pvec) * inverse
+    if u < 0.0 or u > 1.0:
+        return None
+    qvec = cross(tvec, edge1)
+    v = dot(direction, qvec) * inverse
+    if v < 0.0 or u + v > 1.0:
+        return None
+    t = dot(edge2, qvec) * inverse
+    if t <= 1e-5 or t >= 1.0 - 1e-5:
+        return None
+    return t * length(direction)
+
+
+def nozzle_clearance(candidate, axis, radius, triangles):
+    reference = (0.0, 1.0, 0.0) if abs(axis[1]) < 0.9 else (1.0, 0.0, 0.0)
+    tangent_a = normalize(cross(axis, reference))
+    tangent_b = normalize(cross(axis, tangent_a))
+    # The rendered cylinder extends to 1.25 radii from the mount. Probe its
+    # outer housing section, beyond the intentionally seated spherical collar.
+    offsets = [(0.0, 0.0), (0.75, 0.0), (-0.75, 0.0), (0.0, 0.75), (0.0, -0.75)]
+    hits = []
+    for ray_index, (u, v) in enumerate(offsets):
+        offset = add(mul(tangent_a, u * radius), mul(tangent_b, v * radius))
+        start = add(add(candidate, mul(axis, radius * 0.55)), offset)
+        end = add(add(candidate, mul(axis, radius * 1.30)), offset)
+        best = None
+        for tri in triangles:
+            distance = ray_segment_hit(start, end, tri)
+            if distance is not None and (best is None or distance < best[0]):
+                best = (distance, tri["mesh"])
+        if best:
+            hits.append({"ray": ray_index, "mesh": best[1], "distance": round(best[0], 5)})
+    return hits
+
+
 def audit_mount(mount, node_names, globals_, triangles, center):
     if mount["bone"] not in node_names:
         raise ValueError(f"{mount['name']}: missing GLB bone {mount['bone']}")
@@ -359,8 +403,11 @@ def audit_mount(mount, node_names, globals_, triangles, center):
         candidates, scope = triangles, "whole-mesh fallback"
     local = nearest_surface(candidate, candidates, center, mount["bone"])
     whole = nearest_surface(candidate, triangles, center, mount["bone"])
+    nozzle_radius = 0.085 if mount["kind"] == "cold" else 0.18
+    clearance_hits = nozzle_clearance(candidate, axis, nozzle_radius, triangles)
     return {"kind": mount["kind"], "name": mount["name"], "bone": mount["bone"], "scope": scope,
             "mesh": local["mesh"], "primitive": local["primitive"],
+            "nozzle_radius": nozzle_radius, "clearance_hits": clearance_hits,
             "bone_weight": round(local["bone_weight"], 4),
             "position_bone_local": [round(v, 6) for v in mount["position"]],
             "position_world": [round(v, 6) for v in candidate],
@@ -426,7 +473,7 @@ def main():
     results = [audit_mount(m, node_names, globals_, triangles, center)
                for group in ("MOUNTS", "COLD_MOUNTS") for m in mounts[group]]
     failures = [r for r in results if r["distance"] > args.max_distance or
-                r["normal_alignment"] < args.min_normal_dot]
+                r["normal_alignment"] < args.min_normal_dot or r["clearance_hits"]]
     parent_map = {child: parent for parent, node in enumerate(doc.get("nodes", [])) for child in node.get("children", [])}
     relevant_bones = ["PelvisBase", "Low_Waist", "Torso_WaistConnect", "Torso",
                       "Shoulder.L", "Shoulder.R", "Thigh.L", "Thigh.R",
