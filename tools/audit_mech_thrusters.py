@@ -467,9 +467,18 @@ def foot_sole_candidates(mounts, node_names, globals_, triangles, center):
     ):
         mount = next(m for m in mounts["MOUNTS"] if m["name"] == mount_name)
         current = transform_point(globals_[node_names[bone_name]], mount["position"])
-        surface = [t for t in triangles if t["mesh"] == mesh_name]
+        surface = []
+        for tri in triangles:
+            if tri["mesh"] != mesh_name:
+                continue
+            point = mul(add(add(tri["a"], tri["b"]), tri["c"]), 1.0/3.0)
+            normal = tri["normal"]
+            if dot(normal, sub(point, center)) < 0.0:
+                normal = mul(normal, -1.0)
+            if normal[1] < -0.65:
+                surface.append(tri)
         if not surface:
-            candidates.append({"side": side, "mesh": mesh_name, "error": "mesh node not found"})
+            candidates.append({"side": side, "mesh": mesh_name, "error": "no downward-facing sole triangles"})
             continue
         nearest = nearest_surface(current, surface, center, bone_name)
         inverse_bone = inverse4(globals_[node_names[bone_name]])
