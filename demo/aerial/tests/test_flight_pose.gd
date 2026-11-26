@@ -236,30 +236,37 @@ func _check_limbs(mech: Node3D) -> bool:
 	return true
 
 func _check_mount_surfaces(mech: Node3D) -> bool:
-	# Test against source triangles, excluding the collars we add ourselves. Bone
-	# attachment alone cannot prove that a booster is seated against the armor.
-	var sk: Skeleton3D = mech.skeleton
-	for mount in mech.MOUNTS+mech.COLD_MOUNTS:
+	# Compare each outlet against its actual GLB source mesh in world space.
+	# This covers rigid meshes parented to bones as well as the visible armour.
+	var source_meshes := mech.actor.find_children("*","MeshInstance3D",true,false)
+	var source_names := {
+		"BackpackL":["Cube"],"BackpackR":["Cube"],
+		"CalfL":["L.3.Shin"],"CalfR":["R.3.Shin"],
+		"FootSoleL":["L.4.Feets"],"FootSoleR":["R.4.Feets"],
+		"ShoulderL":["L.1. Shoulder"],"ShoulderR":["R.1. Shoulder"],
+		"ChestFrontL":["UpperArmors"],"ChestFrontR":["UpperArmors"],
+		"BackpackUpperL":["Cube"],"BackpackUpperR":["Cube"],
+		"BackpackSideL":["Cube"],"BackpackSideR":["Cube"],
+		"WaistFrontL":["Upper Waist Armor"],"WaistFrontR":["Upper Waist Armor"],
+		"WaistRearL":["Waist Armor"],"WaistRearR":["Waist Armor"],
+	}
+	var mounts: Array = mech.MOUNTS+mech.COLD_MOUNTS
+	var outlets: Array = mech.gimbals+mech.gas_gimbals
+	for index in mounts.size():
+		var mount: Array = mounts[index]
+		var expected_meshes: Array = source_names.get(String(mount[0]),[])
 		var nearest := INF
-		for child in sk.get_children():
-			var candidates := []
-			var transform := Transform3D.IDENTITY
-			if child is BoneAttachment3D and child.bone_name == mount[1] and not str(child.name).begins_with("Thruster"):
-				candidates = child.get_children()
-			elif child is MeshInstance3D and child.name == &"Cube" and mount[1] == &"Torso":
-				candidates = [child]
-				transform = sk.get_bone_global_rest(sk.find_bone("Torso")).affine_inverse()
-			elif child is MeshInstance3D and child.name in [&"Waist Armor",&"Upper Waist Armor"] and mount[1] == &"Low_Waist":
-				candidates = [child]
-				transform = sk.get_bone_global_rest(sk.find_bone("Low_Waist")).affine_inverse()
-			for mesh in candidates:
-				if not mesh is MeshInstance3D: continue
-				var to_bone: Transform3D = transform*mesh.transform
-				var faces: PackedVector3Array = mesh.mesh.get_faces()
-				for index in range(0,faces.size(),3):
-					nearest = minf(nearest,_triangle_distance(mount[2],to_bone*faces[index],to_bone*faces[index+1],to_bone*faces[index+2]))
+		for node in source_meshes:
+			if not node is MeshInstance3D or not expected_meshes.has(String(node.name)): continue
+			var mesh: MeshInstance3D = node
+			var faces: PackedVector3Array = mesh.mesh.get_faces()
+			for face_index in range(0,faces.size(),3):
+				nearest = minf(nearest,_triangle_distance(outlets[index].global_position,
+					mesh.global_transform*faces[face_index],
+					mesh.global_transform*faces[face_index+1],
+					mesh.global_transform*faces[face_index+2]))
 		if nearest >= 0.02:
-			push_error("Booster floats away from source armor: %s (%s source units)"%[mount[0],nearest])
+			push_error("Booster floats away from source armour: %s (%s source units)"%[mount[0],nearest])
 			return false
 	return true
 
