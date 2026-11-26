@@ -460,37 +460,40 @@ def waist_rear_candidates(triangles, center, node_names, globals_):
 
 
 def foot_sole_candidates(mounts, node_names, globals_, triangles, center):
-    candidates = []
-    for side, mesh_name, mount_name, bone_name in (
-        ("left", "L.4.FeetArmor", "FootSoleL", "Feet.L"),
-        ("right", "R.4.FeetArmor", "FootSoleR", "Feet.R"),
+    results = []
+    for side, mesh_names, mount_name, bone_name in (
+        ("left", ["L.4.Feets", "L.4.FeetArmor"], "FootSoleL", "Feet.L"),
+        ("right", ["R.4.Feets", "R.4.FeetArmor"], "FootSoleR", "Feet.R"),
     ):
         mount = next(m for m in mounts["MOUNTS"] if m["name"] == mount_name)
         current = transform_point(globals_[node_names[bone_name]], mount["position"])
-        surface = []
-        for tri in triangles:
-            if tri["mesh"] != mesh_name:
-                continue
-            point = mul(add(add(tri["a"], tri["b"]), tri["c"]), 1.0/3.0)
-            normal = tri["normal"]
-            if dot(normal, sub(point, center)) < 0.0:
-                normal = mul(normal, -1.0)
-            if normal[1] < -0.65:
-                surface.append(tri)
-        if not surface:
-            candidates.append({"side": side, "mesh": mesh_name, "error": "no downward-facing sole triangles"})
-            continue
-        nearest = nearest_surface(current, surface, center, bone_name)
-        inverse_bone = inverse4(globals_[node_names[bone_name]])
-        candidates.append({
-            "side": side, "mesh": mesh_name, "current_distance": round(nearest["distance"], 6),
-            "world_position": [round(v, 6) for v in nearest["nearest"]],
-            "world_outward_normal": [round(v, 6) for v in nearest["normal"]],
-            "bone": bone_name,
-            "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, nearest["nearest"])],
-            "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, nearest["normal"])]
-        })
-    return candidates
+        for mesh_name in mesh_names:
+            matches = []
+            for tri in triangles:
+                if tri["mesh"] != mesh_name:
+                    continue
+                point = closest_on_triangle(current, tri["a"], tri["b"], tri["c"])
+                normal = tri["normal"]
+                if dot(normal, sub(point, center)) < 0.0:
+                    normal = mul(normal, -1.0)
+                if normal[1] > -0.6 or point[1] >= current[1] - 0.03:
+                    continue
+                matches.append((length(sub(point, current)), point, normal))
+            matches.sort(key=lambda x: x[0])
+            if matches:
+                distance, point, normal = matches[0]
+                inverse_bone = inverse4(globals_[node_names[bone_name]])
+                results.append({
+                    "side": side, "mesh": mesh_name, "current_distance": round(distance, 6),
+                    "world_position": [round(v, 6) for v in point],
+                    "world_outward_normal": [round(v, 6) for v in normal],
+                    "bone": bone_name,
+                    "bone_local_position": [round(v, 6) for v in transform_point(inverse_bone, point)],
+                    "bone_local_direction": [round(v, 6) for v in transform_direction(inverse_bone, normal)]
+                })
+            else:
+                results.append({"side": side, "mesh": mesh_name, "error": "no lower downward-facing surface"})
+    return results
 
 
 def main():
