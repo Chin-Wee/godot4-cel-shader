@@ -12,6 +12,7 @@ func _initialize() -> void: call_deferred("_run")
 func _ticks(count: int, mirror_request := true) -> void:
 	if mirror_request:
 		fc.rotation_request = fc.rotation_command
+		fc.pilot_rotation_intent = fc.rotation_command
 		fc.effective_rates = fc.rotation_command*fc.MAX_RATE
 	for tick in count:
 		fc.clock += 1.0/60
@@ -42,6 +43,7 @@ func _neutral() -> void:
 	fc.angular_acceleration = Vector3.ZERO
 	fc.rotation_command = Vector3.ZERO
 	fc.rotation_request = Vector3.ZERO
+	fc.pilot_rotation_intent = Vector3.ZERO
 	fc.effective_rates = Vector3.ZERO
 	fc.gaze_direction = Vector3.ZERO
 	fc.brake_spread = 0.0
@@ -83,10 +85,12 @@ func _run() -> void:
 	for side in 2: assert(mech.rig.arms.hands[side].y< -0.6,"Hover uses skydiver arms")
 	var before_input: Vector3 = mech.rig.arms.hands[0]
 	fc.rotation_request = Vector3(0,1,0)
+	fc.pilot_rotation_intent = fc.rotation_request
 	await _ticks(12,false) # Heavy powered shoulders prepare within 0.2 seconds.
 	assert(fc.rotation_command.is_zero_approx() and mech.angular_velocity.is_zero_approx())
 	assert(mech.rig.arms.hands[0].distance_to(before_input)>0.2,"Brief input is lost behind the physics control filter")
 	fc.rotation_request = Vector3.ZERO
+	fc.pilot_rotation_intent = Vector3.ZERO
 	await _ticks(60)
 	var resting_knee: float = mech.rig.legs[1].value.x
 	fc.jump_remaining = 0.5

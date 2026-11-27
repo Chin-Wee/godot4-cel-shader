@@ -666,7 +666,7 @@ Validation targets: combined lateral/yaw and braced steering must retain distinc
 
 The implementation adds a bounded presentation response without introducing a second physics body or a separate propulsion controller.
 
-- **mechanical_response.gd** consumes filtered acceleration/jerk, delivered main-engine forces, pressure scales and brake/retrograde load. It advances independent damped modes for the pelvis, torso, hips, knees, ankles, shoulders, elbows, wrists and head.
+- **mechanical_response.gd** consumes filtered acceleration/jerk, delivered main-engine forces, pressure scales, brake/retrograde load and normalized per-joint moments. AerialMech estimates those moments from the actual force-producing outlet positions, current articulated joint transforms and the lever-arm cross product. It advances independent damped modes for the pelvis, torso, hips, knees, ankles, shoulders, elbows, wrists and head.
 - The modes use an analytic underdamped step so their response is stable across 30/60/120 Hz physics rates. Angular offsets are individually bounded; the response is an animation estimate, not a finite-element stress solver.
 - Main-engine pressure dips are bounded to loaded retrograde burns. The allocator sees the same reduced per-engine capacity that is used for delivered thrust, and the hardware rating remains an absolute upper limit.
 - The authored pose remains responsible for the large silhouette. Structural offsets are additive and small. The head and hands receive separate stabilisation/grip inputs.
