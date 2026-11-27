@@ -42,8 +42,8 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 	var retro: float = clampf(float(sample.get("retro", 0.0)), 0.0, 1.0)
 	var weight: float = maxf(float(sample.get("weight", 98100.0)), 1.0)
 	var motor_forces: Array = sample.get("motor_forces", [])
-	var motor_ratings: Array = sample.get("motor_ratings", [])
-	var pressure_scales: Array = sample.get("pressure_scales", [])
+	var motor_ratings = sample.get("motor_ratings", [])
+	var pressure_scales = sample.get("pressure_scales", [])
 
 	var left_load := 0.0
 	var right_load := 0.0
@@ -92,8 +92,8 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 		Vector3(longitudinal_g * 0.005 + braking_load * 0.018, -lateral_g * 0.008, yaw_load * 0.010 + shock * 0.004),
 		Vector3(braking_load * 0.012 + left_load * 0.008, lateral_g * 0.004, side_difference * 0.008),
 		Vector3(braking_load * 0.012 + right_load * 0.008, -lateral_g * 0.004, -side_difference * 0.008),
-		Vector3(braking_load * 0.045 + shock * 0.018 + left_slew * 0.012, 0.0, side_difference * 0.008),
-		Vector3(braking_load * 0.045 + shock * 0.018 + right_slew * 0.012, 0.0, -side_difference * 0.008),
+		Vector3(braking_load * 0.045 + shock * 0.018 + left_load * 0.008 + left_slew * 0.012, 0.0, side_difference * 0.008),
+		Vector3(braking_load * 0.045 + shock * 0.018 + right_load * 0.008 + right_slew * 0.012, 0.0, -side_difference * 0.008),
 		Vector3(-longitudinal_g * 0.005 - left_load * 0.008 + shock * 0.010, lateral_g * 0.003, side_difference * 0.005),
 		Vector3(-longitudinal_g * 0.005 - right_load * 0.008 + shock * 0.010, -lateral_g * 0.003, -side_difference * 0.005),
 		Vector3(braking_load * 0.014 + shock * 0.016 + left_slew * 0.012, side_difference * 0.014 + yaw_load * 0.003, roll_load * 0.003),

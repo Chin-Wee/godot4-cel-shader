@@ -177,6 +177,9 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
 	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var strength: float = frame.stress
+	var structural_arms: PackedVector4Array = frame.get("mechanical_arms",PackedVector4Array())
+	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
+	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var direction: Vector3 = frame.stroke_direction
 	var goals := [Vector2.ZERO,Vector2.ZERO]
 	for side in 2:
@@ -206,9 +209,11 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 		upper[side].step(Vector3(clampf(target.x,-0.8,1.05),target.y*sx,clampf(target.z,0.10,2.12)*sx),
 			delta,0.27,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(target.w,0.12,1.65),0,0),delta,0.31,profile.arm_speed)
-		wrists[side].step(Vector3(-frame.flare*0.18+direction.x*weight*0.10+hand_texture*0.035,0,opposition*weight*0.15*sx),delta,0.23,1.0)
+		var wrist_load: Vector3 = structural_wrists[side] if structural_wrists.size()==2 else Vector3.ZERO
+		wrists[side].step(Vector3(-frame.flare*0.18+direction.x*weight*0.10+hand_texture*0.035,0,opposition*weight*0.15*sx)+wrist_load,delta,0.23,1.0)
 	for digit in digits.values():
 		var hand: Vector2 = goals[digit.side]
+		hand.x = clampf(hand.x+structural_grip,0.0,0.90)
 		var value := grip_noise.get_noise_2d(time,digit.phase)
 		var variation := lerpf(0.06,0.115,smoothstep(0.06,0.26,hand.x))
 		variation = lerpf(variation,0.022,smoothstep(0.44,0.80,hand.x))
