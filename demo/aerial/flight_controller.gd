@@ -413,6 +413,12 @@ func _calculate_aerodynamics(surfaces: Array) -> void:
 		aero_torque += lever.cross(force)
 		aero_power += force.dot(flow)
 
+static func burst_acceleration(envelope: float, remaining: float, slew: float) -> float:
+	# A trim engine is already burning. Reserving the full 0-to-100% response
+	# time erased the entire drive phase. Limit the incremental force by its
+	# remaining slew budget; real valve previews still constrain every outlet.
+	return minf(HOVER_BURST_ACCELERATION*envelope,slew*maxf(remaining,0.0))
+
 func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: float) -> void:
 	var weight := body.mass*GRAVITY
 	var length_scale := model_scale/WORLD_UNITS_PER_METER
@@ -427,7 +433,7 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 	var catch_force := (-drift*HOVER_DRIFT_GAIN).limit_length(GRAVITY*0.30)*minf(released_axes.x,released_axes.z)
 	# Reduced trim authority needs a gentler force ramp and earlier shutdown.
 	var force_slew := FORCE_SLEW_G*sqrt(cold_power_fraction())
-	var boost := minf(HOVER_BURST_ACCELERATION*burst_amount,force_slew*maxf(0,burst_remaining-HOT_RESPONSE))
+	var boost := burst_acceleration(burst_amount,burst_remaining,force_slew)
 	var requested := move*GRAVITY*boost+catch_force*(1.0-burst_amount)
 	requested.y = clampf(-velocity.y*1.8,-GRAVITY*0.5,GRAVITY*0.5)
 	# Reserve shutdown time before the burst ends. Only point forces move the body.
@@ -601,12 +607,16 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, translating: bool) -> Array[Vector3]:
 	var local_force := frame.transposed()*force
 	var local_moment := frame.transposed()*moment
+	var pilot_intent := PILOT_AXES*rotation_request
+	var body_rates := frame.transposed()*angular_velocity
 	for axis in 3:
 		local_force[axis] = _cold_trim_axis(axis,local_force[axis],0.025 if translating else 0.04,dt)
-		local_moment[axis] = _cold_trim_axis(axis+3,local_moment[axis],0.005 if translating else 0.02,dt)
+		# A deliberate pilot-commanded arrest is not automatic trim chatter.
+		var arrest := absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*body_rates[axis]<0.0 and pilot_intent[axis]*local_moment[axis]>0.0
+		local_moment[axis] = _cold_trim_axis(axis+3,local_moment[axis],0.005 if translating else 0.02,dt,arrest)
 	return [frame*local_force,frame*local_moment]
 
-func _cold_trim_axis(index: int, request: float, enter: float, dt: float) -> float:
+func _cold_trim_axis(index: int, request: float, enter: float, dt: float, deliberate_arrest := false) -> float:
 	var magnitude := absf(request)
 	if magnitude<enter*0.5:
 		cold_active[index] = 0
@@ -617,7 +627,7 @@ func _cold_trim_axis(index: int, request: float, enter: float, dt: float) -> flo
 		cold_reverse_age[index] = 0.0
 		return 0.0
 	# Delay small repeated reversals, never a large deliberate arrest.
-	if cold_last_sign[index]!=0 and direction!=cold_last_sign[index] and magnitude<enter*COLD_REVERSE_OVERRIDE:
+	if not deliberate_arrest and cold_last_sign[index]!=0 and direction!=cold_last_sign[index] and magnitude<enter*COLD_REVERSE_OVERRIDE:
 		cold_reverse_age[index] += dt
 		if cold_reverse_age[index]<COLD_REVERSE_DWELL:
 			cold_active[index] = 0

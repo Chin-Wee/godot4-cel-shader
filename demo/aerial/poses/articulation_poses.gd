@@ -16,9 +16,9 @@ const AUTHORED := {
 	"Yaw_Left_Soft": [[Vector3(-12,-4,9),12,Vector3(-21,4,-2)],[Vector3(5,0,-11),5,Vector3(-17,0,9)]],
 	"Yaw_Left_Hard": [[Vector3(-31,-13,20),38,Vector3(-27,8,-8)],[Vector3(10,0,-19),7,Vector3(-22,0,8)]],
 	"Vertical_Ascent": [[Vector3(-8.8,0,3),5,Vector3(3.6,0,-3)]],
-	"Forward_Boost": [[Vector3(5,0,7),9,Vector3(-35,0,-6)],[Vector3(13,0,-7),12,Vector3(-35,0,6)]],
-	"Backward_Boost": [[Vector3(-24,0,8),12,Vector3(28,0,-7)]],
-	"Lateral_Boost_Left": [[Vector3(-30,2,21),31,Vector3(-11,1,-4)],[Vector3(9,0,-5),6,Vector3(-19,0,-10)]],
+	"Forward_Boost": [[Vector3(5,0,10),9,Vector3(-35,0,-8)],[Vector3(13,0,-10),12,Vector3(-35,0,8)]],
+	"Backward_Boost": [[Vector3(-30,0,19),24,Vector3(28,0,-10)],[Vector3(-22,0,-16),17,Vector3(28,0,9)]],
+	"Lateral_Boost_Left": [[Vector3(-30,2,24),31,Vector3(-11,1,-10)],[Vector3(9,0,-17),6,Vector3(-19,0,-11)]],
 	"Retrograde_Brake": [[Vector3(-32,0,32),72,Vector3(9,0,-10)]],
 }
 const MIRRORED := {
@@ -59,12 +59,24 @@ static func select(steer: Vector3, move: Vector3, power: float, reversing: float
 	var base := _maneuver(steer,move,power)
 	if power<0.001: return base
 	var brace := clampf(reversing,0.0,1.0)
-	var result := blend(base,angles("Retrograde_Brake"),brace,brace)
-	for side in 2:
-		var knee := side*3+1
-		var angle := result[knee]
-		angle.x = maxf(angle.x,base[knee].x)
-		result[knee] = angle
+	var loaded := angles("Retrograde_Brake")
+	var result := base.duplicate()
+	# Compression and stance are common-mode loads. Keep directional
+	# differences rather than replacing both legs with the same brake key.
+	for joint in 3:
+		var left := base[joint]
+		var right := base[joint+3]*REFLECT
+		var mean := (left+right)*0.5
+		var correction := (loaded[joint]-mean)*brace
+		for side in 2:
+			var index := side*3+joint
+			var mirror := REFLECT if side==1 else Vector3.ONE
+			var angle := base[index]+correction*mirror
+			if joint==0:
+				angle.z = maxf(angle.z*mirror.z,lerpf(base[index].z*mirror.z,loaded[joint].z,brace))*mirror.z
+			elif joint==1:
+				angle.x = maxf(angle.x,maxf(base[index].x,lerpf(base[index].x,loaded[joint].x,brace)))
+			result[index] = angle
 	return result
 
 static func _maneuver(steer: Vector3, move: Vector3, power: float) -> PackedVector3Array:
@@ -74,15 +86,8 @@ static func _maneuver(steer: Vector3, move: Vector3, power: float) -> PackedVect
 	var translation := move.abs()
 	var demand := translation[translation.max_axis_index()]
 	if power<0.001: return angles("Unpowered_Coast")
-	if turn>demand and turn>0.0:
-		var axis := strength.max_axis_index()
-		var turn_keys := ["Pitch_Up" if steer.x>=0 else "Pitch_Down",
-			"Yaw_Left" if steer.y>=0 else "Yaw_Right",
-			"Roll_Left" if steer.z>=0 else "Roll_Right"]
-		var soft := angles(turn_keys[axis]+"_Soft")
-		if turn<=0.5: return blend(rest,soft,2.0*turn,pow(2.0*turn,2))
-		var hard := angles(turn_keys[axis]+"_Hard")
-		return blend(soft,hard,2.0*turn-1.0,pow(2.0*turn-1.0,2))
+	if demand<=0.0001 and turn>0.0:
+		return _turn_pose(steer,strength.max_axis_index())
 	var boost_keys := ["Lateral_Boost_Right" if move.x>=0 else "Lateral_Boost_Left",
 		"Vertical_Ascent" if move.y>=0 else "Retrograde_Brake", "Forward_Boost" if move.z>=0 else "Backward_Boost"]
 	var total := translation.x+translation.y+translation.z
@@ -92,7 +97,29 @@ static func _maneuver(steer: Vector3, move: Vector3, power: float) -> PackedVect
 	for index in mixed.size():
 		mixed[index] = (keys[0][index]*translation.x+keys[1][index]*translation.y+keys[2][index]*translation.z)/total
 	var intensity := minf(move.length(),1.0)
-	return blend(rest,mixed,intensity,intensity*intensity)
+	var result := blend(rest,mixed,intensity,intensity*intensity)
+	# A hover boost and the simultaneous W/S/A/D attitude input share a
+	# translation base. Independent yaw retains a stronger correction.
+	for axis in 3:
+		if strength[axis]<0.001: continue
+		var rotation := _turn_pose(steer,axis)
+		var influence := 0.65 if axis==1 else 0.25
+		for index in result.size():
+			var delta := (rotation[index]-rest[index])*influence
+			var angle := result[index]+delta
+			if index%3==1: angle.x = maxf(result[index].x,angle.x)
+			result[index] = angle
+	return result
+
+static func _turn_pose(steer: Vector3, axis: int) -> PackedVector3Array:
+	var rest := angles("Neutral_Flight")
+	var turn := absf(steer[axis])
+	var keys := ["Pitch_Up" if steer.x>=0 else "Pitch_Down",
+		"Yaw_Left" if steer.y>=0 else "Yaw_Right",
+		"Roll_Left" if steer.z>=0 else "Roll_Right"]
+	var soft := angles(keys[axis]+"_Soft")
+	if turn<=0.5: return blend(rest,soft,2.0*turn,pow(2.0*turn,2))
+	return blend(soft,angles(keys[axis]+"_Hard"),2.0*turn-1.0,pow(2.0*turn-1.0,2))
 
 # Local torso offsets (radians), distributed by the existing four-bone spine.
 # Hathaway's Messer and Titanfall's Titans provide the loaded body accents.

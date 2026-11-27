@@ -43,6 +43,9 @@ var stroke_duration := 0.5
 var gesture_count := 0
 var tested_gesture := -1
 var leg_stroke_available := false
+var primary_trim := Vector3.ZERO
+var trim_clock := 0.0
+var trim_axis := 0
 
 func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 	var sk := get_skeleton()
@@ -83,6 +86,9 @@ func reset() -> void:
 	gesture_count = 0
 	tested_gesture = -1
 	leg_stroke_available = false
+	primary_trim = Vector3.ZERO
+	trim_clock = 0.0
+	trim_axis = 0
 	contacts.reset()
 
 func update(delta: float, controller) -> void:
@@ -583,6 +589,10 @@ func _update_authored_legs(delta: float, controller) -> void:
 	# and braking. Reverse thrust has priority even during full steering.
 	var lateral_balance: float = smoothstep(0.25,0.9,absf(motion.side_load))*(1.0-absf(steer.z))*0.55
 	var bracing: float = maxf(motion.retro,maxf(motion.flare*0.85,lateral_balance))
+	# During a reversal, load a wide transfer stance before the opposite
+	# stagger reaches its final key. Rate error continues to drive the jets.
+	var yaw_arrest: float = smoothstep(0.05,0.45,absf(motion.pilot_rates.y))*float(intent.y*motion.pilot_rates.y<0.0)
+	bracing = maxf(bracing,yaw_arrest*0.55)
 	var target := Articulation.select(steer,move,power,bracing)
 	var land: float = motion.land
 	var takeoff: float = motion.launch
@@ -593,6 +603,19 @@ func _update_authored_legs(delta: float, controller) -> void:
 	# With the calf, backpack and cold couples present, the deep pull can keep
 	# its knee silhouette while the boots recover axial thrust under power.
 	var powered_pull: float = smoothstep(0.25,0.85,steer.x)*throttle_load*(1.0-motion.hover)*(1.0-bracing)
+	# Reuse the real wrench predictor for primary hover trim, not only for
+	# optional gestures. Small ankle/stance adjustments preserve the key.
+	var trim_allowed: bool = controller.hover_assist>0.5 and power>0.04 and land<0.1 and takeoff<0.1 and bracing<0.7
+	if trim_allowed:
+		trim_clock -= delta
+		if trim_clock<=0.0:
+			primary_trim = controller.body.calibrate_primary_pose(target,primary_trim,trim_axis)
+			trim_axis = (trim_axis+1)%3
+			trim_clock = 0.10
+		target = controller.body.apply_primary_trim(target,primary_trim)
+	else:
+		primary_trim = Vector3.ZERO
+		trim_clock = 0.0
 	var stroke: Vector3 = motion.stroke
 	var alternative := target.duplicate()
 	for side in 2:

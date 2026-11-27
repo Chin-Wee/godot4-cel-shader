@@ -272,7 +272,36 @@ func leg_gesture_feasible(primary: PackedVector3Array, gesture: PackedVector3Arr
 	var second := _pose_wrench_error(gesture)
 	return second<=first+0.002
 
-func _pose_wrench_error(angles: PackedVector3Array) -> float:
+func apply_primary_trim(angles: PackedVector3Array, trim: Vector3) -> PackedVector3Array:
+	var result := angles.duplicate()
+	for side in 2:
+		var sign_axis := 1.0 if side==0 else -1.0
+		var hip := result[side*3]
+		hip.z += trim.z*sign_axis
+		result[side*3] = rig.profile.limit_joint(hip,side,0)
+		var ankle := result[side*3+2]
+		ankle.x += trim.x
+		ankle.z += trim.y
+		result[side*3+2] = rig.profile.limit_joint(ankle,side,2)
+	return result
+
+func calibrate_primary_pose(angles: PackedVector3Array, previous: Vector3, axis: int) -> Vector3:
+	var best := previous
+	var error := _pose_wrench_error(apply_primary_trim(angles,best),true)+best.length()*0.02
+	var limit := Vector3(0.14,0.12,0.12)
+	# One bounded coordinate search per interval; do not run a full pose
+	# optimizer every tick. Stance trim may widen but never close the key.
+	for direction in [-1.0,1.0]:
+		var candidate := previous
+		candidate[axis] += direction*0.045
+		candidate = candidate.clamp(Vector3(-limit.x,-limit.y,0.0),limit)
+		var score := _pose_wrench_error(apply_primary_trim(angles,candidate),true)+candidate.length()*0.02
+		if score<error-0.0005:
+			best = candidate
+			error = score
+	return best
+
+func _pose_wrench_error(angles: PackedVector3Array, hot_only := false) -> float:
 	var length_scale := display_scale/FlightController.WORLD_UNITS_PER_METER
 	var weight := mass*FlightController.GRAVITY
 	var ports := []
@@ -300,7 +329,7 @@ func _pose_wrench_error(angles: PackedVector3Array) -> float:
 				local.basis *= rest.inverse()*Basis.from_euler(reachable)*rest
 			parent *= local
 			predicted[index] = parent
-	for i in MOUNTS.size()+COLD_MOUNTS.size():
+	for i in MOUNTS.size()+(0 if hot_only else COLD_MOUNTS.size()):
 		var hot := i<MOUNTS.size()
 		var index := i if hot else i-MOUNTS.size()
 		var mount: Array = MOUNTS[index] if hot else COLD_MOUNTS[index]

@@ -259,7 +259,12 @@ func _check_mount_surfaces(mech: Node3D) -> bool:
 		var found := false
 		var rigid := false
 		for node in source_meshes:
-			if not node is MeshInstance3D or not expected_meshes.has(String(node.name)): continue
+			if not node is MeshInstance3D: continue
+			var match_name := false
+			for expected in expected_meshes:
+				if _mesh_name_key(String(node.name))==_mesh_name_key(String(expected)):
+					match_name = true
+			if not match_name: continue
 			var mesh: MeshInstance3D = node
 			found = true
 			# Raw mesh vertices are not posed vertices for skinned armour. The
@@ -273,12 +278,17 @@ func _check_mount_surfaces(mech: Node3D) -> bool:
 					mesh.global_transform*faces[face_index+1],
 					mesh.global_transform*faces[face_index+2]))
 		if not found:
-			push_error("Missing source armour: "+String(mount[0]))
+			var imported := PackedStringArray()
+			for node in source_meshes: imported.append(String(node.name))
+			push_error("Missing source armour: "+String(mount[0])+"; imported meshes: "+str(imported))
 			return false
 		if rigid and nearest >= 0.02*mech.display_scale:
 			push_error("Booster floats away from source armour: %s (%s world units)"%[mount[0],nearest])
 			return false
 	return true
+
+func _mesh_name_key(value: String) -> String:
+	return value.to_lower().replace(".","").replace("_","").replace(" ","").replace("-","")
 
 func _triangle_distance(point: Vector3, a: Vector3, b: Vector3, c: Vector3) -> float:
 	var normal := (b-a).cross(c-a).normalized()

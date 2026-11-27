@@ -226,6 +226,20 @@ func _check_booster_caps() -> void:
 				_expect(fc.cold_forces[index].is_finite() and fc.cold_forces[index].length()<=fc.cold_thrust_limit(index)+0.1,"Cold outlet exceeds individual Newton cap")
 			peak = maxf(peak,fc.motor_forces[0].length())
 			_expect(fc.motor_forces[1].is_zero_approx() and fc.cold_forces[1].is_zero_approx(),"Disabled booster produces force")
+	# Force one reduced-rating engine to be the only available actuator.
+	# The redundant six-engine allocation above is not required to use it.
 	scene.hero.mass = original_mass
+	for index in profile.main_booster_max_thrust.size():
+		if index!=0: profile.main_booster_max_thrust[index] = 0.0
+	profile.cold_booster_max_thrust.fill(0.0)
+	fc.reset(0.0)
+	fc.detent = 4
+	fc.control_torque = Vector3.ZERO
+	peak = 0.0
+	for tick in 120:
+		fc.clock += 1.0/60.0
+		fc._solve_thrusters(hot,cold,Basis.IDENTITY,1.0/60.0,Vector3.UP*4.0,Vector3.ZERO,Vector3.ZERO,true,6.0,false,false)
+		peak = maxf(peak,fc.motor_forces[0].length())
+		_expect(fc.motor_forces[0].length()<=10000.1,"Isolated engine exceeds reduced rating")
 	scene.hero.linear_velocity = original_velocity
-	_expect(peak>9900,"Cap check never loads the reduced-rating booster")
+	_expect(peak>9900,"Isolated saturation fixture does not load the reduced-rating booster")
