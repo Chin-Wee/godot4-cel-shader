@@ -324,6 +324,8 @@ func _process(delta: float) -> void:
 	for trail in trails: trail.set_process(animate)
 	if trails.size()>0: trails[0].visible = wingman.controller.velocity.length()>1.5
 	if trails.size()>1: trails[1].visible = true
+	if not animate:
+		for emitter in thrust_wash: emitter.emitting = false
 	for index in engine_trails.size():
 		var active: bool = animate and hero.controller.motor_forces[index].length()>hero.controller.hot_max_thrust(index)*0.02
 		engine_trails[index].visible = active

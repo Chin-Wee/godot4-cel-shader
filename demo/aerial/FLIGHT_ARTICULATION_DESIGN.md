@@ -660,3 +660,24 @@ Preserve the half-second tap and one-second cooldown. Reserve the incremental bu
 Primary hover trim reuses the existing predicted bone-chain/valve wrench solver, evaluating hot outlets alone so cold gas cannot hide sustained geometry deficiencies. A bounded coordinate search every 0.10 s adjusts ankle pitch, common lateral ankle trim and outward hip stance. It never replaces the primary key or exceeds the existing joint limits. Secondary gestures continue to use the full-rig feasibility check. Intentional angular arrest can bypass small cold reversal dwell; automatic trim retains hysteresis and all valve constraints. No new controller or thruster ratings.
 
 Validation targets: combined lateral/yaw and braced steering must retain distinct poses; slow heavy-engine ramps must not eliminate burst demand; the imported armour name audit must find the expected mesh; isolated rating tests must saturate the sole available actuator. The revised dynamic pose targets and hot-only trim require CI and visual replay validation. No new measured flight performance is claimed here.
+
+
+## 14. Implemented mechanical-load response and flight feedback
+
+The implementation adds a bounded presentation response without introducing a second physics body or a separate propulsion controller.
+
+- **mechanical_response.gd** consumes filtered acceleration/jerk, delivered main-engine forces, pressure scales and brake/retrograde load. It advances independent damped modes for the pelvis, torso, hips, knees, ankles, shoulders, elbows, wrists and head.
+- The modes use an analytic underdamped step so their response is stable across 30/60/120 Hz physics rates. Angular offsets are individually bounded; the response is an animation estimate, not a finite-element stress solver.
+- Main-engine pressure dips are bounded to loaded retrograde burns. The allocator sees the same reduced per-engine capacity that is used for delivered thrust, and the hardware rating remains an absolute upper limit.
+- The authored pose remains responsible for the large silhouette. Structural offsets are additive and small. The head and hands receive separate stabilisation/grip inputs.
+- The camera receives a one-shot inertial recoil on a rising jerk event, then returns through its damped response. It does not continuously shake during steady acceleration.
+- The exhaust shader receives per-engine pressure stress. The aerial demo now leaves individual thin trails for the six main engines and emits dust only when a downward exhaust ray intersects the ground within range.
+- The initial audio layer is procedural and spatial: a low engine bed, air-noise component and short structural impact transient. It is a system prototype, not a replacement for authored production recordings.
+
+### Validation contract
+
+Run test_mechanical_response alongside the authored-flight, thruster-control, allocator, articulation, propulsion-policy, animation-contract and VFX timing regressions. The structural test checks neutral stability, asymmetric response, bounded offsets, settling and timestep consistency. The thruster-control test logs the worst directional residual and isolated booster output so failures can be diagnosed from CI artifacts rather than hidden by relaxed thresholds.
+
+### Known approximation boundaries
+
+Visual limb movement does not alter the rigid body's mass distribution or inertia. The load estimator uses delivered outlet forces and chassis telemetry to drive presentation only. Ground wash uses ray-tested particle influence rather than fluid simulation. Procedural audio needs an authored sound pass before a production demo.

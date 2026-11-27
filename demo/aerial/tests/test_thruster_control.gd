@@ -59,11 +59,20 @@ func _capture() -> void:
 		var early: Dictionary = _at(rows,0.3)
 		var force := Vector3(early.main_force[0],early.main_force[1],early.main_force[2])+Vector3(early.cold_force[0],early.cold_force[1],early.cold_force[2])
 		_expect(force.dot(entry[2])>scene.hero.mass*Controller.GRAVITY*0.25,entry[0]+": nozzles wait for the body to tilt")
+		var worst_cross := 0.0
+		var worst_net := Vector3.ZERO
+		var worst_time := 0.0
 		for row in rows:
 			_expect(row.upright>cos(deg_to_rad(1)),entry[0]+": boost destabilizes the chassis")
 			if row.burst_amount>0.3:
 				var net: Vector3 = Vector3(row.main_force[0]+row.cold_force[0]+row.aero_force[0],row.main_force[1]+row.cold_force[1]+row.aero_force[1],row.main_force[2]+row.cold_force[2]+row.aero_force[2])/scene.hero.mass+Vector3.DOWN*Controller.GRAVITY
-				_expect(net.slide(entry[2]).length()<0.5,entry[0]+": total force leaves the target direction")
+				var cross_axis := net.slide(entry[2]).length()
+				if cross_axis>worst_cross:
+					worst_cross = cross_axis
+					worst_net = net
+					worst_time = row.time
+				_expect(cross_axis<0.5,entry[0]+": total force leaves the target direction")
+		print("VECTOR DIAGNOSTIC ",entry[0]," cross=",worst_cross," net=",worst_net," time=",worst_time," jerk=",report["vector_"+entry[0]].max_jerk)
 		_expect(report["vector_"+entry[0]].max_jerk<80,entry[0]+": abrupt burst force change")
 		for index in scene.hero.controller.motor_forces.size():
 			var actual: Vector3 = scene.hero.controller.motor_forces[index].normalized()
@@ -242,4 +251,5 @@ func _check_booster_caps() -> void:
 		peak = maxf(peak,fc.motor_forces[0].length())
 		_expect(fc.motor_forces[0].length()<=10000.1,"Isolated engine exceeds reduced rating")
 	scene.hero.linear_velocity = original_velocity
+	print("BOOSTER DIAGNOSTIC peak=",peak," delivered=",fc.motor_forces[0]," valve=",fc.hot_valves[0].level," pressure=",fc.engine_pressure_scales[0]," reference=",fc.force_reference)
 	_expect(peak>9900,"Isolated saturation fixture does not load the reduced-rating booster")

@@ -4,10 +4,19 @@ on:
   push:
     branches:
       - flight/fixed-thrust-bracing
+      - flight/controlled-mechanical-violence
     paths:
       - "demo/models/MechAsset/MechAsset.glb"
       - "demo/aerial/aerial_mech.gd"
+      - "demo/aerial/aerial_demo.gd"
+      - "demo/aerial/flight_controller.gd"
+      - "demo/aerial/flight_pose.gd"
+      - "demo/aerial/arm_pose.gd"
+      - "demo/aerial/flight_camera.gd"
+      - "demo/aerial/flight_audio.gd"
+      - "demo/aerial/mechanical_response.gd"
       - "demo/aerial/articulation_fixture.gd"
+      - "demo/shaders/aerial/afterburner.gdshader"
       - "demo/aerial/tests/**"
       - "tools/audit_mech_thrusters.py"
       - "tools/check_godot.py"
@@ -17,7 +26,15 @@ on:
     paths:
       - "demo/models/MechAsset/MechAsset.glb"
       - "demo/aerial/aerial_mech.gd"
+      - "demo/aerial/aerial_demo.gd"
+      - "demo/aerial/flight_controller.gd"
+      - "demo/aerial/flight_pose.gd"
+      - "demo/aerial/arm_pose.gd"
+      - "demo/aerial/flight_camera.gd"
+      - "demo/aerial/flight_audio.gd"
+      - "demo/aerial/mechanical_response.gd"
       - "demo/aerial/articulation_fixture.gd"
+      - "demo/shaders/aerial/afterburner.gdshader"
       - "demo/aerial/tests/**"
       - "tools/audit_mech_thrusters.py"
       - "tools/check_godot.py"
@@ -58,6 +75,7 @@ jobs:
       - name: Run flight and thruster headless regressions
         run: >-
           python tools/check_godot.py
+          test_mechanical_response
           test_authored_flight
           test_thruster_control
           test_articulation_lab
@@ -65,3 +83,5 @@ jobs:
           test_flight_propulsion_policy
           test_flight_pose
           test_aerial_stack
+          test_animation_contract
+          test_vfx_timing
