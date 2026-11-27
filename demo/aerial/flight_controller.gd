@@ -97,7 +97,8 @@ var hover_assist := 0.0
 var brake_amount := 0.0
 var brake_request := 0.0 # Pose preparation before aerodynamic brake smoothing.
 var rotation_command := Vector3.ZERO
-var rotation_request := Vector3.ZERO # Animation intent before control smoothing.
+var rotation_request := Vector3.ZERO # Control intent after precision scaling.
+var pilot_rotation_intent := Vector3.ZERO # Unscaled input for authored mechanical anticipation.
 var hover_translation := Vector3.ZERO # Heading-local force request, not velocity.
 var translation_request := Vector3.ZERO # Unfiltered intent for pose preparation.
 var hover_actuation := Vector3.ZERO # Planned heading-local acceleration for posing.
@@ -202,6 +203,7 @@ func reset(power := 1.0) -> void:
 	maneuver_hold = Vector2.ZERO
 	clock = 0.0
 	rotation_request = Vector3.ZERO
+	pilot_rotation_intent = Vector3.ZERO
 	hover_translation = Vector3.ZERO
 	translation_request = Vector3.ZERO
 	hover_actuation = Vector3.ZERO
@@ -348,6 +350,7 @@ func _read_commands(raw: Dictionary, dt: float) -> void:
 	burst_amount = smoothstep(0.0, HOVER_BURST_RAMP, age) * smoothstep(0.0, HOVER_BURST_RAMP, burst_remaining) * active_time / dt
 	translation_request = burst_direction if burst_remaining > 0.0 else Vector3.ZERO
 	hover_translation = translation.step(translation_request, dt, HOVER_TRANSLATION_RESPONSE)
+	pilot_rotation_intent = request
 	rotation_request = request * precision
 	released_axes = Vector3.ONE-rotation_request.abs()
 	var rotation_response := lerpf(INPUT_RESPONSE,FULL_POWER_INPUT_RESPONSE,smoothstep(2,4,thrust_level))
@@ -446,7 +449,7 @@ func _calculate_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt:
 	if burst_amount>0.0001: drift -= move.normalized()*horizontal.dot(move.normalized())
 	var catch_force := (-drift*HOVER_DRIFT_GAIN).limit_length(GRAVITY*0.30)*minf(released_axes.x,released_axes.z)
 	# Reduced trim authority needs a gentler force ramp and earlier shutdown.
-	var force_slew := FORCE_SLEW_G*sqrt(cold_power_fraction())
+	var force_slew := FORCE_SLEW_G # Main-engine response is independent of cold-gas trim reserve.
 	var boost := burst_acceleration(burst_amount,burst_remaining,force_slew)
 	var requested := move*GRAVITY*boost+catch_force*(1.0-burst_amount)
 	requested.y = clampf(-velocity.y*1.8,-GRAVITY*0.5,GRAVITY*0.5)
@@ -494,7 +497,15 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	for i in hot_count:
 		hot_error += hot_plan[i]
 		hot_moment_error += ports[i].lever.cross(hot_plan[i])
-	if hot_error.length()<0.02 and hot_moment_error.length()<0.005:
+	var local_rates := frame.transposed()*angular_velocity
+	var pilot_intent := PILOT_AXES*rotation_request
+	var deliberate_arrest := false
+	for axis in 3:
+		if absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*local_rates[axis]<0.0:
+			deliberate_arrest = true
+	var active_rotation := deliberate_arrest or local_rates.length()>0.08
+	var moment_tolerance := 0.0015 if active_rotation else 0.005
+	if hot_error.length()<0.02 and hot_moment_error.length()<moment_tolerance:
 		ideal_forces = hot_plan
 		for i in cold_outlets.size(): ideal_forces.append(Vector3.ZERO)
 	else: ideal_forces = Allocator.solve(ports,force_target,moment_target,along,ideal_forces,[],96,fit)
@@ -569,8 +580,8 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	# Hysteresis lets the body coast through small errors without valve chatter.
 	if quiet_hover:
 		var tilt := acos(clampf(frame.y.y,-1,1))
-		if angular_velocity.length()>0.025 or tilt>deg_to_rad(0.75): hover_cold_correction = true
-		elif angular_velocity.length()<0.007 and tilt<deg_to_rad(0.3): hover_cold_correction = false
+		if angular_velocity.length()>0.08 or tilt>deg_to_rad(1.5): hover_cold_correction = true
+		elif angular_velocity.length()<0.025 and tilt<deg_to_rad(0.6): hover_cold_correction = false
 		cold_needed = cold_needed and hover_cold_correction
 	else: hover_cold_correction = false
 	if cold_needed:
@@ -649,11 +660,12 @@ func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, transl
 	var local_moment := frame.transposed()*moment
 	var pilot_intent := PILOT_AXES*rotation_request
 	var body_rates := frame.transposed()*angular_velocity
+	var moment_enter := 0.005 if translating or body_rates.length()>0.08 else 0.02
 	for axis in 3:
 		local_force[axis] = _cold_trim_axis(axis,local_force[axis],0.025 if translating else 0.04,dt)
 		# A deliberate pilot-commanded arrest is not automatic trim chatter.
 		var arrest := absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*body_rates[axis]<0.0 and pilot_intent[axis]*local_moment[axis]>0.0
-		local_moment[axis] = _cold_trim_axis(axis+3,local_moment[axis],0.005 if translating else 0.02,dt,arrest)
+		local_moment[axis] = _cold_trim_axis(axis+3,local_moment[axis],moment_enter,dt,arrest)
 	return [frame*local_force,frame*local_moment]
 
 func _cold_trim_axis(index: int, request: float, enter: float, dt: float, deliberate_arrest := false) -> float:

@@ -92,6 +92,7 @@ func _run() -> void:
 	fc.jump_remaining = 0.5
 	fc.thrust_level = 4.0
 	await _ticks(14)
+	print("GROUND PUSH DIAGNOSTIC launch=",mech.rig.motion.launch," resting=",resting_knee," current=",mech.rig.legs[1].value.x," target=",mech.rig.profile.launch_pose[1]," mechanical=",mech.rig.motion.get("mechanical_legs",PackedVector3Array()))
 	assert(mech.rig.motion.launch>0.95 and mech.rig.legs[1].value.x<resting_knee-0.15,"Ground push does not extend the legs")
 	fc.jump_remaining = 0.0
 	fc.thrust_level = 1.0

@@ -153,7 +153,7 @@ func _sample_motion(controller, delta: float) -> Dictionary:
 	var pilot_rates: Vector3 = pilot.inverse()*controller.angular_velocity
 	# Pose preparation reads the original request. Physics keeps its existing
 	# command filter; filtering that result again erased brief animation accents.
-	var intent: Vector3 = controller.rotation_request
+	var intent: Vector3 = controller.pilot_rotation_intent
 	# USPA start-coast-stop: command/rate mismatch starts a stroke, sustained
 	# rotation relaxes it, releasing input creates an opposing arrest stroke.
 	# This is a visual intent signal, not another attitude controller.
@@ -600,7 +600,7 @@ func _sample_articulation(controller, delta: float) -> void:
 func _update_authored_legs(delta: float, controller) -> void:
 	var power: float = maxf(controller.thrust_level,float(controller.detent>0))
 	var steer: Vector3 = motion.steer
-	var intent: Vector3 = controller.rotation_request
+	var intent: Vector3 = controller.pilot_rotation_intent
 	# Primary pose follows the command; measured rate error remains in the
 	# independent corrective stroke and the structural response.
 	for axis in 3:

@@ -104,11 +104,11 @@ static func _maneuver(steer: Vector3, move: Vector3, power: float) -> PackedVect
 	for axis in 3:
 		if strength[axis]<0.001: continue
 		var rotation := _turn_pose(steer,axis)
-		var influence := 0.65 if axis==1 else 0.25
+		var influence := 0.75 if axis==0 else (0.65 if axis==1 else 0.25)
 		for index in result.size():
 			var delta := (rotation[index]-rest[index])*influence
 			var angle := result[index]+delta
-			if index%3==1: angle.x = maxf(result[index].x,angle.x)
+			if index%3==1 and axis!=0: angle.x = maxf(result[index].x,angle.x)
 			result[index] = angle
 	return result
 

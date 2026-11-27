@@ -291,7 +291,7 @@ func _check_booster_caps() -> void:
 	peak = 0.0
 	for tick in 120:
 		fc.clock += 1.0/60.0
-		fc._solve_thrusters(hot,cold,Basis.IDENTITY,1.0/60.0,Vector3.UP*4.0,Vector3.ZERO,Vector3.ZERO,true,6.0,false,false)
+		fc._solve_thrusters(hot,cold,Basis.IDENTITY,1.0/60.0,Vector3.DOWN*4.0,Vector3.ZERO,Vector3.ZERO,true,6.0,false,false)
 		peak = maxf(peak,fc.motor_forces[0].length())
 		_expect(fc.motor_forces[0].length()<=10000.1,"Isolated engine exceeds reduced rating")
 	scene.hero.linear_velocity = original_velocity
