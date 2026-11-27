@@ -50,6 +50,7 @@ func _check_thruster_layout() -> void:
 		["BackpackSideR","Torso"],["WaistFrontR","Low_Waist"],["WaistRearR","Low_Waist"],
 	]
 	assert(mech.COLD_MOUNTS.size()==12 and mech.gas_sockets.size()==12,"Expected twelve cold-gas verniers")
+	assert(not mech.rear_waist_offset.is_zero_approx(),"Waist armour adjustment must move rear hardpoints")
 	for index in expected_cold.size():
 		assert(String(mech.COLD_MOUNTS[index][0])==expected_cold[index][0],"Unexpected cold outlet order")
 		assert(String(mech.COLD_MOUNTS[index][1])==expected_cold[index][1],"Cold outlet attached to wrong bone")
@@ -67,7 +68,7 @@ func _check_thruster_attachments() -> void:
 	for index in mech.MOUNTS.size():
 		var mount: Array = mech.MOUNTS[index]
 		var socket: BoneAttachment3D = mech.sockets[index]
-		var expected_position := socket.to_global(mount[2])
+		var expected_position := socket.to_global(mech.mount_position(mount))
 		var expected_axis: Vector3 = (socket.global_basis*mount[3]).normalized()
 		_expect(mech.gimbals[index].global_position.distance_to(expected_position)<0.02,
 			"Main outlet detached from articulated bone: "+String(mount[0]))
@@ -76,7 +77,7 @@ func _check_thruster_attachments() -> void:
 	for index in mech.COLD_MOUNTS.size():
 		var mount: Array = mech.COLD_MOUNTS[index]
 		var socket: BoneAttachment3D = mech.gas_sockets[index]
-		var expected_position := socket.to_global(mount[2])
+		var expected_position := socket.to_global(mech.mount_position(mount))
 		var expected_axis: Vector3 = (socket.global_basis*mount[3]).normalized()
 		_expect(mech.gas_gimbals[index].global_position.distance_to(expected_position)<0.02,
 			"Cold vernier detached from articulated bone: "+String(mount[0]))

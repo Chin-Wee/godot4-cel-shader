@@ -648,3 +648,7 @@ Run the audit locally with:
 ```sh
 python tools/audit_mech_thrusters.py --json --strict --max-distance 0.02 --min-normal-dot 0.97
 ```
+
+### Runtime armour fit
+
+The source GLB audit checks unmodified bind-pose triangles. The runtime waist armour fit translates the rear skirt; the live rear waist outlet positions now incorporate that same displacement in the Low_Waist bone frame. Rendering, native force application and predictive wrench allocation share the calibrated position. Runtime rigid mesh distance checks use world-scaled tolerance; skinned mesh bind-pose seating is checked by the GLB audit instead of treating undeformed vertices as posed geometry. Dynamic clearance and flight handling require a fresh regression run.

@@ -20,6 +20,7 @@ var gas_gimbals: Array[Node3D] = []
 var bone_poses := {}
 var controller: FlightController = FlightController.new()
 var neutral_bases: Array[Basis] = []
+var rear_waist_offset := Vector3.ZERO
 var display_scale := 50.0
 var controls := {}
 var ground_motion: RefCounted
@@ -130,7 +131,11 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 	actor.animation_player.stop()
 	actor.current_animation = &""
 	skeleton = actor.find_child("Skeleton3D",true,false)
+	var skirt := skeleton.find_child("Waist Armor",true,false) as MeshInstance3D
+	var skirt_before := skirt.global_position
 	rig.profile.fit_waist_armor(skeleton)
+	var waist_frame := skeleton.global_transform*skeleton.get_bone_global_pose(skeleton.find_bone(&"Low_Waist"))
+	rear_waist_offset = waist_frame.basis.inverse()*(skirt.global_position-skirt_before)
 	# Flight animation pass: the supplied gun remains available in asset preview.
 	# Mesh inspection: both are weapon geometry weighted solely to Hands.R;
 	# Cube is the Torso-weighted backpack and must remain visible.
@@ -161,7 +166,7 @@ func build(surface: ShaderMaterial, exhaust: ShaderMaterial) -> void:
 		var gimbal := Node3D.new()
 		gimbal.name = "FixedOutlet"
 		socket.add_child(gimbal)
-		gimbal.position = mount[2]
+		gimbal.position = mount_position(mount)
 		var direction: Vector3 = mount[3].normalized()
 		var up := Vector3.FORWARD if absf(direction.dot(Vector3.UP)) > 0.95 else Vector3.UP
 		var neutral := Basis.looking_at(-direction,up)
@@ -243,12 +248,18 @@ func aerodynamic_surfaces() -> Array:
 		surfaces.append({"position":offset,"normal":rotation*Vector3.FORWARD,"forward":rotation*Vector3.UP,"fraction":profile.aero_fractions[index]})
 	return surfaces
 
+func mount_position(mount: Array) -> Vector3:
+	var position: Vector3 = mount[2]
+	if String(mount[0]).begins_with("WaistRear"):
+		position += rear_waist_offset
+	return position
+
 func _thruster_outlets(attachments: Array, mounts: Array, offset: int) -> Array:
 	var outlets := []
 	for index in attachments.size():
 		var bone := skeleton.find_bone(attachments[index].bone_name)
 		var transform: Transform3D = skeleton.global_transform*bone_poses[bone]
-		outlets.append({"position":transform*mounts[index][2]-global_position,
+		outlets.append({"position":transform*mount_position(mounts[index])-global_position,
 			"basis":(transform.basis*neutral_bases[index+offset]).orthonormalized()})
 	return outlets
 
@@ -301,7 +312,7 @@ func _pose_wrench_error(angles: PackedVector3Array) -> float:
 		var tail: float = valve.preview(0.0,0.16)*capacity/weight
 		var available: float = valve.preview(float(can_fire),0.16)*capacity/weight
 		ports.append({"basis":(pose.basis*neutral_bases[i]).orthonormalized(),
-			"lever":(pose*mount[2]-global_position)/display_scale,"cone":0.0,"center":Vector3.ZERO,
+			"lever":(pose*mount_position(mount)-global_position)/display_scale,"cone":0.0,"center":Vector3.ZERO,
 			"gain":1.0,"minimum":tail,"maximum":available,"off":tail,"fuel":0.0})
 		seed.append((controller.motor_forces[index] if hot else controller.cold_forces[index])/weight)
 	var force := controller.requested_main_force/weight

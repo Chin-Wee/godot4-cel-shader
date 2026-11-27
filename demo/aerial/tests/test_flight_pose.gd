@@ -238,7 +238,7 @@ func _check_limbs(mech: Node3D) -> bool:
 func _check_mount_surfaces(mech: Node3D) -> bool:
 	# Compare each outlet against its actual GLB source mesh in world space.
 	# This covers rigid meshes parented to bones as well as the visible armour.
-	var source_meshes := mech.actor.find_children("*","MeshInstance3D",true,false)
+	var source_meshes: Array[Node] = mech.actor.find_children("*","MeshInstance3D",true,false)
 	var source_names := {
 		"BackpackL":["Cube"],"BackpackR":["Cube"],
 		"CalfL":["L.3.Shin"],"CalfR":["R.3.Shin"],
@@ -256,17 +256,27 @@ func _check_mount_surfaces(mech: Node3D) -> bool:
 		var mount: Array = mounts[index]
 		var expected_meshes: Array = source_names.get(String(mount[0]),[])
 		var nearest := INF
+		var found := false
+		var rigid := false
 		for node in source_meshes:
 			if not node is MeshInstance3D or not expected_meshes.has(String(node.name)): continue
 			var mesh: MeshInstance3D = node
+			found = true
+			# Raw mesh vertices are not posed vertices for skinned armour. The
+			# GLB audit checks their bind-pose triangles and bone weights.
+			if mesh.skin != null: continue
+			rigid = true
 			var faces: PackedVector3Array = mesh.mesh.get_faces()
 			for face_index in range(0,faces.size(),3):
 				nearest = minf(nearest,_triangle_distance(outlets[index].global_position,
 					mesh.global_transform*faces[face_index],
 					mesh.global_transform*faces[face_index+1],
 					mesh.global_transform*faces[face_index+2]))
-		if nearest >= 0.02:
-			push_error("Booster floats away from source armour: %s (%s source units)"%[mount[0],nearest])
+		if not found:
+			push_error("Missing source armour: "+String(mount[0]))
+			return false
+		if rigid and nearest >= 0.02*mech.display_scale:
+			push_error("Booster floats away from source armour: %s (%s world units)"%[mount[0],nearest])
 			return false
 	return true
 
