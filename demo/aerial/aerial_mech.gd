@@ -486,11 +486,15 @@ func _refresh_exhaust() -> void:
 		var output: float = controller.motor_forces[index].length()
 		var throttle: float = clampf(output/maxf(controller.hot_max_thrust(index),0.000001),0,1)
 		var load := throttle
+		var pressure_scale: float = controller.engine_pressure_scales[index] if index<controller.engine_pressure_scales.size() else 1.0
+		var pressure_stress := clampf((1.0-pressure_scale)/0.035,0.0,1.0)
 		flame.visible = output>0.00001
 		flame.set_instance_shader_parameter("thrust_load",load)
 		flame.set_instance_shader_parameter("engine_throttle",throttle)
+		flame.set_instance_shader_parameter("pressure_stress",pressure_stress)
 		var beat := (exhaust_phase+float(flame.get_instance_shader_parameter("phase_offset")))*TAU
-		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,throttle)*load*(1.0+sin(beat*4.0)*0.12))
+		var pressure_pulse := 1.0-pressure_stress*(0.025+0.035*(0.5+0.5*sin(beat*1.7)))
+		flame.scale = Vector3(0.18*(1.0+sin(beat*2.0)*0.07),0.18*(1.0+cos(beat*3.0)*0.05),lerpf(1.2,5.5,throttle)*load*(1.0+sin(beat*4.0)*0.12)*pressure_pulse)
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
 		# The same nozzle force drives the native body and its visible exhaust.

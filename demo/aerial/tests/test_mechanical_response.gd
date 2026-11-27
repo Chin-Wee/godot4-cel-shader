@@ -46,13 +46,14 @@ func _run() -> void:
 	assert(float(frame.mechanical_shock)>0.5,"Braking shock does not excite the structure")
 	assert(legs[1].x>0.005 and legs[4].x>0.005,"Braking does not load both knee assemblies")
 	assert(not is_equal_approx(legs[1].x,legs[4].x),"Left and right knees ignore asymmetric engine loading")
-	assert(not arms[0].is_equal_approx(arms[1]),"Arms respond as one synchronised assembly")
+	assert(arms[0].distance_to(arms[1])>0.001,"Arms respond as one synchronised assembly")
 	assert((frame.mechanical_torso as Vector3).length()<0.08,"Torso response exceeds its structural envelope")
 
 	for tick in 240:
 		frame = response.step(neutral,1.0/60.0)
 	assert((frame.mechanical_torso as Vector3).length()<0.002,"Torso response does not settle after load release")
-	assert((frame.mechanical_legs as PackedVector3Array)[1].length()<0.003,"Knee response does not settle after load release")
+	var settled_legs: PackedVector3Array = frame.mechanical_legs
+	assert(settled_legs[1].length()<0.003,"Knee response does not settle after load release")
 
 	var at_30 := _clock_sample(brake,30)
 	var at_60 := _clock_sample(brake,60)

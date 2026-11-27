@@ -3,6 +3,7 @@ extends Camera3D
 # Armored Core VI camera behavior, composed from the installed Phantom Camera.
 # The scene calls update_view once before camera-dependent weather/post effects.
 const AerialMech = preload("res://aerial/aerial_mech.gd")
+const Spring = preload("res://aerial/pose_servo.gd")
 var subject: AerialMech
 var follow_enabled := true
 @export var ground_view := false
@@ -19,6 +20,8 @@ var manual_gaze_time := 0.0
 var focus_target: Node3D
 var focus_targets: Array[Node3D] = []
 var focus_index := -1
+var recoil := Spring.new()
+var last_impact_signal := 0.0
 
 func _ready() -> void:
 	physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
@@ -46,6 +49,8 @@ func _ready() -> void:
 	camera_host.refresh_pcam_list_priorty()
 
 func reset_view() -> void:
+	recoil.reset()
+	last_impact_signal = 0.0
 	yaw = atan2(-subject.global_basis.z.x, -subject.global_basis.z.z) + PI
 	pitch = -0.067 if ground_view else 0.08
 	distance = 2.7 if ground_view else 3.8
@@ -73,6 +78,16 @@ func update_view(delta: float) -> void:
 	# Compensate damping's constant-velocity lag so fast climbs stay framed.
 	var lead: Vector3 = subject.linear_velocity*0.14 if not snap else Vector3.ZERO
 	offset += Basis(Vector3.UP,yaw).x*subject.display_scale*0.4+lead+lag
+	var impact_signal := clampf((subject.controller.jerk.length()-35.0)/120.0,0.0,1.0)
+	var rising_impact := impact_signal-last_impact_signal
+	if impact_signal>0.18 and rising_impact>0.045:
+		var local_jerk: Vector3 = subject.controller.local_jerk
+		var kick_direction := Vector3(local_jerk.z,local_jerk.x,-local_jerk.y)
+		if kick_direction.length()>0.001: recoil.velocity += kick_direction.normalized()*impact_signal*0.85
+	last_impact_signal = lerpf(last_impact_signal,impact_signal,1.0-exp(-delta/0.12))
+	recoil.step(Vector3.ZERO,delta,0.18,4.0)
+	var rendered_basis: Basis = subject.get_global_transform_interpolated().basis.orthonormalized()
+	offset += rendered_basis*recoil.value*subject.display_scale
 	phantom_camera.follow_offset = offset
 	phantom_camera.look_at_offset = aim-center
 	if snap: phantom_camera.teleport_position()
