@@ -22,8 +22,10 @@ func _run() -> void:
 	var frame: Dictionary
 	for tick in 120:
 		frame = response.step(neutral,1.0/60.0)
-	assert((frame.mechanical_torso as Vector3).length()<0.0001,"Neutral flight develops passive torso motion")
-	assert((frame.mechanical_pelvis as Vector3).length()<0.0001,"Neutral flight develops passive pelvis motion")
+	var neutral_torso: Vector3 = frame.mechanical_torso
+	var neutral_pelvis: Vector3 = frame.mechanical_pelvis
+	assert(neutral_torso.length()<0.0001,"Neutral flight develops passive torso motion")
+	assert(neutral_pelvis.length()<0.0001,"Neutral flight develops passive pelvis motion")
 	assert(float(frame.mechanical_shock)<0.0001,"Neutral flight invents structural impacts")
 
 	var brake := neutral.duplicate(true)
@@ -47,11 +49,13 @@ func _run() -> void:
 	assert(legs[1].x>0.005 and legs[4].x>0.005,"Braking does not load both knee assemblies")
 	assert(not is_equal_approx(legs[1].x,legs[4].x),"Left and right knees ignore asymmetric engine loading")
 	assert(arms[0].distance_to(arms[1])>0.001,"Arms respond as one synchronised assembly")
-	assert((frame.mechanical_torso as Vector3).length()<0.08,"Torso response exceeds its structural envelope")
+	var loaded_torso: Vector3 = frame.mechanical_torso
+	assert(loaded_torso.length()<0.08,"Torso response exceeds its structural envelope")
 
 	for tick in 240:
 		frame = response.step(neutral,1.0/60.0)
-	assert((frame.mechanical_torso as Vector3).length()<0.002,"Torso response does not settle after load release")
+	var settled_torso: Vector3 = frame.mechanical_torso
+	assert(settled_torso.length()<0.002,"Torso response does not settle after load release")
 	var settled_legs: PackedVector3Array = frame.mechanical_legs
 	assert(settled_legs[1].length()<0.003,"Knee response does not settle after load release")
 

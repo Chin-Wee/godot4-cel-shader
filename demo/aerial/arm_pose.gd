@@ -177,9 +177,6 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
 	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var strength: float = frame.stress
-	var structural_arms: PackedVector4Array = frame.get("mechanical_arms",PackedVector4Array())
-	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
-	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var direction: Vector3 = frame.stroke_direction
 	var goals := [Vector2.ZERO,Vector2.ZERO]
 	for side in 2:
