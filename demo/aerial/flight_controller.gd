@@ -580,8 +580,8 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	# Hysteresis lets the body coast through small errors without valve chatter.
 	if quiet_hover:
 		var tilt := acos(clampf(frame.y.y,-1,1))
-		if angular_velocity.length()>0.08 or tilt>deg_to_rad(1.5): hover_cold_correction = true
-		elif angular_velocity.length()<0.025 and tilt<deg_to_rad(0.6): hover_cold_correction = false
+		if angular_velocity.length()>0.12 or tilt>deg_to_rad(1.8): hover_cold_correction = true
+		elif angular_velocity.length()<0.04 and tilt<deg_to_rad(0.8): hover_cold_correction = false
 		cold_needed = cold_needed and hover_cold_correction
 	else: hover_cold_correction = false
 	if cold_needed:
@@ -660,7 +660,7 @@ func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, transl
 	var local_moment := frame.transposed()*moment
 	var pilot_intent := PILOT_AXES*rotation_request
 	var body_rates := frame.transposed()*angular_velocity
-	var moment_enter := 0.005 if translating or body_rates.length()>0.08 else 0.02
+	var moment_enter := 0.0015 if body_rates.length()>0.08 else (0.005 if translating else 0.02)
 	for axis in 3:
 		local_force[axis] = _cold_trim_axis(axis,local_force[axis],0.025 if translating else 0.04,dt)
 		# A deliberate pilot-commanded arrest is not automatic trim chatter.
