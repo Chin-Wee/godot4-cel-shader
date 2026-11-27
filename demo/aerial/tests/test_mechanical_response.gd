@@ -28,6 +28,14 @@ func _run() -> void:
 	assert(neutral_pelvis.length()<0.0001,"Neutral flight develops passive pelvis motion")
 	assert(float(frame.mechanical_shock)<0.0001,"Neutral flight invents structural impacts")
 
+	var torque_only := neutral.duplicate(true)
+	torque_only["joint_moments"] = {"left_knee":Vector3(0.8,0.0,0.0)}
+	var torque_response := Response.new()
+	var torque_frame: Dictionary
+	for tick in 18: torque_frame = torque_response.step(torque_only,1.0/60.0)
+	var torque_legs: PackedVector3Array = torque_frame.mechanical_legs
+	assert(torque_legs[1].x>torque_legs[4].x+0.005,"Joint moment does not load only its own knee assembly")
+
 	var brake := neutral.duplicate(true)
 	brake["g_load"] = 2.4
 	brake["brake"] = 1.0

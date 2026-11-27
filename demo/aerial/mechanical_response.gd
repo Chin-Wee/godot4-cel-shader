@@ -44,6 +44,17 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 	var motor_forces: Array = sample.get("motor_forces", [])
 	var motor_ratings = sample.get("motor_ratings", [])
 	var pressure_scales = sample.get("pressure_scales", [])
+	var joint_moments: Dictionary = sample.get("joint_moments", {})
+	var pelvis_moment: Vector3 = joint_moments.get("pelvis",Vector3.ZERO).limit_length(1.0)
+	var torso_moment: Vector3 = joint_moments.get("torso",Vector3.ZERO).limit_length(1.0)
+	var left_hip_moment: Vector3 = joint_moments.get("left_hip",Vector3.ZERO).limit_length(1.0)
+	var right_hip_moment: Vector3 = joint_moments.get("right_hip",Vector3.ZERO).limit_length(1.0)
+	var left_knee_moment: Vector3 = joint_moments.get("left_knee",Vector3.ZERO).limit_length(1.0)
+	var right_knee_moment: Vector3 = joint_moments.get("right_knee",Vector3.ZERO).limit_length(1.0)
+	var left_ankle_moment: Vector3 = joint_moments.get("left_ankle",Vector3.ZERO).limit_length(1.0)
+	var right_ankle_moment: Vector3 = joint_moments.get("right_ankle",Vector3.ZERO).limit_length(1.0)
+	var left_shoulder_moment: Vector3 = joint_moments.get("left_shoulder",Vector3.ZERO).limit_length(1.0)
+	var right_shoulder_moment: Vector3 = joint_moments.get("right_shoulder",Vector3.ZERO).limit_length(1.0)
 
 	var left_load := 0.0
 	var right_load := 0.0
@@ -88,16 +99,16 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 	var pressure_load := mean_pressure_ripple * load
 
 	var targets: Array[Vector3] = [
-		Vector3(-longitudinal_g * 0.004 + braking_load * 0.012, lateral_g * 0.006 + side_difference * 0.010, yaw_load * 0.006),
-		Vector3(longitudinal_g * 0.005 + braking_load * 0.018, -lateral_g * 0.008, yaw_load * 0.010 + shock * 0.004),
-		Vector3(braking_load * 0.012 + left_load * 0.008, lateral_g * 0.004, side_difference * 0.008),
-		Vector3(braking_load * 0.012 + right_load * 0.008, -lateral_g * 0.004, -side_difference * 0.008),
-		Vector3(braking_load * 0.045 + shock * 0.018 + left_load * 0.008 + left_slew * 0.012, 0.0, side_difference * 0.008),
-		Vector3(braking_load * 0.045 + shock * 0.018 + right_load * 0.008 + right_slew * 0.012, 0.0, -side_difference * 0.008),
-		Vector3(-longitudinal_g * 0.005 - left_load * 0.008 + shock * 0.010, lateral_g * 0.003, side_difference * 0.005),
-		Vector3(-longitudinal_g * 0.005 - right_load * 0.008 + shock * 0.010, -lateral_g * 0.003, -side_difference * 0.005),
-		Vector3(braking_load * 0.014 + shock * 0.016 + left_slew * 0.012, side_difference * 0.014 + yaw_load * 0.003, roll_load * 0.003),
-		Vector3(braking_load * 0.014 + shock * 0.016 + right_slew * 0.012, -side_difference * 0.014 + yaw_load * 0.003, -roll_load * 0.003),
+		Vector3(-longitudinal_g * 0.004 + braking_load * 0.012, lateral_g * 0.006 + side_difference * 0.010, yaw_load * 0.006) + pelvis_moment*0.025,
+		Vector3(longitudinal_g * 0.005 + braking_load * 0.018, -lateral_g * 0.008, yaw_load * 0.010 + shock * 0.004) + torso_moment*0.020,
+		Vector3(braking_load * 0.012 + left_load * 0.008, lateral_g * 0.004, side_difference * 0.008) + left_hip_moment*0.025,
+		Vector3(braking_load * 0.012 + right_load * 0.008, -lateral_g * 0.004, -side_difference * 0.008) + right_hip_moment*0.025,
+		Vector3(braking_load * 0.045 + shock * 0.018 + left_load * 0.008 + left_slew * 0.012, 0.0, side_difference * 0.008) + left_knee_moment*0.035,
+		Vector3(braking_load * 0.045 + shock * 0.018 + right_load * 0.008 + right_slew * 0.012, 0.0, -side_difference * 0.008) + right_knee_moment*0.035,
+		Vector3(-longitudinal_g * 0.005 - left_load * 0.008 + shock * 0.010, lateral_g * 0.003, side_difference * 0.005) + left_ankle_moment*0.030,
+		Vector3(-longitudinal_g * 0.005 - right_load * 0.008 + shock * 0.010, -lateral_g * 0.003, -side_difference * 0.005) + right_ankle_moment*0.030,
+		Vector3(braking_load * 0.014 + shock * 0.016 + left_slew * 0.012, side_difference * 0.014 + yaw_load * 0.003, roll_load * 0.003) + left_shoulder_moment*0.030,
+		Vector3(braking_load * 0.014 + shock * 0.016 + right_slew * 0.012, -side_difference * 0.014 + yaw_load * 0.003, -roll_load * 0.003) + right_shoulder_moment*0.030,
 		Vector3(shock * 0.030 + left_slew * 0.012, 0.0, side_difference * 0.008),
 		Vector3(shock * 0.030 + right_slew * 0.012, 0.0, -side_difference * 0.008),
 		Vector3(shock * 0.035 + pressure_load * 0.35, 0.0, side_difference * 0.010),

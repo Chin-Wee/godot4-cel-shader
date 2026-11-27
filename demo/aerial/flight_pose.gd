@@ -19,6 +19,7 @@ var legs: Array = []
 var arms: RefCounted
 var contacts: RefCounted
 var mechanical := MechanicalResponse.new()
+var mechanical_joint_loads: Dictionary = {}
 var bones := {}
 var clock := 0.0 # Shared exhaust clock; not a pose oscillator.
 var root_angles := Vector3.ZERO
@@ -65,6 +66,7 @@ func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 func reset() -> void:
 	for spring in [chest,hips,head,com]: spring.reset()
 	mechanical.reset()
+	mechanical_joint_loads.clear()
 	regimes.reset(Vector3(1,0,0))
 	launch.reset()
 	behavior_weights = PackedFloat32Array([1,0,0,0])
@@ -107,6 +109,7 @@ func update(delta: float, controller) -> void:
 		"retro":motion.get("retro",0.0),"motor_forces":controller.motor_forces,
 		"motor_ratings":controller.hardware.main_booster_max_thrust,
 		"pressure_scales":controller.engine_pressure_scales,
+		"joint_moments":mechanical_joint_loads,
 		"weight":controller.body.mass*controller.GRAVITY
 	}
 	motion.merge(mechanical.step(mechanical_sample,delta),true)

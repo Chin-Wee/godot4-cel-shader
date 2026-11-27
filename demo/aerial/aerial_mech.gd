@@ -396,6 +396,7 @@ func predict_impact() -> float:
 func update_animation(delta: float) -> void:
 	var ground_animation := _ground_animation_name()
 	rig.ground_animation_active = not ground_animation.is_empty()
+	rig.set("mechanical_joint_loads",_mechanical_joint_loads())
 	rig.update(delta,controller)
 	if not controller.articulated_flight or not ground_animation.is_empty(): skeleton.reset_bone_poses()
 	if ground_animation.is_empty():
@@ -419,6 +420,58 @@ func update_animation(delta: float) -> void:
 	actor.position = (-(Basis.from_euler(actor.rotation)*Vector3(0,0.9,0))+rig.com.value+rig.contacts.pelvis.value) * display_scale
 	skeleton.advance(delta)
 
+
+func _mechanical_joint_loads() -> Dictionary:
+	var weight := maxf(mass*FlightController.GRAVITY,1.0)
+	var length_scale := display_scale/FlightController.WORLD_UNITS_PER_METER
+	var reference := weight*length_scale
+	var loads := {
+		"pelvis":Vector3.ZERO,"torso":Vector3.ZERO,
+		"left_hip":Vector3.ZERO,"right_hip":Vector3.ZERO,
+		"left_knee":Vector3.ZERO,"right_knee":Vector3.ZERO,
+		"left_ankle":Vector3.ZERO,"right_ankle":Vector3.ZERO,
+		"left_shoulder":Vector3.ZERO,"right_shoulder":Vector3.ZERO
+	}
+	var profile = rig.profile
+	var torso_bone: StringName = profile.torso_bones[3]
+	for index in MOUNTS.size():
+		var outlet := _mount_world_position(MOUNTS[index])
+		var force: Vector3 = controller.motor_forces[index]
+		_accumulate_joint_moment(loads,"torso",torso_bone,outlet,force,reference)
+		_accumulate_joint_moment(loads,"pelvis",&"PelvisBase",outlet,force,reference)
+		if index==2 or index==4:
+			_accumulate_joint_moment(loads,"left_hip",profile.thigh_bones[0],outlet,force,reference)
+			_accumulate_joint_moment(loads,"left_knee",profile.knee_bones[0],outlet,force,reference)
+			if index==4: _accumulate_joint_moment(loads,"left_ankle",profile.foot_bones[0],outlet,force,reference)
+		elif index==3 or index==5:
+			_accumulate_joint_moment(loads,"right_hip",profile.thigh_bones[1],outlet,force,reference)
+			_accumulate_joint_moment(loads,"right_knee",profile.knee_bones[1],outlet,force,reference)
+			if index==5: _accumulate_joint_moment(loads,"right_ankle",profile.foot_bones[1],outlet,force,reference)
+	for index in COLD_MOUNTS.size():
+		var outlet := _mount_world_position(COLD_MOUNTS[index])
+		var force: Vector3 = controller.cold_forces[index]
+		_accumulate_joint_moment(loads,"torso",torso_bone,outlet,force,reference)
+		_accumulate_joint_moment(loads,"pelvis",&"PelvisBase",outlet,force,reference)
+		if index==0: _accumulate_joint_moment(loads,"left_shoulder",profile.arm_roots[0],outlet,force,reference)
+		elif index==6: _accumulate_joint_moment(loads,"right_shoulder",profile.arm_roots[1],outlet,force,reference)
+	return loads
+
+func _mount_world_position(mount: Array) -> Vector3:
+	var bone := skeleton.find_bone(mount[1])
+	if bone<0 or not bone_poses.has(bone): return global_position
+	var pose: Transform3D = skeleton.global_transform*bone_poses[bone]
+	return pose*mount_position(mount)
+
+func _accumulate_joint_moment(loads: Dictionary, key: String, bone_name: StringName,
+		outlet: Vector3, force: Vector3, reference: float) -> void:
+	if force.length_squared()<0.001: return
+	var bone := skeleton.find_bone(bone_name)
+	if bone<0 or not bone_poses.has(bone): return
+	var joint_pose: Transform3D = skeleton.global_transform*bone_poses[bone]
+	var lever: Vector3 = (outlet-joint_pose.origin)/FlightController.WORLD_UNITS_PER_METER
+	var local_moment: Vector3 = joint_pose.basis.orthonormalized().inverse()*(lever.cross(force))/reference
+	var accumulated: Vector3 = loads.get(key,Vector3.ZERO)
+	loads[key] = accumulated+local_moment
 
 func _ground_animation_name() -> StringName:
 	if ground_motion == null or not ground_motion.supported:
