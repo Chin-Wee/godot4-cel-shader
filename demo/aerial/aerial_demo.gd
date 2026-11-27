@@ -9,6 +9,7 @@ const FlightInput = preload("res://aerial/flight_input.gd")
 const FlightCamera = preload("res://aerial/flight_camera.gd")
 const AerialLighting = preload("res://aerial/aerial_lighting.gd")
 const FlightHUD = preload("res://aerial/flight_hud.gd")
+const FlightAudio = preload("res://aerial/flight_audio.gd")
 @onready var lighting: AerialLighting = $Lighting
 @onready var camera: FlightCamera = $FlightCamera
 @onready var hud: FlightHUD = $FlightHUD
@@ -23,6 +24,8 @@ var animate := true:
 		if is_instance_valid(camera): camera.input_paused = not value
 var elapsed := 0.0
 var trails: Array[MultiMeshInstance3D] = []
+var engine_trails: Array[PositionTrail] = []
+var thrust_wash: Array[GPUParticles3D] = []
 var explosion: Explosion
 var explosion_clock := 0.0
 @export var authored_flight := true
@@ -84,6 +87,9 @@ func _ready() -> void:
 	hero.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_ON
 	add_child(hero)
 	hero.build(body,afterburner_material)
+	var flight_audio := FlightAudio.new()
+	flight_audio.subject = hero
+	hero.add_child(flight_audio)
 	lighting.palette_materials.append_array(hero.palette_materials)
 	hero.position = Vector3(175,600,340)
 	wingman = AerialMech.new()
@@ -115,6 +121,7 @@ func _ready() -> void:
 	wingman.collision_layer = 4
 	wingman.simulation_enabled = false
 	_make_ground()
+	_add_thrust_wash()
 	camera.reset_view()
 	_update_afterburners()
 	for trail in trails.slice(0,2): trail.visible = false
@@ -163,15 +170,20 @@ func missile_position(time: float) -> Vector3:
 
 func _add_trails() -> void:
 	var material := lighting.create_vfx_material(PackedColorArray([Color(0.9,0.83,0.7),Color(0.53,0.49,0.5)]))
-	for flame in hero.flames.slice(0,1):
+	for index in hero.flames.size():
+		var flame: MeshInstance3D = hero.flames[index]
 		var emitter := Marker3D.new()
+		emitter.name = "EngineTrailEmitter_%d" % index
 		flame.get_parent().add_child(emitter)
 		emitter.position = flame.position
 		var trail := PositionTrail.new()
 		trail.emitter = emitter
+		trail.lifetime = 12.0
+		trail.width = 0.42
+		trail.spacing = 4.5
 		add_child(trail)
-		trail.configure(material)
-		trails.append(trail)
+		trail.configure(material,PositionTrail.THIN)
+		engine_trails.append(trail)
 		lighting.palette_materials.append_array(trail.palette_materials())
 
 	var distant_trail := PositionTrail.new()
@@ -203,6 +215,77 @@ func _add_trails() -> void:
 	trails.append(missile_trail)
 	lighting.palette_materials.append_array(missile_trail.palette_materials())
 
+func _add_thrust_wash() -> void:
+	for index in hero.flames.size():
+		var particles := GPUParticles3D.new()
+		particles.name = "ThrustWash_%d" % index
+		particles.amount = 72
+		particles.lifetime = 1.4
+		particles.local_coords = false
+		particles.emitting = false
+		particles.amount_ratio = 0.0
+		particles.visibility_aabb = AABB(Vector3(-120,-80,-120),Vector3(240,160,240))
+		var process := ParticleProcessMaterial.new()
+		process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		process.emission_sphere_radius = 2.5
+		process.direction = Vector3.UP
+		process.spread = 78.0
+		process.initial_velocity_min = 3.0
+		process.initial_velocity_max = 16.0
+		process.gravity = Vector3(0,3,0)
+		process.damping_min = 2.0
+		process.damping_max = 6.0
+		process.scale_min = 0.5
+		process.scale_max = 1.5
+		process.color = Color(0.55,0.48,0.39,0.28)
+		particles.process_material = process
+		var quad := QuadMesh.new()
+		quad.size = Vector2.ONE
+		var material := StandardMaterial3D.new()
+		material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		material.billboard_mode = BaseMaterial3D.BILLBOARD_ENABLED
+		material.depth_draw_mode = BaseMaterial3D.DEPTH_DRAW_DISABLED
+		material.albedo_color = Color(0.58,0.51,0.42,0.24)
+		quad.material = material
+		particles.draw_pass_1 = quad
+		add_child(particles)
+		thrust_wash.append(particles)
+
+func _update_thrust_wash() -> void:
+	if not is_instance_valid(hero) or not hero.simulation_enabled:
+		for emitter in thrust_wash: emitter.emitting = false
+		return
+	var space := get_world_3d().direct_space_state
+	for index in mini(thrust_wash.size(),hero.flames.size()):
+		var emitter: GPUParticles3D = thrust_wash[index]
+		var force: Vector3 = hero.controller.motor_forces[index]
+		var rating: float = maxf(hero.controller.hot_max_thrust(index),1.0)
+		var ratio := clampf(force.length()/rating,0.0,1.0)
+		if ratio<0.04:
+			emitter.emitting = false
+			emitter.amount_ratio = 0.0
+			continue
+		var exhaust_direction := -force.normalized()
+		if exhaust_direction.y>-0.20:
+			emitter.emitting = false
+			emitter.amount_ratio = 0.0
+			continue
+		var origin: Vector3 = hero.flames[index].global_position
+		var query := PhysicsRayQueryParameters3D.create(origin,origin+exhaust_direction*1200.0,2)
+		query.exclude = [hero.get_rid()]
+		var hit := space.intersect_ray(query)
+		if hit.is_empty():
+			emitter.emitting = false
+			emitter.amount_ratio = 0.0
+			continue
+		var distance: float = origin.distance_to(hit.position)
+		var influence := ratio*(1.0-smoothstep(120.0,850.0,distance))
+		emitter.amount_ratio = influence
+		emitter.global_position = hit.position+hit.normal*0.8
+		emitter.scale = Vector3.ONE*lerpf(0.65,1.8,influence)
+		emitter.emitting = influence>0.04
+
 func trigger_explosion(seed_value := -1) -> void:
 	if is_instance_valid(explosion): explosion.queue_free()
 	var fire := lighting.create_vfx_material(PackedColorArray([Color(1,0.95,0.22),Color(1,0.42,0.015),Color(0.65,0.06,0.01),Color(0.03,0.025,0.07)]),0.85,false)
@@ -229,6 +312,7 @@ func _process(delta: float) -> void:
 		hero.update_force_debug()
 		_update_afterburners(delta)
 		camera.update_view(delta)
+		_update_thrust_wash()
 		hud.update_status(hero)
 		missile.position = missile_position(elapsed)
 		missile.look_at(missile_position(elapsed+0.1))
@@ -237,9 +321,13 @@ func _process(delta: float) -> void:
 			explosion_clock = 0.0
 			trigger_explosion()
 		clouds.position.x = sin(elapsed*0.015)*50.0
-	for index in trails.size():
-		trails[index].set_process(animate)
-		if index < 2: trails[index].visible = (hero if index == 0 else wingman).controller.velocity.length() > 1.5
+	for trail in trails: trail.set_process(animate)
+	if trails.size()>0: trails[0].visible = wingman.controller.velocity.length()>1.5
+	if trails.size()>1: trails[1].visible = true
+	for index in engine_trails.size():
+		var active: bool = animate and hero.controller.motor_forces[index].length()>hero.controller.hot_max_thrust(index)*0.02
+		engine_trails[index].visible = active
+		engine_trails[index].set_process(active)
 	if is_instance_valid(explosion): explosion.set_process(animate)
 	lighting.update_weather(camera,clouds,elapsed)
 
