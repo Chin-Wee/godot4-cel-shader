@@ -37,12 +37,56 @@ func _ticks(count: int) -> void:
 			shown_load = maxf(shown_load,fc.cold_forces[index].length()/maxf(fc.cold_max_thrust(index),0.000001))
 		_expect(is_equal_approx(fc.rcs_load,shown_load),"Cold HUD load ignores the speed cap")
 
+func _check_joint_load_estimator() -> void:
+	var fc = scene.hero.controller
+	var saved_hot: Array[Vector3] = []
+	var saved_cold: Array[Vector3] = []
+	for force in fc.motor_forces: saved_hot.append(force)
+	for force in fc.cold_forces: saved_cold.append(force)
+	for index in fc.motor_forces.size(): fc.motor_forces[index] = Vector3.ZERO
+	for index in fc.cold_forces.size(): fc.cold_forces[index] = Vector3.ZERO
+	fc.motor_forces[2] = Vector3.RIGHT*65000.0
+	var loads: Dictionary = scene.hero._mechanical_joint_loads()
+	_expect(loads["left_knee"].length()>0.001,"Actual calf outlet force does not load its knee through the lever arm")
+	_expect(loads["right_knee"].length()<0.001,"Left calf outlet incorrectly loads the right knee")
+	for index in saved_hot.size(): fc.motor_forces[index] = saved_hot[index]
+	for index in saved_cold.size(): fc.cold_forces[index] = saved_cold[index]
+
+func _check_pressure_modulation() -> void:
+	var fc = scene.hero.controller
+	var saved_velocity: Vector3 = scene.hero.linear_velocity
+	var saved_load: float = fc.g_load
+	var saved_brake: float = fc.brake_request
+	var saved_main: Vector3 = fc.main_force
+	var saved_request: Vector3 = fc.requested_main_force
+	var saved_clock: float = fc.clock
+	scene.hero.linear_velocity = Vector3(0,0,-550.0)
+	fc.g_load = 2.4
+	fc.brake_request = 1.0
+	fc.main_force = Vector3(0,0,100000.0)
+	fc.requested_main_force = fc.main_force
+	fc.clock = 0.3
+	var loaded_scale: float = fc._hot_pressure_scale(0)
+	_expect(loaded_scale<1.0 and loaded_scale>=0.965,"Loaded retrograde burn does not produce a bounded pressure dip")
+	fc.g_load = 1.0
+	fc.brake_request = 0.0
+	_expect(is_equal_approx(fc._hot_pressure_scale(0),1.0),"Pressure modulation remains active during quiet flight")
+	scene.hero.linear_velocity = saved_velocity
+	fc.g_load = saved_load
+	fc.brake_request = saved_brake
+	fc.main_force = saved_main
+	fc.requested_main_force = saved_request
+	fc.clock = saved_clock
+
 func _capture() -> void:
 	create_timer(120).timeout.connect(func():
 		if not completed: push_error("Thruster control checks timed out"); quit(1))
 	_check_valves()
 	await _setup_capture()
+	await _ticks(2)
 	_check_nozzle_allocation()
+	_check_joint_load_estimator()
+	_check_pressure_modulation()
 	scene.explosion_clock = -1000
 	for child in scene.hud.get_children():
 		if child is CanvasItem: child.hide()
