@@ -591,6 +591,8 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		var hot := i<hot_count
 		var valve = hot_valves[i] if hot else cold_valves[i-hot_count]
 		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
+		var pressure_scale := engine_pressure_scales[i] if hot else 1.0
+		var effective_capacity := capacity*pressure_scale
 		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
 		if hot: motor_angles[i] = Vector3.ZERO
 		var flow: float = valve.command_for(plan[i].length()/effective_capacity,dt,minimum) if effective_capacity>0 and (hot or cold_needed) else 0.0

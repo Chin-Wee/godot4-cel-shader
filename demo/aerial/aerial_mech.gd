@@ -433,12 +433,12 @@ func _mechanical_joint_loads() -> Dictionary:
 		"left_shoulder":Vector3.ZERO,"right_shoulder":Vector3.ZERO
 	}
 	var profile = rig.profile
-	var torso_bone: StringName = profile.torso_bones[3]
+	var torso_bone = profile.torso_bones[3]
 	for index in MOUNTS.size():
 		var outlet := _mount_world_position(MOUNTS[index])
 		var force: Vector3 = controller.motor_forces[index]
 		_accumulate_joint_moment(loads,"torso",torso_bone,outlet,force,reference)
-		_accumulate_joint_moment(loads,"pelvis",&"PelvisBase",outlet,force,reference)
+		_accumulate_joint_moment(loads,"pelvis","PelvisBase",outlet,force,reference)
 		if index==2 or index==4:
 			_accumulate_joint_moment(loads,"left_hip",profile.thigh_bones[0],outlet,force,reference)
 			_accumulate_joint_moment(loads,"left_knee",profile.knee_bones[0],outlet,force,reference)
@@ -451,7 +451,7 @@ func _mechanical_joint_loads() -> Dictionary:
 		var outlet := _mount_world_position(COLD_MOUNTS[index])
 		var force: Vector3 = controller.cold_forces[index]
 		_accumulate_joint_moment(loads,"torso",torso_bone,outlet,force,reference)
-		_accumulate_joint_moment(loads,"pelvis",&"PelvisBase",outlet,force,reference)
+		_accumulate_joint_moment(loads,"pelvis","PelvisBase",outlet,force,reference)
 		if index==0: _accumulate_joint_moment(loads,"left_shoulder",profile.arm_roots[0],outlet,force,reference)
 		elif index==6: _accumulate_joint_moment(loads,"right_shoulder",profile.arm_roots[1],outlet,force,reference)
 	return loads
@@ -462,7 +462,7 @@ func _mount_world_position(mount: Array) -> Vector3:
 	var pose: Transform3D = skeleton.global_transform*bone_poses[bone]
 	return pose*mount_position(mount)
 
-func _accumulate_joint_moment(loads: Dictionary, key: String, bone_name: StringName,
+func _accumulate_joint_moment(loads: Dictionary, key: String, bone_name: String,
 		outlet: Vector3, force: Vector3, reference: float) -> void:
 	if force.length_squared()<0.001: return
 	var bone := skeleton.find_bone(bone_name)

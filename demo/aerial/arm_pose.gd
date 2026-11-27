@@ -151,7 +151,6 @@ func update(delta: float, frame: Dictionary) -> void:
 		if structural_arms.size()==2:
 			var mechanical_arm: Vector4 = structural_arms[side]
 			swing += mechanical_arm.x
-			twist += mechanical_arm.y
 			spread += mechanical_arm.z
 			flex += mechanical_arm.w
 		swing += clampf(balance.z*0.006,-0.08,0.08)+frame.trim.y*frame.hover*0.06
@@ -160,6 +159,7 @@ func update(delta: float, frame: Dictionary) -> void:
 		# External rotation bends the forearms toward the head. Raising the whole
 		# arm instead creates a straight scarecrow silhouette with forward hands.
 		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.get("belly",frame.box)-sx*profile.arm_back_twist*frame.get("back",0.0)
+		if structural_arms.size()==2: twist += structural_arms[side].y
 		spread = lerpf(spread,minf(spread,0.28),clean)
 		upper[side].step(Vector3(clampf(swing,-0.8,1.1),twist,sx*clampf(spread,0.18,2.15)),delta,0.30,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.34,profile.arm_speed)
