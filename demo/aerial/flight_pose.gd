@@ -7,6 +7,7 @@ const Spring = preload("res://aerial/pose_servo.gd")
 const Articulation = preload("res://aerial/poses/articulation_poses.gd")
 const ArmPose = preload("res://aerial/arm_pose.gd")
 const ContactPose = preload("res://aerial/contact_pose.gd")
+const MechanicalResponse = preload("res://aerial/mechanical_response.gd")
 @export var profile: RigProfile = preload("res://aerial/mech_rig_profile.tres")
 var chest := Spring.new()
 var hips := Spring.new()
@@ -17,6 +18,7 @@ var launch := Spring.new()
 var legs: Array = []
 var arms: RefCounted
 var contacts: RefCounted
+var mechanical := MechanicalResponse.new()
 var bones := {}
 var clock := 0.0 # Shared exhaust clock; not a pose oscillator.
 var root_angles := Vector3.ZERO
@@ -62,6 +64,7 @@ func configure(player: AnimationPlayer, mech: RigidBody3D) -> void:
 
 func reset() -> void:
 	for spring in [chest,hips,head,com]: spring.reset()
+	mechanical.reset()
 	regimes.reset(Vector3(1,0,0))
 	launch.reset()
 	behavior_weights = PackedFloat32Array([1,0,0,0])
@@ -96,6 +99,17 @@ func update(delta: float, controller) -> void:
 	contacts.update(delta,controller)
 	motion = _sample_motion(controller,delta)
 	_sample_effort(controller,delta)
+	var mechanical_sample := {
+		"local_acceleration":controller.local_acceleration*Vector3(-1,1,-1),
+		"local_jerk":controller.local_jerk*Vector3(-1,1,-1),
+		"local_angular_acceleration":Basis(controller.attitude).inverse()*controller.angular_acceleration,
+		"g_load":controller.g_load,"brake":maxf(controller.brake_amount,controller.brake_request),
+		"retro":motion.get("retro",0.0),"motor_forces":controller.motor_forces,
+		"motor_ratings":controller.hardware.main_booster_max_thrust,
+		"pressure_scales":controller.engine_pressure_scales,
+		"weight":controller.body.mass*controller.GRAVITY
+	}
+	motion.merge(mechanical.step(mechanical_sample,delta),true)
 	_choose_posture(controller,delta)
 	motion["spread"] = posture_weights[2]
 	motion["stream"] = posture_weights[1]
@@ -358,7 +372,7 @@ func _update_body(delta: float) -> void:
 	anticipation.y += bank*0.14+signs.y*acro.y*(0.14*roll.x-0.12*roll.y)
 	anticipation.z += signs.y*acro.y*(0.08*roll.x-0.08*roll.y)
 	var pelvic := Vector3(acro.x*(-swing_pitch*flip.x+0.26*flip.y),-bank*0.12-signs.y*acro.y*roll.x*0.12,acro.y*signs.y*0.08)
-	hips.step((pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0))),delta,0.30,0.5)
+	hips.step((pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported+motion.get("mechanical_pelvis",Vector3.ZERO)).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0))),delta,0.30,0.5)
 	root_angles = hips.value*Vector3(-1,1,1)
 	var displacement := Vector3(-acceleration.x*0.001,-clampf(motion.g_load-1,0,3)*0.012,acceleration.z*0.001)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
@@ -377,6 +391,7 @@ func _update_body(delta: float) -> void:
 	if motion.get("authored",false):
 		var stroke: Vector3 = motion.stroke
 		chest_target = Articulation.torso_target(motion)+lag*0.45+Vector3(stroke.x*0.12,stroke.z*0.10,stroke.y*0.09)
+	chest_target += motion.get("mechanical_torso",Vector3.ZERO)
 	chest.step(chest_target.clamp(Vector3(-0.45,-0.30,-0.45),Vector3(0.45,0.30,0.45)),delta,0.30,0.9)
 	_update_head(delta)
 
@@ -395,6 +410,7 @@ func _update_head(delta: float) -> void:
 	var lead := Vector3(intent.x*0.15-motion.reach.z*0.08,intent.y*0.26+motion.reach.x*0.16+bank*0.14,0)
 	lead.x += acro.x*(-signs.x*0.14)*flip.x
 	wanted += lead*lerpf(1.0,0.2,look_weight)
+	wanted += motion.get("mechanical_head",Vector3.ZERO)
 	if motion.get("authored",false) and wanted.distance_to(head.value)<deg_to_rad(2.0):
 		wanted = head.value
 	wanted.z = -chest.value.z*0.2-motion.up.x*0.10
@@ -440,8 +456,10 @@ func _update_legs(delta: float, controller) -> void:
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
 		extras[2].x += move.z*(0.36 if move.z<0 else 0.18) # Reverse brace presents the foot-sole outlets farther aft.
 		var targets: Array[Vector3] = []
+		var structural_legs: PackedVector3Array = motion.get("mechanical_legs",PackedVector3Array())
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
+			if structural_legs.size()==6: target += structural_legs[side*3+joint]
 			var ground_guard: float = motion.get("ground_guard",0.0)
 			if joint==0: target.x -= 0.08*ground_guard
 			elif joint==1: target.x += 0.32*ground_guard
@@ -580,8 +598,10 @@ func _update_authored_legs(delta: float, controller) -> void:
 	var power: float = maxf(controller.thrust_level,float(controller.detent>0))
 	var steer: Vector3 = motion.steer
 	var intent: Vector3 = controller.rotation_request
+	# Primary pose follows the command; measured rate error remains in the
+	# independent corrective stroke and the structural response.
 	for axis in 3:
-		if absf(intent[axis])>absf(steer[axis]): steer[axis] = intent[axis]
+		if absf(intent[axis])>0.10: steer[axis] = intent[axis]
 	# Lab anchors use calibrated chassis axes. The old directional pose
 	# frame reflects X and Z relative to pilot translation.
 	var move: Vector3 = motion.reach*Vector3(-1,1,-1)
@@ -594,6 +614,9 @@ func _update_authored_legs(delta: float, controller) -> void:
 	var yaw_arrest: float = smoothstep(0.05,0.45,absf(motion.pilot_rates.y))*float(intent.y*motion.pilot_rates.y<0.0)
 	bracing = maxf(bracing,yaw_arrest*0.55)
 	var target := Articulation.select(steer,move,power,bracing)
+	var structural_legs: PackedVector3Array = motion.get("mechanical_legs",PackedVector3Array())
+	if structural_legs.size()==target.size():
+		for index in target.size(): target[index] += structural_legs[index]
 	var land: float = motion.land
 	var takeoff: float = motion.launch
 	var acro: Vector2 = motion.acro

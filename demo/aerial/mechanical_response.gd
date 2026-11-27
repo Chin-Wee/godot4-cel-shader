@@ -113,8 +113,10 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 func _step_mode(index: int, target: Vector3, delta: float) -> void:
 	var result := damped_step(positions[index], velocities[index], target.limit_length(LIMITS[index]),
 		float(FREQUENCIES[index]), float(DAMPING[index]), delta)
-	positions[index] = (result[0] as Vector3).clamp(Vector3.ONE * -LIMITS[index], Vector3.ONE * LIMITS[index])
-	velocities[index] = (result[1] as Vector3).limit_length(3.0)
+	var next_position: Vector3 = result[0]
+	var next_velocity: Vector3 = result[1]
+	positions[index] = next_position.clamp(Vector3.ONE * -LIMITS[index], Vector3.ONE * LIMITS[index])
+	velocities[index] = next_velocity.limit_length(3.0)
 
 static func damped_step(position: Vector3, velocity: Vector3, target: Vector3,
 		frequency: float, damping: float, delta: float) -> Array[Vector3]:
