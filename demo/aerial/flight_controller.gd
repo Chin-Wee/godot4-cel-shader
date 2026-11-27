@@ -129,7 +129,10 @@ var maneuver_direction := Vector2.ZERO
 var maneuver_hold := Vector2.ZERO
 var acceleration := Vector3.ZERO
 var angular_acceleration := Vector3.ZERO
+var jerk := Vector3.ZERO
 var local_acceleration := Vector3.ZERO
+var local_jerk := Vector3.ZERO
+var last_acceleration := Vector3.ZERO
 var local_velocity := Vector3.ZERO
 var local_airflow := Vector3.ZERO
 var required_force := Vector3.ZERO # Specific propulsion force, m/s², for posing.
@@ -145,6 +148,7 @@ var air_density := 1.225 # kg/m³; zero permits a vacuum invariant check.
 var wind := Vector3.ZERO # m/s, world axes.
 var air_velocity := Vector3.ZERO
 var engine_shares := PackedFloat32Array()
+var engine_pressure_scales := PackedFloat32Array()
 var motor_angles: Array[Vector3] = []
 var motor_forces: Array[Vector3] = []
 # Signed residual wrench channels in the chassis frame, not nozzle pairs.
@@ -167,6 +171,8 @@ func configure(owner_body: RigidBody3D, display_scale: float, profile: Resource)
 	body = owner_body
 	hardware = profile
 	engine_shares.resize(hardware.main_booster_max_thrust.size())
+	engine_pressure_scales.resize(hardware.main_booster_max_thrust.size())
+	engine_pressure_scales.fill(1.0)
 	for rating in hardware.main_booster_max_thrust + hardware.cold_booster_max_thrust:
 		assert(is_finite(rating) and rating>=0,"Booster ratings must be finite, nonnegative Newtons")
 	model_scale = display_scale
@@ -225,6 +231,10 @@ func reset(power := 1.0) -> void:
 	aero_torque = Vector3.ZERO
 	aero_power = 0.0
 	sampled = false
+	jerk = Vector3.ZERO
+	local_jerk = Vector3.ZERO
+	last_acceleration = Vector3.ZERO
+	engine_pressure_scales.fill(1.0)
 	# Warm-start the original hover pair within its caps. Added foot engines
 	# start closed and pass through normal ignition; live shares are solved.
 	delivered_thrust = 0.0
@@ -297,6 +307,9 @@ func _measure_motion(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	air_velocity = current_velocity - wind
 	acceleration = (current_velocity - last_velocity) / dt if sampled else Vector3.ZERO
 	angular_acceleration = (state.angular_velocity - last_rates) / dt if sampled else Vector3.ZERO
+	var raw_jerk := (acceleration-last_acceleration)/dt if sampled else Vector3.ZERO
+	jerk = jerk.lerp(raw_jerk,1.0-exp(-dt/0.075)) if sampled else Vector3.ZERO
+	last_acceleration = acceleration
 	last_velocity = current_velocity
 	last_rates = state.angular_velocity
 	sampled = true
@@ -304,6 +317,7 @@ func _measure_motion(state: PhysicsDirectBodyState3D, dt: float) -> void:
 	local_velocity = frame.inverse() * current_velocity
 	local_airflow = frame.inverse() * (wind - current_velocity)
 	local_acceleration = accel.step(frame.inverse() * acceleration, dt, 0.12)
+	local_jerk = frame.inverse() * jerk
 	g_load = (acceleration - Vector3.DOWN * GRAVITY).length() / GRAVITY
 
 func _read_commands(raw: Dictionary, dt: float) -> void:
@@ -466,9 +480,13 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	var combined := outlets+cold_outlets
 	for i in combined.size():
 		var hot := i<hot_count
+		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
+		var pressure_scale := _hot_pressure_scale(i) if hot else 1.0
+		if hot: engine_pressure_scales[i] = pressure_scale
 		ports.append({"basis":combined[i].basis,"lever":combined[i].position/(WORLD_UNITS_PER_METER*length_scale),
 			"cone":0.0,"center":Vector3.ZERO,"gain":1.0,
-			"minimum":HOT_IDLE_FLOW*_hot_capacity(i) if hot and hot_enabled else 0.0,"maximum":_hot_capacity(i) if hot and hot_enabled else (_cold_capacity(i-hot_count) if not hot else 0.0),
+			"minimum":HOT_IDLE_FLOW*capacity*pressure_scale if hot and hot_enabled else 0.0,
+			"maximum":capacity*pressure_scale if hot and hot_enabled else (_cold_capacity(i-hot_count) if not hot else 0.0),
 			"off":0.0,"fuel":0.002 if hot else 0.3})
 	var hot_plan := Allocator.solve(ports.slice(0,hot_count),force_target,moment_target,along,ideal_forces,[],64,fit)
 	var hot_error := -force_target
@@ -497,16 +515,18 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		var hot := i<hot_count
 		var valve = hot_valves[i] if hot else cold_valves[i-hot_count]
 		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
+		var pressure_scale := engine_pressure_scales[i] if hot else 1.0
+		var effective_capacity := capacity*pressure_scale
 		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
 		ports[i].fuel = 0.0 if hot else COLD_ACTUATION_FUEL_COST
-		ports[i].off = valve.preview(0,dt)*capacity
-		ports[i].minimum = valve.preview(minimum,dt)*capacity
+		ports[i].off = valve.preview(0,dt)*effective_capacity
+		ports[i].minimum = valve.preview(minimum,dt)*effective_capacity
 		if hot and hot_enabled: ports[i].off = ports[i].minimum
-		ports[i].maximum = valve.preview(1.0 if not hot or hot_enabled else minimum,dt)*capacity
+		ports[i].maximum = valve.preview(1.0 if not hot or hot_enabled else minimum,dt)*effective_capacity
 		# Track scalar pressure on the new bone axis, not the old world vector.
 		ports[i]["tracking"] = HOT_TRACKING if hot and hot_enabled else 0.0
 		var axis: Vector3 = -ports[i].basis.z
-		preferred.append(axis*valve.level*capacity if hot else Vector3.ZERO)
+		preferred.append(axis*valve.level*effective_capacity if hot else Vector3.ZERO)
 		seed.append(axis*(motor_forces[i] if hot else cold_forces[i-hot_count]).length()/weight)
 	if not hot_enabled:
 		# Coast requests zero added translation. Track unavoidable hot shutdown
@@ -573,15 +593,15 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
 		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
 		if hot: motor_angles[i] = Vector3.ZERO
-		var flow: float = valve.command_for(plan[i].length()/capacity,dt,minimum) if capacity>0 and (hot or cold_needed) else 0.0
+		var flow: float = valve.command_for(plan[i].length()/effective_capacity,dt,minimum) if effective_capacity>0 and (hot or cold_needed) else 0.0
 		# Prime the next useful hot engine during ignition, while other outlets
 		# balance its actual zero output. Never bypass ignition or restart time.
 		if hot and capacity>0 and hot_enabled and ports[i].maximum<0.000001 and ideal_forces[i].length()>0.001:
-			flow = ideal_forces[i].length()/capacity
+			flow = ideal_forces[i].length()/effective_capacity
 		if hot: flow = maxf(flow,HOT_IDLE_FLOW) if hot_enabled and capacity>0 else 0.0
 		elif cold_needed and keep_open[i-hot_count]: flow = maxf(flow,COLD_MINIMUM_FLOW)
 		var output: float = valve.step(flow,dt)
-		var actual: Vector3 = -ports[i].basis.z*output*capacity*weight
+		var actual: Vector3 = -ports[i].basis.z*output*effective_capacity*weight
 		var moment: Vector3 = combined[i].position/WORLD_UNITS_PER_METER
 		moment = moment.cross(actual)
 		allocated_force += plan[i]*weight
@@ -603,6 +623,24 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	rcs_request = rcs_torque
 	torque_saturated = (control_torque-main_torque-rcs_torque-aero_torque).length()>torque_limits.length()*0.05
 	motor_saturated = (force_target*weight-main_force-cold_force).length()>weight*0.05
+
+func _hot_pressure_scale(index: int) -> float:
+	# Small pressure dips are confined to loaded retrograde burns. The allocator
+	# uses this same capacity before selecting each engine's valve command.
+	var speed := velocity.length()
+	if speed < 2.0: return 1.0
+	var travel := velocity/speed
+	var weight := maxf(body.mass*GRAVITY,1.0)
+	var actual := maxf(0.0,-main_force.dot(travel))/weight
+	var requested := maxf(0.0,-requested_main_force.dot(travel))/weight
+	var retro := smoothstep(2.0,10.0,speed)*smoothstep(0.08,0.65,maxf(actual,requested*0.8))
+	var load := smoothstep(1.15,2.8,g_load)
+	var envelope := clampf(load*maxf(brake_amount,maxf(brake_request,retro)),0.0,1.0)
+	if envelope <= 0.001: return 1.0
+	var phase := clock*TAU*0.72+float(index)*0.91
+	var pulse := pow(maxf(0.0,sin(phase)),8.0)
+	var flutter := absf(sin(clock*TAU*3.7+float(index)*1.17))
+	return clampf(1.0-envelope*(0.002+0.018*pulse+0.002*flutter),0.965,1.0)
 
 func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, translating: bool) -> Array[Vector3]:
 	var local_force := frame.transposed()*force

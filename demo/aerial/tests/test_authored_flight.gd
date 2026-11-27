@@ -140,11 +140,14 @@ func _powered_inputs() -> void:
 		await _ticks(60)
 		vertical_rates.append(fc.velocity.y)
 		if key=="back":
+			print("PITCH back intent=",fc.rotation_request," pose_steer=",mech.rig.motion.steer," flare=",mech.rig.motion.flare," retro=",mech.rig.motion.retro," knee=",mech.rig.legs[1].value.x)
 			_expect(mech.rig.legs[1].value.x>1.04,"Hard pull-up never gathers the knees")
 			for name in relaxed_digits:
 				var relaxed: Quaternion = relaxed_digits[name]
 				_expect(relaxed.angle_to(_rest_rotation(name))>0.025,"Loaded hand does not articulate "+name)
-		else: _expect(mech.rig.legs[1].value.x<0.25,"Hard pitch-down loses its extended knees")
+		else:
+			print("PITCH forward intent=",fc.rotation_request," pose_steer=",mech.rig.motion.steer," flare=",mech.rig.motion.flare," retro=",mech.rig.motion.retro," knee=",mech.rig.legs[1].value.x)
+			_expect(mech.rig.legs[1].value.x<0.25,"Hard pitch-down loses its extended knees")
 	_expect(vertical_rates[1]>vertical_rates[0]+3.0,"W and S bend the trajectory in the same direction")
 	_reset(HEAD_FIRST,Vector3(0,0,-65),3)
 	await _ticks(30)
@@ -166,6 +169,7 @@ func _powered_inputs() -> void:
 	_expect(fc.velocity.x>0.05 and (fc.pilot_frame().inverse()*mech.angular_velocity).y>0.04,"Combined lateral boost and yaw misses authority")
 	mech.controls = {"left":true,"yaw_right":true}
 	await _ticks(36)
+	print("YAW reversal request=",fc.rotation_request," effective=",fc.effective_rates," rate=",(fc.pilot_frame().inverse()*mech.angular_velocity)," control=",fc.control_torque," cold=",fc.rcs_torque," saturated=",fc.torque_saturated)
 	_expect((fc.pilot_frame().inverse()*mech.angular_velocity).y< -0.35,"Yaw reversal stalls")
 	print("Fixed flight W/S vertical speeds %.2f / %.2f m/s, hard roll %.2f rad/s."%[vertical_rates[0],vertical_rates[1],bank_rate])
 

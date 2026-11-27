@@ -216,7 +216,7 @@ func _check_motors(mech: Node3D) -> bool:
 	var pivots: Array = mech.gimbals+mech.gas_gimbals
 	for index in pivots.size():
 		var relative: Basis = mech.neutral_bases[index].inverse()*pivots[index].basis
-		if relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) > mech.VECTOR_LIMIT+0.001: return false
+		if relative.get_rotation_quaternion().angle_to(Quaternion.IDENTITY) > 0.001: return false
 	var total := 0.0
 	for index in mech.MOUNTS.size():
 		var force: Vector3 = mech.controller.motor_forces[index]

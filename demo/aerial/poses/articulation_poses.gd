@@ -61,6 +61,7 @@ static func select(steer: Vector3, move: Vector3, power: float, reversing: float
 	var brace := clampf(reversing,0.0,1.0)
 	var loaded := angles("Retrograde_Brake")
 	var result := base.duplicate()
+	var extended_pitch_down := steer.x < -0.55 and absf(steer.x) >= maxf(absf(steer.y),absf(steer.z))*0.8
 	# Compression and stance are common-mode loads. Keep directional
 	# differences rather than replacing both legs with the same brake key.
 	for joint in 3:
@@ -74,7 +75,7 @@ static func select(steer: Vector3, move: Vector3, power: float, reversing: float
 			var angle := base[index]+correction*mirror
 			if joint==0:
 				angle.z = maxf(angle.z*mirror.z,lerpf(base[index].z*mirror.z,loaded[joint].z,brace))*mirror.z
-			elif joint==1:
+			elif joint==1 and not extended_pitch_down:
 				angle.x = maxf(angle.x,maxf(base[index].x,lerpf(base[index].x,loaded[joint].x,brace)))
 			result[index] = angle
 	return result
