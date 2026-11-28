@@ -14,7 +14,7 @@ func _run() -> void:
 	lab.set_process(false)
 	var fixture: Fixture = lab.fixture
 	assert(Fixture.MAIN_MOUNT_ORDER==[0,2,4,1,3,5],"Fixture must use left/right groups of the six live main hardpoints")
-	assert(Poses.AUTHORED.size()==15 and Poses.MIRRORED.size()==5)
+	assert(Poses.AUTHORED.size()==17 and Poses.MIRRORED.size()==5)
 	for pair in Poses.MIRRORED:
 		var left := Poses.angles(Poses.MIRRORED[pair])
 		var right := Poses.angles(pair)
@@ -31,7 +31,7 @@ func _run() -> void:
 				assert(fixture.joints[joint].value.is_equal_approx(Fixture.Profile.limit_joint(fixture.joints[joint].value,joint/3,joint%3)))
 	_authority(fixture)
 	assert(await _check_dynamics(fixture))
-	print("Articulation lab checks passed. 20 targets, 100 sampled blends, six fixed-axis outlets.")
+	print("Articulation lab checks passed. 22 logical targets, 110 sampled blends, six fixed-axis outlets.")
 	quit()
 
 func _authority(f: Fixture) -> void:

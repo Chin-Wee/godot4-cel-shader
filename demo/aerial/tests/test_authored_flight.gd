@@ -23,7 +23,7 @@ func _run() -> void:
 	plume.shader = preload("res://shaders/aerial/afterburner.gdshader")
 	mech.build(surface,plume)
 	_check_thruster_layout()
-	assert(Poses.AUTHORED.size()+Poses.TORSO.size()+Poses.ARMS.size()+Poses.HANDS.size()==42)
+	assert(Poses.AUTHORED.size()+Poses.TORSO.size()+Poses.ARMS.size()+Poses.HANDS.size()==44)
 	assert(Poses.MIRRORED.size()+Poses.TORSO_MIRRORED.size()+Poses.ARMS_MIRRORED.size()==9)
 	assert(mech.rig.arms.digits.size()==28)
 	await _hover_and_gaze()

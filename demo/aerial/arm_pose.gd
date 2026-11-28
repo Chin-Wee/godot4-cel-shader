@@ -8,6 +8,9 @@ var profile
 var upper: Array = []
 var elbows: Array = []
 var wrists: Array = []
+var mechanical_arms := PackedVector4Array()
+var mechanical_wrists := PackedVector3Array()
+var mechanical_grip := 0.0
 var finger_poses := {}
 var digits := {}
 var authored_hands := false
@@ -65,15 +68,18 @@ func reset(authored := false) -> void:
 		digit.curl = 0.25
 		digit.fan = 0.0
 	authored_hands = false
+	mechanical_arms = PackedVector4Array()
+	mechanical_wrists = PackedVector3Array()
+	mechanical_grip = 0.0
 
 func update(delta: float, frame: Dictionary) -> void:
 	authored_hands = frame.get("authored",false)
+	mechanical_arms = frame.get("mechanical_arms",PackedVector4Array())
+	mechanical_wrists = frame.get("mechanical_wrists",PackedVector3Array())
+	mechanical_grip = float(frame.get("mechanical_grip",0.0))
 	if authored_hands:
 		_update_articulation(delta,frame)
 		return
-	var structural_arms: PackedVector4Array = frame.get("mechanical_arms",PackedVector4Array())
-	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
-	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var pose: Vector3 = profile.arm_hover*frame.hover+profile.arm_coast*(frame.coast+frame.fall+frame.land)+profile.arm_stream*frame.fighter
 	pose = pose.lerp(profile.arm_stream,frame.track)
 	pose = pose.lerp(profile.arm_box,frame.get("belly",frame.box))
@@ -148,24 +154,17 @@ func update(delta: float, frame: Dictionary) -> void:
 		swing -= steer.x*0.28*acro.x # Keep active air-control pressure through flips.
 		swing += acro.x*sx*frame.get("lead",1.0)*0.10*(flip.x+flip.z)
 		flex += acro.x*sx*frame.get("lead",1.0)*0.12*flip.x
-		if structural_arms.size()==2:
-			var mechanical_arm: Vector4 = structural_arms[side]
-			swing += mechanical_arm.x
-			spread += mechanical_arm.z
-			flex += mechanical_arm.w
 		swing += clampf(balance.z*0.006,-0.08,0.08)+frame.trim.y*frame.hover*0.06
 		spread += clampf(-sx*balance.x*0.006,-0.08,0.08)+sx*frame.trim.x*frame.hover*0.07
 		flex += sx*frame.trim.z*frame.hover*0.06
 		# External rotation bends the forearms toward the head. Raising the whole
 		# arm instead creates a straight scarecrow silhouette with forward hands.
 		var twist: float = (-sx*profile.arm_box_twist+steer.y*0.18+steer.z*0.10)*frame.get("belly",frame.box)-sx*profile.arm_back_twist*frame.get("back",0.0)
-		if structural_arms.size()==2: twist += structural_arms[side].y
 		spread = lerpf(spread,minf(spread,0.28),clean)
 		upper[side].step(Vector3(clampf(swing,-0.8,1.1),twist,sx*clampf(spread,0.18,2.15)),delta,0.30,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(flex,0.12,1.6),0,0),delta,0.34,profile.arm_speed)
-		var wrist_load := structural_wrists[side] if structural_wrists.size()==2 else Vector3.ZERO
-		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18+acro.x*(-0.12*flip.x+0.08*flip.y-0.16*flip.z),0,sx*(steer.y*0.15+steer.z*0.10))+wrist_load,delta,0.24,1.0)
-		var curl: float = clampf(0.25-flare*0.15-frame.box*0.10+frame.retro*(0.35+bias)+frame.get("drive",0.0)*0.1+structural_grip,0.05,0.90)
+		wrists[side].step(Vector3(-frame.box*0.18-flare*0.18+acro.x*(-0.12*flip.x+0.08*flip.y-0.16*flip.z),0,sx*(steer.y*0.15+steer.z*0.10)),delta,0.24,1.0)
+		var curl: float = clampf(0.25-flare*0.15-frame.box*0.10+frame.retro*(0.35+bias)+frame.get("drive",0.0)*0.1,0.05,0.90)
 		curl = lerpf(curl,0.15+0.45*flip.y,acro.x)
 		curl = lerpf(curl,0.20+0.35*roll.y,acro.y)
 		finger_curl[side] = move_toward(finger_curl[side],curl,delta*2.0)
@@ -173,9 +172,6 @@ func update(delta: float, frame: Dictionary) -> void:
 func _update_articulation(delta: float, frame: Dictionary) -> void:
 	var time: float = frame.hand_time
 	var phase: float = frame.stroke_phase
-	var structural_arms: PackedVector4Array = frame.get("mechanical_arms",PackedVector4Array())
-	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
-	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var strength: float = frame.stress
 	var arrest: float = frame.get("arrest",0.0)
 	var direction: Vector3 = frame.stroke_direction
@@ -190,7 +186,6 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 		var recoil := smoothstep(0.24,0.45,age)*(1.0-smoothstep(0.48,0.72,age))
 		target += Vector4(direction.x*0.48+opposition*0.33-arrest*0.10,opposition*0.30,
 			absf(opposition)*0.47+0.18+arrest*0.16,opposition*0.36+recoil*0.46+arrest*0.28)*weight
-		if structural_arms.size()==2: target += structural_arms[side]
 		var flip: Vector3 = frame.flip_shape
 		var acro: Vector2 = frame.acro
 		var tuck := Vector4(0.08,-0.22,0.35,1.22)
@@ -207,11 +202,9 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 		upper[side].step(Vector3(clampf(target.x,-0.8,1.05),target.y*sx,clampf(target.z,0.10,2.12)*sx),
 			delta,0.27,profile.arm_speed)
 		elbows[side].step(Vector3(-clampf(target.w,0.12,1.65),0,0),delta,0.31,profile.arm_speed)
-		var wrist_load: Vector3 = structural_wrists[side] if structural_wrists.size()==2 else Vector3.ZERO
-		wrists[side].step(Vector3(-frame.flare*0.18+direction.x*weight*0.10+hand_texture*0.035,0,opposition*weight*0.15*sx)+wrist_load,delta,0.23,1.0)
+		wrists[side].step(Vector3(-frame.flare*0.18+direction.x*weight*0.10+hand_texture*0.035,0,opposition*weight*0.15*sx),delta,0.23,1.0)
 	for digit in digits.values():
 		var hand: Vector2 = goals[digit.side]
-		hand.x = clampf(hand.x+structural_grip,0.0,0.90)
 		var value := grip_noise.get_noise_2d(time,digit.phase)
 		var variation := lerpf(0.06,0.115,smoothstep(0.06,0.26,hand.x))
 		variation = lerpf(variation,0.022,smoothstep(0.44,0.80,hand.x))
@@ -223,17 +216,25 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 
 func apply(sk: Skeleton3D, rotate: Callable) -> void:
 	for side in 2:
-		var angles: Vector3 = upper[side].value
+		var mechanical_arm: Vector4 = mechanical_arms[side] if mechanical_arms.size()==2 else Vector4.ZERO
+		var angles: Vector3 = upper[side].value+Vector3(mechanical_arm.x,mechanical_arm.y,mechanical_arm.z)
+		angles.x = clampf(angles.x,-0.8,1.05)
+		angles.y = clampf(angles.y,-0.8,0.8)
+		angles.z = clampf(angles.z,-2.12,2.12)
 		rotate.call(profile.arm_roots[side],Vector3(angles.x,0,angles.z))
-		# Twist about the actual humerus, after positioning the upper arm. A
-		# skeleton-space yaw would move the elbow instead of changing its hinge.
 		var shoulder: int = sk.find_bone(profile.arm_roots[side])
 		sk.set_bone_pose_rotation(shoulder,(sk.get_bone_pose_rotation(shoulder)*Quaternion(Vector3.UP,angles.y)).normalized())
-		rotate.call(profile.arm_middles[side],elbows[side].value)
-		rotate.call(profile.arm_ends[side],wrists[side].value)
+		var elbow := elbows[side].value+Vector3(mechanical_arm.w,0,0)
+		elbow.x = clampf(elbow.x,-1.65,-0.12)
+		rotate.call(profile.arm_middles[side],elbow)
+		var wrist := wrists[side].value
+		if mechanical_wrists.size()==2: wrist += mechanical_wrists[side]
+		wrist = wrist.clamp(Vector3(-0.45,-0.35,-0.45),Vector3(0.45,0.35,0.45))
+		rotate.call(profile.arm_ends[side],wrist)
 	for index in finger_poses:
 		var digit: Dictionary = digits[index]
 		var curl: float = minf(digit.curl*digit.scale,0.91) if authored_hands else finger_curl[digit.side]
+		curl = clampf(curl+mechanical_grip,0.0,0.91)
 		var open := sk.get_bone_rest(index).basis.get_rotation_quaternion() if authored_hands else sk.get_bone_pose_rotation(index)
 		var rotation := open.slerp(finger_poses[index],curl)
 		var spread: Vector3 = digit.spread

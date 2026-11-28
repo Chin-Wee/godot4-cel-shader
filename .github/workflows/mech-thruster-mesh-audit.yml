@@ -84,4 +84,5 @@ jobs:
           test_flight_pose
           test_aerial_stack
           test_animation_contract
+          test_flight_pose_composition
           test_vfx_timing

@@ -8,6 +8,7 @@ const Articulation = preload("res://aerial/poses/articulation_poses.gd")
 const ArmPose = preload("res://aerial/arm_pose.gd")
 const ContactPose = preload("res://aerial/contact_pose.gd")
 const MechanicalResponse = preload("res://aerial/mechanical_response.gd")
+const FlightPoseFrame = preload("res://aerial/flight_pose_frame.gd")
 @export var profile: RigProfile = preload("res://aerial/mech_rig_profile.tres")
 var chest := Spring.new()
 var hips := Spring.new()
@@ -103,29 +104,28 @@ func reset() -> void:
 func update(delta: float, controller) -> void:
 	clock = controller.clock
 	contacts.update(delta,controller)
-	motion = _sample_motion(controller,delta)
-	_sample_effort(controller,delta)
+	var frame := FlightPoseFrame.capture(controller,mechanical_joint_loads,delta)
+	motion = _sample_motion(frame,controller)
+	_sample_effort(frame,delta)
 	var mechanical_sample := {
-		"local_acceleration":controller.local_acceleration*Vector3(-1,1,-1),
-		"local_jerk":controller.local_jerk*Vector3(-1,1,-1),
-		"local_angular_acceleration":Basis(controller.attitude).inverse()*controller.angular_acceleration,
-		"g_load":controller.g_load,"brake":maxf(controller.brake_amount,controller.brake_request),
-		"retro":motion.get("retro",0.0),"motor_forces":controller.motor_forces,
-		"motor_ratings":controller.hardware.main_booster_max_thrust,
-		"pressure_scales":controller.engine_pressure_scales,
-		"joint_moments":mechanical_joint_loads,
-		"arrest":arrest,
-		"weight":controller.body.mass*controller.GRAVITY
+		"local_acceleration":frame.local_acceleration*Vector3(-1,1,-1),
+		"local_jerk":frame.local_jerk*Vector3(-1,1,-1),
+		"local_angular_acceleration":Basis(frame.attitude).inverse()*frame.angular_acceleration,
+		"g_load":frame.g_load,"brake":maxf(frame.brake_amount,frame.brake_request),
+		"retro":motion.get("retro",0.0),"motor_forces":frame.motor_forces,
+		"motor_ratings":frame.motor_ratings,"pressure_scales":frame.engine_pressure_scales,
+		"joint_moments":frame.joint_moments,"arrest":arrest,
+		"weight":frame.body_mass*frame.gravity
 	}
 	motion.merge(mechanical.step(mechanical_sample,delta),true)
-	_choose_posture(controller,delta)
+	_choose_posture(frame,delta)
 	motion["spread"] = posture_weights[2]
 	motion["stream"] = posture_weights[1]
 	motion["launch"] = launch.value.x
 	motion["land"] = contacts.preparation
-	_prepare_directional_pose(controller)
-	_prepare_maneuver_pose(controller,delta)
-	if controller.articulated_flight: _sample_articulation(controller,delta)
+	_prepare_directional_pose(frame)
+	_prepare_maneuver_pose(frame,delta)
+	if frame.articulated_flight: _sample_articulation(frame,delta)
 	var ground = contacts.body.ground_motion
 	if ground:
 		var grounded_pose_available: bool = (
@@ -142,110 +142,95 @@ func update(delta: float, controller) -> void:
 		motion["ground_tuck"] = float(not ground.supported and not ground.hot_enabled)*smoothstep(0.0,2.0,ground.velocity.y)
 	motion.make_read_only()
 	_update_body(delta)
-	_update_legs(delta,controller)
+	_update_legs(delta,frame,controller)
 	arms.update(delta,motion)
 	if ground_animation_active:
 		root_angles = Vector3.ZERO
 		com.reset()
 
-func _sample_motion(controller, delta: float) -> Dictionary:
-	var basis := Basis(controller.attitude)
-	var pilot: Basis = controller.pilot_frame()
-	var flow: Vector3 = controller.local_airflow*Vector3(-1,1,-1)
-	var pressure := clampf(0.5*controller.air_density*flow.length_squared()/3000.0,0,1)
-	var omega: Vector3 = basis.inverse()*controller.angular_velocity
-	var alpha: Vector3 = basis.inverse()*controller.angular_acceleration
-	var pilot_rates: Vector3 = pilot.inverse()*controller.angular_velocity
-	# Pose preparation reads the original request. Physics keeps its existing
-	# command filter; filtering that result again erased brief animation accents.
-	var intent: Vector3 = controller.pilot_rotation_intent
-	if intent.is_zero_approx(): intent = controller.rotation_request
-	# USPA start-coast-stop: command/rate mismatch starts a stroke, sustained
-	# rotation relaxes it, releasing input creates an opposing arrest stroke.
-	# This is a visual intent signal, not another attitude controller.
-	var target_rates: Vector3 = controller.effective_rates
-	var rate_scale: Vector3 = controller.MAX_RATE.max(target_rates.abs())
+func _sample_motion(frame, controller) -> Dictionary:
+	var basis := Basis(frame.attitude)
+	var pilot: Basis = frame.pilot_frame
+	var flow: Vector3 = frame.local_airflow*Vector3(-1,1,-1)
+	var pressure := clampf(0.5*frame.air_density*flow.length_squared()/3000.0,0,1)
+	var omega: Vector3 = basis.inverse()*frame.angular_velocity
+	var alpha: Vector3 = basis.inverse()*frame.angular_acceleration
+	var pilot_rates: Vector3 = pilot.inverse()*frame.angular_velocity
+	var intent: Vector3 = frame.pilot_rotation_intent
+	if intent.is_zero_approx(): intent = frame.rotation_request
+	var target_rates: Vector3 = frame.effective_rates
+	var rate_scale: Vector3 = frame.max_rate.max(target_rates.abs())
 	var steer: Vector3 = ((target_rates-pilot_rates)/rate_scale*0.7+intent*0.65).clamp(-Vector3.ONE,Vector3.ONE)
-	var load := clampf((controller.g_load-1.0)/3.0,0,1.2)
-	var acceleration: Vector3 = controller.local_acceleration
+	var load := clampf((frame.g_load-1.0)/3.0,0,1.2)
+	var acceleration: Vector3 = frame.local_acceleration
 	var compression := clampf(load*0.75+alpha.length()*0.028+clampf(-acceleration.z/30.0,0,1)*0.25+contacts.impact*0.4,0,1.3)
-	var speed: float = controller.velocity.length()
-	var slowing: float = maxf(0,-(basis*acceleration).dot(controller.velocity.normalized()))
-	# Retro means delivered thrust opposing existing travel, not a throttle cut
-	# or a velocity rewrite. Gravity and aerodynamic braking stay independent.
-	var retro := Articulation.retrograde_weight(controller.velocity,controller.main_force,
-		controller.requested_main_force,controller.body.mass*controller.GRAVITY,controller.detent>0 or controller.jump_remaining>0)
-	var brake_rate := clampf((controller.brake_amount-last_brake)/delta,-3,3) if delta>0 else 0.0
-	last_brake = controller.brake_amount
-	var roll_stop := clampf(pilot_rates.z/controller.MAX_RATE.z-intent.z,-1,1)*(1.0-absf(intent.z))
-	# Powered joints hold a pose. Hover corrections follow actual attitude effort,
-	# never a perpetual clock-driven swim while the chassis is stable.
-	var gyro: Vector3 = basis.inverse()*controller.rcs_torque.normalized()*clampf(controller.torque_fraction,0,1)
+	var speed: float = frame.velocity.length()
+	var slowing: float = maxf(0,-(basis*acceleration).dot(frame.velocity.normalized()))
+	var retro := Articulation.retrograde_weight(frame.velocity,frame.main_force,
+		frame.requested_main_force,frame.body_mass*frame.gravity,frame.detent>0 or frame.jump_remaining>0)
+	var brake_rate := clampf((frame.brake_amount-last_brake)/frame.delta,-3,3) if frame.delta>0 else 0.0
+	last_brake = frame.brake_amount
+	var roll_stop := clampf(pilot_rates.z/frame.max_rate.z-intent.z,-1,1)*(1.0-absf(intent.z))
+	var gyro: Vector3 = basis.inverse()*frame.rcs_torque.normalized()*clampf(frame.torque_fraction,0,1)
 	var trim := gyro if gyro.length()>0.08 else Vector3.ZERO
-	# Quiet trim cannot cancel a deliberate shoulder stroke or its arrest phase.
 	trim *= 1.0-minf(maxf(intent.length(),steer.length()),1)
 	var look := Vector3.ZERO
-	var gaze: Vector3 = _articulated_gaze(controller,basis,intent,delta) if controller.articulated_flight else controller.gaze_direction
+	var gaze: Vector3 = _articulated_gaze(frame,controller,basis,intent,frame.delta) if frame.articulated_flight else frame.gaze_direction
 	if not gaze.is_zero_approx():
-		# Uncharted production reference: bounded look correction over the base
-		# pose. Only the neck is affected here; there is no arm/weapon look pass.
 		var mech = controller.body
 		var sk: Skeleton3D = mech.skeleton
 		var torso := sk.find_bone("Torso")
-		var frame: Basis = sk.global_basis.orthonormalized()*mech.bone_poses[torso].basis.orthonormalized()*sk.get_bone_global_rest(torso).basis.orthonormalized().inverse()
-		var direction: Vector3 = frame.inverse()*gaze.normalized()
+		var pose: Basis = sk.global_basis.orthonormalized()*mech.bone_poses[torso].basis.orthonormalized()*sk.get_bone_global_rest(torso).basis.orthonormalized().inverse()
+		var direction: Vector3 = pose.inverse()*gaze.normalized()
 		var yaw := atan2(direction.x,direction.z)
 		if direction.z<0 and absf(direction.x)<0.15: yaw = PI*signf(head.value.y if absf(head.value.y)>0.05 else 1.0)
 		look = Vector3(-atan2(direction.y,Vector2(direction.x,direction.z).length()),yaw,0)
 	return {"flow":flow.normalized(),"pressure":pressure,"omega":omega,"alpha":alpha,
-		"translate":controller.hover_actuation*Vector3(-1,1,-1),
-		"move_intent":controller.translation_request*Vector3(-1,1,-1),
-		"acceleration":acceleration,"compression":compression,"g_load":controller.g_load,
+		"translate":frame.hover_actuation*Vector3(-1,1,-1),
+		"move_intent":frame.translation_request*Vector3(-1,1,-1),
+		"acceleration":acceleration,"compression":compression,"g_load":frame.g_load,
 		"look_angles":look,"look_weight":float(not gaze.is_zero_approx()),"target_rates":target_rates,"pilot_rates":pilot_rates,
 		"side_load":clampf(acceleration.x/22.0,-1,1),"pitch":intent.x,"yaw":intent.y,
-		"roll":clampf(intent.z*0.7+pilot_rates.z/controller.MAX_RATE.z*0.3,-1,1),"roll_stop":roll_stop,
+		"roll":clampf(intent.z*0.7+pilot_rates.z/frame.max_rate.z*0.3,-1,1),"roll_stop":roll_stop,
 		"up":basis.inverse()*Vector3.UP,"trim":trim,"gyro":gyro,
 		"steer":steer,"body_steer":(basis.inverse()*pilot*steer)*Vector3(-1,1,-1),
-		"retro":retro,"brake_rate":brake_rate,"deceleration":smoothstep(2,12,slowing)*smoothstep(6,25,speed)*smoothstep(0.15,0.65,controller.g_load)*maxf(retro,maxf(controller.brake_request,controller.brake_amount))}
+		"retro":retro,"brake_rate":brake_rate,"deceleration":smoothstep(2,12,slowing)*smoothstep(6,25,speed)*smoothstep(0.15,0.65,frame.g_load)*maxf(retro,maxf(frame.brake_request,frame.brake_amount))}
 
-func _sample_effort(controller, delta: float) -> void:
-	# Overgrowth's authored directional corrections. This interprets the existing
-	# solver; it never applies force or adds a passive body/limb simulation.
-	var basis := Basis(controller.attitude)
-	var output: float = controller.DETENTS[controller.detent]
-	var requested: Vector3 = controller.requested_main_force
-	var thrust: Vector3 = controller.main_force
+func _sample_effort(frame, delta: float) -> void:
+	var basis := Basis(frame.attitude)
+	var output: float = frame.detent_output
+	var requested: Vector3 = frame.requested_main_force
+	var thrust: Vector3 = frame.main_force
 	var axis := thrust.normalized() if thrust.length_squared()>1 else basis.y
 	var request_axis := requested.normalized() if requested.length_squared()>1 else axis
-	var velocity: Vector3 = controller.velocity
+	var velocity: Vector3 = frame.velocity
 	var speed := velocity.length()
 	var travel := velocity/maxf(speed,0.001)
-	var delivered: float = smoothstep(0.1,0.8,controller.thrust_level)
+	var delivered: float = smoothstep(0.1,0.8,frame.thrust_level)
 	var along := axis.dot(travel)
 	var opposition: float = motion.retro
 	var across := (axis-travel*along)*delivered*smoothstep(2,12,speed)
-	var specific: Vector3 = basis.inverse()*(thrust+controller.aero_force+controller.cold_force)/(controller.body.mass*controller.GRAVITY)
-	var acceleration: Vector3 = basis*controller.local_acceleration
-	var acceleration_load := smoothstep(2,18,acceleration.dot(axis))*smoothstep(0.8,1.8,controller.thrust_level)
-	var spool := clampf((output-controller.thrust_level-0.08)/2.0,0,1)
+	var specific: Vector3 = basis.inverse()*(thrust+frame.aero_force+frame.cold_force)/(frame.body_mass*frame.gravity)
+	var acceleration: Vector3 = basis*frame.local_acceleration
+	var acceleration_load := smoothstep(2,18,acceleration.dot(axis))*smoothstep(0.8,1.8,frame.thrust_level)
+	var spool := clampf((output-frame.thrust_level-0.08)/2.0,0,1)
 	var prepare := spool
 	prepare = maxf(prepare,maxf(0,-request_axis.dot(travel)-opposition)*delivered*0.35)
 	var drive := maxf(spool*0.85,acceleration_load)*(1.0-opposition)
 	var target := Vector3(prepare,opposition,drive)
 	var pilot_rates: Vector3 = motion.pilot_rates
-	var pilot_intent: Vector3 = controller.pilot_rotation_intent
-	if pilot_intent.is_zero_approx(): pilot_intent = controller.rotation_request
+	var pilot_intent: Vector3 = frame.pilot_rotation_intent
+	if pilot_intent.is_zero_approx(): pilot_intent = frame.rotation_request
 	var rotational_arrest := 0.0
 	for axis_index in 3:
 		if absf(pilot_intent[axis_index])>0.1 and pilot_intent[axis_index]*pilot_rates[axis_index]<0.0:
-			rotational_arrest = maxf(rotational_arrest,smoothstep(0.05,0.55,absf(pilot_rates[axis_index])/maxf(controller.MAX_RATE[axis_index],0.001)))
-	var brake_event := smoothstep(0.08,0.55,maxf(controller.brake_amount,controller.brake_request))*smoothstep(2.0,18.0,speed)*smoothstep(1.0,2.2,controller.g_load)
-	var reversal_event := smoothstep(0.10,0.55,opposition)*smoothstep(1.0,2.4,controller.g_load)
+			rotational_arrest = maxf(rotational_arrest,smoothstep(0.05,0.55,absf(pilot_rates[axis_index])/maxf(frame.max_rate[axis_index],0.001)))
+	var brake_event := smoothstep(0.08,0.55,maxf(frame.brake_amount,frame.brake_request))*smoothstep(2.0,18.0,speed)*smoothstep(1.0,2.2,frame.g_load)
+	var reversal_event := smoothstep(0.10,0.55,opposition)*smoothstep(1.0,2.4,frame.g_load)
 	var arrest_target := maxf(rotational_arrest,maxf(brake_event*0.8,reversal_event*0.55))
 	arrest = lerpf(arrest,arrest_target,1.0-exp(-delta/(0.055 if arrest_target>arrest else 0.18)))
 	var recovery_target := 1.0 if arrest_target<0.06 and arrest>0.15 else 0.0
 	recovery = lerpf(recovery,recovery_target,1.0-exp(-delta/(0.16 if recovery_target>recovery else 0.32)))
-	# One bounded envelope for effort; final limb servos retain their velocities.
 	for channel in 3:
 		var tau: float = (0.10 if channel==1 else profile.effort_response[channel]) if target[channel]>effort[channel] else 0.28
 		var decay := 1.0-exp(-delta/maxf(tau,0.001))
@@ -264,10 +249,8 @@ func _sample_effort(controller, delta: float) -> void:
 	var slip := Vector3(-local_travel.x,0,-local_travel.z)*smoothstep(2,12,speed)
 	var directional := maxf(local_across.length(),maxf(motion.body_steer.length()*0.55,slip.length()*motion.pressure*0.4))
 	var role := clampf(maxf(directional,maxf(effort.y*0.65,effort.z*0.5)),0,1)
-	role *= 1.0-controller.hover_assist*0.75
+	role *= 1.0-frame.hover_assist*0.75
 	role = maxf(role,motion.move_intent.length())
-	# No fixed clock wobble during a committed maneuver. The retained lead side
-	# supplies continuity through zero speed and exactly opposing vector geometry.
 	motion.merge({"prepare":effort.x,"retro":effort.y,"drive":effort.z,
 		"powered":delivered,"arrest":arrest,"recovery":recovery,
 		"redirect":clampf(across.length(),0,1),"load_direction":specific*Vector3(-1,1,-1),
@@ -275,18 +258,14 @@ func _sample_effort(controller, delta: float) -> void:
 		"request_alignment":request_axis.dot(travel),"effort_phase":effort_phase},true)
 	motion.trim *= 1.0-role
 
-func _choose_posture(controller, delta: float) -> void:
+func _choose_posture(frame, delta: float) -> void:
 	var landing: float = contacts.preparation
-	# Useful body-flight support develops by about 31 m/s at sea level.
-	# Geometry braking lowers terminal descent below the old 41 m/s threshold.
 	var airload := smoothstep(0.02,0.20,motion.pressure)
-	var powered := smoothstep(0.1,0.95,controller.thrust_level)
-	var hover: float = clampf(controller.hover_assist,0,1)
-	var fighter: float = controller.aero_authority*powered*(1.0-hover)
-	var downward: float = maxf(0,controller.velocity.dot(Vector3.DOWN))
-	# Engine cutoff cannot instantly become a skydiver pose. Descent and useful
-	# relative wind must develop; lateral coasting keeps its independent posture.
-	var descent := smoothstep(2,12,downward)*smoothstep(0.1,0.65,downward/maxf(controller.velocity.length(),1))
+	var powered := smoothstep(0.1,0.95,frame.thrust_level)
+	var hover: float = clampf(frame.hover_assist,0,1)
+	var fighter: float = frame.aero_authority*powered*(1.0-hover)
+	var downward: float = maxf(0,frame.velocity.dot(Vector3.DOWN))
+	var descent := smoothstep(2,12,downward)*smoothstep(0.1,0.65,downward/maxf(frame.velocity.length(),1))
 	var falling := (1.0-hover-fighter)*(1.0-powered)*descent*airload
 	var weights := regimes.step(Vector3(hover,fighter,falling),delta,0.24).clamp(Vector3.ZERO,Vector3.ONE)
 	var total := weights.x+weights.y+weights.z
@@ -298,50 +277,40 @@ func _choose_posture(controller, delta: float) -> void:
 	motion["box"] = motion.fall*smoothstep(0.25,0.75,absf(motion.flow.z))
 	motion["belly"] = motion.box*smoothstep(-0.2,0.2,-motion.flow.z)
 	motion["back"] = motion.box-motion.belly
-	motion["brake"] = maxf(controller.brake_request,controller.brake_amount)*lerpf(0.2,1,airload)*(1.0-landing)
+	motion["brake"] = maxf(frame.brake_request,frame.brake_amount)*lerpf(0.2,1,airload)*(1.0-landing)
 	motion["flare"] = maxf(motion.brake,motion.deceleration)*(1.0-landing)
-	motion["brake_turn"] = controller.rotation_request*Vector3(1,-1,1)*motion.brake
+	motion["brake_turn"] = frame.rotation_request*Vector3(1,-1,1)*motion.brake
 	var spread: float = maxf(motion.flare,motion.box)
 	hover = motion.hover*(1.0-landing-spread)
 	var stream: float = motion.track*maxf(0,1.0-landing-spread-hover)
 	posture_weights = PackedFloat32Array([hover,stream,spread,maxf(0,1.0-landing-spread-hover-stream),landing])
-	var pushing: bool = controller.jump_remaining>0 and controller.thrust_level>1.0
+	var pushing: bool = frame.jump_remaining>0 and frame.thrust_level>1.0
 	launch.step(Vector3(float(pushing),0,0),delta,0.06 if pushing else 0.18)
 
-func _prepare_directional_pose(controller) -> void:
-	# AC VI reference: choose a gathering leg and a longer thrust leg from
-	# intended movement, before acceleration develops. Release follows the real
-	# braking request; a throttle cut alone cannot manufacture a catch gesture.
+func _prepare_directional_pose(frame) -> void:
 	var reach: Vector3 = motion.move_intent if not motion.move_intent.is_zero_approx() else motion.translate
 	reach = reach.limit_length(1.0)*(1.0-motion.land)*(1.0-motion.launch)
 	var strength := smoothstep(0.10,0.85,reach.length())
 	var side: float = signf(reach.x) if absf(reach.x)>0.1 else lead_side
-	# A loaded engine magnifies moving-hardpoint moments. Preserve a readable
-	# stagger while reserving the existing finite cold-gas pitch authority.
-	var loaded_scale: float = lerpf(1.0,0.45,smoothstep(2,4,controller.thrust_level))
+	var loaded_scale: float = lerpf(1.0,0.45,smoothstep(2,4,frame.thrust_level))
 	var knees := Vector2(profile.slide_knees.x,profile.slide_knees.y) if side>0 else Vector2(profile.slide_knees.y,profile.slide_knees.x)
 	knees *= strength
-	# Bank gathers the inside leg strongly; yaw uses a smaller twisting stagger.
-	# Command/rate mismatch also produces the opposite stroke when rotation stops.
 	var turn: float = (motion.steer.z*0.9+motion.steer.y*0.4)*profile.role_stagger*(1.0-motion.land)*(1.0-motion.launch)
 	knees += Vector2(turn,-turn)
 	motion["reach"] = reach
 	motion["gather"] = knees*loaded_scale
 
-func _prepare_maneuver_pose(controller, delta: float) -> void:
-	var weight: Vector2 = controller.maneuver_strength
+func _prepare_maneuver_pose(frame, delta: float) -> void:
+	var weight: Vector2 = frame.maneuver_strength
 	var sum := weight.x+weight.y
 	if sum>1.0: weight /= sum
-	var recovery: Vector2 = controller.maneuver_recovery
-	var signs: Vector2 = controller.maneuver_direction
-	var travel: Vector2 = controller.maneuver_travel*signs
-	# Bank remains long and staggered; only sustained travel gathers a full roll.
+	var recovery: Vector2 = frame.maneuver_recovery
+	var signs: Vector2 = frame.maneuver_direction
+	var travel: Vector2 = frame.maneuver_travel*signs
 	var rolling := smoothstep(deg_to_rad(55),deg_to_rad(140),maxf(travel.y,0))
 	var bank: float = signs.y*weight.y*(1.0-rolling)
-	# A captured, lift-loaded bank still needs inside/outside roles after the
-	# rotation input is released. Relative world-up excludes heading dependence.
-	var held_bank: float = controller.pilot_frame().x.y*maxf(motion.fighter,motion.air_control)*smoothstep(0.1,0.8,motion.g_load)*0.55
-	bank = lerpf(held_bank,bank,minf(controller.maneuver_strength.y,1.0))
+	var held_bank: float = frame.pilot_frame.x.y*maxf(motion.fighter,motion.air_control)*smoothstep(0.1,0.8,motion.g_load)*0.55
+	bank = lerpf(held_bank,bank,minf(frame.maneuver_strength.y,1.0))
 	weight.y *= rolling
 	var available: float = (1.0-motion.land)*(1.0-motion.launch)
 	weight *= available
@@ -349,11 +318,9 @@ func _prepare_maneuver_pose(controller, delta: float) -> void:
 	var error: float = absf(motion.target_rates.x-motion.pilot_rates.x)
 	var long_body: float = motion.pressure*(1.0-smoothstep(0.6,1.5,error))*(1.0-motion.brake*0.65)
 	layout = lerpf(layout,long_body,1.0-exp(-delta/0.24))
-	# The envelope follows measured air support/rate error on the physics clock.
 	motion["layout"] = layout
 	var flip := profile.maneuver_shape(maxf(travel.x,0.0))
 	var roll := profile.maneuver_shape(maxf(travel.y,0.0))
-	# Release/reversal opens now, regardless of how much rotation remains.
 	flip = flip.lerp(Vector3(0,0,1),recovery.x)
 	roll = roll.lerp(Vector3(0,0,1),recovery.y)
 	motion.merge({"bank_gesture":bank*available,"acro":weight,"acro_recovery":recovery,"acro_sign":signs,
@@ -396,8 +363,8 @@ func _update_body(delta: float) -> void:
 	anticipation.y += bank*0.14+signs.y*acro.y*(0.14*roll.x-0.12*roll.y)
 	anticipation.z += signs.y*acro.y*(0.08*roll.x-0.08*roll.y)
 	var pelvic := Vector3(acro.x*(-swing_pitch*flip.x+0.26*flip.y),-bank*0.12-signs.y*acro.y*roll.x*0.12,acro.y*signs.y*0.08)
-	hips.step((pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported+motion.get("mechanical_pelvis",Vector3.ZERO)).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0))),delta,0.30,0.5)
-	root_angles = hips.value*Vector3(-1,1,1)
+	hips.step((pelvic-anticipation*lerpf(0.25,0.15,powered)+lag*0.2+hover+supported).limit_length(lerpf(0.07,0.20,minf(acro.length()+absf(bank)*0.4,1.0))),delta,0.30,0.5)
+	root_angles = (hips.value+motion.get("mechanical_pelvis",Vector3.ZERO))*Vector3(-1,1,1)
 	var displacement := Vector3(-acceleration.x*0.001,-clampf(motion.g_load-1,0,3)*0.012,acceleration.z*0.001)
 	displacement += Vector3(motion.trim.x*0.012,motion.trim.y*0.008,0)*motion.hover
 	displacement.z -= motion.land*0.02
@@ -416,7 +383,6 @@ func _update_body(delta: float) -> void:
 		var stroke: Vector3 = motion.stroke
 		chest_target = Articulation.torso_target(motion)+lag*0.45+Vector3(stroke.x*0.12,stroke.z*0.10,stroke.y*0.09)
 	chest_target += Vector3(arrest*0.045-recovery*0.025,0,0)
-	chest_target += motion.get("mechanical_torso",Vector3.ZERO)
 	chest.step(chest_target.clamp(Vector3(-0.45,-0.30,-0.45),Vector3(0.45,0.30,0.45)),delta,0.30,0.9)
 	_update_head(delta)
 
@@ -437,32 +403,25 @@ func _update_head(delta: float) -> void:
 	lead *= 1.0-arrest*0.35
 	lead.x += acro.x*(-signs.x*0.14)*flip.x
 	wanted += lead*lerpf(1.0,0.2,look_weight)
-	wanted += motion.get("mechanical_head",Vector3.ZERO)
 	if motion.get("authored",false) and wanted.distance_to(head.value)<deg_to_rad(2.0):
 		wanted = head.value
 	wanted.z = -chest.value.z*0.2-motion.up.x*0.10
 	head.step(profile.limit_head(wanted),delta,profile.head_response,profile.head_speed)
 	head.value = profile.limit_head(head.value)
 
-func _update_legs(delta: float, controller) -> void:
+func _update_legs(delta: float, frame, controller) -> void:
 	if motion.get("authored",false):
-		_update_authored_legs(delta,controller)
+		_update_authored_legs(delta,frame,controller)
 		return
 	var flow: Vector3 = motion.flow*motion.pressure
 	var omega: Vector3 = motion.omega
 	var compression: float = motion.compression*0.35*(1.0-motion.launch)
-	# Preserve feasible calibrated anchors. When physical vectoring is already
-	# at its cone, reduce extra load/airflow articulation rather than bend jets.
-	var articulation := lerpf(1.0,0.35,clampf(controller.thrust_level,0,1)*float(controller.motor_saturated))
+	var articulation := lerpf(1.0,0.35,clampf(frame.thrust_level,0,1)*float(frame.motor_saturated))
 	var move: Vector3 = motion.get("translate",Vector3.ZERO)
-	# Full-power streaming otherwise leaves the foot-sole outlets behind the mass
-	# center and overwhelms pitch authority. Paired hip/knee flexion moves the
-	# actual outlets forward without changing the lower-leg thrust heading.
-	var thrust_tuck: float = smoothstep(2,4,controller.thrust_level)*profile.high_thrust_tuck
+	var thrust_tuck: float = smoothstep(2,4,frame.thrust_level)*profile.high_thrust_tuck
 	thrust_tuck *= 1.0-maxf(maxf(motion.flare,motion.retro),maxf(motion.land,motion.launch))
 	thrust_tuck *= 1.0-move.length()
-	# Reverse hover sweeps the calves forward; ankles counter-rotate to align the sole outlets.
-	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,controller.thrust_level)
+	var reverse_slide: float = minf(move.z,0)*profile.high_thrust_reverse*smoothstep(2,4,frame.thrust_level)
 	for side in 2:
 		var sx := 1.0 if side == 0 else -1.0
 		var role: float = sx*(motion.lead*(0.06+motion.flare*0.5)+motion.steer.z*0.6+motion.steer.y*(0.45+motion.hover*0.20)+motion.lead*motion.asymmetry*0.3+move.x*0.55+motion.get("bank_gesture",0.0)*0.3)*(1.0-motion.land)
@@ -475,35 +434,25 @@ func _update_legs(delta: float, controller) -> void:
 		var leg_gain: float = motion.hover*0.4+motion.fighter*0.6+motion.coast+motion.fall
 		var steer: float = sx*(leg_intent.z*0.18+leg_intent.y*0.12)*profile.maneuver_leg_motion/0.22*leg_gain
 		extras[0] += Vector3(steer+move.z*0.14,motion.yaw*(sx*0.06+motion.hover*0.10),move.x*0.10)
-		extras[1].x -= move.z*0.14 # Keep the loaded lower-leg nozzle axis coupled.
+		extras[1].x -= move.z*0.14
 		extras[1] += Vector3(-steer*0.65+motion.brake_rate*0.04,0,0)
-		# A small calf-panel incidence difference rolls lengthwise body flight.
-		# Actual calf nozzles move with it and retain their vectoring limits.
 		extras[1].x -= sx*motion.steer.z*lerpf(0.035,0.18,motion.brake)*motion.track
 		extras[2] += Vector3(0,0,motion.roll_stop*0.06)
-		extras[2].x += move.z*(0.36 if move.z<0 else 0.18) # Reverse brace presents the foot-sole outlets farther aft.
+		extras[2].x += move.z*(0.36 if move.z<0 else 0.18)
 		var targets: Array[Vector3] = []
-		var structural_legs: PackedVector3Array = motion.get("mechanical_legs",PackedVector3Array())
 		for joint in 3:
 			var target: Vector3 = profile.leg_target(posture_weights,side,joint)+extras[joint]*articulation
-			if structural_legs.size()==6: target += structural_legs[side*3+joint]
 			var ground_guard: float = motion.get("ground_guard",0.0)
 			if joint==0: target.x -= 0.08*ground_guard
 			elif joint==1: target.x += 0.32*ground_guard
 			else: target.x -= 0.06*ground_guard
 			var working: Vector3 = target.lerp(profile.drive_pose[joint]*Vector3(1,1,sx),motion.drive)
 			working = working.lerp(profile.retro_pose[joint]*Vector3(1,1,sx),motion.retro)
-			# Preserve the calibrated support pose; knee/hip changes compensate
-			# each other rather than yawing a heavily loaded foot-sole nozzle sideways.
 			target = target.lerp(working,(1.0-motion.land)*(1.0-motion.launch)*(1.0-motion.hover))
-			# A skydiver arches through the hips with the calves folded up. The
-			# powered braking brace remains a separate pose for feasible nozzles.
 			var falling: Vector3 = profile.fall_pose[joint]*Vector3(1,1,sx)+extras[joint]*articulation
 			target = target.lerp(falling,motion.get("belly",motion.box)*(1.0-motion.brake))
 			target = target.lerp(profile.back_fall_pose[joint]*Vector3(1,1,sx)+extras[joint]*articulation,motion.get("back",0.0)*(1.0-motion.brake))
 			var braking: Vector3 = profile.spread_pose[joint]*Vector3(1,1,sx)
-			# Directional armor incidence bleeds energy on the requested turn.
-			# Neutral steering retains compact weight transfer and shallow panels.
 			var turn: Vector3 = motion.brake_turn
 			if joint==0: braking += Vector3(turn.x*0.25+sx*turn.z*0.18,turn.y*0.22,sx*absf(turn.x)*0.12)
 			if joint==1: braking.x += -turn.x*0.20+sx*(turn.z*0.32+turn.y*0.18)
@@ -519,8 +468,6 @@ func _update_legs(delta: float, controller) -> void:
 			var roll: Vector3 = motion.get("roll_shape",Vector3.ZERO)
 			var lead: float = sx*motion.lead
 			var front: float = maxf(-signs.x,0.0)
-			# The long leg swings before inversion; the other knee leads. Front
-			# and back targets differ instead of playing the same pose backward.
 			var hip := -0.20-lead*0.32-front*0.12
 			var knee := 0.35+lead*0.28+front*0.10
 			var flip_target := Vector3.ZERO
@@ -531,13 +478,9 @@ func _update_legs(delta: float, controller) -> void:
 			var roll_target: Vector3 = target
 			if joint==0: roll_target += Vector3(-0.35*roll.y-sx*signs.y*0.24*(roll.x-roll.z),signs.y*0.12*roll.x,0)
 			if joint==1: roll_target.x += 0.50*roll.y+sx*signs.y*0.22*(roll.x-roll.z)
-			# Shift still supplies the wide aerodynamic brake; blend a feasible
-			# compact knee action without replacing that whole-body spread.
 			var pitch_weight: float = acro.x*lerpf(1.0,0.65,motion.brake)
 			target = target*(1.0-pitch_weight-acro.y)+flip_target*pitch_weight+roll_target*acro.y
 			targets.append(profile.limit_joint(target,side,joint))
-		# Clamp coupled flexion against BOTH joints before applying it. Clipping
-		# only the hip while bending the knee would rotate a loaded calf nozzle.
 		var gather: float = motion.gather[side]+motion.pitch*motion.fighter*0.12*(1.0-motion.land)*(1.0-motion.launch)
 		var flexion: float = role*stagger+thrust_tuck+gather-hover_shift
 		var lower: float = maxf(targets[0].x-profile.joint_max[0].x,profile.joint_min[1].x-targets[1].x)
@@ -551,19 +494,19 @@ func _update_legs(delta: float, controller) -> void:
 			servo.step(targets[joint],delta,lerpf(response+motion.hover*side*0.025+maxf(-role,0)*0.05,0.08,motion.launch),profile.joint_speed[joint])
 			servo.value = profile.limit_joint(servo.value,side,joint)
 
-func _articulated_gaze(controller, basis: Basis, intent: Vector3, delta: float) -> Vector3:
-	var direct: Vector3 = controller.gaze_direction
+func _articulated_gaze(frame, controller, basis: Basis, intent: Vector3, delta: float) -> Vector3:
+	var direct: Vector3 = frame.gaze_direction
 	if not direct.is_zero_approx():
 		gaze_heading = direct.normalized()
 		return gaze_heading
-	var travel: Vector3 = controller.velocity
+	var travel: Vector3 = frame.velocity
 	var target := gaze_heading
 	var nose: Vector3 = controller.body.actor.global_basis.z.normalized()
 	if travel.length()>4.0: target = travel.normalized()
-	var desired_force: Vector3 = controller.requested_main_force
+	var desired_force: Vector3 = frame.requested_main_force
 	var turning: Vector3 = basis*Vector3(-intent.y,intent.x,0)
 	if turning.length()>0.1: target = (nose+turning*0.65).normalized()
-	elif desired_force.length()>1.0 and controller.translation_request.length()>0.13 and motion.get("retro",0.0)<0.35:
+	elif desired_force.length()>1.0 and frame.translation_request.length()>0.13 and motion.get("retro",0.0)<0.35:
 		target = (nose+desired_force.normalized()*0.55).normalized()
 	if contacts.preparation>0.1 and not controller.grounded:
 		for hit in contacts.hits:
@@ -579,26 +522,26 @@ func _articulated_gaze(controller, basis: Basis, intent: Vector3, delta: float) 
 	else: gaze_heading = gaze_heading.slerp(target,weight).normalized()
 	return gaze_heading
 
-func _sample_articulation(controller, delta: float) -> void:
-	var reported_force: Vector3 = controller.main_force
-	var demand_force: Vector3 = controller.requested_main_force
-	var residual: Vector3 = controller.control_torque-controller.main_torque-controller.rcs_torque-controller.aero_torque
-	var weight: float = controller.body.mass*controller.GRAVITY
-	var torque_reference: float = maxf(controller.torque_limits.length(),weight)
-	var demand: Vector3 = controller.rotation_request
+func _sample_articulation(frame, delta: float) -> void:
+	var reported_force: Vector3 = frame.main_force
+	var demand_force: Vector3 = frame.requested_main_force
+	var residual: Vector3 = frame.control_torque-frame.main_torque-frame.rcs_torque-frame.aero_torque
+	var weight: float = frame.body_mass*frame.gravity
+	var torque_reference: float = maxf(frame.torque_limits.length(),weight)
+	var demand: Vector3 = frame.rotation_request
 	var change := (demand-previous_intent).length()
 	previous_intent = demand
-	var net_load := smoothstep(0.7,3.5,controller.g_load)
-	var effort_load: float = maxf(net_load*0.55,controller.delivered_thrust/(weight*4.0))
+	var net_load := smoothstep(0.7,3.5,frame.g_load)
+	var effort_load: float = maxf(net_load*0.55,frame.delivered_thrust/(weight*4.0))
 	var steady := clampf(maxf(motion.pressure*0.55,effort_load)+motion.redirect*0.22,0,1)
-	var transient := clampf(maxf(change,residual.length()/torque_reference)+controller.angular_acceleration.length()*0.025,0,1)
+	var transient := clampf(maxf(change,residual.length()/torque_reference)+frame.angular_acceleration.length()*0.025,0,1)
 	transient = maxf(transient,clampf((demand_force-reported_force).length()/(weight*3.0),0,1)*0.7)
 	stress.x = lerpf(stress.x,steady,1.0-exp(-delta/0.28))
 	stress.y = maxf(transient,stress.y*exp(-delta/0.34))
 	var intensity := clampf(stress.x*0.55+stress.y*0.65,0,1)
 	var rates: Vector3 = motion.target_rates-motion.pilot_rates
 	var direction: Vector3 = motion.steer*0.65+rates*0.35
-	direction += controller.pilot_frame().inverse()*residual/torque_reference*0.4
+	direction += frame.pilot_frame.inverse()*residual/torque_reference*0.4
 	var translation: Vector3 = motion.reach
 	direction += Vector3(translation.z,translation.x,0)*0.6
 	stroke_age += delta/maxf(stroke_duration,0.01)
@@ -611,61 +554,37 @@ func _sample_articulation(controller, delta: float) -> void:
 	var envelope := smoothstep(0.0,0.23,stroke_age)*(1.0-smoothstep(0.48,1.0,stroke_age))
 	var stroke := stroke_direction*envelope*intensity
 	var sides := Vector2.ZERO
-	for i in controller.motor_forces.size():
-		var force: Vector3 = controller.motor_forces[i]
-		# Mount order is backpack, calf, then foot outlets grouped by side.
+	for i in frame.motor_forces.size():
+		var force: Vector3 = frame.motor_forces[i]
 		var side: int = i%2 if i<6 else int(i>=8)
 		sides[side] += force.length()
 	var differential := (sides.x-sides.y)/maxf(sides.x+sides.y,1.0)
 	motion.merge({"authored":true,"stress":intensity,"stroke":stroke,
 		"stroke_direction":stroke_direction,"stroke_phase":stroke_age,"differential":differential,
-		"hand_time":controller.clock,"impact":contacts.impact},true)
+		"hand_time":frame.clock,"impact":contacts.impact},true)
 
-func _update_authored_legs(delta: float, controller) -> void:
-	var power: float = maxf(controller.thrust_level,float(controller.detent>0))
+func _update_authored_legs(delta: float, frame, controller) -> void:
+	var power: float = maxf(frame.thrust_level,float(frame.detent>0))
 	var steer: Vector3 = motion.steer
-	var intent: Vector3 = controller.pilot_rotation_intent
-	if intent.is_zero_approx(): intent = controller.rotation_request
-	# Primary pose follows the command; measured rate error remains in the
-	# independent corrective stroke and the structural response.
+	var intent: Vector3 = frame.pilot_rotation_intent
+	if intent.is_zero_approx(): intent = frame.rotation_request
 	for axis in 3:
 		if absf(intent[axis])>0.10: steer[axis] = intent[axis]
-	# Lab anchors use calibrated chassis axes. The old directional pose
-	# frame reflects X and Z relative to pilot translation.
 	var move: Vector3 = motion.reach*Vector3(-1,1,-1)
-	# Preserve intentional narrow rolls, but open the stance under lateral load
-	# and braking. Reverse thrust has priority even during full steering.
 	var lateral_balance: float = smoothstep(0.25,0.9,absf(motion.side_load))*(1.0-absf(steer.z))*0.55
 	var bracing: float = maxf(motion.retro,maxf(motion.flare*0.85,maxf(lateral_balance,motion.get("arrest",0.0)*0.70)))
-	# During a reversal, load a wide transfer stance before the opposite
-	# stagger reaches its final key. Rate error continues to drive the jets.
 	var yaw_arrest: float = smoothstep(0.05,0.45,absf(motion.pilot_rates.y))*float(intent.y*motion.pilot_rates.y<0.0)
 	bracing = maxf(bracing,yaw_arrest*0.55)
-	var target := Articulation.select(steer,move,power,bracing)
-	var hover_pose := Articulation.angles("Hover_Hold")
 	var hover_weight := clampf(motion.hover*(1.0-motion.track)*0.88,0.0,0.88)
-	target = Articulation.blend(target,hover_pose,hover_weight,hover_weight)
-	var structural_legs: PackedVector3Array = motion.get("mechanical_legs",PackedVector3Array())
-	if structural_legs.size()==target.size():
-		for index in target.size():
-			var structural := structural_legs[index]
-			# A locked extended knee carries the load through the joint; secondary
-			# flexion must not erase the authored high-speed silhouette.
-			if index%3==1 and target[index].x<deg_to_rad(12.0):
-				structural.x = clampf(structural.x,-0.015,0.015)
-			target[index] += structural
+	var target := Articulation.select(steer,move,power,bracing,hover_weight)
 	var land: float = motion.land
 	var takeoff: float = motion.launch
 	var acro: Vector2 = motion.acro
 	var flip: Vector3 = motion.flip_shape
 	var roll: Vector3 = motion.roll_shape
-	var throttle_load: float = smoothstep(0.1,0.8,controller.thrust_level)
-	# With the calf, backpack and cold couples present, the deep pull can keep
-	# its knee silhouette while the boots recover axial thrust under power.
+	var throttle_load: float = smoothstep(0.1,0.8,frame.thrust_level)
 	var powered_pull: float = smoothstep(0.25,0.85,steer.x)*throttle_load*(1.0-motion.hover)*(1.0-bracing)
-	# Reuse the real wrench predictor for primary hover trim, not only for
-	# optional gestures. Small ankle/stance adjustments preserve the key.
-	var trim_allowed: bool = controller.hover_assist>0.5 and power>0.04 and land<0.1 and takeoff<0.1 and bracing<0.7
+	var trim_allowed: bool = frame.hover_assist>0.5 and power>0.04 and land<0.1 and takeoff<0.1 and bracing<0.7
 	if trim_allowed:
 		trim_clock -= delta
 		if trim_clock<=0.0:
@@ -726,17 +645,26 @@ func _process_modification() -> void:
 			arms.apply(get_skeleton(),_rotate)
 		contacts.prepare_targets()
 		return
-	var difference := chest.value-hips.value
-	for part in profile.torso_bones.size(): _rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
-	_rotate("Neck",head.value)
+	var pelvis_offset: Vector3 = motion.get("mechanical_pelvis",Vector3.ZERO)
+	var torso_offset: Vector3 = motion.get("mechanical_torso",Vector3.ZERO)
+	var difference := (chest.value+torso_offset-hips.value-pelvis_offset).clamp(
+		Vector3(-0.55,-0.35,-0.55),Vector3(0.55,0.35,0.55))
+	for part in profile.torso_bones.size():
+		_rotate(profile.torso_bones[part],difference*Vector3(1,1,-1)*profile.torso_weights[part])
+	var head_target: Vector3 = profile.limit_head(head.value+motion.get("mechanical_head",Vector3.ZERO))
+	_rotate("Neck",head_target)
+	var structural_legs: PackedVector3Array = motion.get("mechanical_legs",PackedVector3Array())
 	for side in 2:
-		_rotate(profile.thigh_bones[side],legs[side*3].value)
-		_rotate(profile.knee_bones[side],legs[side*3+1].value)
-		_rotate(profile.foot_bones[side],legs[side*3+2].value)
+		for joint in 3:
+			var index := side*3+joint
+			var target: Vector3 = legs[index].value
+			if structural_legs.size()==6: target += structural_legs[index]
+			target = profile.limit_joint(target,side,joint)
+			var bone: String = [profile.thigh_bones[side],profile.knee_bones[side],profile.foot_bones[side]][joint]
+			_rotate(bone,target)
 	arms.apply(get_skeleton(),_rotate)
 	_apply_ground_torso_lean(0.12*float(motion.get("ground_guard",0.0)))
 	contacts.prepare_targets()
-
 
 func _apply_ground_animation_pose(run_weight: float, guard_weight: float) -> void:
 	if run_weight>0.0:
