@@ -1,17 +1,15 @@
-# Graph Report - godot4-cel-shader  (2026-11-25)
+# Graph Report - godot4-cel-shader  (2026-11-29)
 
 ## Corpus Check
-- 30 files · ~2,130,370 words
-- Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1091 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- cluster-only mode — file stats not available
 
 ## Summary
-- 524 nodes · 588 edges · 36 communities (29 shown, 7 thin omitted)
+- 526 nodes · 589 edges · 38 communities (30 shown, 8 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3af4bdcd`
+- Built from commit: `e54cc66a`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -31,7 +29,7 @@
 - PhantomCameraNoiseEmitter2D
 - PhantomCameraNoiseEmitter3D
 - Grass direction: Breath of the Wild
-- FollowMode2D
+- FollowMode3D
 - PhantomCamera3DExtensions
 - Node2D
 - Node3D
@@ -49,8 +47,10 @@
 - check_godot.py
 - Q: Where are Armored Core hover tap burst control timings and force handling defined?
 - Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?
+- LimitTargetQueryResult
 - Q: How are aerial per-booster thrust caps and redundant opposing burns handled?
 - Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?
+- branch-archive/README.md
 
 ## God Nodes (most connected - your core abstractions)
 1. `PhantomCamera3D` - 70 edges
@@ -61,25 +61,25 @@
 6. `PhantomCameraNoiseEmitter3D` - 17 edges
 7. `Camera3DResource` - 17 edges
 8. `PhantomCameraNoise2D` - 16 edges
-9. `PhantomCameraHost` - 15 edges
-10. `TweenDirectorResource` - 15 edges
+9. `TweenDirectorResource` - 15 edges
+10. `PhantomCameraHost` - 15 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `PhantomCamera2D` --inherits--> `PhantomCamera`  [EXTRACTED]
-  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs → demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs
 - `PhantomCamera3D` --inherits--> `PhantomCamera`  [EXTRACTED]
   demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs → demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs
-- `PhantomCamera` --references--> `EaseType`  [EXTRACTED]
-  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs → demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs
-- `PhantomCamera` --references--> `PhantomCameraTween`  [EXTRACTED]
-  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs → demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs
-- `PhantomCamera` --references--> `TransitionType`  [EXTRACTED]
-  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs → demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs
+- `PhantomCamera3D` --references--> `ProjectionType`  [EXTRACTED]
+  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs → demo/addons/phantom_camera/scripts/resources/Camera3DResource.cs
+- `PhantomCamera3D` --references--> `PhantomCameraNoise3D`  [EXTRACTED]
+  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs → demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs
+- `PhantomCameraNoiseEmitter3D` --references--> `PhantomCameraNoise3D`  [EXTRACTED]
+  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs → demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs
+- `PhantomCamera2D` --references--> `PhantomCameraNoise2D`  [EXTRACTED]
+  demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs → demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs
 
 ## Import Cycles
 - None detected.
 
-## Communities (36 total, 7 thin omitted)
+## Communities (38 total, 8 thin omitted)
 
 ### Community 0 - "Animation direction for the 9 m, 10 t mech"
 Cohesion: 0.12
@@ -114,8 +114,8 @@ Cohesion: 0.10
 Nodes (18): Callable, StringName, InterpolationMode, Auto, Idle, Manual, Physics, MethodName (+10 more)
 
 ### Community 8 - "FollowLockAxis3D"
-Cohesion: 0.08
-Nodes (23): PhantomCamera, FollowLockAxis3D, None, X, XY, XYZ, XZ, Y (+15 more)
+Cohesion: 0.22
+Nodes (9): FollowLockAxis3D, None, X, XY, XYZ, XZ, Y, YZ (+1 more)
 
 ### Community 9 - "Godot 4 Complete Cel Shader"
 Cohesion: 0.08
@@ -141,9 +141,9 @@ Nodes (11): GodotObject, Node3D, StringName, MethodName, PhantomCameraNoiseEmitt
 Cohesion: 0.29
 Nodes (6): Grass direction: Breath of the Wild, Local checks, Recommended implementation order, Scope and evidence, Sources and what each supports, Why this scene looks like panels
 
-### Community 15 - "FollowMode2D"
-Cohesion: 0.07
-Nodes (19): CollisionShape2D, PhantomCamera.Noise, GodotObject, FollowLockAxis2D, None, X, Xy, Y (+11 more)
+### Community 15 - "FollowMode3D"
+Cohesion: 0.06
+Nodes (27): PhantomCamera, PhantomCamera.Noise, FollowLockAxis2D, None, X, Xy, Y, FollowMode2D (+19 more)
 
 ### Community 16 - "PhantomCamera3DExtensions"
 Cohesion: 0.25
@@ -189,6 +189,10 @@ Nodes (4): Answer, Outcome, Q: Where are Armored Core hover tap burst control ti
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?, Source Nodes
 
+### Community 34 - "LimitTargetQueryResult"
+Cohesion: 0.22
+Nodes (6): CollisionShape2D, GodotObject, LimitTargetQueryResult, IsCollisionShape2D, IsTileMapLayer, TileMapLayer
+
 ### Community 35 - "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How are aerial per-booster thrust caps and redundant opposing burns handled?, Source Nodes
@@ -198,21 +202,21 @@ Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?, Source Nodes
 
 ## Knowledge Gaps
-- **302 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+297 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 371 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **303 isolated node(s):** `AnimBP, clip data and correction`, `Fit to the existing Godot demos`, `Flight`, `Ground locomotion`, `Movement and combat reference sheet` (+298 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 373 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **8 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.229) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `FollowMode2D`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
+- **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `FollowMode3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
+  _High betweenness centrality (0.227) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `LimitTargetQueryResult`, `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `FollowMode3D`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
+  _High betweenness centrality (0.177) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.149) - this node is a cross-community bridge._
-- **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _302 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.148) - this node is a cross-community bridge._
+- **What connects `AnimBP, clip data and correction`, `Fit to the existing Godot demos`, `Flight` to the rest of the system?**
+  _303 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Animation direction for the 9 m, 10 t mech` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**

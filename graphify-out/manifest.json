@@ -1380,8 +1380,8 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1795616435.0009146,
-    "seen": 1795616610.065668,
+    "mtime": 1795884825.6552048,
+    "seen": 1795884861.980742,
     "ast_hash": "15c33a02390d68aa28a9fc246ed22fae",
     "semantic_hash": ""
   },
@@ -1398,8 +1398,8 @@
     "semantic_hash": ""
   },
   "tools/check_godot.py": {
-    "mtime": 1794037156.922583,
-    "seen": 1794037186.450305,
+    "mtime": 1795884825.6720974,
+    "seen": 1795884861.980735,
     "ast_hash": "47da74733d677c5df1ef859d5965c461",
     "semantic_hash": ""
   },
@@ -1458,9 +1458,27 @@
     "semantic_hash": ""
   },
   "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md": {
-    "mtime": 1795622915.9908147,
-    "seen": 1795622990.497386,
+    "mtime": 1795884825.6545055,
+    "seen": 1795884861.980741,
     "ast_hash": "e004c0c7ff5973ba2ec16ecc3468bb27",
+    "semantic_hash": ""
+  },
+  "demo/aerial/poses/branch-archive/README.md": {
+    "mtime": 1795884844.0062366,
+    "seen": 1795884861.980745,
+    "ast_hash": "196130c074091fd9c54af0b08fc210dd",
+    "semantic_hash": ""
+  },
+  "demo/aerial/poses/branch-archive/controlled-mechanical-violence.gd.txt": {
+    "mtime": 1795884843.9824905,
+    "seen": 1795884861.980746,
+    "ast_hash": "9439ac9a3b4f4232810c9bfb1b1c20fe",
+    "semantic_hash": ""
+  },
+  "demo/aerial/poses/branch-archive/fixed-thrust-bracing.gd.txt": {
+    "mtime": 1795884843.9716005,
+    "seen": 1795884861.980747,
+    "ast_hash": "6298617c58029e7fef1dd7a59e780d66",
     "semantic_hash": ""
   }
 }

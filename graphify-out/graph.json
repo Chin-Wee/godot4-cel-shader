@@ -224,7 +224,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -243,7 +243,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -256,23 +256,42 @@
       "source_location": "L10"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult",
-      "label": "LimitTargetQueryResult",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d",
+      "label": "FollowMode3D",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
         "scope_chain": [
-          "s106"
+          "s145"
         ]
       },
-      "norm_label": "limittargetqueryresult",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L364"
+      "norm_label": "followmode3d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L19"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode",
+      "label": "LookAtMode",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "lookatmode",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L11"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions",
@@ -506,6 +525,25 @@
       "norm_label": "transitiontype",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs",
       "source_location": "L5"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult",
+      "label": "LimitTargetQueryResult",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "limittargetqueryresult",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L364"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameratweendirector_phantomcamera_tweendirector_methodname",
@@ -916,44 +954,6 @@
       "source_location": "L30"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d",
-      "label": "FollowMode3D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "followmode3d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L19"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode",
-      "label": "LookAtMode",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "lookatmode",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L11"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3d_setcollisionmaskvalue",
       "label": ".SetCollisionMaskValue()",
       "_callable": true,
@@ -1348,92 +1348,6 @@
       "norm_label": ".toggle()",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
       "source_location": "L54"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_ascollisionshape2d",
-      "label": ".AsCollisionShape2D()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": ".ascollisionshape2d()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L376"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_astilemaplayer",
-      "label": ".AsTileMapLayer()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": ".astilemaplayer()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L371"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_getlimittarget",
-      "label": ".GetLimitTarget()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": ".getlimittarget()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L267"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_setlimittarget",
-      "label": ".SetLimitTarget()",
-      "_callable": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "GetPath",
-            "receiver_type": "TileMapLayer",
-            "lang": "csharp",
-            "line": "L259"
-          },
-          {
-            "callee": "GetPath",
-            "receiver_type": "CollisionShape2D",
-            "lang": "csharp",
-            "line": "L264"
-          }
-        ]
-      },
-      "norm_label": ".setlimittarget()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L257"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3dextensions_ascamera3dresource",
@@ -1904,6 +1818,92 @@
       "norm_label": "main()",
       "source_file": "tools/check_godot.py",
       "source_location": "L11"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_ascollisionshape2d",
+      "label": ".AsCollisionShape2D()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": ".ascollisionshape2d()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L376"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_astilemaplayer",
+      "label": ".AsTileMapLayer()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": ".astilemaplayer()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L371"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_getlimittarget",
+      "label": ".GetLimitTarget()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": ".getlimittarget()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L267"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_setlimittarget",
+      "label": ".SetLimitTarget()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "GetPath",
+            "receiver_type": "TileMapLayer",
+            "lang": "csharp",
+            "line": "L259"
+          },
+          {
+            "callee": "GetPath",
+            "receiver_type": "CollisionShape2D",
+            "lang": "csharp",
+            "line": "L264"
+          }
+        ]
+      },
+      "norm_label": ".setlimittarget()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L257"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_tweendirectorresource_phantomcamera_tweendirector_tweendirectorresource_new",
@@ -3921,22 +3921,27 @@
       "source_location": "L14"
     },
     {
-      "id": "collisionshape2d",
-      "label": "CollisionShape2D",
+      "id": "csharp_namespace:16bf58738495132a",
+      "label": "PhantomCamera",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
-      "norm_label": "collisionshape2d",
-      "source_file": "",
-      "source_location": ""
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera"
+      },
+      "norm_label": "phantomcamera",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
+      "source_location": "L6",
+      "type": "namespace"
     },
     {
       "id": "csharp_namespace:c24975ad28b7b1df",
       "label": "PhantomCamera.Noise",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "kind": "csharp_namespace",
@@ -3952,29 +3957,18 @@
       "label": "PhantomCamera2D.cs",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "norm_label": "phantomcamera2d.cs",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
       "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_cs_godotobject",
-      "label": "GodotObject",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "godotobject",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
       "label": "None",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -3991,7 +3985,7 @@
       "label": "X",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4008,7 +4002,7 @@
       "label": "Xy",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4025,7 +4019,7 @@
       "label": "Y",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4042,7 +4036,7 @@
       "label": "Framed",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4059,7 +4053,7 @@
       "label": "Glued",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4076,7 +4070,7 @@
       "label": "Group",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4093,7 +4087,7 @@
       "label": "None",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4110,7 +4104,7 @@
       "label": "Path",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4127,7 +4121,7 @@
       "label": "Simple",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4140,45 +4134,209 @@
       "source_location": "L14"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_iscollisionshape2d",
-      "label": "IsCollisionShape2D",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
+      "label": "PhantomCamera3D.cs",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "iscollisionshape2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L368"
+      "norm_label": "phantomcamera3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_istilemaplayer",
-      "label": "IsTileMapLayer",
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_framed",
+      "label": "Framed",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
         "scope_chain": [
-          "s106"
+          "s145"
         ]
       },
-      "norm_label": "istilemaplayer",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L366"
+      "norm_label": "framed",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L26"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_glued",
+      "label": "Glued",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "glued",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_group",
+      "label": "Group",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "group",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L24"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L21"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_path",
+      "label": "Path",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "path",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L25"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_simple",
+      "label": "Simple",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "simple",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L23"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_thirdperson",
+      "label": "ThirdPerson",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "thirdperson",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L27"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_group",
+      "label": "Group",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "group",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L16"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_mimic",
+      "label": "Mimic",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "mimic",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L14"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L13"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_simple",
+      "label": "Simple",
+      "_origin": "ast",
+      "community": 15,
+      "community_name": "FollowMode3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s145"
+        ]
+      },
+      "norm_label": "simple",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
+      "source_location": "L15"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
       "label": "PhantomCameraNoiseEmitter2D.cs",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "norm_label": "phantomcameranoiseemitter2d.cs",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
@@ -4189,7 +4347,7 @@
       "label": "PhantomCameraNoiseEmitter3D.cs",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "norm_label": "phantomcameranoiseemitter3d.cs",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
@@ -4200,7 +4358,7 @@
       "label": "PhantomCameraNoise2D.cs",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "norm_label": "phantomcameranoise2d.cs",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
@@ -4211,22 +4369,11 @@
       "label": "PhantomCameraNoise3D.cs",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "FollowMode3D",
       "file_type": "code",
       "norm_label": "phantomcameranoise3d.cs",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
       "source_location": "L1"
-    },
-    {
-      "id": "tilemaplayer",
-      "label": "TileMapLayer",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "tilemaplayer",
-      "source_file": "",
-      "source_location": ""
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_phantomcamera3d_camera3dresource",
@@ -6218,6 +6365,73 @@
       "source_location": "L26"
     },
     {
+      "id": "collisionshape2d",
+      "label": "CollisionShape2D",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "norm_label": "collisionshape2d",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_cs_godotobject",
+      "label": "GodotObject",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "norm_label": "godotobject",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_iscollisionshape2d",
+      "label": "IsCollisionShape2D",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "iscollisionshape2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L368"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_istilemaplayer",
+      "label": "IsTileMapLayer",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "istilemaplayer",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L366"
+    },
+    {
+      "id": "tilemaplayer",
+      "label": "TileMapLayer",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "LimitTargetQueryResult",
+      "file_type": "code",
+      "norm_label": "tilemaplayer",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
       "id": "graphify_out_memory_query_20261106_185819_e22bcec3_how_are_aerial_per_booster_thrust_caps_and_redunda",
       "label": "query_20261106_185819_e22bcec3_how_are_aerial_per_booster_thrust_caps_and_redunda.md",
       "_origin": "ast",
@@ -6354,6 +6568,30 @@
       "norm_label": "source nodes",
       "source_file": "graphify-out/memory/query_20261106_192423_a70fcb6e_how_does_aerial_cold_jet_thrust_scale_with_speed_f.md",
       "source_location": "L30"
+    },
+    {
+      "id": "demo_aerial_poses_branch_archive_readme",
+      "label": "branch-archive/README.md",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "branch-archive/README.md",
+      "file_type": "document",
+      "node_kind": "page",
+      "norm_label": "branch-archive/readme.md",
+      "source_file": "demo/aerial/poses/branch-archive/README.md",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_poses_branch_archive_readme_archived_flight_pose_sources",
+      "label": "Archived flight pose sources",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "branch-archive/README.md",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "archived flight pose sources",
+      "source_file": "demo/aerial/poses/branch-archive/README.md",
+      "source_location": "L1"
     },
     {
       "id": "csharp_namespace:c00019ec7183498a",
@@ -7510,33 +7748,6 @@
       "source_location": "L66"
     },
     {
-      "id": "csharp_namespace:16bf58738495132a",
-      "label": "PhantomCamera",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera"
-      },
-      "norm_label": "phantomcamera",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera.cs",
-      "source_location": "L6",
-      "type": "namespace"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d",
-      "label": "PhantomCamera3D.cs",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "norm_label": "phantomcamera3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followlockaxis3d_none",
       "label": "None",
       "_origin": "ast",
@@ -7671,193 +7882,6 @@
       "norm_label": "z",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
       "source_location": "L35"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_framed",
-      "label": "Framed",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "framed",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L26"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_glued",
-      "label": "Glued",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "glued",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L22"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_group",
-      "label": "Group",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "group",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L24"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_none",
-      "label": "None",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L21"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_path",
-      "label": "Path",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "path",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L25"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_simple",
-      "label": "Simple",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "simple",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L23"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_followmode3d_thirdperson",
-      "label": "ThirdPerson",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "thirdperson",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L27"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_group",
-      "label": "Group",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "group",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L16"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_mimic",
-      "label": "Mimic",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "mimic",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L14"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_none",
-      "label": "None",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L13"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera3d_phantomcamera_lookatmode_simple",
-      "label": "Simple",
-      "_origin": "ast",
-      "community": 8,
-      "community_name": "FollowLockAxis3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s145"
-        ]
-      },
-      "norm_label": "simple",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera3D.cs",
-      "source_location": "L15"
     },
     {
       "id": "demo_aerial_flight_articulation_design",
@@ -13739,6 +13763,17 @@
       "weight": 1.0
     },
     {
+      "source": "demo_aerial_poses_branch_archive_readme",
+      "target": "demo_aerial_poses_branch_archive_readme_archived_flight_pose_sources",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/poses/branch-archive/README.md",
+      "source_location": "L1",
+      "weight": 1.0
+    },
+    {
       "source": "demo_aerial_readme",
       "target": "demo_aerial_readme_aerial_rendering_study_delivery_must_complete",
       "relation": "contains",
@@ -15348,5 +15383,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "3af4bdcde44ff7171ccc6793230a962059f8ef2d"
+  "built_at_commit": "e54cc66abc98b05708fa9473b4b1176f1d3fb349"
 }
