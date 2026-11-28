@@ -4,7 +4,7 @@ extends RefCounted
 # These are visual compliance estimates, not a second physics simulation.
 const FREQUENCIES := [2.1, 2.3, 2.7, 2.7, 4.2, 4.2, 7.0, 7.0, 3.1, 3.3, 4.4, 4.4, 5.8, 5.8, 1.8]
 const DAMPING := [0.78, 0.78, 0.68, 0.68, 0.48, 0.48, 0.36, 0.36, 0.55, 0.55, 0.50, 0.50, 0.42, 0.42, 0.85]
-const LIMITS := [0.035, 0.035, 0.040, 0.040, 0.075, 0.075, 0.090, 0.090, 0.055, 0.055, 0.070, 0.070, 0.080, 0.080, 0.035]
+const LIMITS := [0.045, 0.045, 0.055, 0.055, 0.095, 0.095, 0.110, 0.110, 0.070, 0.070, 0.090, 0.090, 0.100, 0.100, 0.040]
 const MODE_COUNT := 15
 const ENGINE_COUNT := 6
 
@@ -13,6 +13,7 @@ var velocities: Array[Vector3] = []
 var previous_forces: Array[Vector3] = []
 var previous_initialized := false
 var shock := 0.0
+var compression := 0.0
 
 func _init() -> void:
 	for index in MODE_COUNT:
@@ -29,6 +30,7 @@ func reset() -> void:
 		previous_forces[index] = Vector3.ZERO
 	previous_initialized = false
 	shock = 0.0
+	compression = 0.0
 
 func step(sample: Dictionary, delta: float) -> Dictionary:
 	if delta <= 0.0:
@@ -87,28 +89,31 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 	var side_total := maxf(left_load + right_load, 0.001)
 	var side_difference := clampf((left_load - right_load) / side_total, -1.0, 1.0)
 	var load := clampf(maxf(smoothstep(1.0, 2.5, g_load), smoothstep(0.8, 3.5, total_effort / weight)), 0.0, 1.0)
-	var braking_load := clampf(maxf(brake, retro) * smoothstep(1.0, 2.4, g_load), 0.0, 1.0)
+	var arrest := clampf(float(sample.get("arrest",0.0)),0.0,1.0)
+	var braking_load := clampf(maxf(maxf(brake,retro),arrest*0.8)*smoothstep(1.0,2.4,g_load),0.0,1.0)
 	var mean_pressure_ripple := pressure_ripple / maxf(float(sampled_engines), 1.0)
 	var shock_input := maxf(clampf(jerk.length() / 110.0, 0.0, 1.0), maxf(left_slew, right_slew))
 	shock = maxf(shock * exp(-delta / 0.24), shock_input)
 
 	var lateral_g := clampf(acceleration.x / 9.81, -4.0, 4.0)
+	var vertical_g := clampf(acceleration.y / 9.81,-4.0,4.0)
 	var longitudinal_g := clampf(acceleration.z / 9.81, -4.0, 4.0)
+	compression = clampf(maxf(vertical_g,0.0)*0.010+maxf(g_load-1.0,0.0)*0.005+braking_load*0.012+shock*0.006,0.0,0.055)
 	var yaw_load := clampf(angular_acceleration.y / 5.0, -1.0, 1.0)
 	var roll_load := clampf(angular_acceleration.z / 5.0, -1.0, 1.0)
 	var pressure_load := mean_pressure_ripple * load
 
 	var targets: Array[Vector3] = [
-		Vector3(-longitudinal_g * 0.004 + braking_load * 0.012, lateral_g * 0.006 + side_difference * 0.010, yaw_load * 0.006) + pelvis_moment*0.025,
-		Vector3(longitudinal_g * 0.005 + braking_load * 0.018, -lateral_g * 0.008, yaw_load * 0.010 + shock * 0.004) + torso_moment*0.020,
-		Vector3(braking_load * 0.012 + left_load * 0.008, lateral_g * 0.004, side_difference * 0.008) + left_hip_moment*0.025,
-		Vector3(braking_load * 0.012 + right_load * 0.008, -lateral_g * 0.004, -side_difference * 0.008) + right_hip_moment*0.025,
-		Vector3(braking_load * 0.045 + shock * 0.018 + left_load * 0.008 + left_slew * 0.012, 0.0, side_difference * 0.008) + left_knee_moment*0.035,
-		Vector3(braking_load * 0.045 + shock * 0.018 + right_load * 0.008 + right_slew * 0.012, 0.0, -side_difference * 0.008) + right_knee_moment*0.035,
-		Vector3(-longitudinal_g * 0.005 - left_load * 0.008 + shock * 0.010, lateral_g * 0.003, side_difference * 0.005) + left_ankle_moment*0.030,
-		Vector3(-longitudinal_g * 0.005 - right_load * 0.008 + shock * 0.010, -lateral_g * 0.003, -side_difference * 0.005) + right_ankle_moment*0.030,
-		Vector3(braking_load * 0.014 + shock * 0.016 + left_slew * 0.012, side_difference * 0.014 + yaw_load * 0.003, roll_load * 0.003) + left_shoulder_moment*0.030,
-		Vector3(braking_load * 0.014 + shock * 0.016 + right_slew * 0.012, -side_difference * 0.014 + yaw_load * 0.003, -roll_load * 0.003) + right_shoulder_moment*0.030,
+		Vector3(-longitudinal_g * 0.004 + braking_load * 0.012 + compression*0.12, lateral_g * 0.006 + side_difference * 0.010, yaw_load * 0.006) + pelvis_moment*0.030,
+		Vector3(longitudinal_g * 0.005 + braking_load * 0.018 - compression*0.10, -lateral_g * 0.008, yaw_load * 0.010 + shock * 0.004) + torso_moment*0.025,
+		Vector3(braking_load * 0.012 + compression*0.22 + left_load * 0.008, lateral_g * 0.004, side_difference * 0.008) + left_hip_moment*0.030,
+		Vector3(braking_load * 0.012 + compression*0.22 + right_load * 0.008, -lateral_g * 0.004, -side_difference * 0.008) + right_hip_moment*0.030,
+		Vector3(braking_load * 0.045 + compression*0.72 + shock * 0.018 + left_load * 0.008 + left_slew * 0.012, 0.0, side_difference * 0.008) + left_knee_moment*0.040,
+		Vector3(braking_load * 0.045 + compression*0.72 + shock * 0.018 + right_load * 0.008 + right_slew * 0.012, 0.0, -side_difference * 0.008) + right_knee_moment*0.040,
+		Vector3(-longitudinal_g * 0.005 - compression*0.25 - left_load * 0.008 + shock * 0.010, lateral_g * 0.003, side_difference * 0.005) + left_ankle_moment*0.035,
+		Vector3(-longitudinal_g * 0.005 - compression*0.25 - right_load * 0.008 + shock * 0.010, -lateral_g * 0.003, -side_difference * 0.005) + right_ankle_moment*0.035,
+		Vector3(braking_load * 0.014 + compression*0.10 + shock * 0.016 + left_slew * 0.012, side_difference * 0.014 + yaw_load * 0.003, roll_load * 0.003) + left_shoulder_moment*0.035,
+		Vector3(braking_load * 0.014 + compression*0.10 + shock * 0.016 + right_slew * 0.012, -side_difference * 0.014 + yaw_load * 0.003, -roll_load * 0.003) + right_shoulder_moment*0.035,
 		Vector3(shock * 0.030 + left_slew * 0.012, 0.0, side_difference * 0.008),
 		Vector3(shock * 0.030 + right_slew * 0.012, 0.0, -side_difference * 0.008),
 		Vector3(shock * 0.035 + pressure_load * 0.35, 0.0, side_difference * 0.010),
@@ -119,7 +124,7 @@ func step(sample: Dictionary, delta: float) -> Dictionary:
 	for index in MODE_COUNT:
 		_step_mode(index, targets[index], delta)
 
-	return _frame(load, braking_load)
+	return _frame(load, braking_load, compression)
 
 func _step_mode(index: int, target: Vector3, delta: float) -> void:
 	var result := damped_step(positions[index], velocities[index], target.limit_length(LIMITS[index]),
@@ -144,7 +149,7 @@ static func damped_step(position: Vector3, velocity: Vector3, target: Vector3,
 	var next_velocity := decay * (velocity * cosine - (ratio * omega * velocity + omega * omega * offset) * sine_over_frequency)
 	return [target + next_offset, next_velocity]
 
-func _frame(load := 0.0, braking_load := 0.0) -> Dictionary:
+func _frame(load := 0.0, braking_load := 0.0, compression_load := 0.0) -> Dictionary:
 	var legs := PackedVector3Array([
 		positions[2], positions[4], positions[6],
 		positions[3], positions[5], positions[7]
@@ -161,7 +166,8 @@ func _frame(load := 0.0, braking_load := 0.0) -> Dictionary:
 		"mechanical_arms": arms,
 		"mechanical_wrists": wrists,
 		"mechanical_head": positions[14],
-		"mechanical_grip": clampf(load * 0.12 + braking_load * 0.18 + shock * 0.20, 0.0, 0.35),
+		"mechanical_grip": clampf(load * 0.14 + braking_load * 0.22 + shock * 0.24, 0.0, 0.45),
 		"mechanical_shock": shock,
-		"mechanical_load": load
+		"mechanical_load": load,
+		"mechanical_compression": compression_load
 	}

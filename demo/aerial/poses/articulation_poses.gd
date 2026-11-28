@@ -6,6 +6,7 @@ extends RefCounted
 const NEUTRAL := [[Vector3(-8.8,0,5),5,Vector3(3.6,0,-5)]]
 const AUTHORED := {
 	"Neutral_Flight": NEUTRAL,
+	"Hover_Hold": [[Vector3(-16,0,10),18,Vector3(12,0,-8)]],
 	"Unpowered_Coast": [[Vector3(-3,0,7),8,Vector3(-5,0,-4)]],
 	"Pitch_Up_Soft": [[Vector3(-12,0,7),5,Vector3(12,0,-7)]],
 	"Pitch_Up_Hard": [[Vector3(-40,0,22),85,Vector3(10,0,-10)]],
@@ -147,7 +148,7 @@ const TORSO_MIRRORED := {"Lateral_Lean_Right":"Lateral_Lean","Axial_Twist_Right"
 # Swing, humerus twist, elevation from the side, and elbow flexion.
 const ARMS := {
 	"Neutral_Straight":Vector4(0.02,0,0.22,0.28),
-	"Streamlined":Vector4(0.30,-0.08,0.17,0.20),
+	"Streamlined":Vector4(0.68,-0.10,0.25,0.30),
 	"Trailing_Extension":Vector4(0.61,-0.11,0.25,0.30),
 	"Forward_Brace":Vector4(-0.42,-0.42,0.72,0.91),
 	"Asymmetric_Balance":[Vector4(-0.14,-0.36,0.60,0.82),Vector4(0.26,-0.16,0.27,0.36)],

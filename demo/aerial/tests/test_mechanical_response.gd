@@ -36,6 +36,15 @@ func _run() -> void:
 	var torque_legs: PackedVector3Array = torque_frame.mechanical_legs
 	assert(torque_legs[1].x>torque_legs[4].x+0.005,"Joint moment does not load only its own knee assembly")
 
+	var vertical := neutral.duplicate(true)
+	vertical["local_acceleration"] = Vector3(0,29.43,0)
+	vertical["g_load"] = 4.0
+	var vertical_response := Response.new()
+	var vertical_frame: Dictionary
+	for tick in 36: vertical_frame = vertical_response.step(vertical,1.0/60.0)
+	var vertical_legs: PackedVector3Array = vertical_frame.mechanical_legs
+	assert(vertical_frame.mechanical_compression>0.02 and vertical_legs[1].x>neutral_frame.mechanical_legs[1].x+0.01,"Vertical G does not compress the loaded leg structure")
+
 	var brake := neutral.duplicate(true)
 	brake["g_load"] = 2.4
 	brake["brake"] = 1.0

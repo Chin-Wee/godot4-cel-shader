@@ -217,7 +217,7 @@ func _check_nozzle_allocation() -> void:
 					_expect(fc.cold_angles[index].is_zero_approx(),"Fixed cold nozzle was steered")
 				_expect(force.distance_to(fc.cold_force)<0.1 and moment.distance_to(fc.rcs_torque)<0.1,"Cold force/moment differs from actual outlet forces")
 				recoil_peak = maxf(recoil_peak,force.length()/(scene.hero.mass*Controller.GRAVITY))
-			print("COLD AXIS ",axis," ",sign," recoil_peak ",recoil_peak," mean ",mean_moment)
+			print("COLD AXIS ",axis," ",sign," recoil_peak ",recoil_peak," mean ",mean_moment," requests=",fc.cold_requests," levels=",fc.cold_valves.map(func(valve):return valve.level))
 			_expect(recoil_peak<0.03,"Opposed cold nozzles waste fuel on recoil")
 			_expect(mean_moment[axis]*sign>35000,"Placed cold nozzles cannot control a signed rotation axis")
 		fc.control_torque = Vector3.ZERO

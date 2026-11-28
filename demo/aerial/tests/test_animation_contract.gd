@@ -118,6 +118,7 @@ func _run() -> void:
 	await _ticks(150)
 	assert(mech.rig.behavior_weights[1]>0.99 and mech.rig.motion.track>0.99)
 	var fighter_hand: Vector3 = mech.rig.arms.hands[0]
+	print("SILHOUETTE DIAGNOSTIC hover=",before_input," cruise=",fighter_hand," track=",mech.rig.motion.track," hover_weight=",mech.rig.motion.hover," arms=",mech.rig.motion.get("mechanical_arms",PackedVector4Array()))
 	assert(fighter_hand.z< -0.5 and fighter_hand.distance_to(before_input)>2,"Displayed hover and cruise silhouettes still collapse into the same pose")
 	var fighter_knee: Vector3 = mech.rig.legs[1].value
 	mech.quaternion = Quaternion(Vector3.FORWARD,PI)*mech.quaternion

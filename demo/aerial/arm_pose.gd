@@ -177,6 +177,7 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 	var structural_wrists: PackedVector3Array = frame.get("mechanical_wrists",PackedVector3Array())
 	var structural_grip: float = float(frame.get("mechanical_grip",0.0))
 	var strength: float = frame.stress
+	var arrest: float = frame.get("arrest",0.0)
 	var direction: Vector3 = frame.stroke_direction
 	var goals := [Vector2.ZERO,Vector2.ZERO]
 	for side in 2:
@@ -187,15 +188,15 @@ func _update_articulation(delta: float, frame: Dictionary) -> void:
 		var weight: float = envelope*strength*(0.7+sx*frame.differential*0.15)*(1.0-frame.land)
 		var opposition := sx*(direction.y+direction.z)*0.50
 		var recoil := smoothstep(0.24,0.45,age)*(1.0-smoothstep(0.48,0.72,age))
-		target += Vector4(direction.x*0.48+opposition*0.33,opposition*0.30,
-			absf(opposition)*0.47+0.18,opposition*0.36+recoil*0.46)*weight
+		target += Vector4(direction.x*0.48+opposition*0.33-arrest*0.10,opposition*0.30,
+			absf(opposition)*0.47+0.18+arrest*0.16,opposition*0.36+recoil*0.46+arrest*0.28)*weight
 		if structural_arms.size()==2: target += structural_arms[side]
 		var flip: Vector3 = frame.flip_shape
 		var acro: Vector2 = frame.acro
 		var tuck := Vector4(0.08,-0.22,0.35,1.22)
 		var opening := Poses.arm_key("Forward_Brace",side)
 		target = target.lerp(tuck,acro.x*flip.y)
-		target = target.lerp(opening,acro.x*flip.z)
+		target = target.lerp(opening,maxf(acro.x*flip.z,arrest*0.58))
 		var hand_texture := grip_noise.get_noise_2d(time,side*19.3)
 		var settling: float = frame.pressure*strength*hand_texture*(1.0-envelope)*(1.0-frame.land)
 		target += Vector4(settling*0.065,0,settling*0.06,settling*0.09)
