@@ -24,6 +24,7 @@ func _run() -> void:
 		frame = response.step(neutral,1.0/60.0)
 	var neutral_torso: Vector3 = frame.mechanical_torso
 	var neutral_pelvis: Vector3 = frame.mechanical_pelvis
+	var neutral_frame: Dictionary = frame
 	assert(neutral_torso.length()<0.0001,"Neutral flight develops passive torso motion")
 	assert(neutral_pelvis.length()<0.0001,"Neutral flight develops passive pelvis motion")
 	assert(float(frame.mechanical_shock)<0.0001,"Neutral flight invents structural impacts")
