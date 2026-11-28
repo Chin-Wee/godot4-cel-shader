@@ -621,7 +621,13 @@ func _update_authored_legs(delta: float, controller) -> void:
 	var target := Articulation.select(steer,move,power,bracing)
 	var structural_legs: PackedVector3Array = motion.get("mechanical_legs",PackedVector3Array())
 	if structural_legs.size()==target.size():
-		for index in target.size(): target[index] += structural_legs[index]
+		for index in target.size():
+			var structural := structural_legs[index]
+			# A locked extended knee carries the load through the joint; secondary
+			# flexion must not erase the authored high-speed silhouette.
+			if index%3==1 and target[index].x<deg_to_rad(12.0):
+				structural.x = clampf(structural.x,-0.015,0.015)
+			target[index] += structural
 	var land: float = motion.land
 	var takeoff: float = motion.launch
 	var acro: Vector2 = motion.acro

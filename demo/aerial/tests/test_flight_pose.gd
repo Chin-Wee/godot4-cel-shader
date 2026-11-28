@@ -53,6 +53,7 @@ func _run() -> void:
 	assert(mech.basis.y.dot(Vector3.UP) > 0.99, "Hover did not remain upright")
 	assert(_check_limbs(mech) and _check_motors(mech))
 	await _ticks(420)
+	print("LONG HOVER DIAGNOSTIC speed=",mech.controller.velocity.length()," velocity=",mech.controller.velocity," omega=",mech.angular_velocity.length()," cold=",mech.controller.cold_force)
 	assert(mech.controller.velocity.length() < 0.3, "Long hover develops persistent drift")
 	# Hover taps boost while the same precision input rotates immediately.
 	mech.controls = {"forward":true,"precision":true}

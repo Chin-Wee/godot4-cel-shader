@@ -45,6 +45,12 @@ const HOT_MINIMUM_ON := 0.16
 const HOT_TRACKING := 6.0 # Prefer current heavy-engine pressure distribution.
 const COLD_REVERSE_DWELL := 0.10
 const COLD_REVERSE_OVERRIDE := 3.0
+const COLD_IGNITION := 0.008
+const COLD_RESTART := 0.03
+const COLD_RESPONSE := 0.04
+const COLD_FALL := 0.045
+const COLD_MINIMUM_ON := 0.02
+const QUIET_HOVER_FORCE_ENTER := 0.006
 const HOT_IDLE_FLOW := 0.01 # Powered engines retain pilot flow; cutoff closes valves.
 const COLD_ACTUATION_FUEL_COST := 0.06 # Penalize cancellation in the reachable solve too.
 const COLD_MINIMUM_FLOW := 0.025 # Minimum useful impulse; small errors coast instead.
@@ -161,6 +167,7 @@ var cold_valves: Array = []
 var cold_requests: Array[Vector3] = []
 var cold_forces: Array[Vector3] = []
 var cold_angles: Array[Vector3] = []
+var cold_force_caps: Array[float] = []
 var command := Spring.new()
 var brake := Spring.new()
 var accel := Spring.new()
@@ -182,10 +189,11 @@ func configure(owner_body: RigidBody3D, display_scale: float, profile: Resource)
 		motor_forces.append(Vector3.ZERO)
 		hot_valves.append(Valve.new(HOT_IGNITION,HOT_RESTART,HOT_RESPONSE,HOT_RESPONSE,HOT_MINIMUM_ON))
 	for index in hardware.cold_booster_max_thrust.size():
-		cold_valves.append(Valve.new())
+		cold_valves.append(Valve.new(COLD_IGNITION,COLD_RESTART,COLD_RESPONSE,COLD_FALL,COLD_MINIMUM_ON))
 		cold_requests.append(Vector3.ZERO)
 		cold_forces.append(Vector3.ZERO)
 		cold_angles.append(Vector3.ZERO)
+		cold_force_caps.append(0.0)
 	reset()
 
 func reset(power := 1.0) -> void:
@@ -478,78 +486,60 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	var length_scale := model_scale/WORLD_UNITS_PER_METER
 	requested_main_force = force_target*weight
 	requested_thrust = requested_main_force.length()
-	var ports := []
-	var fit := FIXED_FIT
 	var combined := outlets+cold_outlets
-	for i in combined.size():
-		var hot := i<hot_count
-		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
-		var pressure_scale := _hot_pressure_scale(i) if hot else 1.0
-		if hot: engine_pressure_scales[i] = pressure_scale
-		ports.append({"basis":combined[i].basis,"lever":combined[i].position/(WORLD_UNITS_PER_METER*length_scale),
-			"cone":0.0,"center":Vector3.ZERO,"gain":1.0,
-			"minimum":HOT_IDLE_FLOW*capacity*pressure_scale if hot and hot_enabled else 0.0,
-			"maximum":capacity*pressure_scale if hot and hot_enabled else (_cold_capacity(i-hot_count) if not hot else 0.0),
-			"off":0.0,"fuel":0.002 if hot else 0.3})
-	var hot_plan := Allocator.solve(ports.slice(0,hot_count),force_target,moment_target,along,ideal_forces,[],64,fit)
-	var hot_error := -force_target
-	var hot_moment_error := -moment_target
-	for i in hot_count:
-		hot_error += hot_plan[i]
-		hot_moment_error += ports[i].lever.cross(hot_plan[i])
-	var local_rates := frame.transposed()*angular_velocity
-	var pilot_intent := PILOT_AXES*rotation_request
-	var deliberate_arrest := false
-	for axis in 3:
-		if absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*local_rates[axis]<0.0:
-			deliberate_arrest = true
-	var active_rotation := deliberate_arrest or local_rates.length()>0.08
-	var moment_tolerance := 0.0015 if active_rotation else 0.005
-	if hot_error.length()<0.02 and hot_moment_error.length()<moment_tolerance:
-		ideal_forces = hot_plan
-		for i in cold_outlets.size(): ideal_forces.append(Vector3.ZERO)
-	else: ideal_forces = Allocator.solve(ports,force_target,moment_target,along,ideal_forces,[],96,fit)
-	# Choose attainable magnitude first; then slew the complete wrench request.
-	# The next-step solve fits all force axes equally, so fuel savings cannot
-	# suddenly drop the along-axis push or create an upward hop.
-	var feasible_force := Vector3.ZERO
-	for force in ideal_forces: feasible_force += force
-	# Anchor slew to delivered force, not an unreachable previous request:
-	# delayed valves must not accumulate a catch-up jump in the reference.
-	var previous_force := force_reference if clock<=dt+0.000001 else (main_force+cold_force)/weight
-	force_reference = previous_force.move_toward(feasible_force,force_slew*dt)
-	force_target = force_reference
-	along = Vector3.ZERO
+	var horizon_ports := []
+	var ports := []
 	var seed: Array[Vector3] = []
 	var preferred: Array[Vector3] = []
+	var effective_capacities: Array[float] = []
+
+	# Retain a theoretical horizon plan for heavy-engine ignition priming.
+	# Current feasibility and cold-gas decisions use valve-reachable pressure.
 	for i in combined.size():
 		var hot := i<hot_count
-		var valve = hot_valves[i] if hot else cold_valves[i-hot_count]
-		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
-		var pressure_scale := engine_pressure_scales[i] if hot else 1.0
+		var index := i if hot else i-hot_count
+		var capacity := _hot_capacity(index) if hot else _cold_capacity(index)
+		var pressure_scale := _hot_pressure_scale(index) if hot else 1.0
 		var effective_capacity := capacity*pressure_scale
-		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
-		ports[i].fuel = 0.0 if hot else COLD_ACTUATION_FUEL_COST
-		ports[i].off = valve.preview(0,dt)*effective_capacity
-		ports[i].minimum = valve.preview(minimum,dt)*effective_capacity
-		if hot and hot_enabled: ports[i].off = ports[i].minimum
-		ports[i].maximum = valve.preview(1.0 if not hot or hot_enabled else minimum,dt)*effective_capacity
-		# Track scalar pressure on the new bone axis, not the old world vector.
-		ports[i]["tracking"] = HOT_TRACKING if hot and hot_enabled else 0.0
-		var axis: Vector3 = -ports[i].basis.z
+		effective_capacities.append(effective_capacity)
+		if hot:
+			engine_pressure_scales[index] = pressure_scale
+		else:
+			cold_force_caps[index] = effective_capacity*weight
+
+		var valve = hot_valves[index] if hot else cold_valves[index]
+		var minimum_command := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
+		var horizon_minimum := HOT_IDLE_FLOW*effective_capacity if hot and hot_enabled else 0.0
+		var horizon_maximum := effective_capacity if (not hot or hot_enabled) else 0.0
+		horizon_ports.append({
+			"basis":combined[i].basis,
+			"lever":combined[i].position/(WORLD_UNITS_PER_METER*length_scale),
+			"cone":0.0,"center":Vector3.ZERO,"gain":1.0,
+			"minimum":horizon_minimum,"maximum":horizon_maximum,"off":0.0,
+			"fuel":0.002 if hot else COLD_ACTUATION_FUEL_COST
+		})
+
+		var off_output: float = valve.preview(0.0,dt)
+		var minimum_output: float = valve.preview(minimum_command,dt)
+		var maximum_output: float = valve.preview(1.0 if (not hot or hot_enabled) else minimum_command,dt)
+		var off := off_output*effective_capacity
+		var minimum := minimum_output*effective_capacity
+		if hot and hot_enabled: off = maxf(off,minimum)
+		minimum = maxf(minimum,off)
+		if hot and not hot_enabled: maximum_output = off_output
+		var axis: Vector3 = -combined[i].basis.z
+		ports.append({
+			"basis":combined[i].basis,
+			"lever":combined[i].position/(WORLD_UNITS_PER_METER*length_scale),
+			"cone":0.0,"center":Vector3.ZERO,"gain":1.0,
+			"minimum":minimum,"maximum":maxf(maximum_output*effective_capacity,off),"off":off,
+			"fuel":0.0 if hot else COLD_ACTUATION_FUEL_COST,
+			"tracking":HOT_TRACKING if hot and hot_enabled else 0.0
+		})
 		preferred.append(axis*valve.level*effective_capacity if hot else Vector3.ZERO)
-		seed.append(axis*(motor_forces[i] if hot else cold_forces[i-hot_count]).length()/weight)
-	if not hot_enabled:
-		# Coast requests zero added translation. Track unavoidable hot shutdown
-		# impulse, rather than wasting cold gas trying to replace cut-off power.
-		force_reference = Vector3.ZERO
-		force_target = Vector3.ZERO
-		for i in hot_count:
-			ports[i].minimum = ports[i].off
-			ports[i].maximum = ports[i].off
-			force_target += -ports[i].basis.z*ports[i].off
-	# Fuel priority: first try fixed-axis hot pressure plus unavoidable cold shutdown
-	# tails. Open a cold valve only when that cannot meet the wrench tolerance.
+		var delivered: Vector3 = motor_forces[index] if hot else cold_forces[index]
+		seed.append(axis*delivered.length()/weight)
+
 	var off_force := Vector3.ZERO
 	var off_moment := Vector3.ZERO
 	var off_plan: Array[Vector3] = []
@@ -558,37 +548,115 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		off_plan.append(off)
 		off_force += off
 		off_moment += ports[i].lever.cross(off)
-	var plan := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,moment_target-off_moment,along,seed,preferred.slice(0,hot_count),Allocator.SWEEPS,fit)
+
+	if not hot_enabled:
+		for i in hot_count:
+			force_target += -ports[i].basis.z*ports[i].off
+			ports[i].minimum = ports[i].off
+			ports[i].maximum = ports[i].off
+			horizon_ports[i].minimum = 0.0
+			horizon_ports[i].maximum = 0.0
+		force_reference = Vector3.ZERO
+
+	var horizon_hot := Allocator.solve(horizon_ports.slice(0,hot_count),force_target,moment_target,along,
+		ideal_forces,[],64,FIXED_FIT)
+	var horizon_error := -force_target
+	var horizon_moment_error := -moment_target
+	for i in hot_count:
+		horizon_error += horizon_hot[i]
+		horizon_moment_error += horizon_ports[i].lever.cross(horizon_hot[i])
+	if horizon_error.length()<0.02 and horizon_moment_error.length()<0.005:
+		ideal_forces = horizon_hot
+		for i in cold_outlets.size(): ideal_forces.append(Vector3.ZERO)
+	else:
+		ideal_forces = Allocator.solve(horizon_ports,force_target,moment_target,along,ideal_forces,[],96,FIXED_FIT)
+
+	# The current hot-only solve includes average valve output and unavoidable
+	# cold shutdown tails. A full-capacity hot solution cannot veto a needed RCS burn.
+	var reachable_hot := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,
+		moment_target-off_moment,along,seed.slice(0,hot_count),preferred.slice(0,hot_count),Allocator.SWEEPS,FIXED_FIT)
+	var reachable_hot_force := Vector3.ZERO
+	var reachable_hot_moment := Vector3.ZERO
+	for i in hot_count:
+		reachable_hot_force += reachable_hot[i]
+		reachable_hot_moment += ports[i].lever.cross(reachable_hot[i])
+	var reachable_force_error := force_target-reachable_hot_force-off_force
+	var reachable_moment_error := moment_target-reachable_hot_moment-off_moment
+	var local_rates := frame.transposed()*angular_velocity
+	var pilot_intent := PILOT_AXES*rotation_request
+	var deliberate_arrest := false
+	for axis in 3:
+		if absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*local_rates[axis]<0.0:
+			deliberate_arrest = true
+	var force_tolerance := 0.006 if quiet_hover else 0.02
+	var moment_tolerance := 0.0015 if quiet_hover or deliberate_arrest or local_rates.length()>0.08 else 0.005
+	var reachable_ideal: Array[Vector3]
+	if reachable_force_error.length()<force_tolerance and reachable_moment_error.length()<moment_tolerance:
+		reachable_ideal = reachable_hot
+		reachable_ideal.append_array(off_plan)
+	else:
+		reachable_ideal = Allocator.solve(ports,force_target,moment_target,along,seed,preferred,96,FIXED_FIT)
+	var feasible_force := Vector3.ZERO
+	for force in reachable_ideal: feasible_force += force
+	var previous_force := force_reference if clock<=dt+0.000001 else (main_force+cold_force)/weight
+	force_reference = previous_force.move_toward(feasible_force,force_slew*dt)
+	force_target = force_reference
+	along = Vector3.ZERO
+
+	var hot_plan := Allocator.solve(ports.slice(0,hot_count),force_target-off_force,
+		moment_target-off_moment,along,seed.slice(0,hot_count),preferred.slice(0,hot_count),Allocator.SWEEPS,FIXED_FIT)
 	var hot_force := Vector3.ZERO
 	var hot_moment := Vector3.ZERO
 	for i in hot_count:
-		hot_force += plan[i]
-		hot_moment += ports[i].lever.cross(plan[i])
-	# Gate net cold wrench, not nozzle pairs: opposing forces at separate
-	# lever arms can supply a useful torque couple.
-	var correction := _cold_trim(frame,force_target-hot_force,moment_target-hot_moment,dt,translating)
+		hot_force += hot_plan[i]
+		hot_moment += ports[i].lever.cross(hot_plan[i])
+	var correction := _cold_trim(frame,force_target-hot_force-off_force,
+		moment_target-hot_moment-off_moment,dt,translating,quiet_hover)
 	var correction_force: Vector3 = correction[0]
 	var correction_moment: Vector3 = correction[1]
 	var cold_needed := not correction_force.is_zero_approx() or not correction_moment.is_zero_approx()
-	var keep_open := []
-	for i in range(hot_count,ports.size()):
-		var axis: Vector3 = -ports[i].basis.z
-		var useful: float = axis.dot(correction_force)+ports[i].lever.cross(axis).dot(correction_moment)
-		var needed: bool = useful>0.000001 and ideal_forces[i].length()>_cold_capacity(i-hot_count)*COLD_MINIMUM_FLOW*0.5
-		keep_open.append(needed)
-	# Real motion, not a trim clock, opens a quiet-hover correction window.
-	# Hysteresis lets the body coast through small errors without valve chatter.
+
+	# A quiet-hover correction window opens for real drift as well as angular
+	# error, and closes only after linear and angular motion have settled.
 	if quiet_hover:
 		var tilt := acos(clampf(frame.y.y,-1,1))
-		if angular_velocity.length()>0.12 or tilt>deg_to_rad(1.8): hover_cold_correction = true
-		elif angular_velocity.length()<0.04 and tilt<deg_to_rad(0.8): hover_cold_correction = false
+		var horizontal_speed := velocity.slide(Vector3.UP).length()
+		var vertical_speed := absf(velocity.y)
+		if angular_velocity.length()>0.12 or tilt>deg_to_rad(1.8) or horizontal_speed>0.18 or vertical_speed>0.18:
+			hover_cold_correction = true
+		elif angular_velocity.length()<0.04 and tilt<deg_to_rad(0.8) and horizontal_speed<0.06 and vertical_speed<0.06:
+			hover_cold_correction = false
 		cold_needed = cold_needed and hover_cold_correction
-	else: hover_cold_correction = false
+	else:
+		hover_cold_correction = false
+
+	var keep_open: Array[bool] = []
+	var plan: Array[Vector3]
 	if cold_needed:
+		var corrected_force := hot_force+off_force+correction_force
+		var corrected_moment := hot_moment+off_moment+correction_moment
+		var candidate_plan := Allocator.solve(ports,corrected_force,corrected_moment,along,
+			seed,preferred,Allocator.SWEEPS,FIXED_FIT)
 		for i in range(hot_count,ports.size()):
-			if keep_open[i-hot_count]: ports[i].off = ports[i].minimum
-		plan = Allocator.solve(ports,hot_force+correction_force,hot_moment+correction_moment,along,seed,preferred,Allocator.SWEEPS,fit)
-	else: plan.append_array(off_plan)
+			var axis: Vector3 = -ports[i].basis.z
+			var useful: float = axis.dot(correction_force)+ports[i].lever.cross(axis).dot(correction_moment)
+			var threshold := maxf(ports[i].off,ports[i].minimum*0.5)+0.000001
+			var needed := useful>0.000001 and candidate_plan[i].length()>threshold
+			keep_open.append(needed)
+			if needed:
+				ports[i].off = ports[i].minimum
+			else:
+				ports[i].minimum = ports[i].off
+				ports[i].maximum = ports[i].off
+		plan = Allocator.solve(ports,corrected_force,corrected_moment,along,
+			seed,preferred,Allocator.SWEEPS,FIXED_FIT)
+	else:
+		for i in range(hot_count,ports.size()):
+			ports[i].minimum = ports[i].off
+			ports[i].maximum = ports[i].off
+		plan = hot_plan
+		plan.append_array(off_plan)
+
 	main_force = Vector3.ZERO
 	main_torque = Vector3.ZERO
 	cold_force = Vector3.ZERO
@@ -600,19 +668,20 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 	allocated_moment = Vector3.ZERO
 	for i in combined.size():
 		var hot := i<hot_count
-		var valve = hot_valves[i] if hot else cold_valves[i-hot_count]
-		var capacity := _hot_capacity(i) if hot else _cold_capacity(i-hot_count)
-		var pressure_scale := engine_pressure_scales[i] if hot else 1.0
-		var effective_capacity := capacity*pressure_scale
+		var index := i if hot else i-hot_count
+		var valve = hot_valves[index] if hot else cold_valves[index]
+		var effective_capacity: float = effective_capacities[i]
 		var minimum := (HOT_IDLE_FLOW if hot_enabled else 0.000001) if hot else COLD_MINIMUM_FLOW
-		if hot: motor_angles[i] = Vector3.ZERO
-		var flow: float = valve.command_for(plan[i].length()/effective_capacity,dt,minimum) if effective_capacity>0 and (hot or cold_needed) else 0.0
-		# Prime the next useful hot engine during ignition, while other outlets
-		# balance its actual zero output. Never bypass ignition or restart time.
-		if hot and capacity>0 and hot_enabled and ports[i].maximum<0.000001 and ideal_forces[i].length()>0.001:
+		if hot: motor_angles[index] = Vector3.ZERO
+		var flow: float = valve.command_for(plan[i].length()/effective_capacity,dt,minimum) if effective_capacity>0 and (hot or (cold_needed and keep_open[index])) else 0.0
+		# Prime a useful heavy outlet during ignition using the theoretical plan;
+		# other outlets balance its actual zero delivered pressure.
+		if hot and effective_capacity>0 and hot_enabled and ports[i].maximum<0.000001 and ideal_forces[i].length()>0.001:
 			flow = ideal_forces[i].length()/effective_capacity
-		if hot: flow = maxf(flow,HOT_IDLE_FLOW) if hot_enabled and capacity>0 else 0.0
-		elif cold_needed and keep_open[i-hot_count]: flow = maxf(flow,COLD_MINIMUM_FLOW)
+		if hot:
+			flow = maxf(flow,HOT_IDLE_FLOW) if hot_enabled and hardware.main_booster_max_thrust[index]>0 else 0.0
+		elif cold_needed and keep_open[index]:
+			flow = maxf(flow,COLD_MINIMUM_FLOW)
 		var output: float = valve.step(flow,dt)
 		var actual: Vector3 = -ports[i].basis.z*output*effective_capacity*weight
 		var moment: Vector3 = combined[i].position/WORLD_UNITS_PER_METER
@@ -620,23 +689,23 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 		allocated_force += plan[i]*weight
 		allocated_moment += ports[i].lever.cross(plan[i])*weight*length_scale
 		if hot:
-			motor_forces[i] = actual
+			motor_forces[index] = actual
 			main_force += actual
 			main_torque += moment
 			delivered_thrust += actual.length()
 		else:
-			cold_requests[i-hot_count] = plan[i]*weight
-			cold_forces[i-hot_count] = actual
+			cold_requests[index] = plan[i]*weight
+			cold_forces[index] = actual
 			cold_force += actual
 			rcs_torque += moment
-			rcs_load = maxf(rcs_load,actual.length()/maxf(cold_max_thrust(i-hot_count),0.000001))
-			torque_fraction = maxf(torque_fraction,plan[i].length()/capacity if capacity>0 else 0.0)
+			rcs_load = maxf(rcs_load,actual.length()/maxf(cold_max_thrust(index),0.000001))
+			torque_fraction = maxf(torque_fraction,plan[i].length()/maxf(effective_capacity,0.000001))
+	ideal_forces = plan.duplicate()
 	thrust_level = delivered_thrust/weight
 	for i in hot_count: engine_shares[i] = motor_forces[i].length()/maxf(delivered_thrust,0.000001)
 	rcs_request = rcs_torque
 	torque_saturated = (control_torque-main_torque-rcs_torque-aero_torque).length()>torque_limits.length()*0.05
 	motor_saturated = (force_target*weight-main_force-cold_force).length()>weight*0.05
-
 func _hot_pressure_scale(index: int) -> float:
 	# Small pressure dips are confined to loaded retrograde burns. The allocator
 	# uses this same capacity before selecting each engine's valve command.
@@ -653,16 +722,17 @@ func _hot_pressure_scale(index: int) -> float:
 	var phase := clock*TAU*0.72+float(index)*0.91
 	var pulse := pow(maxf(0.0,sin(phase)),8.0)
 	var flutter := absf(sin(clock*TAU*3.7+float(index)*1.17))
-	return clampf(1.0-envelope*(0.002+0.018*pulse+0.002*flutter),0.965,1.0)
+	return clampf(1.0-envelope*(0.004+0.020*pulse+0.006*flutter),0.970,1.0)
 
-func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, translating: bool) -> Array[Vector3]:
+func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, translating: bool, quiet_hover := false) -> Array[Vector3]:
 	var local_force := frame.transposed()*force
 	var local_moment := frame.transposed()*moment
 	var pilot_intent := PILOT_AXES*rotation_request
 	var body_rates := frame.transposed()*angular_velocity
-	var moment_enter := 0.0015 if body_rates.length()>0.08 else (0.005 if translating else 0.02)
+	var moment_enter := 0.0015 if quiet_hover or body_rates.length()>0.08 else (0.005 if translating else 0.02)
+	var force_enter := QUIET_HOVER_FORCE_ENTER if quiet_hover else (0.025 if translating else 0.04)
 	for axis in 3:
-		local_force[axis] = _cold_trim_axis(axis,local_force[axis],0.025 if translating else 0.04,dt)
+		local_force[axis] = _cold_trim_axis(axis,local_force[axis],force_enter,dt)
 		# A deliberate pilot-commanded arrest is not automatic trim chatter.
 		var arrest := absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*body_rates[axis]<0.0 and pilot_intent[axis]*local_moment[axis]>0.0
 		local_moment[axis] = _cold_trim_axis(axis+3,local_moment[axis],moment_enter,dt,arrest)

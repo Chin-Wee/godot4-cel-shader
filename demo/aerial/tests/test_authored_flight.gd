@@ -140,13 +140,13 @@ func _powered_inputs() -> void:
 		await _ticks(60)
 		vertical_rates.append(fc.velocity.y)
 		if key=="back":
-			print("PITCH back intent=",fc.rotation_request," raw=",fc.pilot_rotation_intent," pose_steer=",mech.rig.motion.steer," flare=",mech.rig.motion.flare," retro=",mech.rig.motion.retro," knee=",mech.rig.legs[1].value.x)
+			print("PITCH back intent=",fc.rotation_request," raw=",fc.pilot_rotation_intent," pose_steer=",mech.rig.motion.steer," reach=",mech.rig.motion.reach," flare=",mech.rig.motion.flare," retro=",mech.rig.motion.retro," knee=",mech.rig.legs[1].value.x," mechanical=",mech.rig.motion.get("mechanical_legs",PackedVector3Array()))
 			_expect(mech.rig.legs[1].value.x>1.04,"Hard pull-up never gathers the knees")
 			for name in relaxed_digits:
 				var relaxed: Quaternion = relaxed_digits[name]
 				_expect(relaxed.angle_to(_rest_rotation(name))>0.025,"Loaded hand does not articulate "+name)
 		else:
-			print("PITCH forward intent=",fc.rotation_request," raw=",fc.pilot_rotation_intent," pose_steer=",mech.rig.motion.steer," flare=",mech.rig.motion.flare," retro=",mech.rig.motion.retro," knee=",mech.rig.legs[1].value.x)
+			print("PITCH forward intent=",fc.rotation_request," raw=",fc.pilot_rotation_intent," pose_steer=",mech.rig.motion.steer," reach=",mech.rig.motion.reach," flare=",mech.rig.motion.flare," retro=",mech.rig.motion.retro," knee=",mech.rig.legs[1].value.x," mechanical=",mech.rig.motion.get("mechanical_legs",PackedVector3Array()))
 			_expect(mech.rig.legs[1].value.x<0.25,"Hard pitch-down loses its extended knees")
 	_expect(vertical_rates[1]>vertical_rates[0]+3.0,"W and S bend the trajectory in the same direction")
 	_reset(HEAD_FIRST,Vector3(0,0,-65),3)

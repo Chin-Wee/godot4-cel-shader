@@ -3,6 +3,7 @@ extends SceneTree
 const Fixture = preload("res://aerial/articulation_fixture.gd")
 const Poses = preload("res://aerial/poses/articulation_poses.gd")
 const Lab = preload("res://aerial/flight_articulation_lab.tscn")
+const GIMBAL_REFERENCE_CONE := PI/6.0
 
 func _initialize() -> void: call_deferred("_run")
 
@@ -55,7 +56,7 @@ func _authority(f: Fixture) -> void:
 			"Vertical_Ascent": f.power = 2.0
 		f.tick(1.0/60,true)
 		var fixed := f.wrench_plan(f.ports,f.requested_force,f.requested_moment)
-		var gimballed := f.wrench_plan(f.ports,f.requested_force,f.requested_moment,Fixture.Flight.VECTOR_LIMIT)
+		var gimballed := f.wrench_plan(f.ports,f.requested_force,f.requested_moment,GIMBAL_REFERENCE_CONE)
 		for i in fixed.size():
 			assert(fixed[i].length()<=f.ports[i].cap+0.00001)
 			assert(fixed[i].cross(-f.ports[i].basis.z).length()<0.00001,"Nozzle independently steered")

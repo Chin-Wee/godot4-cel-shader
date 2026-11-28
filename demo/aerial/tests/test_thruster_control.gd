@@ -33,7 +33,7 @@ func _ticks(count: int) -> void:
 			if fc.cold_forces[index].length()>1.0:
 				var shown: Vector3 = -scene.hero.gas_gimbals[index].global_basis.z.normalized()
 				_expect(shown.angle_to(fc.cold_forces[index].normalized())<0.08,"Rendered cold nozzle differs from its applied force direction")
-			_expect(fc.cold_forces[index].length()<=fc.cold_thrust_limit(index)+1.0,"Cold outlet exceeds its physical thrust capacity")
+			_expect(fc.cold_forces[index].length()<=fc.cold_force_caps[index]+1.0,"Cold outlet exceeds the capacity applied during its physics tick")
 			shown_load = maxf(shown_load,fc.cold_forces[index].length()/maxf(fc.cold_max_thrust(index),0.000001))
 		_expect(is_equal_approx(fc.rcs_load,shown_load),"Cold HUD load ignores the speed cap")
 
@@ -152,7 +152,7 @@ func _capture() -> void:
 
 func _check_valves() -> void:
 	var Valve = Controller.Valve
-	for timings in [[0.008,0.03,0.012,0.014,0.02],
+	for timings in [[Controller.COLD_IGNITION,Controller.COLD_RESTART,Controller.COLD_RESPONSE,Controller.COLD_FALL,Controller.COLD_MINIMUM_ON],
 		[Controller.HOT_IGNITION,Controller.HOT_RESTART,Controller.HOT_RESPONSE,Controller.HOT_RESPONSE,Controller.HOT_MINIMUM_ON]]:
 		var probe = Valve.new(timings[0],timings[1],timings[2],timings[3],timings[4])
 		var predicted: float = probe.preview(0.7,0.1)

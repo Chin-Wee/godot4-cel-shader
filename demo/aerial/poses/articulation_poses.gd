@@ -78,6 +78,13 @@ static func select(steer: Vector3, move: Vector3, power: float, reversing: float
 			elif joint==1 and not extended_pitch_down:
 				angle.x = maxf(angle.x,maxf(base[index].x,lerpf(base[index].x,loaded[joint].x,brace)))
 			result[index] = angle
+	# A dominant forward pitch-down is an extended high-speed posture.
+	# Translation blending and braking corrections may not fold its knees.
+	if extended_pitch_down:
+		var pitch_down := _turn_pose(Vector3(-1,0,0),0)
+		for side in 2:
+			var knee := side*3+1
+			result[knee].x = minf(result[knee].x,pitch_down[knee].x)
 	return result
 
 static func _maneuver(steer: Vector3, move: Vector3, power: float) -> PackedVector3Array:

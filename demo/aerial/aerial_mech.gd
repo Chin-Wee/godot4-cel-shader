@@ -551,8 +551,9 @@ func _refresh_exhaust() -> void:
 	gas_material.set_shader_parameter("flow_phase",exhaust_phase)
 	for index in gas_jets.size():
 		# The same nozzle force drives the native body and its visible exhaust.
-		var demand: float = controller.cold_forces[index].length()/maxf(controller.cold_max_thrust(index),0.000001)
-		gas_jets[index].visible = demand>0.00001
+		var delivered: float = controller.cold_forces[index].length()
+		var demand: float = delivered/maxf(controller.cold_max_thrust(index),0.000001)
+		gas_jets[index].visible = delivered>0.01
 		gas_jets[index].scale = Vector3(0.09,0.09,0.7+demand*0.7)
 		gas_jets[index].set_instance_shader_parameter("thrust_load",demand)
 		gas_jets[index].set_instance_shader_parameter("engine_throttle",demand)

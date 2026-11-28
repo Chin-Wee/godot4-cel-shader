@@ -28,7 +28,7 @@ func _initialize() -> void:
 	assert(Poses.retrograde_weight(travel,Vector3.ZERO,Vector3.BACK*98100.0,98100.0,false)==0.0)
 	assert(Poses.retrograde_weight(Vector3.ZERO,Vector3.BACK*98100.0,Vector3.ZERO,98100.0,true)==0.0)
 	var hot = Flight.Valve.new(Flight.HOT_IGNITION,Flight.HOT_RESTART,Flight.HOT_RESPONSE,Flight.HOT_RESPONSE,Flight.HOT_MINIMUM_ON)
-	var cold = Flight.Valve.new()
+	var cold = Flight.Valve.new(Flight.COLD_IGNITION,Flight.COLD_RESTART,Flight.COLD_RESPONSE,Flight.COLD_FALL,Flight.COLD_MINIMUM_ON)
 	hot.reset(0.2)
 	cold.reset(0.2)
 	hot.step(1.0,1.0/60.0)
