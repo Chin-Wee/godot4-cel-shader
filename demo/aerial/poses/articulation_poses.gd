@@ -182,12 +182,20 @@ static func torso_target(frame: Dictionary) -> Vector3:
 	var soft := torso_key("Arch" if steer.x>0.0 else "Forward_Lean")
 	var hard := torso_key("Deep_Arch" if steer.x>0.0 else "Deep_Forward_Lean")
 	var target := torso_key("Neutral").lerp(soft,2.0*pitch) if pitch<0.5 else soft.lerp(hard,2.0*pitch-1.0)
-	var lateral: float = clampf(steer.y+frame.reach.x*0.55,-1,1)
-	var side := torso_key("Lateral_Lean" if lateral>=0 else "Lateral_Lean_Right")
-	target = target.lerp(side,absf(lateral)*(1.0-pitch*0.65))
-	var roll: float = steer.z
-	var twist := torso_key("Axial_Twist" if roll>=0 else "Axial_Twist_Right")
-	target += twist*absf(roll)*(1.0-absf(lateral)*0.65)
+
+	# Translation, yaw and roll are independent chassis contributions.
+	# Yaw counter-rotates the torso against the commanded turn instead of
+	# reusing the same lean direction as lateral translation.
+	var translation_lateral: float = clampf(frame.reach.x,-1.0,1.0)
+	var translation_key := torso_key("Lateral_Lean" if translation_lateral>=0.0 else "Lateral_Lean_Right")
+	var translation_delta := Basis.from_euler(translation_key*absf(translation_lateral)*0.55).get_rotation_quaternion()
+	var yaw_key := torso_key("Lateral_Lean_Right" if steer.y>=0.0 else "Lateral_Lean")
+	var yaw_delta := Basis.from_euler(yaw_key*absf(steer.y)).get_rotation_quaternion()
+	var roll_key := torso_key("Axial_Twist" if steer.z>=0.0 else "Axial_Twist_Right")
+	var roll_delta := Basis.from_euler(roll_key*absf(steer.z)).get_rotation_quaternion()
+	var composed := (Basis.from_euler(target).get_rotation_quaternion()*translation_delta*yaw_delta*roll_delta).normalized()
+	target = composed.get_euler()
+
 	target = target.lerp(torso_key("Forward_Lean"),frame.drive*0.65)
 	target = target.lerp(torso_key("Extended_Release"),frame.coast*0.75)
 	target = target.lerp(torso_key("Compressed_Brace"),maxf(frame.retro,maxf(frame.flare*0.7,frame.land)))
