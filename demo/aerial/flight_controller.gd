@@ -54,7 +54,7 @@ const COLD_FLOW_SLEW := 8.0 # Normalized cold-gas output per second; the valve i
 const QUIET_HOVER_FORCE_ENTER := 0.012
 const HOT_IDLE_FLOW := 0.01 # Powered engines retain pilot flow; cutoff closes valves.
 const COLD_ACTUATION_FUEL_COST := 0.06 # Penalize cancellation in the reachable solve too.
-const COLD_MINIMUM_FLOW := 0.025 # Minimum useful impulse; small errors coast instead.
+const COLD_MINIMUM_FLOW := 0.01 # Minimum useful impulse; small errors coast instead.
 # Cd stays positive in every pose. High-speed drag supplies a finite energy bound.
 const AERO_AREA_M2 := 80.0
 const BASE_DRAG_CD := 0.075
@@ -559,18 +559,25 @@ func _solve_thrusters(outlets: Array, cold_outlets: Array, frame: Basis, dt: flo
 			horizon_ports[i].maximum = 0.0
 		force_reference = Vector3.ZERO
 
-	var horizon_hot := Allocator.solve(horizon_ports.slice(0,hot_count),force_target,moment_target,along,
-		ideal_forces,[],64,FIXED_FIT)
-	var horizon_error := -force_target
-	var horizon_moment_error := -moment_target
-	for i in hot_count:
-		horizon_error += horizon_hot[i]
-		horizon_moment_error += horizon_ports[i].lever.cross(horizon_hot[i])
-	if horizon_error.length()<0.02 and horizon_moment_error.length()<0.005:
-		ideal_forces = horizon_hot
-		for i in cold_outlets.size(): ideal_forces.append(Vector3.ZERO)
-	else:
-		ideal_forces = Allocator.solve(horizon_ports,force_target,moment_target,along,ideal_forces,[],96,FIXED_FIT)
+	var needs_ignition_prime := false
+	if hot_enabled:
+		for i in hot_count:
+			if effective_capacities[i]>0.0 and ports[i].maximum<0.000001:
+				needs_ignition_prime = true
+				break
+	if needs_ignition_prime:
+		var horizon_hot := Allocator.solve(horizon_ports.slice(0,hot_count),force_target,moment_target,along,
+			ideal_forces,[],64,FIXED_FIT)
+		var horizon_error := -force_target
+		var horizon_moment_error := -moment_target
+		for i in hot_count:
+			horizon_error += horizon_hot[i]
+			horizon_moment_error += horizon_ports[i].lever.cross(horizon_hot[i])
+		if horizon_error.length()<0.02 and horizon_moment_error.length()<0.005:
+			ideal_forces = horizon_hot
+			for i in cold_outlets.size(): ideal_forces.append(Vector3.ZERO)
+		else:
+			ideal_forces = Allocator.solve(horizon_ports,force_target,moment_target,along,ideal_forces,[],96,FIXED_FIT)
 
 	# The current hot-only solve includes average valve output and unavoidable
 	# cold shutdown tails. A full-capacity hot solution cannot veto a needed RCS burn.
@@ -734,7 +741,7 @@ func _cold_trim(frame: Basis, force: Vector3, moment: Vector3, dt: float, transl
 	var local_moment := frame.transposed()*moment
 	var pilot_intent := PILOT_AXES*rotation_request
 	var body_rates := frame.transposed()*angular_velocity
-	var moment_enter := 0.003 if quiet_hover else (0.0015 if body_rates.length()>0.08 else (0.005 if translating else 0.02))
+	var moment_enter := 0.003 if quiet_hover else (0.0015 if body_rates.length()>0.08 else (0.005 if translating or body_rates.length()>0.01 else 0.02))
 	var force_enter := QUIET_HOVER_FORCE_ENTER if quiet_hover else (0.025 if translating else 0.04)
 	for axis in 3:
 		local_force[axis] = _cold_trim_axis(axis,local_force[axis],force_enter,dt)
@@ -785,7 +792,10 @@ func _calculate_attitude_demand(state: PhysicsDirectBodyState3D) -> void:
 		local_rates.x = lerpf(local_rates.x,protected_pitch,flight_protection)
 	effective_rates = local_rates
 	var rates := pilot*local_rates
-	var upright := pilot.inverse() * frame.y.cross(Vector3.UP) * 2.5 * hover_assist
+	var hover_up := Vector3.UP
+	if hover_assist>0.5 and rotation_request.length()<0.1 and burst_remaining<=0 and jump_remaining<=0:
+		hover_up = (Vector3.UP+frame*hover_actuation*HOVER_TRANSLATE_G).normalized()
+	var upright := pilot.inverse() * frame.y.cross(hover_up) * 2.5 * hover_assist
 	upright *= released_axes
 	rates += pilot * upright
 	requested_rates = rates

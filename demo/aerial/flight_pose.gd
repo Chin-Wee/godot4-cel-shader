@@ -236,9 +236,9 @@ func _sample_effort(controller, delta: float) -> void:
 	var pilot_intent: Vector3 = controller.pilot_rotation_intent
 	if pilot_intent.is_zero_approx(): pilot_intent = controller.rotation_request
 	var rotational_arrest := 0.0
-	for axis in 3:
-		if absf(pilot_intent[axis])>0.1 and pilot_intent[axis]*pilot_rates[axis]<0.0:
-			rotational_arrest = maxf(rotational_arrest,smoothstep(0.05,0.55,absf(pilot_rates[axis])/maxf(controller.MAX_RATE[axis],0.001)))
+	for axis_index in 3:
+		if absf(pilot_intent[axis_index])>0.1 and pilot_intent[axis_index]*pilot_rates[axis_index]<0.0:
+			rotational_arrest = maxf(rotational_arrest,smoothstep(0.05,0.55,absf(pilot_rates[axis_index])/maxf(controller.MAX_RATE[axis_index],0.001)))
 	var brake_event := smoothstep(0.08,0.55,maxf(controller.brake_amount,controller.brake_request))*smoothstep(2.0,18.0,speed)*smoothstep(1.0,2.2,controller.g_load)
 	var reversal_event := smoothstep(0.10,0.55,opposition)*smoothstep(1.0,2.4,controller.g_load)
 	var arrest_target := maxf(rotational_arrest,maxf(brake_event*0.8,reversal_event*0.55))

@@ -12,11 +12,11 @@
   "10": "PhantomCameraNoise3D",
   "11": "PhantomCameraManager",
   "12": "PhantomCameraNoiseEmitter2D",
-  "13": "PhantomCameraNoiseEmitter3D",
+  "13": "audit_mech_thrusters.py",
   "14": "Grass direction: Breath of the Wild",
-  "15": "FollowMode2D",
+  "15": "LimitTargetQueryResult",
   "16": "PhantomCamera3DExtensions",
-  "17": "Node2D",
+  "17": "PhantomCamera2D.cs",
   "18": "Node3D",
   "19": "StringName",
   "20": ".GetLimit",
@@ -33,6 +33,8 @@
   "31": "check_godot.py",
   "32": "Q: Where are Armored Core hover tap burst control timings and force handling defined?",
   "33": "Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?",
+  "34": "FollowMode2D",
   "35": "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?",
-  "36": "Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?"
+  "36": "Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?",
+  "37": "FollowLockAxis2D"
 }

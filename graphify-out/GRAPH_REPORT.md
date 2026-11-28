@@ -1,17 +1,17 @@
-# Graph Report - godot4-cel-shader  (2026-11-25)
+# Graph Report - godot4-cel-shader  (2026-11-28)
 
 ## Corpus Check
-- 30 files · ~2,130,370 words
+- 31 files · ~2,134,376 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 1091 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
+- Unclassified: 1099 file(s) not represented in the graph (top: .glb 162, .obj 157, .fbx 156)
 
 ## Summary
-- 524 nodes · 588 edges · 36 communities (29 shown, 7 thin omitted)
+- 560 nodes · 673 edges · 38 communities (31 shown, 7 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 2 edges (avg confidence: 0.85)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `3af4bdcd`
+- Built from commit: `f52fa609`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -29,11 +29,11 @@
 - PhantomCameraNoise3D
 - PhantomCameraManager
 - PhantomCameraNoiseEmitter2D
-- PhantomCameraNoiseEmitter3D
+- audit_mech_thrusters.py
 - Grass direction: Breath of the Wild
-- FollowMode2D
+- LimitTargetQueryResult
 - PhantomCamera3DExtensions
-- Node2D
+- PhantomCamera2D.cs
 - Node3D
 - StringName
 - .GetLimit
@@ -49,8 +49,10 @@
 - check_godot.py
 - Q: Where are Armored Core hover tap burst control timings and force handling defined?
 - Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?
+- FollowMode2D
 - Q: How are aerial per-booster thrust caps and redundant opposing burns handled?
 - Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?
+- FollowLockAxis2D
 
 ## God Nodes (most connected - your core abstractions)
 1. `PhantomCamera3D` - 70 edges
@@ -79,7 +81,7 @@
 ## Import Cycles
 - None detected.
 
-## Communities (36 total, 7 thin omitted)
+## Communities (38 total, 7 thin omitted)
 
 ### Community 0 - "Animation direction for the 9 m, 10 t mech"
 Cohesion: 0.12
@@ -122,8 +124,8 @@ Cohesion: 0.08
 Nodes (24): Aerial rendering study — DELIVERY MUST COMPLETE, Asset selection, Body-flight control checks, Checks and comparison captures, Dynamic rotation and flip checks, Flight animation checks, Implementation and reference, Pose Studio (+16 more)
 
 ### Community 10 - "PhantomCameraNoise3D"
-Cohesion: 0.11
-Nodes (17): GDScript, Resource, StringName, MethodName, PhantomCameraNoise3D, Amplitude, Frequency, NoiseSeed (+9 more)
+Cohesion: 0.06
+Nodes (28): GodotObject, Node3D, StringName, MethodName, PhantomCameraNoiseEmitter3D, Continuous, DecayTime, Duration (+20 more)
 
 ### Community 11 - "PhantomCameraManager"
 Cohesion: 0.15
@@ -131,19 +133,19 @@ Nodes (12): PhantomCamera.Manager, GodotObject, PhantomCamera2D, PhantomCamera3D
 
 ### Community 12 - "PhantomCameraNoiseEmitter2D"
 Cohesion: 0.06
-Nodes (25): GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime, Duration (+17 more)
+Nodes (26): PhantomCamera.Noise, GodotObject, Node2D, StringName, MethodName, PhantomCameraNoiseEmitter2D, Continuous, DecayTime (+18 more)
 
-### Community 13 - "PhantomCameraNoiseEmitter3D"
-Cohesion: 0.12
-Nodes (11): GodotObject, Node3D, StringName, MethodName, PhantomCameraNoiseEmitter3D, Continuous, DecayTime, Duration (+3 more)
+### Community 13 - "audit_mech_thrusters.py"
+Cohesion: 0.19
+Nodes (28): add(), audit_mount(), build_node_transforms(), global_matrix(), closest_on_triangle(), cross(), dot(), gltf_matrix() (+20 more)
 
 ### Community 14 - "Grass direction: Breath of the Wild"
 Cohesion: 0.29
 Nodes (6): Grass direction: Breath of the Wild, Local checks, Recommended implementation order, Scope and evidence, Sources and what each supports, Why this scene looks like panels
 
-### Community 15 - "FollowMode2D"
-Cohesion: 0.07
-Nodes (19): CollisionShape2D, PhantomCamera.Noise, GodotObject, FollowLockAxis2D, None, X, Xy, Y (+11 more)
+### Community 15 - "LimitTargetQueryResult"
+Cohesion: 0.22
+Nodes (6): CollisionShape2D, GodotObject, LimitTargetQueryResult, IsCollisionShape2D, IsTileMapLayer, TileMapLayer
 
 ### Community 16 - "PhantomCamera3DExtensions"
 Cohesion: 0.25
@@ -174,8 +176,8 @@ Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: Why do A/D and Q/E keep their axes between space and plane flight?, Source Nodes
 
 ### Community 29 - "Pose-driven aerial mech articulation"
-Cohesion: 0.06
-Nodes (31): 10. Live flight implementation, 1. Goals and design principles, 2.1 Pitch, 2.2 Roll, 2.3 Yaw — Armored Core-style lean, 2.4 Translation and braking, 2.5 Initial pose authoring checklist, 2.6 Continuous pose intensity and selection (+23 more)
+Cohesion: 0.05
+Nodes (38): 10. Live flight implementation, 11. Loaded bracing and fixed thrust revision (2026-11-26), 12. Gundam-style propulsion hardpoints, 13. Manoeuvre coordination revision, 14. Implemented mechanical-load response and flight feedback, 1. Goals and design principles, 2.1 Pitch, 2.2 Roll (+30 more)
 
 ### Community 30 - "Q: refactor the codebase based on solid design principles."
 Cohesion: 0.40
@@ -189,6 +191,10 @@ Nodes (4): Answer, Outcome, Q: Where are Armored Core hover tap burst control ti
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does flight enforce physical hot/cold nozzle forces and finite activation/restart timing?, Source Nodes
 
+### Community 34 - "FollowMode2D"
+Cohesion: 0.29
+Nodes (7): FollowMode2D, Framed, Glued, Group, None, Path, Simple
+
 ### Community 35 - "Q: How are aerial per-booster thrust caps and redundant opposing burns handled?"
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How are aerial per-booster thrust caps and redundant opposing burns handled?, Source Nodes
@@ -197,22 +203,26 @@ Nodes (4): Answer, Outcome, Q: How are aerial per-booster thrust caps and redund
 Cohesion: 0.40
 Nodes (4): Answer, Outcome, Q: How does aerial cold-jet thrust scale with speed from rest to 40 mps?, Source Nodes
 
+### Community 37 - "FollowLockAxis2D"
+Cohesion: 0.40
+Nodes (5): FollowLockAxis2D, None, X, Xy, Y
+
 ## Knowledge Gaps
-- **302 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+297 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 371 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **307 isolated node(s):** `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds`, `PhantomCamera3Ds`, `PhantomCameraHosts` (+302 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 377 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
 - **7 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `PhantomCamera3D` connect `PhantomCamera3D` to `PhantomCamera`, `Camera3DResource`, `PhantomCameraHost`, `FollowLockAxis3D`, `PhantomCameraNoise3D`, `PhantomCamera3DExtensions`, `Node3D`, `StringName`, `.EmitNoise`?**
-  _High betweenness centrality (0.229) - this node is a cross-community bridge._
-- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `FollowMode2D`, `Node2D`, `StringName`, `.GetLimit`, `.EmitNoise`?**
-  _High betweenness centrality (0.178) - this node is a cross-community bridge._
+  _High betweenness centrality (0.200) - this node is a cross-community bridge._
+- **Why does `PhantomCamera2D` connect `PhantomCamera2D` to `FollowMode2D`, `FollowLockAxis2D`, `PhantomCamera`, `PhantomCameraHost`, `PhantomCameraNoiseEmitter2D`, `LimitTargetQueryResult`, `PhantomCamera2D.cs`, `StringName`, `.GetLimit`, `.EmitNoise`?**
+  _High betweenness centrality (0.156) - this node is a cross-community bridge._
 - **Why does `PhantomCamera` connect `PhantomCamera` to `PhantomCamera3D`, `PhantomCamera2D`, `TransitionType`, `PhantomCameraHost`?**
-  _High betweenness centrality (0.149) - this node is a cross-community bridge._
+  _High betweenness centrality (0.130) - this node is a cross-community bridge._
 - **What connects `PhantomCamera.Manager`, `Instance`, `PhantomCamera2Ds` to the rest of the system?**
-  _302 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _307 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Animation direction for the 9 m, 10 t mech` be split into smaller, more focused modules?**
   _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
 - **Should `PhantomCamera3D` be split into smaller, more focused modules?**

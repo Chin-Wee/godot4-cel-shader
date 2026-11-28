@@ -1380,9 +1380,9 @@
     "semantic_hash": ""
   },
   "demo/aerial/README.md": {
-    "mtime": 1795616435.0009146,
-    "seen": 1795616610.065668,
-    "ast_hash": "15c33a02390d68aa28a9fc246ed22fae",
+    "mtime": 1795858786.6643093,
+    "seen": 1795861369.7359,
+    "ast_hash": "9bcc3771e9de8ca2ac81784a7e47f44a",
     "semantic_hash": ""
   },
   "demo/aerial/cloud_field.LICENSE.txt": {
@@ -1398,9 +1398,9 @@
     "semantic_hash": ""
   },
   "tools/check_godot.py": {
-    "mtime": 1794037156.922583,
-    "seen": 1794037186.450305,
-    "ast_hash": "47da74733d677c5df1ef859d5965c461",
+    "mtime": 1795858786.674675,
+    "seen": 1795861369.73589,
+    "ast_hash": "6b87d49fe8f8275c82999942be9a418b",
     "semantic_hash": ""
   },
   "graphify-out/memory/query_20261105_112848_78f9098f_refactor_the_codebase_based_on_solid_design_princi.md": {
@@ -1458,9 +1458,21 @@
     "semantic_hash": ""
   },
   "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md": {
-    "mtime": 1795616910.2331994,
-    "seen": 1795616948.364077,
-    "ast_hash": "7a2596996aad85950784386e025f3e9e",
+    "mtime": 1795861367.5089445,
+    "seen": 1795861369.735898,
+    "ast_hash": "922db4d6709d249bfa374d5356b4e9b1",
+    "semantic_hash": ""
+  },
+  "tools/audit_mech_thrusters.py": {
+    "mtime": 1795858786.6742775,
+    "seen": 1795861369.7358878,
+    "ast_hash": "7fc17333758ff2749c6f8bccf8525365",
+    "semantic_hash": ""
+  },
+  ".github/workflows/mech-thruster-mesh-audit.yml": {
+    "mtime": 1795858786.6627002,
+    "seen": 1795861369.7358909,
+    "ast_hash": "e7b82da89eaa1e3dfaff85618c1551d3",
     "semantic_hash": ""
   }
 }

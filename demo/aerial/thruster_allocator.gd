@@ -17,8 +17,12 @@ static func direction(basis: Basis, rotation: Vector3) -> Vector3:
 	return -basis.z if rotation.is_zero_approx() else -(basis*Basis(Quaternion(rotation.normalized(),rotation.length()))).z
 
 static func project(candidate: Vector3, port: Dictionary) -> Vector3:
-	var target: Vector3 = ((angle(port.basis,candidate,port.cone)-port.center)/port.gain).limit_length(port.cone)
-	var axis := direction(port.basis,(port.center+target*port.gain).limit_length(port.cone))
+	var axis: Vector3
+	if port.cone == 0.0:
+		axis = -port.basis.z
+	else:
+		var target: Vector3 = ((angle(port.basis,candidate,port.cone)-port.center)/port.gain).limit_length(port.cone)
+		axis = direction(port.basis,(port.center+target*port.gain).limit_length(port.cone))
 	var magnitude := clampf(candidate.dot(axis)-port.fuel,port.minimum,port.maximum)
 	var on := axis*magnitude
 	var off: Vector3 = axis*port.off

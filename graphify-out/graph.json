@@ -23,6 +23,45 @@
       "source_location": "L84"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_methodname",
+      "label": "MethodName",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "is_nested_type": true,
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "methodname",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L56"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d",
+      "label": "PhantomCameraNoiseEmitter3D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "phantomcameranoiseemitter3d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L5"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d_phantomcamera_noise_methodname",
       "label": "MethodName",
       "_callable": true,
@@ -179,90 +218,13 @@
       "source_location": "L5"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_methodname",
-      "label": "MethodName",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "is_nested_type": true,
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "methodname",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L56"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d",
-      "label": "PhantomCameraNoiseEmitter3D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "phantomcameranoiseemitter3d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L5"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
-      "label": "FollowLockAxis2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followlockaxis2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L20"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d",
-      "label": "FollowMode2D",
-      "_callable": true,
-      "_callable_class": true,
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "followmode2d",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L10"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult",
       "label": "LimitTargetQueryResult",
       "_callable": true,
       "_callable_class": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -300,7 +262,7 @@
       "_callable_class": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -506,6 +468,44 @@
       "norm_label": "transitiontype",
       "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraTween.cs",
       "source_location": "L5"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d",
+      "label": "FollowMode2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "followmode2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L10"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d",
+      "label": "FollowLockAxis2D",
+      "_callable": true,
+      "_callable_class": true,
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "followlockaxis2d",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L20"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameratweendirector_phantomcamera_tweendirector_methodname",
@@ -972,6 +972,136 @@
       "source_location": "L220"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_emit",
+      "label": ".Emit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Call",
+            "receiver_type": "Node3D",
+            "lang": "csharp",
+            "line": "L48"
+          }
+        ]
+      },
+      "norm_label": ".emit()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L48"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_isemitting",
+      "label": ".IsEmitting()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Call",
+            "receiver_type": "Node3D",
+            "lang": "csharp",
+            "line": "L50"
+          }
+        ]
+      },
+      "norm_label": ".isemitting()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L50"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_setnoiseemitterlayervalue",
+      "label": ".SetNoiseEmitterLayerValue()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Call",
+            "receiver_type": "Node3D",
+            "lang": "csharp",
+            "line": "L46"
+          }
+        ]
+      },
+      "norm_label": ".setnoiseemitterlayervalue()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L45"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_stop",
+      "label": ".Stop()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Call",
+            "receiver_type": "Node3D",
+            "lang": "csharp",
+            "line": "L52"
+          }
+        ]
+      },
+      "norm_label": ".stop()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L52"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_toggle",
+      "label": ".Toggle()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ],
+        "unresolved_calls": [
+          {
+            "callee": "Call",
+            "receiver_type": "Node3D",
+            "lang": "csharp",
+            "line": "L54"
+          }
+        ]
+      },
+      "norm_label": ".toggle()",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L54"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d_phantomcamera_noise_phantomcameranoise3d_new",
       "label": ".New()",
       "_callable": true,
@@ -1220,134 +1350,328 @@
       "source_location": "L63"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_emit",
-      "label": ".Emit()",
+      "id": "tools_audit_mech_thrusters_add",
+      "label": "add()",
       "_callable": true,
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community_name": "audit_mech_thrusters.py",
       "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Call",
-            "receiver_type": "Node3D",
-            "lang": "csharp",
-            "line": "L48"
-          }
-        ]
-      },
-      "norm_label": ".emit()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L48"
+      "norm_label": "add()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L32"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_isemitting",
-      "label": ".IsEmitting()",
+      "id": "tools_audit_mech_thrusters_audit_mount",
+      "label": "audit_mount()",
       "_callable": true,
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community_name": "audit_mech_thrusters.py",
       "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Call",
-            "receiver_type": "Node3D",
-            "lang": "csharp",
-            "line": "L50"
-          }
-        ]
-      },
-      "norm_label": ".isemitting()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L50"
+      "norm_label": "audit_mount()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L394"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_setnoiseemitterlayervalue",
-      "label": ".SetNoiseEmitterLayerValue()",
+      "id": "tools_audit_mech_thrusters_build_node_transforms",
+      "label": "build_node_transforms()",
       "_callable": true,
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community_name": "audit_mech_thrusters.py",
       "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Call",
-            "receiver_type": "Node3D",
-            "lang": "csharp",
-            "line": "L46"
-          }
-        ]
-      },
-      "norm_label": ".setnoiseemitterlayervalue()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "norm_label": "build_node_transforms()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L186"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_build_node_transforms_global_matrix",
+      "label": "global_matrix()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "global_matrix()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L196"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_closest_on_triangle",
+      "label": "closest_on_triangle()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "closest_on_triangle()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L306"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_cross",
+      "label": "cross()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "cross()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L36"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_dot",
+      "label": "dot()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "dot()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L35"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_gltf_matrix",
+      "label": "gltf_matrix()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "gltf_matrix()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L87"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_identity",
+      "label": "identity()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "identity()",
+      "source_file": "tools/audit_mech_thrusters.py",
       "source_location": "L45"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_stop",
-      "label": ".Stop()",
+      "id": "tools_audit_mech_thrusters_inverse4",
+      "label": "inverse4()",
       "_callable": true,
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community_name": "audit_mech_thrusters.py",
       "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Call",
-            "receiver_type": "Node3D",
-            "lang": "csharp",
-            "line": "L52"
-          }
-        ]
-      },
-      "norm_label": ".stop()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L52"
+      "norm_label": "inverse4()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L65"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_toggle",
-      "label": ".Toggle()",
+      "id": "tools_audit_mech_thrusters_length",
+      "label": "length()",
       "_callable": true,
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community_name": "audit_mech_thrusters.py",
       "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ],
-        "unresolved_calls": [
-          {
-            "callee": "Call",
-            "receiver_type": "Node3D",
-            "lang": "csharp",
-            "line": "L54"
-          }
-        ]
-      },
-      "norm_label": ".toggle()",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L54"
+      "norm_label": "length()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L37"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_main",
+      "label": "main()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "main()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L427"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_mat_mul",
+      "label": "mat_mul()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "mat_mul()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L49"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_mesh_triangles",
+      "label": "mesh_triangles()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "mesh_triangles()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L205"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_mul",
+      "label": "mul()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "mul()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L34"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_nearest_surface",
+      "label": "nearest_surface()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "nearest_surface()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L332"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_node_local_matrix",
+      "label": "node_local_matrix()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "node_local_matrix()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L91"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_normalize",
+      "label": "normalize()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "normalize()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L40"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_nozzle_clearance",
+      "label": "nozzle_clearance()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "nozzle_clearance()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L372"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_parse_mounts",
+      "label": "parse_mounts()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "parse_mounts()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L156"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_ray_segment_hit",
+      "label": "ray_segment_hit()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "ray_segment_hit()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L350"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_read_accessor",
+      "label": "read_accessor()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "read_accessor()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L132"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_read_glb",
+      "label": "read_glb()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "read_glb()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L110"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_sub",
+      "label": "sub()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "sub()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L33"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_transform_direction",
+      "label": "transform_direction()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "transform_direction()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L61"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_transform_normal_inverse",
+      "label": "transform_normal_inverse()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "transform_normal_inverse()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L83"
+    },
+    {
+      "id": "tools_audit_mech_thrusters_transform_point",
+      "label": "transform_point()",
+      "_callable": true,
+      "_origin": "ast",
+      "community": 13,
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "code",
+      "norm_label": "transform_point()",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L53"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_ascollisionshape2d",
@@ -1355,7 +1679,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1373,7 +1697,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1391,7 +1715,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1409,7 +1733,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1567,7 +1891,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1585,7 +1909,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1603,7 +1927,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1621,7 +1945,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -1639,7 +1963,7 @@
       "_callable": true,
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -2994,6 +3318,141 @@
       "source_location": ""
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_godotobject",
+      "label": "GodotObject",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "norm_label": "godotobject",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_node3d",
+      "label": "Node3D",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "norm_label": "node3d",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_stringname",
+      "label": "StringName",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "norm_label": "stringname",
+      "source_file": "",
+      "source_location": ""
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_continuous",
+      "label": "Continuous",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "continuous",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L15"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_decaytime",
+      "label": "DecayTime",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "decaytime",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L33"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_duration",
+      "label": "Duration",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "duration",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L27"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_growthtime",
+      "label": "GrowthTime",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "growthtime",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L21"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_noise",
+      "label": "Noise",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "noise",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L9"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_noiseemitterlayer",
+      "label": "NoiseEmitterLayer",
+      "_origin": "ast",
+      "community": 10,
+      "community_name": "PhantomCameraNoise3D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera.Noise",
+        "scope_chain": [
+          "s17"
+        ]
+      },
+      "norm_label": "noiseemitterlayer",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L39"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d_cs_gdscript",
       "label": "GDScript",
       "_origin": "ast",
@@ -3381,6 +3840,33 @@
       "source_location": "L22"
     },
     {
+      "id": "csharp_namespace:c24975ad28b7b1df",
+      "label": "PhantomCamera.Noise",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "metadata": {
+        "kind": "csharp_namespace",
+        "namespace": "PhantomCamera.Noise"
+      },
+      "norm_label": "phantomcamera.noise",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
+      "source_location": "L3",
+      "type": "namespace"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
+      "label": "PhantomCameraNoiseEmitter2D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoiseemitter2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d_cs_godotobject",
       "label": "GodotObject",
       "_origin": "ast",
@@ -3514,6 +4000,28 @@
       "norm_label": "noiseemitterlayer",
       "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
       "source_location": "L39"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d",
+      "label": "PhantomCameraNoiseEmitter3D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoiseemitter3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
+      "source_location": "L1"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d",
+      "label": "PhantomCameraNoise2D.cs",
+      "_origin": "ast",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
+      "file_type": "code",
+      "norm_label": "phantomcameranoise2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
+      "source_location": "L1"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d_cs_gdscript",
@@ -3702,139 +4210,37 @@
       "source_location": "L33"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_godotobject",
-      "label": "GodotObject",
+      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d",
+      "label": "PhantomCameraNoise3D.cs",
       "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community": 12,
+      "community_name": "PhantomCameraNoiseEmitter2D",
       "file_type": "code",
-      "norm_label": "godotobject",
-      "source_file": "",
-      "source_location": ""
+      "norm_label": "phantomcameranoise3d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
+      "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_node3d",
-      "label": "Node3D",
+      "id": "tools_audit_mech_thrusters",
+      "label": "audit_mech_thrusters.py",
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
+      "community_name": "audit_mech_thrusters.py",
       "file_type": "code",
-      "norm_label": "node3d",
-      "source_file": "",
-      "source_location": ""
+      "norm_label": "audit_mech_thrusters.py",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L1"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_cs_stringname",
-      "label": "StringName",
+      "id": "tools_audit_mech_thrusters_rationale_2",
+      "label": "Audit live thruster hardpoints against the MechAsset GLB bind-pose mesh. The\u2026",
       "_origin": "ast",
       "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "norm_label": "stringname",
-      "source_file": "",
-      "source_location": ""
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_continuous",
-      "label": "Continuous",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "continuous",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L15"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_decaytime",
-      "label": "DecayTime",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "decaytime",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L33"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_duration",
-      "label": "Duration",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "duration",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L27"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_growthtime",
-      "label": "GrowthTime",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "growthtime",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L21"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_noise",
-      "label": "Noise",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "noise",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L9"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d_phantomcamera_noise_phantomcameranoiseemitter3d_noiseemitterlayer",
-      "label": "NoiseEmitterLayer",
-      "_origin": "ast",
-      "community": 13,
-      "community_name": "PhantomCameraNoiseEmitter3D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera.Noise",
-        "scope_chain": [
-          "s17"
-        ]
-      },
-      "norm_label": "noiseemitterlayer",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L39"
+      "community_name": "audit_mech_thrusters.py",
+      "file_type": "rationale",
+      "norm_label": "audit live thruster hardpoints against the mechasset glb bind-pose mesh. the...",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L2"
     },
     {
       "id": "grass_research",
@@ -3925,226 +4331,29 @@
       "label": "CollisionShape2D",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "norm_label": "collisionshape2d",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "csharp_namespace:c24975ad28b7b1df",
-      "label": "PhantomCamera.Noise",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "kind": "csharp_namespace",
-        "namespace": "PhantomCamera.Noise"
-      },
-      "norm_label": "phantomcamera.noise",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
-      "source_location": "L3",
-      "type": "namespace"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d",
-      "label": "PhantomCamera2D.cs",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcamera2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_cs_godotobject",
       "label": "GodotObject",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "norm_label": "godotobject",
       "source_file": "",
       "source_location": ""
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
-      "label": "None",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L22"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
-      "label": "X",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "x",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L23"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
-      "label": "Xy",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "xy",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L25"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
-      "label": "Y",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "y",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L24"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_framed",
-      "label": "Framed",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "framed",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L17"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_glued",
-      "label": "Glued",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "glued",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L13"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_group",
-      "label": "Group",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "group",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L15"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_none",
-      "label": "None",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "none",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L12"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_path",
-      "label": "Path",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "path",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L16"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_simple",
-      "label": "Simple",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "metadata": {
-        "namespace": "PhantomCamera",
-        "scope_chain": [
-          "s106"
-        ]
-      },
-      "norm_label": "simple",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
-      "source_location": "L14"
-    },
-    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_limittargetqueryresult_iscollisionshape2d",
       "label": "IsCollisionShape2D",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4161,7 +4370,7 @@
       "label": "IsTileMapLayer",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -4174,55 +4383,11 @@
       "source_location": "L366"
     },
     {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter2d",
-      "label": "PhantomCameraNoiseEmitter2D.cs",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoiseemitter2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter2D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcameranoiseemitter3d",
-      "label": "PhantomCameraNoiseEmitter3D.cs",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoiseemitter3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCameraNoiseEmitter3D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise2d",
-      "label": "PhantomCameraNoise2D.cs",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoise2d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise2D.cs",
-      "source_location": "L1"
-    },
-    {
-      "id": "demo_addons_phantom_camera_scripts_resources_phantomcameranoise3d",
-      "label": "PhantomCameraNoise3D.cs",
-      "_origin": "ast",
-      "community": 15,
-      "community_name": "FollowMode2D",
-      "file_type": "code",
-      "norm_label": "phantomcameranoise3d.cs",
-      "source_file": "demo/addons/phantom_camera/scripts/resources/PhantomCameraNoise3D.cs",
-      "source_location": "L1"
-    },
-    {
       "id": "tilemaplayer",
       "label": "TileMapLayer",
       "_origin": "ast",
       "community": 15,
-      "community_name": "FollowMode2D",
+      "community_name": "LimitTargetQueryResult",
       "file_type": "code",
       "norm_label": "tilemaplayer",
       "source_file": "",
@@ -4268,11 +4433,22 @@
       "source_location": ""
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d",
+      "label": "PhantomCamera2D.cs",
+      "_origin": "ast",
+      "community": 17,
+      "community_name": "PhantomCamera2D.cs",
+      "file_type": "code",
+      "norm_label": "phantomcamera2d.cs",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L1"
+    },
+    {
       "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_phantomcamera2d_node2d",
       "label": "Node2D",
       "_origin": "ast",
       "community": 17,
-      "community_name": "Node2D",
+      "community_name": "PhantomCamera2D.cs",
       "file_type": "code",
       "metadata": {
         "namespace": "PhantomCamera",
@@ -5273,7 +5449,55 @@
       "node_kind": "heading",
       "norm_label": "10. live flight implementation",
       "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
-      "source_location": "L554"
+      "source_location": "L557"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_11_loaded_bracing_and_fixed_thrust_revision_2026_11_26",
+      "label": "11. Loaded bracing and fixed thrust revision (2026-11-26)",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "11. loaded bracing and fixed thrust revision (2026-11-26)",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L613"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_12_gundam_style_propulsion_hardpoints",
+      "label": "12. Gundam-style propulsion hardpoints",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "12. gundam-style propulsion hardpoints",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L625"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_13_manoeuvre_coordination_revision",
+      "label": "13. Manoeuvre coordination revision",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "13. manoeuvre coordination revision",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L656"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_14_implemented_mechanical_load_response_and_flight_feedback",
+      "label": "14. Implemented mechanical-load response and flight feedback",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "14. implemented mechanical-load response and flight feedback",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L665"
     },
     {
       "id": "demo_aerial_flight_articulation_design_1_goals_and_design_principles",
@@ -5612,16 +5836,28 @@
       "source_location": "L502"
     },
     {
-      "id": "demo_aerial_flight_articulation_design_9_laboratory_measurements",
-      "label": "9. Laboratory measurements",
+      "id": "demo_aerial_flight_articulation_design_9_historical_feet_only_laboratory_measurements_superseded",
+      "label": "9. Historical feet-only laboratory measurements (superseded)",
       "_origin": "ast",
       "community": 29,
       "community_name": "Pose-driven aerial mech articulation",
       "file_type": "document",
       "node_kind": "heading",
-      "norm_label": "9. laboratory measurements",
+      "norm_label": "9. historical feet-only laboratory measurements (superseded)",
       "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
       "source_location": "L508"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_known_approximation_boundaries",
+      "label": "Known approximation boundaries",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "known approximation boundaries",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L681"
     },
     {
       "id": "demo_aerial_flight_articulation_design_pose_driven_aerial_mech_articulation",
@@ -5634,6 +5870,30 @@
       "norm_label": "pose-driven aerial mech articulation",
       "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
       "source_location": "L1"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_runtime_armour_fit",
+      "label": "Runtime armour fit",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "runtime armour fit",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L652"
+    },
+    {
+      "id": "demo_aerial_flight_articulation_design_validation_contract",
+      "label": "Validation contract",
+      "_origin": "ast",
+      "community": 29,
+      "community_name": "Pose-driven aerial mech articulation",
+      "file_type": "document",
+      "node_kind": "heading",
+      "norm_label": "validation contract",
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L677"
     },
     {
       "id": "demo_addons_phantom_camera_scripts_resources_phantomcameratween",
@@ -6072,12 +6332,12 @@
     },
     {
       "id": "tools_check_godot_rationale_2",
-      "label": "Run all headless first-party checks and copy checks; requires an imported demo\u2026",
+      "label": "Run headless first-party checks and copy checks; optional arguments select\u2026",
       "_origin": "ast",
       "community": 31,
       "community_name": "check_godot.py",
       "file_type": "rationale",
-      "norm_label": "run all headless first-party checks and copy checks; requires an imported demo...",
+      "norm_label": "run headless first-party checks and copy checks; optional arguments select...",
       "source_file": "tools/check_godot.py",
       "source_location": "L2"
     },
@@ -6218,6 +6478,108 @@
       "source_location": "L26"
     },
     {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_framed",
+      "label": "Framed",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "framed",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L17"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_glued",
+      "label": "Glued",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "glued",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L13"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_group",
+      "label": "Group",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "group",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L15"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L12"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_path",
+      "label": "Path",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "path",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L16"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followmode2d_simple",
+      "label": "Simple",
+      "_origin": "ast",
+      "community": 34,
+      "community_name": "FollowMode2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "simple",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L14"
+    },
+    {
       "id": "graphify_out_memory_query_20261106_185819_e22bcec3_how_are_aerial_per_booster_thrust_caps_and_redunda",
       "label": "query_20261106_185819_e22bcec3_how_are_aerial_per_booster_thrust_caps_and_redunda.md",
       "_origin": "ast",
@@ -6354,6 +6716,74 @@
       "norm_label": "source nodes",
       "source_file": "graphify-out/memory/query_20261106_192423_a70fcb6e_how_does_aerial_cold_jet_thrust_scale_with_speed_f.md",
       "source_location": "L30"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_none",
+      "label": "None",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "none",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L22"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_x",
+      "label": "X",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "x",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L23"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_xy",
+      "label": "Xy",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "xy",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L25"
+    },
+    {
+      "id": "demo_addons_phantom_camera_scripts_phantom_camera_phantomcamera2d_phantomcamera_followlockaxis2d_y",
+      "label": "Y",
+      "_origin": "ast",
+      "community": 37,
+      "community_name": "FollowLockAxis2D",
+      "file_type": "code",
+      "metadata": {
+        "namespace": "PhantomCamera",
+        "scope_chain": [
+          "s106"
+        ]
+      },
+      "norm_label": "y",
+      "source_file": "demo/addons/phantom_camera/scripts/phantom_camera/PhantomCamera2D.cs",
+      "source_location": "L24"
     },
     {
       "id": "csharp_namespace:c00019ec7183498a",
@@ -7905,7 +8335,7 @@
       "node_kind": "heading",
       "norm_label": "asset selection",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L380"
+      "source_location": "L377"
     },
     {
       "id": "demo_aerial_readme_body_flight_control_checks",
@@ -7917,7 +8347,7 @@
       "node_kind": "heading",
       "norm_label": "body-flight control checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L751"
+      "source_location": "L749"
     },
     {
       "id": "demo_aerial_readme_checks_and_comparison_captures",
@@ -7929,7 +8359,7 @@
       "node_kind": "heading",
       "norm_label": "checks and comparison captures",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L465"
+      "source_location": "L463"
     },
     {
       "id": "demo_aerial_readme_dynamic_rotation_and_flip_checks",
@@ -7941,7 +8371,7 @@
       "node_kind": "heading",
       "norm_label": "dynamic rotation and flip checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L774"
+      "source_location": "L772"
     },
     {
       "id": "demo_aerial_readme_flight_animation_checks",
@@ -7953,7 +8383,7 @@
       "node_kind": "heading",
       "norm_label": "flight animation checks",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L721"
+      "source_location": "L719"
     },
     {
       "id": "demo_aerial_readme_implementation_and_reference",
@@ -7977,7 +8407,7 @@
       "node_kind": "heading",
       "norm_label": "pose studio",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L678"
+      "source_location": "L676"
     },
     {
       "id": "demo_aerial_readme_procedural_pose_ownership_and_tuning",
@@ -7989,7 +8419,7 @@
       "node_kind": "heading",
       "norm_label": "procedural pose ownership and tuning",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L395"
+      "source_location": "L393"
     },
     {
       "id": "demo_aerial_readme_research_mapped_to_the_current_behaviours",
@@ -8001,7 +8431,7 @@
       "node_kind": "heading",
       "norm_label": "research mapped to the current behaviours",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L629"
+      "source_location": "L627"
     },
     {
       "id": "demo_aerial_readme_run_and_controls",
@@ -8025,7 +8455,7 @@
       "node_kind": "heading",
       "norm_label": "visual review and remaining goal",
       "source_file": "demo/aerial/README.md",
-      "source_location": "L806"
+      "source_location": "L804"
     },
     {
       "id": "demo_ground_readme",
@@ -8339,6 +8769,618 @@
       "context": "call",
       "source_file": "demo/addons/phantom_camera/scripts/resources/TweenDirectorResource.cs",
       "source_location": "L63",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_audit_mount",
+      "target": "tools_audit_mech_thrusters_transform_point",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L398",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_audit_mount",
+      "target": "tools_audit_mech_thrusters_transform_direction",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L399",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_audit_mount",
+      "target": "tools_audit_mech_thrusters_nearest_surface",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L404",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_audit_mount",
+      "target": "tools_audit_mech_thrusters_nozzle_clearance",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L407",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_audit_mount",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L419",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_build_node_transforms",
+      "target": "tools_audit_mech_thrusters_node_local_matrix",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L193",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_build_node_transforms_global_matrix",
+      "target": "tools_audit_mech_thrusters_build_node_transforms_global_matrix",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L199",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_build_node_transforms_global_matrix",
+      "target": "tools_audit_mech_thrusters_mat_mul",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L199",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_closest_on_triangle",
+      "target": "tools_audit_mech_thrusters_sub",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L307",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_closest_on_triangle",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L308",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_closest_on_triangle",
+      "target": "tools_audit_mech_thrusters_add",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L317",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_closest_on_triangle",
+      "target": "tools_audit_mech_thrusters_mul",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L317",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_inverse4",
+      "target": "tools_audit_mech_thrusters_identity",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L66",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_length",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L37",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_main",
+      "target": "tools_audit_mech_thrusters_read_glb",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L434",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_main",
+      "target": "tools_audit_mech_thrusters_build_node_transforms",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L435",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_main",
+      "target": "tools_audit_mech_thrusters_parse_mounts",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L436",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_main",
+      "target": "tools_audit_mech_thrusters_mesh_triangles",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L437",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_main",
+      "target": "tools_audit_mech_thrusters_audit_mount",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L438",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_read_accessor",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L223",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_inverse4",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L225",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_transform_point",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L226",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_transform_normal_inverse",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L229",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_cross",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L270",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_normalize",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L270",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_sub",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L270",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_length",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L271",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_add",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L274",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L275",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_mesh_triangles",
+      "target": "tools_audit_mech_thrusters_mul",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L276",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nearest_surface",
+      "target": "tools_audit_mech_thrusters_closest_on_triangle",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L335",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nearest_surface",
+      "target": "tools_audit_mech_thrusters_sub",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L336",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nearest_surface",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L337",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nearest_surface",
+      "target": "tools_audit_mech_thrusters_mul",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L343",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_node_local_matrix",
+      "target": "tools_audit_mech_thrusters_identity",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L102",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_node_local_matrix",
+      "target": "tools_audit_mech_thrusters_gltf_matrix",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L93",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_normalize",
+      "target": "tools_audit_mech_thrusters_length",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L41",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_normalize",
+      "target": "tools_audit_mech_thrusters_mul",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L42",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nozzle_clearance",
+      "target": "tools_audit_mech_thrusters_cross",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L374",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nozzle_clearance",
+      "target": "tools_audit_mech_thrusters_normalize",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L374",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nozzle_clearance",
+      "target": "tools_audit_mech_thrusters_add",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L381",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nozzle_clearance",
+      "target": "tools_audit_mech_thrusters_mul",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L381",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_nozzle_clearance",
+      "target": "tools_audit_mech_thrusters_ray_segment_hit",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L386",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_parse_mounts",
+      "target": "tools_audit_mech_thrusters_normalize",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L179",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_ray_segment_hit",
+      "target": "tools_audit_mech_thrusters_sub",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L351",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_ray_segment_hit",
+      "target": "tools_audit_mech_thrusters_cross",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L353",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_ray_segment_hit",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L354",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_ray_segment_hit",
+      "target": "tools_audit_mech_thrusters_length",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L369",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_transform_direction",
+      "target": "tools_audit_mech_thrusters_normalize",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L62",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_transform_normal_inverse",
+      "target": "tools_audit_mech_thrusters_normalize",
+      "relation": "calls",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L84",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters_build_node_transforms",
+      "target": "tools_audit_mech_thrusters_build_node_transforms_global_matrix",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "context": "call",
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L196",
       "weight": 1.0
     },
     {
@@ -13409,6 +14451,39 @@
       "weight": 1.0
     },
     {
+      "source": "demo_aerial_flight_articulation_design_12_gundam_style_propulsion_hardpoints",
+      "target": "demo_aerial_flight_articulation_design_runtime_armour_fit",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L652",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_articulation_design_14_implemented_mechanical_load_response_and_flight_feedback",
+      "target": "demo_aerial_flight_articulation_design_validation_contract",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L677",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_articulation_design_14_implemented_mechanical_load_response_and_flight_feedback",
+      "target": "demo_aerial_flight_articulation_design_known_approximation_boundaries",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L681",
+      "weight": 1.0
+    },
+    {
       "source": "demo_aerial_flight_articulation_design_2_lower_body_flight_articulation_study",
       "target": "demo_aerial_flight_articulation_design_2_6_continuous_pose_intensity_and_selection",
       "relation": "contains",
@@ -13707,7 +14782,7 @@
     },
     {
       "source": "demo_aerial_flight_articulation_design_pose_driven_aerial_mech_articulation",
-      "target": "demo_aerial_flight_articulation_design_9_laboratory_measurements",
+      "target": "demo_aerial_flight_articulation_design_9_historical_feet_only_laboratory_measurements_superseded",
       "relation": "contains",
       "_origin": "ast",
       "confidence": "EXTRACTED",
@@ -13724,7 +14799,51 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
-      "source_location": "L554",
+      "source_location": "L557",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_articulation_design_pose_driven_aerial_mech_articulation",
+      "target": "demo_aerial_flight_articulation_design_11_loaded_bracing_and_fixed_thrust_revision_2026_11_26",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L613",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_articulation_design_pose_driven_aerial_mech_articulation",
+      "target": "demo_aerial_flight_articulation_design_12_gundam_style_propulsion_hardpoints",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L625",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_articulation_design_pose_driven_aerial_mech_articulation",
+      "target": "demo_aerial_flight_articulation_design_13_manoeuvre_coordination_revision",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L656",
+      "weight": 1.0
+    },
+    {
+      "source": "demo_aerial_flight_articulation_design_pose_driven_aerial_mech_articulation",
+      "target": "demo_aerial_flight_articulation_design_14_implemented_mechanical_load_response_and_flight_feedback",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "demo/aerial/FLIGHT_ARTICULATION_DESIGN.md",
+      "source_location": "L665",
       "weight": 1.0
     },
     {
@@ -13757,7 +14876,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L380",
+      "source_location": "L377",
       "weight": 1.0
     },
     {
@@ -13768,7 +14887,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L395",
+      "source_location": "L393",
       "weight": 1.0
     },
     {
@@ -13779,7 +14898,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L465",
+      "source_location": "L463",
       "weight": 1.0
     },
     {
@@ -13801,7 +14920,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L806",
+      "source_location": "L804",
       "weight": 1.0
     },
     {
@@ -13823,7 +14942,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L629",
+      "source_location": "L627",
       "weight": 1.0
     },
     {
@@ -13834,7 +14953,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L678",
+      "source_location": "L676",
       "weight": 1.0
     },
     {
@@ -13845,7 +14964,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L721",
+      "source_location": "L719",
       "weight": 1.0
     },
     {
@@ -13856,7 +14975,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L751",
+      "source_location": "L749",
       "weight": 1.0
     },
     {
@@ -13867,7 +14986,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L774",
+      "source_location": "L772",
       "weight": 1.0
     },
     {
@@ -14696,6 +15815,292 @@
       "weight": 1.0
     },
     {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_read_glb",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L110",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_read_accessor",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L132",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_parse_mounts",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L156",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_build_node_transforms",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L186",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_mesh_triangles",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L205",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_closest_on_triangle",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L306",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_add",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L32",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_sub",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L33",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_nearest_surface",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L332",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_mul",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L34",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_dot",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L35",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_ray_segment_hit",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L350",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_cross",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L36",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_length",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L37",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_nozzle_clearance",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L372",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_audit_mount",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L394",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_normalize",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L40",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_main",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L427",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_identity",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L45",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_mat_mul",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L49",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_transform_point",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L53",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_transform_direction",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L61",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_inverse4",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L65",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_transform_normal_inverse",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L83",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_gltf_matrix",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L87",
+      "weight": 1.0
+    },
+    {
+      "source": "tools_audit_mech_thrusters",
+      "target": "tools_audit_mech_thrusters_node_local_matrix",
+      "relation": "contains",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L91",
+      "weight": 1.0
+    },
+    {
       "source": "tools_check_godot",
       "target": "tools_check_godot_main",
       "relation": "contains",
@@ -15235,6 +16640,17 @@
       "weight": 1.0
     },
     {
+      "source": "tools_audit_mech_thrusters_rationale_2",
+      "target": "tools_audit_mech_thrusters",
+      "relation": "rationale_for",
+      "_origin": "ast",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "tools/audit_mech_thrusters.py",
+      "source_location": "L2",
+      "weight": 1.0
+    },
+    {
       "source": "tools_check_godot_rationale_2",
       "target": "tools_check_godot",
       "relation": "rationale_for",
@@ -15275,7 +16691,7 @@
       "confidence": "EXTRACTED",
       "confidence_score": 1.0,
       "source_file": "demo/aerial/README.md",
-      "source_location": "L397",
+      "source_location": "L395",
       "weight": 1.0
     },
     {
@@ -15348,5 +16764,5 @@
     }
   ],
   "hyperedges": [],
-  "built_at_commit": "3af4bdcde44ff7171ccc6793230a962059f8ef2d"
+  "built_at_commit": "f52fa6094bbe87853488f0b9712f09c71d0725c4"
 }
