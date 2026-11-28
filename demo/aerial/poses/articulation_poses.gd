@@ -178,29 +178,45 @@ static func arm_key(key: String, side: int) -> Vector4:
 
 static func torso_target(frame: Dictionary) -> Vector3:
 	var steer: Vector3 = frame.steer
+
+	# Choose the flight-regime base first. Directional control is an overlay,
+	# not a competing posture selection that coast/drive can erase afterward.
+	var base := torso_key("Neutral")
+	base = base.lerp(torso_key("Forward_Lean"),clampf(frame.drive*0.65,0.0,1.0))
+	base = base.lerp(torso_key("Extended_Release"),clampf(frame.coast*0.75,0.0,1.0))
+	base.x += frame.back*0.12-frame.belly*0.18
+	var rotation := Basis.from_euler(base).get_rotation_quaternion()
+
+	# Pitch, translation, yaw and roll each contribute their own local rotation.
 	var pitch := absf(steer.x)
 	var soft := torso_key("Arch" if steer.x>0.0 else "Forward_Lean")
 	var hard := torso_key("Deep_Arch" if steer.x>0.0 else "Deep_Forward_Lean")
-	var target := torso_key("Neutral").lerp(soft,2.0*pitch) if pitch<0.5 else soft.lerp(hard,2.0*pitch-1.0)
+	var neutral_rotation := Basis.from_euler(torso_key("Neutral")).get_rotation_quaternion()
+	var soft_rotation := Basis.from_euler(soft).get_rotation_quaternion()
+	var hard_rotation := Basis.from_euler(hard).get_rotation_quaternion()
+	var pitch_rotation := neutral_rotation.slerp(soft_rotation,pitch*2.0) if pitch<=0.5 else soft_rotation.slerp(hard_rotation,(pitch-0.5)*2.0)
+	var pitch_delta := neutral_rotation.inverse()*pitch_rotation
 
-	# Translation, yaw and roll are independent chassis contributions.
-	# Yaw counter-rotates the torso against the commanded turn instead of
-	# reusing the same lean direction as lateral translation.
 	var translation_lateral: float = clampf(frame.reach.x,-1.0,1.0)
 	var translation_key := torso_key("Lateral_Lean" if translation_lateral>=0.0 else "Lateral_Lean_Right")
 	var translation_delta := Basis.from_euler(translation_key*absf(translation_lateral)*0.55).get_rotation_quaternion()
+
+	# Positive pilot yaw counter-leans the torso to the opposite side.
 	var yaw_key := torso_key("Lateral_Lean_Right" if steer.y>=0.0 else "Lateral_Lean")
 	var yaw_delta := Basis.from_euler(yaw_key*absf(steer.y)).get_rotation_quaternion()
+
 	var roll_key := torso_key("Axial_Twist" if steer.z>=0.0 else "Axial_Twist_Right")
 	var roll_delta := Basis.from_euler(roll_key*absf(steer.z)).get_rotation_quaternion()
-	var composed := (Basis.from_euler(target).get_rotation_quaternion()*translation_delta*yaw_delta*roll_delta).normalized()
-	target = composed.get_euler()
 
-	target = target.lerp(torso_key("Forward_Lean"),frame.drive*0.65)
-	target = target.lerp(torso_key("Extended_Release"),frame.coast*0.75)
-	target = target.lerp(torso_key("Compressed_Brace"),maxf(frame.retro,maxf(frame.flare*0.7,frame.land)))
-	target.x += frame.back*0.12-frame.belly*0.18
-	return target
+	rotation = (rotation*pitch_delta*translation_delta*yaw_delta*roll_delta).normalized()
+
+	# Structural bracing is the final common-mode load. It must not replace
+	# the asymmetry that communicates the pilot's directional intent.
+	var brace: float = clampf(maxf(frame.retro,maxf(frame.flare*0.7,frame.land)),0.0,1.0)
+	if brace>0.0001:
+		var brace_delta := Basis.from_euler(torso_key("Compressed_Brace")*brace).get_rotation_quaternion()
+		rotation = (rotation*brace_delta).normalized()
+	return rotation.get_euler()
 
 static func arm_target(frame: Dictionary, side: int) -> Vector4:
 	var steer: Vector3 = frame.steer

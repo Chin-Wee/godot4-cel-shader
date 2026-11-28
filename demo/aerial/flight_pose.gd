@@ -517,7 +517,7 @@ func _articulated_gaze(frame, controller, basis: Basis, intent: Vector3, delta: 
 	var weight := 1.0-exp(-delta/0.15)
 	if gaze_heading.is_zero_approx(): gaze_heading = target
 	elif gaze_heading.dot(target)<-0.999:
-		var axis := basis.z if absf(gaze_heading.dot(basis.z))<0.9 else basis.y
+		var axis := (basis.z if absf(gaze_heading.dot(basis.z))<0.9 else basis.y).normalized()
 		gaze_heading = gaze_heading.rotated(axis,PI*weight).normalized()
 	else: gaze_heading = gaze_heading.slerp(target,weight).normalized()
 	return gaze_heading

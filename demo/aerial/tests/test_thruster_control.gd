@@ -6,6 +6,7 @@ var pulse_ticks := 0
 var visible_ticks := 0
 var was_firing := false
 var maneuver_firing_ticks := 0
+var nozzle_axis_diagnostics: Array[String] = []
 
 func _position_capture_camera() -> void:
 	# Low three-quarter view exposes foot-sole/calf articulation and shoulder/backpack puffs.
@@ -79,6 +80,7 @@ func _check_pressure_modulation() -> void:
 	fc.clock = saved_clock
 
 func _capture() -> void:
+	nozzle_axis_diagnostics.clear()
 	create_timer(120).timeout.connect(func():
 		if not completed: push_error("Thruster control checks timed out"); quit(1))
 	_check_valves()
@@ -132,6 +134,7 @@ func _capture() -> void:
 	_expect(rows[-1].speed<0.8 and rows[-1].omega<0.15,"Relaxed hover accumulates uncontrolled drift")
 	for row in rows: _expect(row.upright>cos(deg_to_rad(5)),"Relaxed hover loses gyro support")
 	_keys([])
+	for diagnostic in nozzle_axis_diagnostics: print(diagnostic)
 	report["failures"] = failures.duplicate()
 	report["pulse_starts"] = pulse_starts
 	report["pulse_ticks"] = pulse_ticks
@@ -217,7 +220,9 @@ func _check_nozzle_allocation() -> void:
 					_expect(fc.cold_angles[index].is_zero_approx(),"Fixed cold nozzle was steered")
 				_expect(force.distance_to(fc.cold_force)<0.1 and moment.distance_to(fc.rcs_torque)<0.1,"Cold force/moment differs from actual outlet forces")
 				recoil_peak = maxf(recoil_peak,force.length()/(scene.hero.mass*Controller.GRAVITY))
-			print("COLD AXIS ",axis," ",sign," recoil_peak ",recoil_peak," mean ",mean_moment," requests=",fc.cold_requests," levels=",fc.cold_valves.map(func(valve):return valve.level))
+			var valve_levels := PackedFloat32Array()
+			for valve in fc.cold_valves: valve_levels.append(valve.level)
+			nozzle_axis_diagnostics.append("COLD AXIS "+str(axis)+" "+str(sign)+" recoil_peak "+str(recoil_peak)+" mean "+str(mean_moment)+" requests="+str(fc.cold_requests)+" levels="+str(valve_levels))
 			_expect(recoil_peak<0.03,"Opposed cold nozzles waste fuel on recoil")
 			_expect(mean_moment[axis]*sign>35000,"Placed cold nozzles cannot control a signed rotation axis")
 		fc.control_torque = Vector3.ZERO

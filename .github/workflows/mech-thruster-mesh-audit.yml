@@ -5,6 +5,7 @@ on:
     branches:
       - flight/fixed-thrust-bracing
       - flight/controlled-mechanical-violence
+      - flight/controlled-mechanical-violence-next
     paths:
       - "demo/models/MechAsset/MechAsset.glb"
       - "demo/aerial/aerial_mech.gd"

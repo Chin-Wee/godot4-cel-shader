@@ -143,6 +143,7 @@ func _run() -> void:
 	var start := _asymmetry()
 	assert(absf(start)>1.0,"Yaw command did not produce asymmetric arm articulation: "+str(start))
 	assert(hover_stroke>0.35,"Hover yaw did not produce a visible torso stroke: "+str(hover_stroke))
+	print("TORSO YAW DIAGNOSTIC steer=",mech.rig.motion.steer," reach=",mech.rig.motion.reach," coast=",mech.rig.motion.coast," drive=",mech.rig.motion.drive," chest=",mech.rig.chest.value)
 	assert(mech.rig.chest.value.z< -0.08,"Yaw did not counter-rotate the torso around the chest-to-back axis: "+str(mech.rig.chest.value))
 	mech.angular_velocity = fc.pilot_frame()*Vector3(0,fc.MAX_RATE.y,0)
 	await _ticks(30)

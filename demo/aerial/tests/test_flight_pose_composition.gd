@@ -38,6 +38,19 @@ func _run() -> void:
 	var braced_yaw := Articulation.select(Vector3(0,0.8,0),Vector3.ZERO,1.0,0.8)
 	assert(_distance(braced_yaw,yaw)>0.02,"Structural bracing did not contribute to the composed pose")
 
+	# Torso composition must preserve yaw and lateral translation over the
+	# coast base. These are independent requests, not mutually exclusive poses.
+	var coast_base := Articulation.torso_target(_torso_frame())
+	var coast_yaw := Articulation.torso_target(_torso_frame(Vector3(0,0.8,0)))
+	var coast_lateral := Articulation.torso_target(_torso_frame(Vector3.ZERO,Vector3(1,0,0)))
+	var coast_combined := Articulation.torso_target(_torso_frame(Vector3(0,0.8,0),Vector3(1,0,0)))
+	assert(coast_yaw.z < -0.08 and absf(coast_yaw.z-coast_base.z)>0.08,
+		"Coast base suppressed yaw counter-lean")
+	assert(coast_lateral.z > 0.08 and absf(coast_lateral.z-coast_base.z)>0.08,
+		"Lateral translation did not lean the torso")
+	assert(_torso_distance(coast_combined,coast_yaw)>0.02 and _torso_distance(coast_combined,coast_lateral)>0.02,
+		"Combined yaw and lateral translation collapsed into one torso pose")
+
 	for intensity_step in 11:
 		var intensity := float(intensity_step)/10.0
 		var pose := Articulation.select(Vector3(intensity,intensity*0.7,-intensity*0.5),
@@ -45,8 +58,17 @@ func _run() -> void:
 		for angle in pose:
 			assert(angle.is_finite(),"Quaternion composition produced a non-finite joint target")
 
-	print("Flight pose composition checks passed: six translation directions, three independent rotation axes, unpowered articulation, hover base and common-mode bracing.")
+	print("Flight pose composition checks passed: six translation directions, three independent rotation axes, unpowered articulation, hover base, torso yaw/translation overlay and common-mode bracing.")
 	quit()
+
+func _torso_frame(steer := Vector3.ZERO, reach := Vector3.ZERO) -> Dictionary:
+	return {"steer":steer,"reach":reach,"drive":0.0,"coast":1.0,
+		"retro":0.0,"flare":0.0,"land":0.0,"back":0.0,"belly":0.0}
+
+func _torso_distance(a: Vector3, b: Vector3) -> float:
+	var qa := Basis.from_euler(a).get_rotation_quaternion()
+	var qb := Basis.from_euler(b).get_rotation_quaternion()
+	return qa.angle_to(qb)
 
 func _distance(a: PackedVector3Array, b: PackedVector3Array) -> float:
 	var total := 0.0

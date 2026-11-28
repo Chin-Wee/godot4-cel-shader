@@ -69,7 +69,7 @@ func _run() -> void:
 			mech.controls = {key:true}
 			await _ticks(36)
 			assert(mech.controller.rotation_command.length() > 0.9, "Rotation input was gated")
-			print("ROTATION DIAGNOSTIC key=",key," orientation=",orientation," command=",mech.controller.rotation_command," body_rates=",mech.global_basis.orthonormalized().inverse()*mech.angular_velocity," control=",mech.controller.control_torque," rcs=",mech.controller.rcs_torque," cold=",mech.controller.cold_force)
+			print("ROTATION DIAGNOSTIC key=",key," orientation=",orientation," command=",mech.controller.rotation_command," body_rates=",mech.global_basis.orthonormalized().inverse()*mech.angular_velocity," control=",mech.controller.control_torque," main_torque=",mech.controller.main_torque," aero_torque=",mech.controller.aero_torque," rcs=",mech.controller.rcs_torque," main_force=",mech.controller.main_force," cold=",mech.controller.cold_force," cold_fraction=",mech.controller.cold_power_fraction()," torque_fraction=",mech.controller.torque_fraction," saturated=",mech.controller.torque_saturated)
 			assert(mech.controller.attitude.angle_to(orientation) > 0.08, "A rotation axis cannot move")
 			var expected: Vector3 = {"forward":Vector3.LEFT,"back":Vector3.RIGHT,"left":Vector3.DOWN,"right":Vector3.UP,"yaw_left":Vector3.BACK,"yaw_right":Vector3.FORWARD}[key]
 			var body_rates: Vector3 = mech.global_basis.orthonormalized().inverse()*mech.angular_velocity

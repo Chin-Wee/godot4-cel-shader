@@ -169,7 +169,7 @@ func _powered_inputs() -> void:
 	_expect(fc.velocity.x>0.05 and (fc.pilot_frame().inverse()*mech.angular_velocity).y>0.04,"Combined lateral boost and yaw misses authority")
 	mech.controls = {"left":true,"yaw_right":true}
 	await _ticks(36)
-	print("YAW reversal request=",fc.rotation_request," effective=",fc.effective_rates," rate=",(fc.pilot_frame().inverse()*mech.angular_velocity)," control=",fc.control_torque," cold=",fc.rcs_torque," saturated=",fc.torque_saturated)
+	print("YAW reversal request=",fc.rotation_request," effective=",fc.effective_rates," rate=",(fc.pilot_frame().inverse()*mech.angular_velocity)," control=",fc.control_torque," main_torque=",fc.main_torque," aero_torque=",fc.aero_torque," rcs=",fc.rcs_torque," main_force=",fc.main_force," cold_force=",fc.cold_force," cold_fraction=",fc.cold_power_fraction()," torque_fraction=",fc.torque_fraction," saturated=",fc.torque_saturated)
 	_expect((fc.pilot_frame().inverse()*mech.angular_velocity).y< -0.35,"Yaw reversal stalls")
 	print("Fixed flight W/S vertical speeds %.2f / %.2f m/s, hard roll %.2f rad/s."%[vertical_rates[0],vertical_rates[1],bank_rate])
 
@@ -191,6 +191,9 @@ func _cutoff_and_landing() -> void:
 	_expect(fc.delivered_thrust<1.0,"Main outlets fail to close in coast")
 	fc.detent = 3
 	await _ticks(35)
+	var hot_levels := PackedFloat32Array()
+	for valve in fc.hot_valves: hot_levels.append(valve.level)
+	print("RELIGHT DIAGNOSTIC detent=",fc.detent," engine=",fc.engine_level," thrust=",fc.thrust_level," delivered=",fc.delivered_thrust," required=",mech.mass*Flight.GRAVITY*0.8," motor_forces=",fc.motor_forces," valve_levels=",hot_levels," pressure=",fc.engine_pressure_scales)
 	_expect(fc.delivered_thrust>mech.mass*Flight.GRAVITY*0.8,"Fixed outlets fail to relight")
 	var floor_body := StaticBody3D.new()
 	floor_body.collision_layer = 2
@@ -216,6 +219,7 @@ func _compare_clocks() -> void:
 		mech.controls = {"left":true}
 		await _ticks(int(hz*0.8))
 		rates.append((mech.controller.pilot_frame().inverse()*mech.angular_velocity).z)
+		print("ROLL CLOCK DIAGNOSTIC hz=",hz," rate=",rates[-1]," engine=",mech.controller.engine_level," thrust=",mech.controller.thrust_level," control=",mech.controller.control_torque," rcs=",mech.controller.rcs_torque," saturated=",mech.controller.torque_saturated)
 	Engine.physics_ticks_per_second = previous
 	_expect(rates.max()-rates.min()<0.23,"Fixed-axis roll is timestep-dependent")
 	print("Matched hard roll at 30/60/120 Hz: ",rates)
