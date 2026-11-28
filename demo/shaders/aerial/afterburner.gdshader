@@ -10,8 +10,8 @@ uniform float flow_phase = 0.0;
 instance uniform float phase_offset = 0.0;
 instance uniform float thrust_load = 1.0;
 instance uniform float engine_throttle = -1.0;
-instance uniform float pressure_stress = 0.0;
 uniform float throttle: hint_range(0.0, 1.0) = 1.0;
+instance uniform float pressure_stress = 0.0;
 uniform float twist = 1.2;
 uniform float flow_density = 0.08;
 uniform float turbulence: hint_range(0.0, 0.16, 0.01) = 0.14;
@@ -53,7 +53,7 @@ void fragment() {
  // Multiplication erodes the tail; adding alpha masks would saturate coverage.
  float tail = smoothstep(0.6,1.0,axial);
  float coverage = (1.0-smoothstep(0.65,1.0,axial))*mix(1.0,noise*wisps*2.0,tail);
- coverage *= 1.0-clamp(pressure_stress,0.0,1.0)*0.035*(0.5+0.5*sin(flow_phase*6.283+phase_offset));
+ coverage *= 1.0-clamp(pressure_stress,0.0,1.0)*0.035*(0.5+0.5*sin(flow_phase*6.283185+phase_offset));
  if (coverage < 0.22) { discard; }
  float cells = pow(0.5+0.5*cos(axial*25.13274),10.0);
  float heat = (1.0-smoothstep(0.0,0.22,axial))*0.85+noise*0.15+cells*mix(0.8,0.35,axial);
