@@ -625,7 +625,7 @@ func _update_authored_legs(delta: float, frame, controller) -> void:
 	for index in legs.size():
 		var servo = legs[index]
 		var aim := alternative[index] if can_correct else target[index]
-		servo.step(profile.limit_joint(aim,index/3,index%3),delta,profile.leg_response[index%3],profile.joint_speed[index%3])
+		servo.step(profile.limit_joint(aim,index/3,index%3),delta,lerpf(profile.leg_response[index%3],0.08,takeoff),profile.joint_speed[index%3])
 		servo.value = profile.limit_joint(servo.value,index/3,index%3)
 
 func _rotate(bone: String, angles: Vector3) -> void:

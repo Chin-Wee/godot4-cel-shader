@@ -6,7 +6,7 @@ extends RefCounted
 const NEUTRAL := [[Vector3(-8.8,0,5),5,Vector3(3.6,0,-5)]]
 const AUTHORED := {
 	"Neutral_Flight": NEUTRAL,
-	"Hover_Hold": [[Vector3(-16,0,10),18,Vector3(12,0,-8)]],
+	"Hover_Hold": [[Vector3(-10,0,6),8,Vector3(5,0,-5)]],
 	"Unpowered_Coast": [[Vector3(-3,0,7),8,Vector3(-5,0,-4)]],
 	"Pitch_Up_Soft": [[Vector3(-12,0,7),5,Vector3(12,0,-7)]],
 	"Pitch_Up_Hard": [[Vector3(-40,0,22),85,Vector3(10,0,-10)]],
