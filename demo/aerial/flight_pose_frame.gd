@@ -52,6 +52,7 @@ var body_mass: float
 var gravity: float
 var max_rate: Vector3
 var articulated_flight: bool
+var grounded: bool
 var joint_moments: Dictionary
 
 static func capture(controller, loads: Dictionary, step_delta: float) -> FlightPoseFrame:
@@ -106,6 +107,7 @@ static func capture(controller, loads: Dictionary, step_delta: float) -> FlightP
 	frame.gravity = controller.GRAVITY
 	frame.max_rate = controller.MAX_RATE
 	frame.articulated_flight = controller.articulated_flight
+	frame.grounded = controller.grounded
 	frame.joint_moments = loads.duplicate(true)
 	frame.joint_moments.make_read_only()
 	return frame

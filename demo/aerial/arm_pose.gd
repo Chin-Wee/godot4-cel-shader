@@ -224,10 +224,10 @@ func apply(sk: Skeleton3D, rotate: Callable) -> void:
 		rotate.call(profile.arm_roots[side],Vector3(angles.x,0,angles.z))
 		var shoulder: int = sk.find_bone(profile.arm_roots[side])
 		sk.set_bone_pose_rotation(shoulder,(sk.get_bone_pose_rotation(shoulder)*Quaternion(Vector3.UP,angles.y)).normalized())
-		var elbow := elbows[side].value+Vector3(mechanical_arm.w,0,0)
+		var elbow: Vector3 = elbows[side].value+Vector3(mechanical_arm.w,0,0)
 		elbow.x = clampf(elbow.x,-1.65,-0.12)
 		rotate.call(profile.arm_middles[side],elbow)
-		var wrist := wrists[side].value
+		var wrist: Vector3 = wrists[side].value
 		if mechanical_wrists.size()==2: wrist += mechanical_wrists[side]
 		wrist = wrist.clamp(Vector3(-0.45,-0.35,-0.45),Vector3(0.45,0.35,0.45))
 		rotate.call(profile.arm_ends[side],wrist)

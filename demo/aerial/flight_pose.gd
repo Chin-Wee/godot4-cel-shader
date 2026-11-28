@@ -102,9 +102,9 @@ func reset() -> void:
 	contacts.reset()
 
 func update(delta: float, controller) -> void:
-	clock = controller.clock
 	contacts.update(delta,controller)
 	var frame := FlightPoseFrame.capture(controller,mechanical_joint_loads,delta)
+	clock = frame.clock
 	motion = _sample_motion(frame,controller)
 	_sample_effort(frame,delta)
 	var mechanical_sample := {
@@ -508,7 +508,7 @@ func _articulated_gaze(frame, controller, basis: Basis, intent: Vector3, delta: 
 	if turning.length()>0.1: target = (nose+turning*0.65).normalized()
 	elif desired_force.length()>1.0 and frame.translation_request.length()>0.13 and motion.get("retro",0.0)<0.35:
 		target = (nose+desired_force.normalized()*0.55).normalized()
-	if contacts.preparation>0.1 and not controller.grounded:
+	if contacts.preparation>0.1 and not frame.grounded:
 		for hit in contacts.hits:
 			if not hit.is_empty():
 				target = (hit.position-controller.body.global_position).normalized()
